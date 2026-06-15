@@ -17,7 +17,7 @@ namespace tool::gsc::compiler {
     class AscmNodeOpCode;
 
     class AscmNode {
-    public:
+      public:
         int32_t rloc{};
         int32_t floc{};
         size_t line{};
@@ -35,26 +35,19 @@ namespace tool::gsc::compiler {
             return true;
         }
 
-        bool HasRef() const {
-            return refs.size();
-        }
+        bool HasRef() const { return refs.size(); }
 
-        bool IsOpCode() const {
-            return nodetype == ASCMNT_OPCODE;
-        }
+        bool IsOpCode() const { return nodetype == ASCMNT_OPCODE; }
 
         AscmNodeOpCode* AsOpCode();
     };
 
-
     class AscmNodeRaw : public AscmNode {
-    public:
+      public:
         std::vector<byte> data{};
         uint32_t align;
 
-        AscmNodeRaw(size_t align = 1) : align((uint32_t)align) {
-            nodetype = ASCMNT_RAW;
-        }
+        AscmNodeRaw(size_t align = 1) : align((uint32_t)align) { nodetype = ASCMNT_RAW; }
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             if (aligned) {
@@ -72,19 +65,15 @@ namespace tool::gsc::compiler {
 
     template<typename Type>
     class AscmNodeRawData : public AscmNodeRaw {
-    public:
-        AscmNodeRawData(Type t) : AscmNodeRaw(sizeof(Type)) {
-            utils::WriteValue<Type>(data, t);
-        }
+      public:
+        AscmNodeRawData(Type t) : AscmNodeRaw(sizeof(Type)) { utils::WriteValue<Type>(data, t); }
     };
 
     class AscmNodeOpCode : public AscmNode {
-    public:
+      public:
         OPCode opcode;
 
-        AscmNodeOpCode(OPCode opcode) : opcode(opcode) {
-            nodetype = ASCMNT_OPCODE;
-        }
+        AscmNodeOpCode(OPCode opcode) : opcode(opcode) { nodetype = ASCMNT_OPCODE; }
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             if (aligned) {
@@ -96,7 +85,8 @@ namespace tool::gsc::compiler {
         bool Write(AscmCompilerContext& ctx) override {
             auto [ok, op] = GetOpCodeId(ctx.vmInfo->vmMagic, ctx.plt, opcode, ctx.cfg.useModToolOpCodes);
             if (!ok) {
-                LOG_ERROR("Can't find opcode {} ({}) for vm {}/{}", utils::PtrOrElse(OpCodeName(opcode), "null"), (int)opcode, ctx.vmInfo->name, PlatformName(ctx.plt));
+                LOG_ERROR("Can't find opcode {} ({}) for vm {}/{}", utils::PtrOrElse(OpCodeName(opcode), "null"),
+                          (int)opcode, ctx.vmInfo->name, PlatformName(ctx.plt));
 
                 return false;
             }
@@ -104,26 +94,21 @@ namespace tool::gsc::compiler {
             ctx.Align<uint16_t>();
             if (ctx.HasAlign()) {
                 ctx.Write<uint16_t>(op);
-            }
-            else {
+            } else {
                 ctx.Write<byte>((byte)op);
             }
 
             return true;
         }
 
-        virtual uint32_t GetDataFLoc(bool aligned) const {
-            throw std::runtime_error("GetDataFLoc not implemented");
-        }
+        virtual uint32_t GetDataFLoc(bool aligned) const { throw std::runtime_error("GetDataFLoc not implemented"); }
     };
 
     class AscmNodeRawOpCode : public AscmNode {
-    public:
+      public:
         int16_t opcode;
 
-        AscmNodeRawOpCode(int16_t opcode) : opcode(opcode) {
-            nodetype = ASCMNT_OPCODE_RAW;
-        }
+        AscmNodeRawOpCode(int16_t opcode) : opcode(opcode) { nodetype = ASCMNT_OPCODE_RAW; }
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             if (aligned) {
@@ -136,8 +121,7 @@ namespace tool::gsc::compiler {
             ctx.Align<uint16_t>();
             if (ctx.HasAlign()) {
                 ctx.Write<uint16_t>(opcode);
-            }
-            else {
+            } else {
                 ctx.Write<byte>((byte)opcode);
             }
 
@@ -147,11 +131,10 @@ namespace tool::gsc::compiler {
 
     template<typename Type>
     class AscmNodeData : public AscmNodeOpCode {
-    public:
+      public:
         Type val;
 
-        AscmNodeData(Type val, OPCode opcode) : AscmNodeOpCode(opcode), val(val) {
-        }
+        AscmNodeData(Type val, OPCode opcode) : AscmNodeOpCode(opcode), val(val) {}
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             if (aligned) {
@@ -170,18 +153,16 @@ namespace tool::gsc::compiler {
             return true;
         }
 
-        uint32_t GetDataFLoc(bool aligned) const override {
-            return ShiftSize(floc, aligned) - sizeof(Type);
-        }
+        uint32_t GetDataFLoc(bool aligned) const override { return ShiftSize(floc, aligned) - sizeof(Type); }
     };
 
     class AscmNodeHash : public AscmNodeOpCode {
-    public:
+      public:
         uint64_t val;
         uint32_t hashSize;
 
-        AscmNodeHash(uint64_t val, OPCode opcode, uint32_t hashSize) : AscmNodeOpCode(opcode), val(val), hashSize(hashSize) {
-        }
+        AscmNodeHash(uint64_t val, OPCode opcode, uint32_t hashSize)
+            : AscmNodeOpCode(opcode), val(val), hashSize(hashSize) {}
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             if (aligned) {
@@ -198,28 +179,23 @@ namespace tool::gsc::compiler {
             if (hashSize == 8) {
                 ctx.Align<uint64_t>();
                 ctx.Write<uint64_t>(val);
-            }
-            else if (hashSize == 4) {
+            } else if (hashSize == 4) {
                 ctx.Align<uint32_t>();
                 ctx.Write<uint32_t>((uint32_t)val);
-            }
-            else {
+            } else {
                 throw std::runtime_error(utils::va("hash%d not implemented in AscmNodeHash", hashSize * 8));
             }
             return true;
         }
 
-        uint32_t GetDataFLoc(bool aligned) const override {
-            return ShiftSize(floc, aligned) - hashSize;
-        }
+        uint32_t GetDataFLoc(bool aligned) const override { return ShiftSize(floc, aligned) - hashSize; }
     };
 
     class AscmNodeStringData : public AscmNodeOpCode {
-    public:
+      public:
         std::string string;
 
-        AscmNodeStringData(std::string string, OPCode opcode) : AscmNodeOpCode(opcode), string(string) {
-        }
+        AscmNodeStringData(std::string string, OPCode opcode) : AscmNodeOpCode(opcode), string(string) {}
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             return AscmNodeOpCode::ShiftSize(start, aligned) + (uint32_t)string.size() + 1;
@@ -250,7 +226,7 @@ namespace tool::gsc::compiler {
     };
 
     class AscmNodeFunctionCall : public AscmNodeOpCode {
-    public:
+      public:
         uint64_t nameSpace;
         uint64_t clsName;
         // linked by the compiler after the parsing
@@ -284,8 +260,7 @@ namespace tool::gsc::compiler {
                     break;
                 }
                 dataSize = (flags & FCF_POINTER) ? 0 : 8;
-            }
-            else {
+            } else {
                 switch (opcode) {
                 case OPCODE_ScriptThreadCallPointerEndOn:
                 case OPCODE_ScriptThreadCallPointer:
@@ -330,7 +305,8 @@ namespace tool::gsc::compiler {
                     break;
                 default: {
                     const char* opcodeName{ tool::gsc::opcode::OpCodeName(opcode) };
-                    throw std::runtime_error(utils::va("invalid opcode for func call %s", opcodeName ? opcodeName : "null"));
+                    throw std::runtime_error(
+                        utils::va("invalid opcode for func call %s", opcodeName ? opcodeName : "null"));
                 }
                 }
             }
@@ -342,12 +318,14 @@ namespace tool::gsc::compiler {
             LoadData(useParams, dataSize);
             if (aligned) {
                 if (flags & FCF_POINTER_CLASS) {
-                    return utils::Aligned<uint32_t>(AscmNodeOpCode::ShiftSize(start, aligned) + (useParams ? 1 : 0)) + hashSize;
+                    return utils::Aligned<uint32_t>(AscmNodeOpCode::ShiftSize(start, aligned) + (useParams ? 1 : 0)) +
+                           hashSize;
                 }
                 if (flags & FCF_POINTER) {
                     return AscmNodeOpCode::ShiftSize(start, aligned) + (useParams ? 1 : 0);
                 }
-                return utils::Aligned<uint64_t>(AscmNodeOpCode::ShiftSize(start, aligned) + (useParams ? 1 : 0)) + dataSize;
+                return utils::Aligned<uint64_t>(AscmNodeOpCode::ShiftSize(start, aligned) + (useParams ? 1 : 0)) +
+                       dataSize;
             }
 
             start = AscmNodeOpCode::ShiftSize(start, aligned);
@@ -382,16 +360,15 @@ namespace tool::gsc::compiler {
                     ctx.Align<uint64_t>();
                     ctx.Write<uint64_t>(clsName);
                     break;
-                default: throw std::runtime_error(utils::va("Invalid hash size cls ptr %d", hashSize));
+                default:
+                    throw std::runtime_error(utils::va("Invalid hash size cls ptr %d", hashSize));
                 }
-            }
-            else if (!(flags & FCF_POINTER)) {
+            } else if (!(flags & FCF_POINTER)) {
                 // replaced by the linker
                 ctx.Align(dataSize);
                 if (dataSize == 8) {
                     ctx.Write<uint64_t>(utils::CatLocated((uint32_t)nameSpace, (uint32_t)clsName));
-                }
-                else {
+                } else {
                     for (size_t i = 0; i < dataSize; i++) {
                         ctx.Write<byte>((byte)i);
                     }
@@ -414,11 +391,10 @@ namespace tool::gsc::compiler {
     };
 
     class AscmNodeVariable : public AscmNodeOpCode {
-    public:
+      public:
         size_t varId;
 
-        AscmNodeVariable(size_t varId, OPCode opcode) : AscmNodeOpCode(opcode), varId(varId) {
-        }
+        AscmNodeVariable(size_t varId, OPCode opcode) : AscmNodeOpCode(opcode), varId(varId) {}
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             return AscmNodeOpCode::ShiftSize(start, aligned) + 1;
@@ -442,8 +418,10 @@ namespace tool::gsc::compiler {
         bool hasFlag;
         bool obfuscate;
         uint32_t hashSize;
-    public:
-        AscmNodeCreateLocalVariables(const FunctionVar* lvars, size_t count, size_t params, const FunctionObject& fobj, bool obfuscate);
+
+      public:
+        AscmNodeCreateLocalVariables(const FunctionVar* lvars, size_t count, size_t params, const FunctionObject& fobj,
+                                     bool obfuscate);
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             static AscmNodeOpCode opCodeUndef{ OPCODE_Undefined };
@@ -476,8 +454,7 @@ namespace tool::gsc::compiler {
 
                         e += hashSize;
                     }
-                }
-                else if (hasRegisters) {
+                } else if (hasRegisters) {
                     if (vars.size() - params) {
                         e = opCodeUndef.ShiftSize(e, aligned);
                         e++; // add var count
@@ -489,8 +466,7 @@ namespace tool::gsc::compiler {
                         e += hashSize * (uint32_t)(vars.size() - params);
                     }
                 }
-            }
-            else if (vars.size()) {
+            } else if (vars.size()) {
                 // count
                 e += 1;
                 for (size_t i = 0; i < vars.size(); i++) {
@@ -525,18 +501,18 @@ namespace tool::gsc::compiler {
 
                         if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                             ctx.Align<uint64_t>();
-                            ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1) : ctx.vmInfo->HashField(var.name.c_str()));
-                        }
-                        else {
+                            ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1)
+                                                          : ctx.vmInfo->HashField(var.name.c_str()));
+                        } else {
                             ctx.Align<uint32_t>();
-                            ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                            ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1)
+                                                          : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
                         }
                         if (hasFlag) {
                             ctx.Write<byte>(var.flags);
                         }
                     }
-                }
-                else {
+                } else {
                     // check no params
                     AscmNodeOpCode opCode{ OPCODE_CheckClearParams };
                     if (!opCode.Write(ctx)) {
@@ -556,18 +532,18 @@ namespace tool::gsc::compiler {
 
                         if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                             ctx.Align<uint64_t>();
-                            ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1) : ctx.vmInfo->HashField(var.name.c_str()));
-                        }
-                        else {
+                            ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1)
+                                                          : ctx.vmInfo->HashField(var.name.c_str()));
+                        } else {
                             ctx.Align<uint32_t>();
-                            ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                            ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1)
+                                                          : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
                         }
                         if (hasFlag) {
                             ctx.Write<byte>(var.flags);
                         }
                     }
-                }
-                else if (hasRegisters) {
+                } else if (hasRegisters) {
                     if (vars.size() - params) {
                         AscmNodeOpCode opCode{ OPCODE_IW_RegisterMultipleVariables };
                         if (!opCode.Write(ctx)) {
@@ -579,11 +555,12 @@ namespace tool::gsc::compiler {
 
                             if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                                 ctx.Align<uint64_t>();
-                                ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1) : ctx.vmInfo->HashField(var.name.c_str()));
-                            }
-                            else {
+                                ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1)
+                                                              : ctx.vmInfo->HashField(var.name.c_str()));
+                            } else {
                                 ctx.Align<uint32_t>();
-                                ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                                ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1)
+                                                              : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
                             }
                         }
                     }
@@ -603,11 +580,12 @@ namespace tool::gsc::compiler {
                 for (FunctionVar& var : vars) {
                     if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                         ctx.Align<uint64_t>();
-                        ctx.Write<uint64_t>(obfuscate ? (uint64_t)(var.id + 1) : ctx.vmInfo->HashField(var.name.c_str()));
-                    }
-                    else {
+                        ctx.Write<uint64_t>(obfuscate ? (uint64_t)(var.id + 1)
+                                                      : ctx.vmInfo->HashField(var.name.c_str()));
+                    } else {
                         ctx.Align<uint32_t>();
-                        ctx.Write<uint32_t>(obfuscate ? (uint32_t)(var.id + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                        ctx.Write<uint32_t>(obfuscate ? (uint32_t)(var.id + 1)
+                                                      : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
                     }
                     if (hasFlag) {
                         ctx.Write<byte>(var.flags);
@@ -617,19 +595,16 @@ namespace tool::gsc::compiler {
                 return true;
             }
 
-
             AscmNodeOpCode opCode{ OPCODE_CheckClearParams };
             return opCode.Write(ctx);
         }
     };
 
     class AscmNodeGlobalVariable : public AscmNodeOpCode {
-    public:
+      public:
         GlobalVariableDef* def;
 
-        AscmNodeGlobalVariable(GlobalVariableDef* def, OPCode op) :
-            AscmNodeOpCode(op), def(def) {
-        }
+        AscmNodeGlobalVariable(GlobalVariableDef* def, OPCode op) : AscmNodeOpCode(op), def(def) {}
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             if (aligned) {
@@ -643,23 +618,21 @@ namespace tool::gsc::compiler {
                 return false;
             }
 
-            ctx.Align<uint16_t>(); // not really required, but still good
+            ctx.Align<uint16_t>();  // not really required, but still good
             ctx.Write<uint16_t>(0); // added by the linker, remove if def using opcode todo??
             return true;
         }
 
-        uint32_t GetDataFLoc(bool aligned) const override {
-            return ShiftSize(floc, aligned) - sizeof(uint16_t);
-        }
+        uint32_t GetDataFLoc(bool aligned) const override { return ShiftSize(floc, aligned) - sizeof(uint16_t); }
     };
 
     class AscmNodeLazyLink : public AscmNodeOpCode {
-    public:
+      public:
         uint64_t path;
         uint32_t nsp;
         uint32_t func;
-        AscmNodeLazyLink(uint64_t path, uint32_t nsp, uint32_t func) : AscmNodeOpCode(OPCode::OPCODE_T8C_GetLazyFunction), path(path), func(func), nsp(nsp) {
-        }
+        AscmNodeLazyLink(uint64_t path, uint32_t nsp, uint32_t func)
+            : AscmNodeOpCode(OPCode::OPCODE_T8C_GetLazyFunction), path(path), func(func), nsp(nsp) {}
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             if (aligned) {
@@ -682,7 +655,7 @@ namespace tool::gsc::compiler {
     };
 
     class AscmNodeJump : public AscmNodeOpCode {
-    public:
+      public:
         AscmNode* const location;
         AscmNodeJump(AscmNode* location, OPCode opcode) : AscmNodeOpCode(opcode), location(location) {
             location->refs.push_back(this);
@@ -715,4 +688,4 @@ namespace tool::gsc::compiler {
         }
     };
 
-}
+} // namespace tool::gsc::compiler

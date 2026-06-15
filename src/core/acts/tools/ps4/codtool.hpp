@@ -4,7 +4,7 @@
 namespace tool::ps4::codtool {
     struct CodToolHandler;
 
-	struct CodTool {
+    struct CodTool {
         char gscFileIn[MAX_PATH + 1]{};
         char cbuffIn[0x100]{};
         char ps4In[0x50]{};
@@ -18,10 +18,9 @@ namespace tool::ps4::codtool {
         std::string notif{};
         bool loadAfter{};
 
-
         void Handle();
         void Load();
-	};
+    };
 
     extern CodTool codTool;
 
@@ -29,10 +28,10 @@ namespace tool::ps4::codtool {
         const char* name;
         const char* process;
 
-        void (*CBuf)(CodTool* tool, const char* cbuf) {};
-        void (*InjectGSC)(CodTool* tool, const std::filesystem::path& path) {};
+        void (*CBuf)(CodTool* tool, const char* cbuf){};
+        void (*InjectGSC)(CodTool* tool, const std::filesystem::path& path){};
     };
 
     std::vector<CodToolHandler*>& GetHandlers();
     CodToolHandler* GetHandler(const char* name);
-}
+} // namespace tool::ps4::codtool

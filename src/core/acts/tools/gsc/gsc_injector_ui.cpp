@@ -38,7 +38,8 @@ namespace {
             return "Can't find pool";
         }
 
-        auto [entry, ok] = proc.ReadMemoryObject<cw::XAssetPool>(pool + sizeof(cw::XAssetPool) * cw::ASSET_TYPE_SCRIPTPARSETREE);
+        auto [entry, ok] =
+            proc.ReadMemoryObject<cw::XAssetPool>(pool + sizeof(cw::XAssetPool) * cw::ASSET_TYPE_SCRIPTPARSETREE);
 
         if (!ok) {
             return "Can't read SPT pool";
@@ -48,133 +49,45 @@ namespace {
     }
 
     int Render(HWND window, HINSTANCE hInstance) {
-        info.titleLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            L"GSC Injector",
-            SS_CENTER | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.titleLabel = CreateWindowExW(0, L"STATIC", L"GSC Injector", SS_CENTER | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
+                                          window, NULL, hInstance, NULL);
 
-        info.notificationLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            info.lastNotif.c_str(),
-            SS_CENTER | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.notificationLabel =
+            CreateWindowExW(0, L"STATIC", info.lastNotif.c_str(), SS_CENTER | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, window,
+                            NULL, hInstance, NULL);
 
-        info.filePathEdit = CreateWindowExW(
-            0,
-            L"EDIT",
-            L"",
-            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
-        
-        info.filePathEditLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            L"GSC File : ",
-            SS_RIGHT | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
-        info.hookPathEdit = CreateWindowExW(
-            0,
-            WC_COMBOBOXW,
-            L"",
-             CBS_HASSTRINGS | CBS_DROPDOWN | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.filePathEdit =
+            CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0,
+                            window, NULL, hInstance, NULL);
 
-        info.hookPathEditLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            L"Hook : ",
-            SS_RIGHT | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.filePathEditLabel = CreateWindowExW(0, L"STATIC", L"GSC File : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0,
+                                                 0, 0, window, NULL, hInstance, NULL);
+        info.hookPathEdit = CreateWindowExW(0, WC_COMBOBOXW, L"", CBS_HASSTRINGS | CBS_DROPDOWN | WS_CHILD | WS_VISIBLE,
+                                            0, 0, 0, 0, window, NULL, hInstance, NULL);
 
-        info.filePathButton = CreateWindowExW(
-            0,
-            L"BUTTON",
-            L"...",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.hookPathEditLabel = CreateWindowExW(0, L"STATIC", L"Hook : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
+                                                 window, NULL, hInstance, NULL);
 
-        info.injectButton = CreateWindowExW(
-            0,
-            L"BUTTON",
-            L"Inject",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.filePathButton = CreateWindowExW(0, L"BUTTON", L"...", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
+                                              0, 0, 0, 0, window, NULL, hInstance, NULL);
 
-        info.injectEEButton = CreateWindowExW(
-            0,
-            L"BUTTON",
-            L"Patch EEs (Zombies)",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.injectButton = CreateWindowExW(0, L"BUTTON", L"Inject", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
+                                            0, 0, 0, 0, window, NULL, hInstance, NULL);
 
-        if (
-            info.filePathEdit == NULL
-            || info.filePathEditLabel == NULL
-            || info.filePathButton == NULL
-            || info.injectButton == NULL
-            || info.injectEEButton == NULL
-            || info.hookPathEdit == NULL
-            || info.hookPathEditLabel == NULL
-            || info.titleLabel == NULL
-            ) {
+        info.injectEEButton =
+            CreateWindowExW(0, L"BUTTON", L"Patch EEs (Zombies)", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 0,
+                            0, 0, 0, window, NULL, hInstance, NULL);
+
+        if (info.filePathEdit == NULL || info.filePathEditLabel == NULL || info.filePathButton == NULL ||
+            info.injectButton == NULL || info.injectEEButton == NULL || info.hookPathEdit == NULL ||
+            info.hookPathEditLabel == NULL || info.titleLabel == NULL) {
             return -1;
         }
 
         SendMessage(info.filePathEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
 
-        wchar_t injections[3][64] = {
-            L"scripts\\zm_common\\load.gsc",
-            L"scripts\\mp_common\\bb.gsc",
-            L"scripts\\core_common\\load_shared.gsc"
-        };
+        wchar_t injections[3][64] = { L"scripts\\zm_common\\load.gsc", L"scripts\\mp_common\\bb.gsc",
+                                      L"scripts\\core_common\\load_shared.gsc" };
 
         wchar_t buff[sizeof(*injections)];
 
@@ -186,12 +99,12 @@ namespace {
             SendMessage(info.hookPathEdit, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)buff);
         }
 
-        std::wstring hook = utils::StrToWStr(core::config::GetString("ui.injector.hook", "scripts\\zm_common\\load.gsc"));
+        std::wstring hook =
+            utils::StrToWStr(core::config::GetString("ui.injector.hook", "scripts\\zm_common\\load.gsc"));
 
         if (hook.size()) {
             SendMessage(info.hookPathEdit, WM_SETTEXT, (WPARAM)0, (LPARAM)hook.data());
-        }
-        else {
+        } else {
             // no cfg, use default
             SendMessage(info.hookPathEdit, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
         }
@@ -232,7 +145,7 @@ namespace {
                         core::config::SetString("ui.injector.path", path);
                         core::config::SaveConfig();
                     }
-                } 
+                }
             } else if (wParam == BN_CLICKED) {
                 if (info.filePathButton == (HWND)lParam) {
                     // Open file
@@ -260,8 +173,7 @@ namespace {
                         SendMessage(info.filePathEdit, WM_SETTEXT, (WPARAM)0, (LPARAM)ofn.lpstrFile);
                     }
                     return 1;
-                }
-                else if (info.injectButton == (HWND)lParam) {
+                } else if (info.injectButton == (HWND)lParam) {
                     std::string file{};
 
                     std::string filePath = utils::WStrToStr(tool::ui::GetWindowTextVal(info.filePathEdit));
@@ -297,11 +209,11 @@ namespace {
                             }
                             utils::CloseEnd ce{ [&proc] { proc.Close(); } };
 
-                            cw::InjectScriptCW(proc, filePath.c_str(), hookPath.c_str(), "scripts/core_common/clientids_shared.gsc", notif);
+                            cw::InjectScriptCW(proc, filePath.c_str(), hookPath.c_str(),
+                                               "scripts/core_common/clientids_shared.gsc", notif);
                             SetNotif(notif);
 
-                        }
-                        else if (magic == cw::GSC_MAGIC_37) {
+                        } else if (magic == cw::GSC_MAGIC_37) {
                             // cw gsc
 
                             Process proc{ L"BlackOpsColdWar.exe" }; // base game
@@ -309,24 +221,23 @@ namespace {
                             if (!!proc) {
                                 if (proc.Open()) {
                                     utils::CloseEnd ce{ [&proc] { proc.Close(); } };
-                                    cw::InjectScriptCW(proc, filePath.c_str(), hookPath.c_str(), "scripts/core_common/clientids_shared.gsc", notif);
+                                    cw::InjectScriptCW(proc, filePath.c_str(), hookPath.c_str(),
+                                                       "scripts/core_common/clientids_shared.gsc", notif);
                                     SetNotif(notif);
-                                }
-                                else {
+                                } else {
                                     SetNotif("Can't open Black Ops Cold War");
                                     return TRUE;
                                 }
-                            }
-                            else {
+                            } else {
                                 Process proc2{ L"COD2020.exe" }; // alpha game
 
                                 if (!!proc2) {
                                     if (proc2.Open()) {
                                         utils::CloseEnd ce{ [&proc2] { proc2.Close(); } };
-                                        cw::InjectScriptCWAlpha(proc2, filePath.c_str(), hookPath.c_str(), "scripts/core_common/clientids_shared.gsc", notif);
+                                        cw::InjectScriptCWAlpha(proc2, filePath.c_str(), hookPath.c_str(),
+                                                                "scripts/core_common/clientids_shared.gsc", notif);
                                         SetNotif(notif);
-                                    }
-                                    else {
+                                    } else {
                                         SetNotif("Can't open Black Ops Cold War Alpha");
                                         return TRUE;
                                     }
@@ -334,8 +245,7 @@ namespace {
                                 SetNotif("Can't find Black Ops Cold War");
                                 return TRUE;
                             }
-                        }
-                        else if (magic == bo3::GSC_MAGIC) {
+                        } else if (magic == bo3::GSC_MAGIC) {
                             // bo3 gsc
 
                             Process proc{ L"BlackOps3.exe" };
@@ -346,25 +256,22 @@ namespace {
                             }
                             utils::CloseEnd ce{ [&proc] { proc.Close(); } };
 
-                            bo3::InjectScriptBO3(proc, filePath.c_str(), "scripts/shared/duplicaterender_mgr.gsc", notif);
+                            bo3::InjectScriptBO3(proc, filePath.c_str(), "scripts/shared/duplicaterender_mgr.gsc",
+                                                 notif);
                             SetNotif(notif);
-                        }
-                        else {
+                        } else {
                             tool::gsc::opcode::VmInfo* nfo{};
                             if (tool::gsc::opcode::IsValidVmMagic(magic, nfo)) {
                                 SetNotif(std::format("Injector not implemented for VM: {}", nfo->name));
-                            }
-                            else {
+                            } else {
                                 SetNotif(std::format("Invalid magic: 0x{:x}", magic));
                             }
                         }
-                    }
-                    catch (std::exception& e) {
+                    } catch (std::exception& e) {
                         SetNotif(std::format("Exception: {}", e.what()));
                     }
                     return TRUE;
-                }
-                else if (info.injectEEButton == (HWND)lParam) {
+                } else if (info.injectEEButton == (HWND)lParam) {
                     try {
                         {
                             Process proc{ L"BlackOpsColdWar.exe" };
@@ -394,32 +301,25 @@ namespace {
                         }
 
                         SetNotif("Can't find game");
-                    }
-                    catch (std::exception& e) {
+                    } catch (std::exception& e) {
                         SetNotif(std::format("Exception: {}", e.what()));
                     }
                     return 1;
                 }
             }
-        }
-        else if (uMsg == WM_CTLCOLORSTATIC) {
-            if (lParam == (LPARAM)info.filePathEdit
-                || lParam == (LPARAM)info.filePathEditLabel
-                || lParam == (LPARAM)info.filePathButton
-                || lParam == (LPARAM)info.hookPathEdit
-                || lParam == (LPARAM)info.hookPathEditLabel
-                || lParam == (LPARAM)info.injectButton
-                || lParam == (LPARAM)info.injectEEButton
-                || lParam == (LPARAM)info.notificationLabel
-                || lParam == (LPARAM)info.titleLabel
-                ) {
-                return 0; 
+        } else if (uMsg == WM_CTLCOLORSTATIC) {
+            if (lParam == (LPARAM)info.filePathEdit || lParam == (LPARAM)info.filePathEditLabel ||
+                lParam == (LPARAM)info.filePathButton || lParam == (LPARAM)info.hookPathEdit ||
+                lParam == (LPARAM)info.hookPathEditLabel || lParam == (LPARAM)info.injectButton ||
+                lParam == (LPARAM)info.injectEEButton || lParam == (LPARAM)info.notificationLabel ||
+                lParam == (LPARAM)info.titleLabel) {
+                return 0;
             }
         }
-		return 1;
-	}
+        return 1;
+    }
 
-	void Resize(int width, int height) {
+    void Resize(int width, int height) {
         SetWindowPos(info.titleLabel, NULL, 0, height / 2 - 160, width, 60, SWP_SHOWWINDOW);
         SetWindowPos(info.filePathEdit, NULL, width / 2 - 300, height / 2 - 92, 520, 24, SWP_SHOWWINDOW);
         SetWindowPos(info.filePathEditLabel, NULL, 0, height / 2 - 92, width / 2 - 300, 24, SWP_SHOWWINDOW);
@@ -431,7 +331,7 @@ namespace {
         SetWindowPos(info.notificationLabel, NULL, 0, height / 2 - 4, width, 48, SWP_SHOWWINDOW);
 
         tool::ui::window().SetTitleFont(info.titleLabel);
-	}
+    }
     const char* InjectPS4Impl(const char* filePath, const char* hookPath, const char* ps4ip) {
         std::string file{};
 
@@ -453,8 +353,7 @@ namespace {
             tool::gsc::opcode::VmInfo* nfo{};
             if (!tool::gsc::opcode::IsValidVmMagic(magic, nfo)) {
                 return utils::va("Invalid magic: 0x%llx", magic);
-            }
-            else if (nfo->vmMagic == tool::gsc::opcode::VMId::VMI_T10_06) {
+            } else if (nfo->vmMagic == tool::gsc::opcode::VMId::VMI_T10_06) {
                 // bo6 injector
 
                 try {
@@ -464,10 +363,11 @@ namespace {
 
                     utils::ps4::PS4Process ps4{ ps4ip };
 
-                    auto pool = ps4.ReadObject<bo6::DB_AssetPool>(ps4[0x98FEFA0] + sizeof(bo6::DB_AssetPool) * bo6::T10_ASSET_GSCOBJ);
+                    auto pool = ps4.ReadObject<bo6::DB_AssetPool>(ps4[0x98FEFA0] +
+                                                                  sizeof(bo6::DB_AssetPool) * bo6::T10_ASSET_GSCOBJ);
 
-
-                    LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize, pool->m_poolSize, pool->m_elementSize);
+                    LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize,
+                             pool->m_poolSize, pool->m_elementSize);
                     auto objs = ps4.ReadArray<bo6::GscObjEntry>(pool->m_entries, pool->m_loadedPoolSize);
 
                     size_t i;
@@ -483,7 +383,8 @@ namespace {
                         }
 
                         if (obj.len < file.size()) {
-                            throw std::runtime_error(utils::va("Buffer too small, can't remplace %llu < %llu", (size_t)obj.len, file.size()));
+                            throw std::runtime_error(utils::va("Buffer too small, can't remplace %llu < %llu",
+                                                               (size_t)obj.len, file.size()));
                         }
 
                         auto scriptTarget = ps4.ReadObject<tool::gsc::GscObj24>(obj.buffer);
@@ -498,16 +399,13 @@ namespace {
                         return "Script injected";
                     }
                     return "Can't find hook script";
-                }
-                catch (std::exception& e) {
+                } catch (std::exception& e) {
                     return utils::va("Exception: %s", e.what());
                 }
-            }
-            else {
+            } else {
                 return utils::va("PS4 injector not implemented for VM: %s", nfo->name);
             }
-        }
-        catch (std::exception& e) {
+        } catch (std::exception& e) {
             return utils::va("Exception: %s", e.what());
         }
     }
@@ -543,8 +441,7 @@ namespace {
 
                 cw::InjectScriptCW(proc, filePath, hookPath, "scripts/core_common/clientids_shared.gsc", notif);
 
-            }
-            else if (magic == bo3::GSC_MAGIC) {
+            } else if (magic == bo3::GSC_MAGIC) {
                 // bo3 gsc
 
                 Process proc{ L"BlackOps3.exe" };
@@ -555,20 +452,17 @@ namespace {
                 utils::CloseEnd ce{ [&proc] { proc.Close(); } };
 
                 bo3::InjectScriptBO3(proc, filePath, "scripts/shared/duplicaterender_mgr.gsc", notif);
-            }
-            else {
+            } else {
                 tool::gsc::opcode::VmInfo* nfo{};
                 if (tool::gsc::opcode::IsValidVmMagic(magic, nfo)) {
                     return utils::va("PC injector not implemented for VM: %s", nfo->name);
-                }
-                else {
+                } else {
                     return utils::va("Invalid magic: 0x%llx", magic);
                 }
             }
 
-			return utils::CloneString(notif.c_str());
-        }
-        catch (std::exception& e) {
+            return utils::CloneString(notif.c_str());
+        } catch (std::exception& e) {
             return utils::va("Exception: %s", e.what());
         }
     }
@@ -603,9 +497,8 @@ namespace {
             if (!done) {
                 notif = "Can't find game";
             }
-			return utils::CloneString(notif.c_str());
-        }
-        catch (std::exception& e) {
+            return utils::CloneString(notif.c_str());
+        } catch (std::exception& e) {
             return utils::va("Exception: %s", e.what());
         }
     }
@@ -671,7 +564,7 @@ namespace {
             core::config::SetString("ui.injector.hook", hookIn);
             c = true;
         }
-        
+
         if (ImGui::Button("Inject PC Script")) {
             notif = InjectPCImpl(gscFileIn, hookIn);
         }
@@ -683,7 +576,6 @@ namespace {
             core::config::SetString("ui.ps4.ipd", ps4In);
             c = true;
         }
-
 
         if (ImGui::Button("Inject PS4 Script")) {
             notif = InjectPS4Impl(gscFileIn, hookIn, ps4In);
@@ -701,53 +593,45 @@ namespace {
             std::string file{};
             if (!utils::ReadFile(gscFileIn, file)) {
                 notif = std::format("Can't read '{}'", gscFileIn);
-            }
-            else if (file.size() >= 4 && !memcmp("GSC", file.data(), 4)) {
+            } else if (file.size() >= 4 && !memcmp("GSC", file.data(), 4)) {
                 notif = "GSCBIN file";
-            }
-            else if (file.size() >= 4 && !memcmp("GSIC", file.data(), 4)) {
+            } else if (file.size() >= 4 && !memcmp("GSIC", file.data(), 4)) {
                 notif = "GSIC file";
-            }
-            else if (file.size() < 8) {
+            } else if (file.size() < 8) {
                 notif = "Invalid GSC compiled file";
-            }
-            else {
+            } else {
                 uint64_t magic = *reinterpret_cast<uint64_t*>(file.data());
                 tool::gsc::opcode::VmInfo* nfo{};
 
                 if (!tool::gsc::opcode::IsValidVmMagic(magic, nfo)) {
                     notif = (std::format("Invalid magic: 0x{:x}", magic));
-                }
-                else {
+                } else {
                     notif = std::format("Vm: {} (0x{:x})", nfo->name, nfo->vmMagic);
 
                     tool::gsc::vm::GscVm* readerBuilder = tool::gsc::vm::GetGscReader(nfo->vmMagic);
 
                     if (!readerBuilder) {
                         notif += "\nNo GSC handler available";
-                    }
-                    else {
-                        std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)file.data(), file.length()) };
+                    } else {
+                        std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)file.data(),
+                                                                                                     file.length()) };
 
                         if (!handler->IsValidHeader(file.length())) {
                             notif += "\nInvalid header";
-                        }
-                        else {
+                        } else {
                             std::ostringstream oss{};
-                            oss
-                                << "\n"
-                                << "// " << hashutils::ExtractTmpScript(handler->GetName()) << " (" << gscFileIn << ")" << " (size: " << file.length() << " Bytes / " << std::hex << "0x" << file.length() << ")\n"
-                                << "// magic: 0x" << std::hex << handler->Ref<uint64_t>()
-                                ;
+                            oss << "\n"
+                                << "// " << hashutils::ExtractTmpScript(handler->GetName()) << " (" << gscFileIn << ")"
+                                << " (size: " << file.length() << " Bytes / " << std::hex << "0x" << file.length()
+                                << ")\n"
+                                << "// magic: 0x" << std::hex << handler->Ref<uint64_t>();
 
                             handler->DumpHeader(oss << "\n", {});
                             notif += oss.str();
                         }
                     }
-
                 }
             }
-
         }
 
         if (!notif.empty()) {
@@ -756,34 +640,26 @@ namespace {
             ImGui::Text("%s", notif.data());
         }
 
-
-        if (c) tool::nui::SaveNextConfig();
+        if (c)
+            tool::nui::SaveNextConfig();
     }
 
     ADD_TOOL_UI(gsc_inject, L"GSC Inject", Render, Update, Resize);
     ADD_TOOL_NUI(gsc_inject, "GSC Inject", gsc_inject);
-}
+} // namespace
 
-const char* ActsAPIGscInjection_InjectPC(const char* path, const char* hook) {
-	return InjectPCImpl(path, hook);
-}
+const char* ActsAPIGscInjection_InjectPC(const char* path, const char* hook) { return InjectPCImpl(path, hook); }
 const char* ActsAPIGscInjection_InjectPS4(const char* path, const char* hook, const char* ps4ip) {
-	return InjectPS4Impl(path, hook, ps4ip);
+    return InjectPS4Impl(path, hook, ps4ip);
 }
-const char* ActsAPIGscInjection_PatchEE() {
-    return PatchEEImpl();
-}
-#else // !_WIN32
+const char* ActsAPIGscInjection_PatchEE() { return PatchEEImpl(); }
+#else  // !_WIN32
 
-const char* ActsAPIGscInjection_InjectPC(const char* path, const char* hook) {
-    return "no supported";
-}
+const char* ActsAPIGscInjection_InjectPC(const char* path, const char* hook) { return "no supported"; }
 
 const char* ActsAPIGscInjection_InjectPS4(const char* path, const char* hook, const char* ps4ip) {
     return "no supported";
 }
 
-const char* ActsAPIGscInjection_PatchEE() {
-    return "no supported";
-}
+const char* ActsAPIGscInjection_PatchEE() { return "no supported"; }
 #endif // _WIN32

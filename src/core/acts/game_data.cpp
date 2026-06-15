@@ -7,504 +7,490 @@
 #include <acts_api_impl/api_impl.hpp>
 
 namespace acts::game_data {
-	static core::config::ConfigEnumData cTypeInfo[]{
-		{ "enum", CTT_ENUM },
-		{ "struct", CTT_STRUCT },
-	};
-	static core::config::ConfigEnumData scanTypeInfo[]{
-		{ "Relative", SCT_RELATIVE },
-		{ "Absolute", SCT_ABSOLUTE },
-		{ "Offset", SCT_OFFSET },
-		{ "GetOffset32", SCT_GET_OFFSET32 },
-	};
+    static core::config::ConfigEnumData cTypeInfo[]{
+        { "enum", CTT_ENUM },
+        { "struct", CTT_STRUCT },
+    };
+    static core::config::ConfigEnumData scanTypeInfo[]{
+        { "Relative", SCT_RELATIVE },
+        { "Absolute", SCT_ABSOLUTE },
+        { "Offset", SCT_OFFSET },
+        { "GetOffset32", SCT_GET_OFFSET32 },
+    };
 
-	std::filesystem::path GetBaseDir() {
-		std::string scanpath{ core::config::GetString("data.dir", "") };
-		if (scanpath.empty()) {
-			return utils::GetProgDir() / "data" / "games";
-		}
-		return std::filesystem::path{ scanpath } / "games";
-	}
+    std::filesystem::path GetBaseDir() {
+        std::string scanpath{ core::config::GetString("data.dir", "") };
+        if (scanpath.empty()) {
+            return utils::GetProgDir() / "data" / "games";
+        }
+        return std::filesystem::path{ scanpath } / "games";
+    }
 
-	size_t ParseOffsetScan(const std::string& scan) {
-		size_t val;
-		try {
-			size_t idx{};
-			if (scan.starts_with("0x")) {
-				idx = 2;
-			}
-			val = std::strtoull(scan.data() + idx, nullptr, 16);
-		}
-		catch (...) {
-			val = 0;
-		}
-		if (!val) {
-			throw std::runtime_error(std::format("Can't parse offset: {}", scan));
-		}
-		return val;
-	}
+    size_t ParseOffsetScan(const std::string& scan) {
+        size_t val;
+        try {
+            size_t idx{};
+            if (scan.starts_with("0x")) {
+                idx = 2;
+            }
+            val = std::strtoull(scan.data() + idx, nullptr, 16);
+        } catch (...) {
+            val = 0;
+        }
+        if (!val) {
+            throw std::runtime_error(std::format("Can't parse offset: {}", scan));
+        }
+        return val;
+    }
 
-	std::vector<std::string> GetAllGameData() {
-		std::vector<std::filesystem::path> paths{};
-		utils::GetFileRecurseExt(GetBaseDir(), paths, ".json\0", true);
-		std::vector<std::string> r{};
+    std::vector<std::string> GetAllGameData() {
+        std::vector<std::filesystem::path> paths{};
+        utils::GetFileRecurseExt(GetBaseDir(), paths, ".json\0", true);
+        std::vector<std::string> r{};
 
-		for (std::filesystem::path& path : paths) {
-			path.replace_extension();
-			std::string name{ path.string() };
-			if (name.rfind("template") != std::string::npos) {
-				continue;
-			}
-			r.emplace_back(name);
-		}
+        for (std::filesystem::path& path : paths) {
+            path.replace_extension();
+            std::string name{ path.string() };
+            if (name.rfind("template") != std::string::npos) {
+                continue;
+            }
+            r.emplace_back(name);
+        }
 
-		return r;
-	}
+        return r;
+    }
 
-	GameData::GameData(const char* dirname)
-		: dirname(dirname) {
-		if (*dirname == ':') {
-			cfg.SetConfigPath(utils::GetProgDir() / std::format("{}.json", dirname + 1));
-		}
-		else {
-			cfg.SetConfigPath(GetBaseDir() / std::format("{}.json", dirname));
-		}
-		if (!cfg.SyncConfig(false)) {
-			throw std::runtime_error(std::format("Can't find scan dir {}: {}", dirname, cfg.configFile.string()));
-		}
-	}
-	hook::scan_container::ScanContainer& GameData::GetScanContainer() {
-		if (!scan) throw std::runtime_error("Missing scan container");
-		return *scan;
-	}
+    GameData::GameData(const char* dirname) : dirname(dirname) {
+        if (*dirname == ':') {
+            cfg.SetConfigPath(utils::GetProgDir() / std::format("{}.json", dirname + 1));
+        } else {
+            cfg.SetConfigPath(GetBaseDir() / std::format("{}.json", dirname));
+        }
+        if (!cfg.SyncConfig(false)) {
+            throw std::runtime_error(std::format("Can't find scan dir {}: {}", dirname, cfg.configFile.string()));
+        }
+    }
+    hook::scan_container::ScanContainer& GameData::GetScanContainer() {
+        if (!scan)
+            throw std::runtime_error("Missing scan container");
+        return *scan;
+    }
 
-	void GameData::Redirect(const char* id, void* to, const char* parent) {
-		void* from{ GetPointer(id, parent) };
-		if (from) {
-			hook::memory::RedirectJmp(from, to);
-		}
-	}
+    void GameData::Redirect(const char* id, void* to, const char* parent) {
+        void* from{ GetPointer(id, parent) };
+        if (from) {
+            hook::memory::RedirectJmp(from, to);
+        }
+    }
 
-	void GameData::Nulled(const char* id, const char* parent) {
-		if (cfg.GetBool(std::format("{}.{}.multiple", parent, id), false)) {
-			std::vector<void*> locs{ GetPointerArray(id, parent) };
-			if (locs.empty()) {
-				throw std::runtime_error(std::format("Missing scans for {}: {}::{}", dirname, parent, id));
-			}
+    void GameData::Nulled(const char* id, const char* parent) {
+        if (cfg.GetBool(std::format("{}.{}.multiple", parent, id), false)) {
+            std::vector<void*> locs{ GetPointerArray(id, parent) };
+            if (locs.empty()) {
+                throw std::runtime_error(std::format("Missing scans for {}: {}::{}", dirname, parent, id));
+            }
 
-			for (void* loc : locs) {
-				if (loc) {
-					hook::memory::Nulled(loc);
-				}
-			}
-		}
-		else {
-			void* loc{ GetPointer(id, parent) };
-			if (loc) {
-				hook::memory::Nulled(loc);
-			}
-		}
-	}
+            for (void* loc : locs) {
+                if (loc) {
+                    hook::memory::Nulled(loc);
+                }
+            }
+        } else {
+            void* loc{ GetPointer(id, parent) };
+            if (loc) {
+                hook::memory::Nulled(loc);
+            }
+        }
+    }
 
-	void GameData::Detour(const char* id, hook::library::Detour& detour, void* to, const char* parent) {
-		void* loc{ GetPointer(id, parent) };
-		if (loc) {
-			detour.Create(loc, to);
-		}
-		
-	}
+    void GameData::Detour(const char* id, hook::library::Detour& detour, void* to, const char* parent) {
+        void* loc{ GetPointer(id, parent) };
+        if (loc) {
+            detour.Create(loc, to);
+        }
+    }
 
-	const char* GameData::GetModuleName() {
-		const char* dump{ cfg.GetCString("module") };
-		if (!dump) {
-			throw std::runtime_error(std::format("Missing game data module for {}", dirname));
-		}
-		return dump;
-	}
-	std::vector<std::string> GameData::GetCommonFastFiles() {
-		rapidjson::Value& commonFastFiles{ cfg.GetVal("commonFastFiles", 0, cfg.main) };
-		if (!commonFastFiles.IsArray()) {
-			return {};
-		}
-		std::vector<std::string> files{};
-		for (rapidjson::Value& v : commonFastFiles.GetArray()) {
-			if (!v.IsString()) {
-				LOG_WARNING("Invalid commonFastFiles in {}", dirname);
-				continue;
-			}
+    const char* GameData::GetModuleName() {
+        const char* dump{ cfg.GetCString("module") };
+        if (!dump) {
+            throw std::runtime_error(std::format("Missing game data module for {}", dirname));
+        }
+        return dump;
+    }
+    std::vector<std::string> GameData::GetCommonFastFiles() {
+        rapidjson::Value& commonFastFiles{ cfg.GetVal("commonFastFiles", 0, cfg.main) };
+        if (!commonFastFiles.IsArray()) {
+            return {};
+        }
+        std::vector<std::string> files{};
+        for (rapidjson::Value& v : commonFastFiles.GetArray()) {
+            if (!v.IsString()) {
+                LOG_WARNING("Invalid commonFastFiles in {}", dirname);
+                continue;
+            }
 
-			files.emplace_back(v.GetString());
-		}
-		if (files.empty()) {
-			LOG_WARNING("empty commonFastFiles");
-		}
-		return files;
-	}
+            files.emplace_back(v.GetString());
+        }
+        if (files.empty()) {
+            LOG_WARNING("empty commonFastFiles");
+        }
+        return files;
+    }
 
-	ScanData GameData::GetScan(const char* id, const char* parent) {
-		ScanData res{};
-		res.name = id;
-		res.ctype = cfg.GetString(std::format("{}.{}.ctype", parent, id), "");
-		res.path = cfg.GetString(std::format("{}.{}.scan", parent, id), "");
-		res.single = cfg.GetBool(std::format("{}.{}.single", parent, id), false);
-		res.offset = (size_t)cfg.GetInteger(std::format("{}.{}.offset", parent, id), 0);
-		res.postOffset = cfg.GetInteger(std::format("{}.{}.postOffset", parent, id), 0);
-		res.type = cfg.GetEnumVal<ScanType>(std::format("{}.{}.type", parent, id), scanTypeInfo, ACTS_ARRAYSIZE(scanTypeInfo), SCT_UNKNOWN);
+    ScanData GameData::GetScan(const char* id, const char* parent) {
+        ScanData res{};
+        res.name = id;
+        res.ctype = cfg.GetString(std::format("{}.{}.ctype", parent, id), "");
+        res.path = cfg.GetString(std::format("{}.{}.scan", parent, id), "");
+        res.single = cfg.GetBool(std::format("{}.{}.single", parent, id), false);
+        res.offset = (size_t)cfg.GetInteger(std::format("{}.{}.offset", parent, id), 0);
+        res.postOffset = cfg.GetInteger(std::format("{}.{}.postOffset", parent, id), 0);
+        res.type = cfg.GetEnumVal<ScanType>(std::format("{}.{}.type", parent, id), scanTypeInfo,
+                                            ACTS_ARRAYSIZE(scanTypeInfo), SCT_UNKNOWN);
 
+        if (res.path.empty()) {
+            throw std::runtime_error(std::format("can't find scan path for {}::{}.{}", dirname, parent, id));
+        }
+        if (!res.type) {
+            throw std::runtime_error(std::format("invalid scan type for {}::{}.{}", dirname, parent, id));
+        }
+        if (res.type == SCT_OFFSET) {
+            res.offset += ParseOffsetScan(res.path);
+        }
 
-		if (res.path.empty()) {
-			throw std::runtime_error(std::format("can't find scan path for {}::{}.{}", dirname, parent, id));
-		}
-		if (!res.type) {
-			throw std::runtime_error(std::format("invalid scan type for {}::{}.{}", dirname, parent, id));
-		}
-		if (res.type == SCT_OFFSET) {
-			res.offset += ParseOffsetScan(res.path);
-		}
+        return res;
+    }
 
-		return res;
-	}
+    void GameData::ApplyNullScans(const char* id) {
+        std::string parent{ std::format("nullscans.{}", id) };
+        rapidjson::Value& nullScans{ cfg.GetVal(parent.data(), 0, cfg.main) };
+        if (!nullScans.IsObject()) {
+            throw std::runtime_error(std::format("Invalid nullscan type in {}: {} is an object", dirname, id));
+        }
 
-	void GameData::ApplyNullScans(const char* id) {
-		std::string parent{ std::format("nullscans.{}", id) };
-		rapidjson::Value& nullScans{ cfg.GetVal(parent.data(), 0, cfg.main) };
-		if (!nullScans.IsObject()) {
-			throw std::runtime_error(std::format("Invalid nullscan type in {}: {} is an object", dirname, id));
-		}
+        for (auto& [k, v] : nullScans.GetObj()) {
+            Nulled(k.GetString(), parent.data());
+        }
+    }
+    // validate all scans
+    bool GameData::ValidateScans() {
+        hook::scan_container::ScanContainer& scan{ GetScanContainer() };
+        bool oldFoundMissing{ scan.foundMissing };
+        bool oldIgnoreMissing{ scan.foundMissing };
+        scan.foundMissing = false;
+        scan.ignoreMissing = true;
+        {
+            rapidjson::Value& scansVal{ cfg.GetVal(BASE_PARENT, 0, cfg.main) };
+            if (scansVal.IsObject()) {
+                for (auto& [k, v] : scansVal.GetObj()) {
+                    std::vector<void*> ptr{ GetPointerArray(k.GetString(), BASE_PARENT) };
 
-		for (auto& [k, v] : nullScans.GetObj()) {
-			Nulled(k.GetString(), parent.data());
-		}
-	}
-	// validate all scans
-	bool GameData::ValidateScans() {
-		hook::scan_container::ScanContainer& scan{ GetScanContainer() };
-		bool oldFoundMissing{ scan.foundMissing };
-		bool oldIgnoreMissing{ scan.foundMissing };
-		scan.foundMissing = false;
-		scan.ignoreMissing = true;
-		{
-			rapidjson::Value& scansVal{ cfg.GetVal(BASE_PARENT, 0, cfg.main) };
-			if (scansVal.IsObject()) {
-				for (auto& [k, v] : scansVal.GetObj()) {
-					std::vector<void*> ptr{ GetPointerArray(k.GetString(), BASE_PARENT) };
+                    if (ptr.size()) {
+                        LOG_DEBUG("{} -> {}{}", k.GetString(), hook::library::CodePointer{ ptr[0] },
+                                  ptr.size() > 1 ? ", ..." : "");
+                    }
+                }
+            }
+        }
+        rapidjson::Value& nullscans{ cfg.GetVal("nullscans", 0, cfg.main) };
+        if (nullscans.IsObject()) {
+            for (auto& [k, v] : nullscans.GetObj()) {
+                const char* parent{ k.GetString() };
+                std::string base{ std::format("nullscans.{}", parent) };
 
-					if (ptr.size()) {
-						LOG_DEBUG("{} -> {}{}", k.GetString(), hook::library::CodePointer{ ptr[0] }, ptr.size() > 1 ? ", ..." : "");
-					}
-				}
-			}
-		}
-		rapidjson::Value& nullscans{ cfg.GetVal("nullscans", 0, cfg.main) };
-		if (nullscans.IsObject()) {
-			for (auto& [k, v] : nullscans.GetObj()) {
-				const char* parent{ k.GetString() };
-				std::string base{ std::format("nullscans.{}", parent) };
+                rapidjson::Value& scansVal{ cfg.GetVal(base.data(), 0, cfg.main) };
+                if (scansVal.IsObject()) {
+                    for (auto& [k, v] : scansVal.GetObj()) {
+                        std::vector<void*> ptr{ GetPointerArray(k.GetString(), base.data()) };
 
-				rapidjson::Value& scansVal{ cfg.GetVal(base.data(), 0, cfg.main)};
-				if (scansVal.IsObject()) {
-					for (auto& [k, v] : scansVal.GetObj()) {
-						std::vector<void*> ptr{ GetPointerArray(k.GetString(), base.data()) };
+                        if (ptr.size()) {
+                            LOG_DEBUG("{} -> {}{}", k.GetString(), hook::library::CodePointer{ ptr[0] },
+                                      ptr.size() > 1 ? ", ..." : "");
+                        }
+                    }
+                }
+            }
+        }
+        bool err{ scan.foundMissing };
+        scan.foundMissing = oldFoundMissing;
+        scan.ignoreMissing = oldIgnoreMissing;
+        return !err;
+    }
 
-						if (ptr.size()) {
-							LOG_DEBUG("{} -> {}{}", k.GetString(), hook::library::CodePointer{ ptr[0] }, ptr.size() > 1 ? ", ..." : "");
-						}
-					}
-				}
-			}
-		}
-		bool err{ scan.foundMissing };
-		scan.foundMissing = oldFoundMissing;
-		scan.ignoreMissing = oldIgnoreMissing;
-		return !err;
-	}
+    void GameData::AddTypesToIdc(deps::idc_builder::IdcBuilder& builder) {
+        rapidjson::Value& ctypesVal{ cfg.GetVal("ctypes", 0, cfg.main) };
+        rapidjson::Value& cdeclsVal{ cfg.GetVal("cdecls", 0, cfg.main) };
+        if (ctypesVal.IsArray()) {
+            for (rapidjson::Value& ctype : ctypesVal.GetArray()) {
+                if (!ctype.IsObject()) {
+                    LOG_WARNING("Invalid ctype in {}: Not an object", dirname);
+                    continue;
+                }
+                auto obj{ ctype.GetObj() };
+                auto nameIt{ obj.FindMember("name") };
+                auto typeIt{ obj.FindMember("type") };
 
-	void GameData::AddTypesToIdc(deps::idc_builder::IdcBuilder& builder) {
-		rapidjson::Value& ctypesVal{ cfg.GetVal("ctypes", 0, cfg.main) };
-		rapidjson::Value& cdeclsVal{ cfg.GetVal("cdecls", 0, cfg.main) };
-		if (ctypesVal.IsArray()) {
-			for (rapidjson::Value& ctype : ctypesVal.GetArray()) {
-				if (!ctype.IsObject()) {
-					LOG_WARNING("Invalid ctype in {}: Not an object", dirname);
-					continue;
-				}
-				auto obj{ ctype.GetObj() };
-				auto nameIt{ obj.FindMember("name") };
-				auto typeIt{ obj.FindMember("type") };
+                if (nameIt == obj.MemberEnd() || !nameIt->value.IsString()) {
+                    LOG_WARNING("Invalid ctype in {}: missing valid name", dirname);
+                    continue;
+                }
+                const char* name{ nameIt->value.GetString() };
 
-				if (nameIt == obj.MemberEnd() || !nameIt->value.IsString()) {
-					LOG_WARNING("Invalid ctype in {}: missing valid name", dirname);
-					continue;
-				}
-				const char* name{ nameIt->value.GetString() };
+                if (typeIt == obj.MemberEnd() || !typeIt->value.IsString()) {
+                    LOG_WARNING("Invalid ctype in {}: missing valid type for {}", dirname, name);
+                    continue;
+                }
 
-				if (typeIt == obj.MemberEnd() || !typeIt->value.IsString()) {
-					LOG_WARNING("Invalid ctype in {}: missing valid type for {}", dirname, name);
-					continue;
-				}
+                CTypeType type{ core::config::ParseEnumValue<CTypeType>(typeIt->value.GetString(), cTypeInfo,
+                                                                        ACTS_ARRAYSIZE(cTypeInfo)) };
 
-				CTypeType type{ core::config::ParseEnumValue<CTypeType>(typeIt->value.GetString(), cTypeInfo, ACTS_ARRAYSIZE(cTypeInfo)) };
+                if (!type) {
+                    LOG_WARNING("Invalid ctype in {}: bad type for {}", dirname, name);
+                    continue;
+                }
 
-				if (!type) {
-					LOG_WARNING("Invalid ctype in {}: bad type for {}", dirname, name);
-					continue;
-				}
+                switch (type) {
+                case CTT_STRUCT:
+                    builder.AddStruct(name);
+                    break;
+                case CTT_ENUM: {
+                    deps::idc_builder::IdcEnumId id{ builder.AddEnum(name) };
+                    auto fieldsIt{ obj.FindMember("fields") };
+                    if (fieldsIt != obj.MemberEnd()) {
+                        if (!fieldsIt->value.IsObject()) {
+                            LOG_WARNING("Invalid ctype in {}: 'fields' should be an object for {}", dirname, name);
+                            continue;
+                        }
 
-				switch (type) {
-				case CTT_STRUCT:
-					builder.AddStruct(name);
-					break;
-				case CTT_ENUM: {
-					deps::idc_builder::IdcEnumId id{ builder.AddEnum(name) };
-					auto fieldsIt{ obj.FindMember("fields") };
-					if (fieldsIt != obj.MemberEnd()) {
-						if (!fieldsIt->value.IsObject()) {
-							LOG_WARNING("Invalid ctype in {}: 'fields' should be an object for {}", dirname, name);
-							continue;
-						}
+                        for (auto& [key, val] : fieldsIt->value.GetObj()) {
 
-						for (auto& [key, val] : fieldsIt->value.GetObj()) {
+                            const char* fieldName{ key.GetString() };
+                            if (!val.IsInt64()) {
+                                LOG_WARNING("Invalid ctype in {}: field {} isn't an int {}", dirname, fieldName, name);
+                                continue;
+                            }
+                            builder.AddEnumMember(id, fieldName, val.GetInt64());
+                        }
+                    }
+                } break;
+                default:
+                    throw std::runtime_error(std::format("CTYPE TYPE NOT IMPLEMENTED : {}", (int)type));
+                }
+            }
+        }
+        if (cdeclsVal.IsArray()) {
+            for (rapidjson::Value& cdeclVal : cdeclsVal.GetArray()) {
+                if (!cdeclVal.IsObject()) {
+                    LOG_WARNING("Invalid cdecl in {}: Not an object", dirname);
+                    continue;
+                }
+                auto obj{ cdeclVal.GetObj() };
+                auto declIt{ obj.FindMember("decl") };
+                auto flagsIt{ obj.FindMember("flags") };
 
-							const char* fieldName{ key.GetString() };
-							if (!val.IsInt64()) {
-								LOG_WARNING("Invalid ctype in {}: field {} isn't an int {}", dirname, fieldName, name);
-								continue;
-							}
-							builder.AddEnumMember(id, fieldName, val.GetInt64());
-						}
-					}
-				}
-					break;
-				default: throw std::runtime_error(std::format("CTYPE TYPE NOT IMPLEMENTED : {}", (int)type));
-				}
-			}
-		}
-		if (cdeclsVal.IsArray()) {
-			for (rapidjson::Value& cdeclVal : cdeclsVal.GetArray()) {
-				if (!cdeclVal.IsObject()) {
-					LOG_WARNING("Invalid cdecl in {}: Not an object", dirname);
-					continue;
-				}
-				auto obj{ cdeclVal.GetObj() };
-				auto declIt{ obj.FindMember("decl") };
-				auto flagsIt{ obj.FindMember("flags") };
+                if (declIt == obj.MemberEnd() || !declIt->value.IsString()) {
+                    LOG_WARNING("Invalid cdecl in {}: missing valid decl", dirname);
+                    continue;
+                }
+                const char* decl{ declIt->value.GetString() };
 
-				if (declIt == obj.MemberEnd() || !declIt->value.IsString()) {
-					LOG_WARNING("Invalid cdecl in {}: missing valid decl", dirname);
-					continue;
-				}
-				const char* decl{ declIt->value.GetString() };
+                const char* flags;
+                if (flagsIt != obj.MemberEnd()) {
+                    if (!flagsIt->value.IsString()) {
+                        LOG_WARNING("Invalid cdecl in {}: bad type for decl {}", dirname, decl);
+                        continue;
+                    }
+                    flags = flagsIt->value.GetString();
+                } else {
+                    flags = nullptr;
+                }
 
-				const char* flags;
-				if (flagsIt != obj.MemberEnd()) {
-					if (!flagsIt->value.IsString()) {
-						LOG_WARNING("Invalid cdecl in {}: bad type for decl {}", dirname, decl);
-						continue;
-					}
-					flags = flagsIt->value.GetString();
-				} else {
-					flags = nullptr;
-				}
+                builder.AddCDecl(decl, flags);
+            }
+        }
+    }
+    void GameData::ScanToIdc(deps::idc_builder::IdcBuilder& builder, const char* parent) {
+        hook::scan_container::ScanContainer& container{ GetScanContainer() };
 
-				builder.AddCDecl(decl, flags);
-			}
-		}
-	}
-	void GameData::ScanToIdc(deps::idc_builder::IdcBuilder& builder, const char* parent) {
-		hook::scan_container::ScanContainer& container{ GetScanContainer() };
+        rapidjson::Value& scansVal{ cfg.GetVal(parent, 0, cfg.main) };
+        if (!scansVal.IsObject()) {
+            return; // not an object
+        }
 
-		rapidjson::Value& scansVal{ cfg.GetVal(parent, 0, cfg.main) };
-		if (!scansVal.IsObject()) {
-			return; // not an object
-		}
+        for (auto& [k, v] : scansVal.GetObj()) {
+            ScanData data{ GetScan(k.GetString(), parent) };
+            if (data.name.empty() || data.name[0] == '$') {
+                continue; // unused
+            }
+            try {
+                std::vector<void*> array{ GetPointerArray<void*>(data.name.data(), parent) };
 
-		for (auto& [k, v] : scansVal.GetObj()) {
-			ScanData data{ GetScan(k.GetString(), parent) };
-			if (data.name.empty() || data.name[0] == '$') {
-				continue; // unused
-			}
-			try {
-				std::vector<void*> array{ GetPointerArray<void*>(data.name.data(), parent) };
+                if (array.empty()) {
+                    LOG_ERROR("Missing {}", data.name);
+                    continue; // no found
+                }
 
-				if (array.empty()) {
-					LOG_ERROR("Missing {}", data.name);
-					continue; // no found
-				}
+                builder.AddAddressEx(array[0], data.name.data(), "SN_CHECK | SN_NOWARN",
+                                     data.ctype.empty() ? nullptr : data.ctype.data());
+            } catch (std::runtime_error& err) {
+                LOG_ERROR("error with {}: {}", data.name, err.what());
+            }
+        }
+    }
 
-				builder.AddAddressEx(array[0], data.name.data(), "SN_CHECK | SN_NOWARN", data.ctype.empty() ? nullptr : data.ctype.data());
-			}
-			catch (std::runtime_error& err) {
-				LOG_ERROR("error with {}: {}", data.name, err.what());
-			}
-		}
-	}
-
-	void GameData::ScanAllToIdc(deps::idc_builder::IdcBuilder& builder) {
-		hook::scan_container::ScanContainer& scan{ GetScanContainer() };
-		bool ignoreMissingOld = scan.ignoreMissing;
-		scan.ignoreMissing = true;
-		ScanToIdc(builder, BASE_PARENT);
-		rapidjson::Value& nullscans{ cfg.GetVal("nullscans", 0, cfg.main) };
-		if (nullscans.IsObject()) {
-			for (auto& [k, v] : nullscans.GetObj()) {
-				std::string parent{ std::format("nullscans.{}", k.GetString()) };
-				ScanToIdc(builder, parent.data());
-			}
-		}
-		scan.ignoreMissing = ignoreMissingOld;
-
-	}
-}
+    void GameData::ScanAllToIdc(deps::idc_builder::IdcBuilder& builder) {
+        hook::scan_container::ScanContainer& scan{ GetScanContainer() };
+        bool ignoreMissingOld = scan.ignoreMissing;
+        scan.ignoreMissing = true;
+        ScanToIdc(builder, BASE_PARENT);
+        rapidjson::Value& nullscans{ cfg.GetVal("nullscans", 0, cfg.main) };
+        if (nullscans.IsObject()) {
+            for (auto& [k, v] : nullscans.GetObj()) {
+                std::string parent{ std::format("nullscans.{}", k.GetString()) };
+                ScanToIdc(builder, parent.data());
+            }
+        }
+        scan.ignoreMissing = ignoreMissingOld;
+    }
+} // namespace acts::game_data
 
 namespace {
-	class GameDataImplInternal {
-	public:
-		acts::game_data::GameData gameData;
-		hook::module_mapper::Module gameModule{};
+    class GameDataImplInternal {
+      public:
+        acts::game_data::GameData gameData;
+        hook::module_mapper::Module gameModule{};
 
-		GameDataImplInternal(const char* dirname, bool loadGameModule, const char* customGameModule, bool loadDecrypt)
-			: gameData(dirname) {
-			if (loadGameModule) {
-				std::filesystem::path exe;
-				if (customGameModule) {
-					exe = customGameModule;
-				}
-				else {
-					const char* defaultName{ gameData.GetModuleName() };
-					if (defaultName && *defaultName) {
-						exe = utils::GetProgDir() / "deps" / defaultName;
-					}
-				}
+        GameDataImplInternal(const char* dirname, bool loadGameModule, const char* customGameModule, bool loadDecrypt)
+            : gameData(dirname) {
+            if (loadGameModule) {
+                std::filesystem::path exe;
+                if (customGameModule) {
+                    exe = customGameModule;
+                } else {
+                    const char* defaultName{ gameData.GetModuleName() };
+                    if (defaultName && *defaultName) {
+                        exe = utils::GetProgDir() / "deps" / defaultName;
+                    }
+                }
 
-				if (!gameModule.Load(exe)) {
-					throw std::runtime_error(std::format("Can't load {}", exe.string()));
-				}
+                if (!gameModule.Load(exe)) {
+                    throw std::runtime_error(std::format("Can't load {}", exe.string()));
+                }
 
-				if (loadDecrypt && !acts::decryptutils::LoadDecryptModule(gameModule)) {
-					throw std::runtime_error(std::format("Can't load {}: Can't find DecryptString", exe.string()));
-				}
+                if (loadDecrypt && !acts::decryptutils::LoadDecryptModule(gameModule)) {
+                    throw std::runtime_error(std::format("Can't load {}: Can't find DecryptString", exe.string()));
+                }
 
+                gameData.SetScanContainer(&gameModule.GetScanContainer());
+            }
+        }
+    };
+} // namespace
 
-				gameData.SetScanContainer(&gameModule.GetScanContainer());
-			}
-		}
-	};
-}
+char* ActsAPIData_DecryptString(char* str) { return acts::decryptutils::DecryptString(str); }
 
-char* ActsAPIData_DecryptString(char* str) {
-	return acts::decryptutils::DecryptString(str);
-}
+bool ActsAPIData_LoadDecryptModule(char* path) { return acts::decryptutils::LoadDecrypt(path); }
 
-bool ActsAPIData_LoadDecryptModule(char* path) {
-	return acts::decryptutils::LoadDecrypt(path);
-}
-
-ActsHandle ActsAPIData_NewGameData(const char* dirname, bool loadGameModule, const char* customGameModule, bool loadDecrypt) {
-	try {
-		return ActsAPIImpl_New<GameDataImplInternal>(dirname, loadGameModule, customGameModule, loadDecrypt);
-	}
-	catch (std::exception& e) {
-		ActsAPISetLastMessage("%s", e.what());
-		return nullptr;
-	}
+ActsHandle ActsAPIData_NewGameData(const char* dirname, bool loadGameModule, const char* customGameModule,
+                                   bool loadDecrypt) {
+    try {
+        return ActsAPIImpl_New<GameDataImplInternal>(dirname, loadGameModule, customGameModule, loadDecrypt);
+    } catch (std::exception& e) {
+        ActsAPISetLastMessage("%s", e.what());
+        return nullptr;
+    }
 }
 
 void ActsAPIData_IgnoreMissingScan(ActsHandle gameData, bool ignore) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
-	impl.gameModule.GetScanContainer().ignoreMissing = ignore;
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    impl.gameModule.GetScanContainer().ignoreMissing = ignore;
 }
 
 bool ActsAPIData_HasMissingScan(ActsHandle gameData, bool cleanup) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
-	hook::scan_container::ScanContainer& scan{ impl.gameModule.GetScanContainer() };
-	bool r{ scan.foundMissing };
-	if (cleanup) {
-		scan.foundMissing = false;
-	}
-	return r;
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    hook::scan_container::ScanContainer& scan{ impl.gameModule.GetScanContainer() };
+    bool r{ scan.foundMissing };
+    if (cleanup) {
+        scan.foundMissing = false;
+    }
+    return r;
 }
 void ActsAPIData_SaveScans(ActsHandle gameData) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
-	hook::scan_container::ScanContainer& scan{ impl.gameModule.GetScanContainer() };
-	scan.Save();
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    hook::scan_container::ScanContainer& scan{ impl.gameModule.GetScanContainer() };
+    scan.Save();
 }
 
 bool ActsAPIData_ValidateScans(ActsHandle gameData) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
-	return impl.gameData.ValidateScans();
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    return impl.gameData.ValidateScans();
 }
 
 ActsStatus ActsAPIData_ApplyNullScans(ActsHandle gameData, const char* id) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
 
-	try {
-		impl.gameData.ApplyNullScans(id);
-		return ACTS_STATUS_OK;
-	}
-	catch (std::exception& e) {
-		ActsAPISetLastMessage("%s", e.what());
-		return ACTS_STATUS_ERROR;
-	}
+    try {
+        impl.gameData.ApplyNullScans(id);
+        return ACTS_STATUS_OK;
+    } catch (std::exception& e) {
+        ActsAPISetLastMessage("%s", e.what());
+        return ACTS_STATUS_ERROR;
+    }
 }
 
 const char* ActsAPIData_GetModuleName(ActsHandle gameData) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
 
-	try {
-		return impl.gameData.GetModuleName();
-	}
-	catch (std::exception& e) {
-		ActsAPISetLastMessage("%s", e.what());
-		return nullptr;
-	}
+    try {
+        return impl.gameData.GetModuleName();
+    } catch (std::exception& e) {
+        ActsAPISetLastMessage("%s", e.what());
+        return nullptr;
+    }
 }
 
 void* ActsAPIData_GetModuleBase(ActsHandle gameData) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
-	return *impl.gameModule.GetLibrary();
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    return *impl.gameModule.GetLibrary();
 }
 
 const char* ActsAPIData_GetConfigCString(ActsHandle gameData, const char* path) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
-	return impl.gameData.Config().GetCString(path);
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    return impl.gameData.Config().GetCString(path);
 }
 
 ActsStatus ActsAPIData_Redirect(ActsHandle gameData, const char* id, void* to, const char* parent) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
 
-	try {
-		impl.gameData.Redirect(id, to, parent);
-		return ACTS_STATUS_OK;
-	}
-	catch (std::exception& e) {
-		ActsAPISetLastMessage("%s", e.what());
-		return ACTS_STATUS_ERROR;
-	}
+    try {
+        impl.gameData.Redirect(id, to, parent);
+        return ACTS_STATUS_OK;
+    } catch (std::exception& e) {
+        ActsAPISetLastMessage("%s", e.what());
+        return ACTS_STATUS_ERROR;
+    }
 }
 
 ActsStatus ActsAPIData_Nulled(ActsHandle gameData, const char* id, const char* parent) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
 
-	try {
-		impl.gameData.Nulled(id, parent);
-		return ACTS_STATUS_OK;
-	}
-	catch (std::exception& e) {
-		ActsAPISetLastMessage("%s", e.what());
-		return ACTS_STATUS_ERROR;
-	}
+    try {
+        impl.gameData.Nulled(id, parent);
+        return ACTS_STATUS_OK;
+    } catch (std::exception& e) {
+        ActsAPISetLastMessage("%s", e.what());
+        return ACTS_STATUS_ERROR;
+    }
 }
 
 ActsStatus ActsAPIData_Get(ActsHandle gameData, const char* id, void** to, const char* parent) {
-	GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
+    GameDataImplInternal& impl{ *(GameDataImplInternal*)gameData };
 
-	try {
-		impl.gameData.Get<void*>(id, to, parent);
-		return ACTS_STATUS_OK;
-	}
-	catch (std::exception& e) {
-		ActsAPISetLastMessage("%s", e.what());
-		return ACTS_STATUS_ERROR;
-	}
-
+    try {
+        impl.gameData.Get<void*>(id, to, parent);
+        return ACTS_STATUS_OK;
+    } catch (std::exception& e) {
+        ActsAPISetLastMessage("%s", e.what());
+        return ACTS_STATUS_ERROR;
+    }
 }

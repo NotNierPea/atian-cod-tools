@@ -1,7 +1,6 @@
 #include <ui_includes.hpp>
 #include "UI3MdiArea.h"
 
-
 #include <QDropEvent>
 #include <QDragEnterEvent>
 #include <QMimeData>
@@ -28,10 +27,7 @@ void UI3MdiArea::AddSubWindow(QWidget* widget) {
         QSize s{ widget->size() };
         sub->setMinimumSize(s);
         sub->setMaximumSize(s);
-        sub->setWindowFlags(
-            (sub->windowFlags() | Qt::MSWindowsFixedSizeDialogHint)
-            & ~Qt::WindowMaximizeButtonHint
-        );
+        sub->setWindowFlags((sub->windowFlags() | Qt::MSWindowsFixedSizeDialogHint) & ~Qt::WindowMaximizeButtonHint);
         sub->updateGeometry();
         sub->update();
     }

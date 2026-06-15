@@ -12,21 +12,24 @@ namespace tool::gsc::vm {
 
     template<uint64_t GDB_MAGIC>
     class GscGdbT78 : public GscGdb {
-    public:
+      public:
         GscGdbT78() : GscGdb(GDB_MAGIC) {}
 
         void DbgLoad(T8GSCOBJContext& ctx, core::bytebuffer::ByteBuffer& dbgReader, std::ostream& asmout) override {
             GSC_GDB* dbg{ dbgReader.ReadPtr<GSC_GDB>() };
 
-            asmout << "// GDB compiled file, file version 0x" << std::hex << (int)dbg->version << ", magic: 0x" << (*(uint64_t*)&dbg->magic[0]) << "\n";
+            asmout << "// GDB compiled file, file version 0x" << std::hex << (int)dbg->version << ", magic: 0x"
+                   << (*(uint64_t*)&dbg->magic[0]) << "\n";
 
             asmout << "// dbg crc .. " << "0x" << std::hex << dbg->source_crc << "\n";
             if (ctx.scriptfile->GetChecksum() && ctx.scriptfile->GetChecksum() != dbg->source_crc) {
-                LOG_WARNING("Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}, magic: 0x{:x}", ctx.scriptfile->GetChecksum(), dbg->source_crc, *(uint64_t*)dbg);
+                LOG_WARNING("Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}, magic: 0x{:x}",
+                            ctx.scriptfile->GetChecksum(), dbg->source_crc, *(uint64_t*)dbg);
                 return;
             }
 
-            asmout << "// strings .. " << std::dec << dbg->stringtable_count << " (offset: 0x" << std::hex << dbg->stringtable_offset << ")\n";
+            asmout << "// strings .. " << std::dec << dbg->stringtable_count << " (offset: 0x" << std::hex
+                   << dbg->stringtable_offset << ")\n";
             if (dbg->stringtable_count) {
                 dbgReader.Goto(dbg->stringtable_offset);
                 for (size_t i = 0; i < dbg->stringtable_count; i++) {
@@ -57,8 +60,7 @@ namespace tool::gsc::vm {
                                     }
                                     hashutils::AddPrecomputed(hash, str, true);
                                 }
-                            }
-                            catch (std::exception&) {
+                            } catch (std::exception&) {
                                 // ignore
                             }
                         }
@@ -71,14 +73,14 @@ namespace tool::gsc::vm {
 
             // not used by acts decompiler, but can be useful for a vm
             if (ctx.opt.m_header) {
-                asmout << "// lines .... " << std::dec << dbg->lineinfo_count << " (offset: 0x" << std::hex << dbg->lineinfo_offset << ")\n";
+                asmout << "// lines .... " << std::dec << dbg->lineinfo_count << " (offset: 0x" << std::hex
+                       << dbg->lineinfo_offset << ")\n";
 
                 dbgReader.Goto(dbg->lineinfo_offset);
                 for (size_t i = 1; i <= dbg->lineinfo_count; i++) {
                     GSC_LINEINFO* linesOff = dbgReader.ReadPtr<GSC_LINEINFO>();
                     asmout << "// - " << std::dec << i << " " << ctx.GetFLocName(linesOff->offset) << "\n";
                 }
-
             }
         }
 
@@ -90,12 +92,12 @@ namespace tool::gsc::vm {
             size_t devStringTable{};
             size_t devStringsCount{ gdb->devStringsLocation.size() };
 
-
             // know the size for the devstring table
             if (devStringsCount) {
                 auto it{ gdb->devStringsLocation.begin() };
                 devStringTable = *it;
-                for (size_t i = 1; i < devStringsCount; i++) it++; // goto last
+                for (size_t i = 1; i < devStringsCount; i++)
+                    it++; // goto last
                 size_t maxDevString = *it;
 
                 if (data.size() > devStringTable) {
@@ -151,4 +153,4 @@ namespace tool::gsc::vm {
             return true;
         }
     };
-}
+} // namespace tool::gsc::vm

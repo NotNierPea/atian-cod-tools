@@ -1,4 +1,4 @@
-#include<includes.hpp>
+#include <includes.hpp>
 #include <tools/fastfile/fastfile_bdiff.hpp>
 #include <xxhash.h>
 #include <acts_api_impl/api_impl.hpp>
@@ -13,19 +13,9 @@ namespace fastfile::bdiff {
             unsigned char* pAddr;
         };
 
+        enum VCD { VCD_SELF = 0, VCD_HERE = 1 };
 
-        enum VCD {
-            VCD_SELF = 0,
-            VCD_HERE = 1
-        };
-
-        enum VCDInstructionCode : uint16_t {
-            VCDI_NOOP = 0,
-            VCDI_ADD = 1,
-            VCDI_RUN = 2,
-            VCDI_COPY = 3,
-            VCDI_COUNT
-        };
+        enum VCDInstructionCode : uint16_t { VCDI_NOOP = 0, VCDI_ADD = 1, VCDI_RUN = 2, VCDI_COPY = 3, VCDI_COUNT };
         static const char* vcdInstructionCodeNames[VCDI_COUNT]{ "NOOP", "ADD", "RUN", "COPY" };
 
         struct Instruction {
@@ -37,265 +27,262 @@ namespace fastfile::bdiff {
         struct DoubleInstruction {
             Instruction instruction[2];
         };
-        static DoubleInstruction instructions[256] =
-        {
-            { { { VCDI_RUN, 0x0, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x0, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x1, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x2, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x3, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x4, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x5, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x6, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x7, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_COPY, 0x8, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x0, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x0, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x0, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x0, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x0, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x0, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x0, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x0, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x0, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x0, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x0, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x0, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x1, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x1, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x1, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x1, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x1, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x1, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x1, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x1, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x1, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x1, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x1, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x1, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x2, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x2, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x2, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x2, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x2, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x2, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x2, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x2, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x2, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x2, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x2, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x2, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x3, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x3, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x3, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x3, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x3, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x3, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x3, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x3, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x3, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x3, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x3, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x3, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x4, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x4, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x4, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x4, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x4, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x4, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x4, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x4, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x4, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x4, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x4, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x4, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x5, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x5, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x5, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x5, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x5, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x5, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x5, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x5, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x5, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x5, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x5, 0x5 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x5, 0x6 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x6, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x6, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x6, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x6, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x7, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x7, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x7, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x7, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x8, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x8, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x8, 0x4 } } } ,
-            { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x8, 0x4 } } } ,
-            { { { VCDI_COPY, 0x0, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x1, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x2, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x3, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x4, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x5, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x6, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x7, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } ,
-            { { { VCDI_COPY, 0x8, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } }
-        };
+        static DoubleInstruction instructions[256] = { { { { VCDI_RUN, 0x0, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x0 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x4 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x5 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x6 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x7 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x8 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x9 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0xa }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0xb }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0xc }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0xd }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0xe }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0xf }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x10 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x11 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x12 }, { VCDI_NOOP, 0x0, 0x0 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x0, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x0, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x0, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x0, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x0, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x0, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x0, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x0, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x0, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x0, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x0, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x0, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x1, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x1, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x1, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x1, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x1, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x1, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x1, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x1, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x1, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x1, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x1, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x1, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x2, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x2, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x2, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x2, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x2, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x2, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x2, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x2, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x2, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x2, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x2, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x2, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x3, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x3, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x3, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x3, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x3, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x3, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x3, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x3, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x3, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x3, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x3, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x3, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x4, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x4, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x4, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x4, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x4, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x4, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x4, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x4, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x4, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x4, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x4, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x4, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x5, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x5, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x5, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x5, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x5, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x5, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x5, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x5, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x5, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x5, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x5, 0x5 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x5, 0x6 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x6, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x6, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x6, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x6, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x7, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x7, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x7, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x7, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x1 }, { VCDI_COPY, 0x8, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x2 }, { VCDI_COPY, 0x8, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x3 }, { VCDI_COPY, 0x8, 0x4 } } },
+                                                       { { { VCDI_ADD, 0x0, 0x4 }, { VCDI_COPY, 0x8, 0x4 } } },
+                                                       { { { VCDI_COPY, 0x0, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x1, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x2, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x3, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x4, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x5, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x6, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x7, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } },
+                                                       { { { VCDI_COPY, 0x8, 0x4 }, { VCDI_ADD, 0x0, 0x1 } } } };
 
         enum VCDFlags {
             VCDF_UNK1 = 1,
@@ -323,16 +310,13 @@ namespace fastfile::bdiff {
 
             if (mode == VCD_SELF) {
                 address = ReadULEB128(&vcd->pAddr);
-            }
-            else if (mode == VCD_HERE) {
+            } else if (mode == VCD_HERE) {
                 address = here - ReadULEB128(&vcd->pAddr);
-            }
-            else if (mode >= 6) {
+            } else if (mode >= 6) {
                 int index = (mode - 6) << 8;
                 index += *(vcd->pAddr++);
                 address = vcd->asame[index];
-            }
-            else {
+            } else {
                 address = vcd->anear[mode - 2] + ReadULEB128(&vcd->pAddr);
             }
 
@@ -356,14 +340,9 @@ namespace fastfile::bdiff {
                 dest[i] = src[i];
             }
         }
-    }
+    } // namespace
 
-    bool bdiff(
-        BDiffState* state,
-        vcSourceCB_t* sourceDataCB,
-        vcDiffCB_t* patchDataCB,
-        vcDestCB_t* destDataCB)
-    {
+    bool bdiff(BDiffState* state, vcSourceCB_t* sourceDataCB, vcDiffCB_t* patchDataCB, vcDestCB_t* destDataCB) {
         if (!state->headerRead) {
             byte* header{ patchDataCB(state->state, 0, 0x405, nullptr) };
 
@@ -400,23 +379,19 @@ namespace fastfile::bdiff {
             size_t sourceSegmentLocation;
             if (flags & VCDF_SOURCE_SEGMENT_RELATIVE) {
                 sourceSegmentLocation = ReadULEB128(&bdiffData);
-            }
-            else {
+            } else {
                 sourceSegmentLocation = sourceSegmentLocationEx;
             }
 
             size_t sourceSegmentStart{ sourceSegmentLocationEx - sourceSegmentLocation };
-            sourceSegment = &sourceDataCB(state->state, sourceSegmentLocation, sourceSegmentStart + sourceSegmentOffset)[sourceSegmentStart];
+            sourceSegment = &sourceDataCB(state->state, sourceSegmentLocation,
+                                          sourceSegmentStart + sourceSegmentOffset)[sourceSegmentStart];
         }
 
         size_t patchDataLen{ ReadULEB128(&bdiffData) };
 
-        byte* patchData{ patchDataCB(
-            state->state,
-            offset + bdiffData - bdiffDataStart,
-            patchDataLen + (flags & VCDF_CHECKSUM ? 4 : 0),
-            &offset
-        ) };
+        byte* patchData{ patchDataCB(state->state, offset + bdiffData - bdiffDataStart,
+                                     patchDataLen + (flags & VCDF_CHECKSUM ? 4 : 0), &offset) };
         byte* patchDataStart{ patchData };
 
         size_t patchDestLen{ ReadULEB128(&patchData) };
@@ -453,17 +428,18 @@ namespace fastfile::bdiff {
                 assert(inst.op < VCDI_COUNT && "invalid op");
 
                 size_t ilen{ inst.size };
-                if (!ilen && inst.op != VCDI_NOOP) ilen = ReadULEB128(&instructionData);
+                if (!ilen && inst.op != VCDI_NOOP)
+                    ilen = ReadULEB128(&instructionData);
 
-                //LOG_TRACE(
-                //    "r:0x{:03x} 0x{:02x} inst[{}] = "
-                //    "(VCDI_{}, m:{}, s:0x{:x}/0x{:x})"
-                //    " 0x{:x}/0x{:x}"
-                //    " 0x{:x}",
-                //    instructionDataEnd - instructionData, (int)opcode, i, 
-                //    vcdInstructionCodeNames[inst.op], inst.mode, inst.size, ilen,
-                //    patchDest - patchDestStart, patchDestLen,
-                //    patchData - patchDataStart
+                // LOG_TRACE(
+                //     "r:0x{:03x} 0x{:02x} inst[{}] = "
+                //     "(VCDI_{}, m:{}, s:0x{:x}/0x{:x})"
+                //     " 0x{:x}/0x{:x}"
+                //     " 0x{:x}",
+                //     instructionDataEnd - instructionData, (int)opcode, i,
+                //     vcdInstructionCodeNames[inst.op], inst.mode, inst.size, ilen,
+                //     patchDest - patchDestStart, patchDestLen,
+                //     patchData - patchDataStart
                 //);
 
                 switch (inst.op) {
@@ -491,11 +467,11 @@ namespace fastfile::bdiff {
                             return false;
                         }
                         readLoc = &sourceSegment[address];
-                        //LOG_TRACE("VCDI_COPY(0x{:x}, b:0x{:x}, 0x{:x})", patchDest - patchDestStart, address, ilen);
-                    }
-                    else {
+                        // LOG_TRACE("VCDI_COPY(0x{:x}, b:0x{:x}, 0x{:x})", patchDest - patchDestStart, address, ilen);
+                    } else {
                         readLoc = &patchDestStart[address - sourceSegmentOffset];
-                        //LOG_TRACE("VCDI_COPY(0x{:x}, d:0x{:x}, 0x{:x})", patchDest - patchDestStart, address - sourceSegmentOffset, ilen);
+                        // LOG_TRACE("VCDI_COPY(0x{:x}, d:0x{:x}, 0x{:x})", patchDest - patchDestStart, address -
+                        // sourceSegmentOffset, ilen);
                     }
 
                     memmove2(patchDest, readLoc, ilen);
@@ -504,7 +480,6 @@ namespace fastfile::bdiff {
                 }
                 }
             }
-
         }
 
         if (flags & VCDF_CHECKSUM) {
@@ -526,7 +501,8 @@ namespace fastfile::bdiff {
                 uint64_t xxh64{ XXH64(patchDestStart, patchDestLen, state->lastChecksum) };
                 uint32_t calculatedChecksum{ (uint32_t)(xxh64 ^ (xxh64 >> 32)) };
                 if (calculatedChecksum != realChecksum) {
-                    state->error = utils::va("Data is corrupt. %x != %x (last=%x)", realChecksum, calculatedChecksum, state->lastChecksum);
+                    state->error = utils::va("Data is corrupt. %x != %x (last=%x)", realChecksum, calculatedChecksum,
+                                             state->lastChecksum);
                     return false;
                 }
                 LOG_TRACE("validated bdiff checksum {:x}", realChecksum);
@@ -543,7 +519,6 @@ namespace fastfile::bdiff {
         return true;
     }
 
-
     class DiffState {
         std::vector<byte> outwindow{};
         byte tmpPatch[0x405]{};
@@ -556,15 +531,17 @@ namespace fastfile::bdiff {
 
         std::vector<byte>* destdata{};
 
-    public:
-        DiffState(size_t winsize, core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData, std::vector<byte>* destdata)
-        : sourceData(sourceData), patchData(patchData), destdata(destdata) {
+      public:
+        DiffState(size_t winsize, core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData,
+                  std::vector<byte>* destdata)
+            : sourceData(sourceData), patchData(patchData), destdata(destdata) {
             outwindow.resize(winsize);
             destWindow = outwindow.data();
         }
 
         void SyncData() {
-            if (!destWindowLastSize) return;
+            if (!destWindowLastSize)
+                return;
 
             LOG_TRACE("Sync 0x{:x} bytes", destWindowLastSize);
             utils::WriteValue(*destdata, destWindow, destWindowLastSize);
@@ -576,7 +553,8 @@ namespace fastfile::bdiff {
             sourceData->Goto(offset);
             if (!sourceData->CanRead(size)) {
                 hook::error::DumpStackTraceFrom();
-                throw std::runtime_error(std::format("vcSourceCB_t: read too much at 0x{:x}/0x{:x}", sourceData->Loc(), size));
+                throw std::runtime_error(
+                    std::format("vcSourceCB_t: read too much at 0x{:x}/0x{:x}", sourceData->Loc(), size));
             }
             LOG_TRACE("vcSourceCB_t: read 0x{:x}:0x{:x}", sourceData->Loc(), size);
             return sourceData->ReadPtr<uint8_t>(size);
@@ -585,11 +563,11 @@ namespace fastfile::bdiff {
         byte* LoadPatchData(size_t offset, size_t size, size_t* pOffset) {
             if (offset) {
                 patchWindowOffsetLast = offset;
-            }
-            else {
+            } else {
                 offset = patchWindowOffsetLast;
             }
-            if (pOffset) *pOffset = offset;
+            if (pOffset)
+                *pOffset = offset;
 
             patchData->Goto(offset);
             if (!patchData->CanRead(size)) {
@@ -602,7 +580,8 @@ namespace fastfile::bdiff {
                 }
 
                 hook::error::DumpStackTraceFrom();
-                throw std::runtime_error(std::format("vcDiffCB_t: read too much at 0x{:x}/0x{:x}", patchData->Loc(), size));
+                throw std::runtime_error(
+                    std::format("vcDiffCB_t: read too much at 0x{:x}/0x{:x}", patchData->Loc(), size));
             }
             LOG_TRACE("vcDiffCB_t: read 0x{:x}:0x{:x}", patchData->Loc(), size);
             return patchData->ReadPtr<uint8_t>(size);
@@ -624,7 +603,8 @@ namespace fastfile::bdiff {
         constexpr size_t GetLastSize() const { return destWindowLastSize; };
     };
 
-    std::vector<byte> bdiff(core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData, BDiffType type, size_t winsize) {
+    std::vector<byte> bdiff(core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData,
+                            BDiffType type, size_t winsize) {
         std::vector<byte> destdata{};
         DiffState bdiffStates{ winsize, sourceData, patchData, &destdata };
 
@@ -633,17 +613,15 @@ namespace fastfile::bdiff {
         state.type = type;
         while (patchData->CanRead(1)) {
             LOG_TRACE("Pre bdiff");
-            if (!bdiff(&state,
-                [](void* state, size_t offset, size_t size) -> uint8_t* {
-                    return ((DiffState*)state)->LoadSourceData(offset, size);
-                },
-                [](void* state, size_t offset, size_t size, size_t* pOffset) -> uint8_t* {
-                    return ((DiffState*)state)->LoadPatchData(offset, size, pOffset);
-                },
-                [](void* state, size_t size) -> uint8_t* {
-                    return ((DiffState*)state)->LoadDestData(size);
-                }
-            )) {
+            if (!bdiff(
+                    &state,
+                    [](void* state, size_t offset, size_t size) -> uint8_t* {
+                        return ((DiffState*)state)->LoadSourceData(offset, size);
+                    },
+                    [](void* state, size_t offset, size_t size, size_t* pOffset) -> uint8_t* {
+                        return ((DiffState*)state)->LoadPatchData(offset, size, pOffset);
+                    },
+                    [](void* state, size_t size) -> uint8_t* { return ((DiffState*)state)->LoadDestData(size); })) {
                 throw std::runtime_error(std::format("bdiff error: {}", state.error));
             }
             if (!bdiffStates.GetLastSize()) {
@@ -656,30 +634,26 @@ namespace fastfile::bdiff {
         LOG_TRACE("bdiff end size: 0x{:x}", destdata.size());
         return destdata;
     }
-}
+} // namespace fastfile::bdiff
 
-bool ActsAPIFastFile_bdiff(ActsAPIFastFile_BDiffState* state, ActsAPIFastFile_sourceCallback* sourceDataCB, ActsAPIFastFile_diffCallback* patchDataCB, ActsAPIFastFile_destCallback* destDataCB) {
+bool ActsAPIFastFile_bdiff(ActsAPIFastFile_BDiffState* state, ActsAPIFastFile_sourceCallback* sourceDataCB,
+                           ActsAPIFastFile_diffCallback* patchDataCB, ActsAPIFastFile_destCallback* destDataCB) {
     return fastfile::bdiff::bdiff(state, sourceDataCB, patchDataCB, destDataCB);
 }
 
-ActsStatus ActsAPIFastFile_bdiffData(
-    uint8_t* sourceData, size_t sourceDataLen,
-    uint8_t* patchData, size_t patchDataLen,
-    ActsHandle outData, ActsAPIFastFile_BDiffType type,
-    size_t winSize
-) {
+ActsStatus ActsAPIFastFile_bdiffData(uint8_t* sourceData, size_t sourceDataLen, uint8_t* patchData, size_t patchDataLen,
+                                     ActsHandle outData, ActsAPIFastFile_BDiffType type, size_t winSize) {
     ACTS_API_ASSERT(sourceData || !sourceDataLen);
     ACTS_API_ASSERT(patchData || !patchDataLen);
-	ACTS_API_ASSERT_VALID_HANDLE(outData);
+    ACTS_API_ASSERT_VALID_HANDLE(outData);
 
-	core::bytebuffer::ByteBuffer sourceDataBuf{ sourceData, sourceDataLen };
-	core::bytebuffer::ByteBuffer patchDataBuf{ patchData, patchDataLen };
+    core::bytebuffer::ByteBuffer sourceDataBuf{ sourceData, sourceDataLen };
+    core::bytebuffer::ByteBuffer patchDataBuf{ patchData, patchDataLen };
     try {
         ActsAPIImpl_VectorData(outData) = fastfile::bdiff::bdiff(&sourceDataBuf, &patchDataBuf, type, winSize);
         return ACTS_STATUS_OK;
-	}
-	catch (std::runtime_error& e) {
-		ActsAPISetLastMessage("%s", e.what());
+    } catch (std::runtime_error& e) {
+        ActsAPISetLastMessage("%s", e.what());
         return ACTS_STATUS_ERROR;
     }
 }

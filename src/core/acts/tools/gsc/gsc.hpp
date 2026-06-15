@@ -9,6 +9,4 @@
 #include <tools/gsc/decompiler/gsc_decompiler_formatter.hpp>
 #include <tools/gsc/gsc_gdb.hpp>
 
-namespace tool::gsc {
-
-}
+namespace tool::gsc {}

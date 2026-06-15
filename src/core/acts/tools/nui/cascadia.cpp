@@ -11,16 +11,8 @@
 #include "cascadia_map.hpp"
 
 namespace tool::nui::cascadia {
-	void* GetCascadiaFont() {
-		return __cascadia_mono_semibold_12_PNG;
-	}
-	size_t GetCascadiaFontLen() {
-		return __cascadia_mono_semibold_12_PNG_len;
-	}
-	void* GetCascadiaMap() {
-		return __cascadia_mono_semibold_12_json;
-	}
-	size_t GetCascadiaMapLen() {
-		return __cascadia_mono_semibold_12_json_len;
-	}
-}
+    void* GetCascadiaFont() { return __cascadia_mono_semibold_12_PNG; }
+    size_t GetCascadiaFontLen() { return __cascadia_mono_semibold_12_PNG_len; }
+    void* GetCascadiaMap() { return __cascadia_mono_semibold_12_json; }
+    size_t GetCascadiaMapLen() { return __cascadia_mono_semibold_12_json_len; }
+} // namespace tool::nui::cascadia

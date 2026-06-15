@@ -83,4 +83,4 @@ namespace tool::gsc {
         uint32_t unk54;
     };
 
-}
+} // namespace tool::gsc

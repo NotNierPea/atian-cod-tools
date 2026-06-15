@@ -216,8 +216,6 @@ namespace {
         "compasstunables",
     };
 
-
-
     struct XAssetPool {
         uintptr_t pool; // void*
         unsigned int itemSize;
@@ -231,13 +229,13 @@ namespace {
         uint64_t namenull;
         uintptr_t buffer; // GSC_OBJ*
         int32_t len;
-    }; static_assert(sizeof(ScriptParseTree) == 0x20);
+    };
+    static_assert(sizeof(ScriptParseTree) == 0x20);
 
     int pdcod2020(Process& proc, int argc, const char* argv[]) {
         uintptr_t poolsPtr{ cw::ScanPool(proc) };
 
         auto pool{ proc.ReadMemoryArrayEx<XAssetPool>(cw::ScanPool(proc), cw::alpha::ASSET_TYPE_COUNT) };
-
 
         core::raw_file::json::RawFileJsonWriter writer{};
 
@@ -260,8 +258,8 @@ namespace {
             writer.WriteFieldNameString("itemAllocCount");
             writer.WriteValueString(std::format("0x{:x}", po.itemAllocCount));
 
-
-            LOG_INFO("Pool {} 0x{:x} 0x{:x} 0x{:x} 0x{:x}", poolNames[i], po.pool, po.itemSize, po.itemCount, po.itemAllocCount);
+            LOG_INFO("Pool {} 0x{:x} 0x{:x} 0x{:x} 0x{:x}", poolNames[i], po.pool, po.itemSize, po.itemCount,
+                     po.itemAllocCount);
             if (po.itemAllocCount) {
                 writer.WriteFieldNameString("firsts");
 
@@ -286,8 +284,7 @@ namespace {
 
         if (utils::WriteFile(file, writer.Build())) {
             LOG_INFO("Dump into {}", file.string());
-        }
-        else {
+        } else {
             LOG_ERROR("Error when dumping into {}", file.string());
         }
 
@@ -301,22 +298,24 @@ namespace {
 
         uintptr_t poolsPtr{ cw::ScanPool(proc) };
 
-        auto pool{ proc.ReadMemoryObjectEx<XAssetPool>(cw::ScanPool(proc) + sizeof(XAssetPool) * cw::alpha::ASSET_TYPE_SCRIPTPARSETREE) };
+        auto pool{ proc.ReadMemoryObjectEx<XAssetPool>(cw::ScanPool(proc) +
+                                                       sizeof(XAssetPool) * cw::alpha::ASSET_TYPE_SCRIPTPARSETREE) };
 
-        LOG_INFO("Find pool scriptparsetree -> 0x{:x} (0x{:x} * 0x{:x}/0x{:x} element(s)", pool->pool, pool->itemSize, pool->itemAllocCount, pool->itemCount);
+        LOG_INFO("Find pool scriptparsetree -> 0x{:x} (0x{:x} * 0x{:x}/0x{:x} element(s)", pool->pool, pool->itemSize,
+                 pool->itemAllocCount, pool->itemCount);
 
         if (pool->itemSize != sizeof(ScriptParseTree)) {
             LOG_ERROR("Invalid item size 0x{:x}", pool->itemSize);
             return tool::BASIC_ERROR;
         }
 
-
         auto entries{ proc.ReadMemoryArrayEx<ScriptParseTree>(pool->pool, pool->itemSize) };
 
         for (size_t i = 0; i < pool->itemAllocCount; i++) {
             ScriptParseTree& e{ entries[i] };
 
-            if (e.name < 0x1000000000000 || e.buffer == 0 || e.len <= 0 || e.len >= 1000000000) continue; // ignore bad entries
+            if (e.name < 0x1000000000000 || e.buffer == 0 || e.len <= 0 || e.len >= 1000000000)
+                continue; // ignore bad entries
 
             std::filesystem::path of{ output / std::format("script_{:x}.gscc", e.name) };
             try {
@@ -324,16 +323,13 @@ namespace {
 
                 if (utils::WriteFile(of, buffer.get(), e.len)) {
                     LOG_INFO("Dump {}", of.string());
-                }
-                else {
+                } else {
                     LOG_ERROR("Error when dumping {}", of.string());
                 }
-            }
-            catch (std::runtime_error& e) {
+            } catch (std::runtime_error& e) {
                 LOG_ERROR("Error when dumping {}: {}", of.string(), e.what());
             }
         }
-
 
         LOG_INFO("Dump into {}", output.string());
 
@@ -341,5 +337,6 @@ namespace {
     }
 
     ADD_TOOL(pdcod2020, "cw", "", "", L"CoD2020.exe", pdcod2020);
-    ADD_TOOL(wpscod2020, "cw", " [output=scriptparsetree_cod2020]", "write pooled scripts (cwa)", L"CoD2020.exe", wpscod2020);
-}
+    ADD_TOOL(wpscod2020, "cw", " [output=scriptparsetree_cod2020]", "write pooled scripts (cwa)", L"CoD2020.exe",
+             wpscod2020);
+} // namespace

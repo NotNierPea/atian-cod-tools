@@ -17,8 +17,7 @@ namespace tool::gsc::compiler {
         if (flags & FCF_GETTER) {
             if (scriptCall || !obj.HasOpCode(OPCODE_IW_GetBuiltinFunction)) {
                 opcode = OPCODE_GetResolveFunction;
-            }
-            else {
+            } else {
                 throw std::runtime_error("builtin getters not implemented for this vm");
             }
             return;
@@ -28,40 +27,34 @@ namespace tool::gsc::compiler {
             if (flags & FCF_METHOD) {
                 if (flags & FCF_CHILDTHREAD) {
                     opcode = OPCODE_ScriptMethodThreadCallEndOn;
-                }
-                else if (flags & FCF_THREAD) {
+                } else if (flags & FCF_THREAD) {
                     opcode = OPCODE_ScriptMethodThreadCall;
-                }
-                else {
+                } else {
                     opcode = OPCODE_ScriptMethodCall;
                 }
-            }
-            else {
+            } else {
                 // func
                 if (flags & FCF_CHILDTHREAD) {
                     opcode = OPCODE_ScriptThreadCallEndOn;
-                }
-                else if (flags & FCF_THREAD) {
+                } else if (flags & FCF_THREAD) {
                     opcode = OPCODE_ScriptThreadCall;
-                }
-                else {
+                } else {
                     opcode = OPCODE_ScriptFunctionCall;
                 }
             }
-        }
-        else {
+        } else {
             // builtin
             if (flags & FCF_METHOD) {
                 opcode = OPCODE_CallBuiltinMethod;
-            }
-            else {
+            } else {
                 // func
                 opcode = OPCODE_CallBuiltinFunction;
             }
         }
     }
 
-    AscmNodeCreateLocalVariables::AscmNodeCreateLocalVariables(const FunctionVar* lvars, size_t count, size_t params, const FunctionObject& fobj, bool obfuscate)
+    AscmNodeCreateLocalVariables::AscmNodeCreateLocalVariables(const FunctionVar* lvars, size_t count, size_t params,
+                                                               const FunctionObject& fobj, bool obfuscate)
         : params(params), obfuscate(obfuscate) {
         hasRegister = fobj.obj.HasOpCode(OPCODE_IW_RegisterVariable);
         hasRegisters = fobj.obj.HasOpCode(OPCODE_IW_RegisterMultipleVariables);
@@ -74,4 +67,4 @@ namespace tool::gsc::compiler {
         }
     }
 
-}
+} // namespace tool::gsc::compiler

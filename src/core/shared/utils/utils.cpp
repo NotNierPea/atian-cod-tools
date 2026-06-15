@@ -3,7 +3,9 @@
 
 namespace utils {
     Timestamp GetTimestamp() {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::system_clock::now().time_since_epoch())
+            .count();
     }
 
     std::ostream& NullStream() {
@@ -48,8 +50,7 @@ namespace utils {
         if (append) {
             offset = buffer.size();
             buffer.resize(length + buffer.size());
-        }
-        else {
+        } else {
             offset = 0;
             buffer.resize(length);
         }
@@ -60,7 +61,7 @@ namespace utils {
         return true;
     }
 
-    void* ReadFilePtr(const std::filesystem::path& path, size_t* len, std::function<void* (size_t)> alloc) {
+    void* ReadFilePtr(const std::filesystem::path& path, size_t* len, std::function<void*(size_t)> alloc) {
         static byte emptyBuff[]{ 0 };
         std::ifstream in{ path, std::ios::binary };
         if (!in) {
@@ -69,7 +70,8 @@ namespace utils {
 
         in.seekg(0, std::ios::end);
         size_t length = (size_t)in.tellg();
-        if (len) *len = length;
+        if (len)
+            *len = length;
         in.seekg(0, std::ios::beg);
 
         if (!length) {
@@ -99,8 +101,7 @@ namespace utils {
         if (append) {
             offset = buffer.size();
             buffer.resize(length + buffer.size());
-        }
-        else {
+        } else {
             offset = 0;
             buffer.resize(length);
         }
@@ -111,7 +112,8 @@ namespace utils {
         return true;
     }
 
-    bool ReadFileAlign(const std::filesystem::path& path, std::string& buffer, void*& bufferAligned, size_t& sizeAligned) {
+    bool ReadFileAlign(const std::filesystem::path& path, std::string& buffer, void*& bufferAligned,
+                       size_t& sizeAligned) {
         std::ifstream in{ path, std::ios::binary };
         if (!in) {
             return false;
@@ -130,7 +132,8 @@ namespace utils {
         return true;
     }
 
-    bool ReadFileAlign(const std::filesystem::path& path, std::vector<byte>& buffer, void*& bufferAligned, size_t& sizeAligned) {
+    bool ReadFileAlign(const std::filesystem::path& path, std::vector<byte>& buffer, void*& bufferAligned,
+                       size_t& sizeAligned) {
         std::ifstream in{ path, std::ios::binary };
         if (!in) {
             return false;
@@ -159,7 +162,6 @@ namespace utils {
         size_t length = in.tellg();
         in.seekg(0, std::ios::beg);
 
-
         if (buffer) {
             void* all = std::realloc(buffer, length + (nullTerminate ? 1 : 0));
             if (!all) {
@@ -167,8 +169,7 @@ namespace utils {
                 buffer = NULL;
                 return false; // error realloc, free old buffer
             }
-        }
-        else {
+        } else {
             buffer = std::malloc(length + (nullTerminate ? 1 : 0));
             if (!buffer) {
                 return false; // error malloc
@@ -186,7 +187,8 @@ namespace utils {
         return true;
     }
 
-    bool ReadFileAlign(const std::filesystem::path& path, void*& buffer, void*& bufferAligned, size_t& size, size_t& sizeAligned) {
+    bool ReadFileAlign(const std::filesystem::path& path, void*& buffer, void*& bufferAligned, size_t& size,
+                       size_t& sizeAligned) {
         std::ifstream in{ path, std::ios::binary };
         if (!in) {
             return false;
@@ -196,7 +198,6 @@ namespace utils {
         size_t length = in.tellg();
         in.seekg(0, std::ios::beg);
 
-
         if (buffer) {
             void* all = std::realloc(buffer, length + 15);
             if (!all) {
@@ -204,8 +205,7 @@ namespace utils {
                 buffer = NULL;
                 return false; // error realloc, free old buffer
             }
-        }
-        else {
+        } else {
             buffer = std::malloc(length + 15);
             if (!buffer) {
                 return false; // error malloc
@@ -249,9 +249,7 @@ namespace utils {
         return out;
     }
 
-    uint64_t CatLocated(uint32_t name_space, uint32_t local) {
-        return ((uint64_t)local << 32) | name_space;
-    }
+    uint64_t CatLocated(uint32_t name_space, uint32_t local) { return ((uint64_t)local << 32) | name_space; }
 
     std::pair<uint32_t, uint32_t> UnCatLocated(uint64_t located) {
         uint32_t name_space = (located << 32) >> 32;
@@ -259,9 +257,7 @@ namespace utils {
         return std::make_pair<>(name_space, local);
     }
 
-    uint32_t CatLocated32(uint16_t a, uint16_t b) {
-        return ((uint32_t)b << 16) | a;
-    }
+    uint32_t CatLocated32(uint16_t a, uint16_t b) { return ((uint32_t)b << 16) | a; }
 
     std::pair<uint16_t, uint16_t> UnCatLocated32(uint32_t located) {
         uint16_t a = (located << 16) >> 16;
@@ -269,9 +265,7 @@ namespace utils {
         return std::make_pair<>(a, b);
     }
 
-    uint16_t CatLocated16(byte a, byte b) {
-        return ((uint16_t)b << 8) | a;
-    }
+    uint16_t CatLocated16(byte a, byte b) { return ((uint16_t)b << 8) | a; }
 
     std::pair<byte, byte> UnCatLocated16(uint16_t located) {
         byte a = (located << 8) >> 8;
@@ -279,7 +273,9 @@ namespace utils {
         return std::make_pair<>(a, b);
     }
 
-    static void GetFileRecurse0(const std::filesystem::path& dir, std::vector<std::filesystem::path>& files, std::function<bool(const std::filesystem::path&)> predicate, const std::filesystem::path& base, bool removeBase) {
+    static void GetFileRecurse0(const std::filesystem::path& dir, std::vector<std::filesystem::path>& files,
+                                std::function<bool(const std::filesystem::path&)> predicate,
+                                const std::filesystem::path& base, bool removeBase) {
         if (std::filesystem::is_directory(dir)) {
             for (const auto& sub : std::filesystem::directory_iterator{ dir }) {
                 GetFileRecurse0(sub, files, predicate, base, removeBase);
@@ -289,47 +285,45 @@ namespace utils {
         if (predicate(dir)) {
             if (removeBase) {
                 files.emplace_back(std::filesystem::relative(dir, base));
-            }
-            else {
+            } else {
                 files.emplace_back(dir);
             }
         }
     }
 
-    void GetFileRecurse(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files, std::function<bool(const std::filesystem::path&)> predicate, bool removeParent) {
+    void GetFileRecurse(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
+                        std::function<bool(const std::filesystem::path&)> predicate, bool removeParent) {
         if (!std::filesystem::exists(parent)) {
             return;
         }
         GetFileRecurse0(parent, files, predicate, parent, removeParent);
     }
 
-
     void GetFileRecurse(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files) {
         GetFileRecurse(parent, files, [](const auto& ref) { return true; });
     }
-    void GetFileRecurseExt(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files, const char* ends, bool removeParent) {
-        GetFileRecurse(parent, files, [ends](const std::filesystem::path& p) -> bool {
-            std::string s{ p.string() };
+    void GetFileRecurseExt(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
+                           const char* ends, bool removeParent) {
+        GetFileRecurse(
+            parent, files,
+            [ends](const std::filesystem::path& p) -> bool {
+                std::string s{ p.string() };
 
-            for (const char* exts{ ends }; *exts; exts += std::strlen(exts) + 1) {
-                if (s.ends_with(exts)) return true;
-            }
+                for (const char* exts{ ends }; *exts; exts += std::strlen(exts) + 1) {
+                    if (s.ends_with(exts))
+                        return true;
+                }
 
-            return false;
-        }, removeParent);
+                return false;
+            },
+            removeParent);
     }
 
-    std::string WStrToStr(const std::wstring& wstr) {
-        return platform::WStrToStr(wstr);
-    }
+    std::string WStrToStr(const std::wstring& wstr) { return platform::WStrToStr(wstr); }
 
-    std::wstring StrToWStr(const std::string& str) {
-        return platform::StrToWStr(str);
-    }
+    std::wstring StrToWStr(const std::string& str) { return platform::StrToWStr(str); }
 
-    std::filesystem::path GetProgDir() {
-        return platform::GetProgDir();
-    }
+    std::filesystem::path GetProgDir() { return platform::GetProgDir(); }
     int64_t ParseFormatInt(const char* number) {
         if (!number || !*number) {
             throw std::runtime_error(va("Invalid number %s", number ? number : "nullptr"));
@@ -419,7 +413,8 @@ namespace utils {
     }
 
     int RemoveCase(int c) {
-        if (c == '\\') return '/';
+        if (c == '\\')
+            return '/';
         return tolower(c);
     }
 
@@ -447,7 +442,7 @@ namespace utils {
             if (_strcmpi(prpath.data(), chpath.data())) {
                 return false; // not same
             }
-            prit++; 
+            prit++;
             chit++;
         }
 
@@ -490,9 +485,9 @@ namespace utils {
                 break;
             default:
                 if (*str < 0x20 || *str >= 0x7F) {
-                    out << "\\x" << std::hex << std::setfill('0') << std::setw(2) << (unsigned int)(*reinterpret_cast<const byte*>(str)) << std::dec;
-                }
-                else {
+                    out << "\\x" << std::hex << std::setfill('0') << std::setw(2)
+                        << (unsigned int)(*reinterpret_cast<const byte*>(str)) << std::dec;
+                } else {
                     out << *str;
                 }
                 break;
@@ -537,10 +532,10 @@ namespace utils {
                 break;
             default:
                 if (*str >= 0 && *str < 0x20) {
-                    out << "\\u" << std::hex << std::setfill('0') << std::setw(4) << (unsigned int)(*reinterpret_cast<const byte*>(str)) << std::dec;
-                }
-                else {
-                // todo: handle utf8 to us \uxxxx
+                    out << "\\u" << std::hex << std::setfill('0') << std::setw(4)
+                        << (unsigned int)(*reinterpret_cast<const byte*>(str)) << std::dec;
+                } else {
+                    // todo: handle utf8 to us \uxxxx
                     out << *str;
                 }
                 break;
@@ -561,7 +556,8 @@ namespace utils {
         std::string_view s{ view() };
         // load the lines
         for (size_t i = 0; i < s.length(); i++) {
-            if (s[i] == '\n') line++;
+            if (s[i] == '\n')
+                line++;
         }
 
         if (callback) {
@@ -572,7 +568,7 @@ namespace utils {
 
         return 0;
     }
-}
+} // namespace utils
 std::ostream& operator<<(std::ostream& stream, const utils::FormattedTimestamp& timestamp) {
     std::time_t ts{ timestamp.isMillis ? timestamp.ts / 1000 : timestamp.ts };
     std::tm tm{};

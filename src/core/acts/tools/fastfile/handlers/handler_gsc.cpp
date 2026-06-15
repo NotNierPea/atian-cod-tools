@@ -9,21 +9,25 @@ namespace {
     class GscFFHandler : public fastfile::FFHandler {
         size_t count{};
         bool anyDbg{};
-    public:
-        GscFFHandler() : fastfile::FFHandler("gsc", "GSC Scripts", compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {
-        }
+
+      public:
+        GscFFHandler()
+            : fastfile::FFHandler("gsc", "GSC Scripts", compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {}
         void Init(fastfile::FastFileOption& opt) override {
             count = 0;
             anyDbg = false;
         }
 
         void Cleanup() override {
-            if (count) LOG_OPT_INFO("{} file(s) dumped", count);
-            if (anyDbg) LOG_WARNING("Debug file found");
+            if (count)
+                LOG_OPT_INFO("{} file(s) dumped", count);
+            if (anyDbg)
+                LOG_WARNING("Debug file found");
         }
 
         void DecompFile(fastfile::FastFileOption& opt, byte* file, size_t len, const std::filesystem::path& path) {
-            if (opt.disableScriptsDecomp) return; // nothing to decomp
+            if (opt.disableScriptsDecomp)
+                return; // nothing to decomp
             tool::gsc::GscDecompilerGlobalContext gdctx{};
 
             gdctx.opt.m_platform = (tool::gsc::opcode::Platform)fastfile::GetCurrentContext().gscPlatform;
@@ -52,8 +56,10 @@ namespace {
             }
         }
 
-        bool HandleScriptFile(fastfile::FastFileOption & opt, core::bytebuffer::ByteBuffer & buff, fastfile::FastFileContext & ctx) {
-            if (!ctx.hasGSCBin) return false;
+        bool HandleScriptFile(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
+                              fastfile::FastFileContext& ctx) {
+            if (!ctx.hasGSCBin)
+                return false;
             struct ScriptFile {
                 uint64_t name;
                 int32_t compressedLen;
@@ -79,7 +85,8 @@ namespace {
             size_t off{};
             while (true) {
                 buff.Goto(off);
-                if (buff.CanRead(8)) buff.Skip(8);
+                if (buff.CanRead(8))
+                    buff.Skip(8);
 
                 if ((off = buff.FindMasked(&sfSearch, &sfMask, sizeof(sfSearch))) == std::string::npos) {
                     break;
@@ -88,8 +95,8 @@ namespace {
                 off++;
                 ScriptFile& sf{ *buff.ReadPtr<ScriptFile>() };
 
-                if (sf.name < 0x1000000000 || sf.compressedLen <= 0 || sf.len <= 0 || sf.bytecodeLen <= 0
-                    || !buff.CanRead((size_t)sf.compressedLen + sf.bytecodeLen)) {
+                if (sf.name < 0x1000000000 || sf.compressedLen <= 0 || sf.len <= 0 || sf.bytecodeLen <= 0 ||
+                    !buff.CanRead((size_t)sf.compressedLen + sf.bytecodeLen)) {
                     continue; // bad header
                 }
 
@@ -97,8 +104,7 @@ namespace {
                 if (sf.name == 0xFFFFFFFFFFFFFFFF) {
                     // xstring?
                     sfname = buff.ReadString();
-                }
-                else {
+                } else {
                     // xhash?
                     sfname = utils::va("script_%llx", sf.name);
                 }
@@ -113,7 +119,8 @@ namespace {
                 byte* bytecodeData{ buff.ReadPtr<byte>((size_t)sf.bytecodeLen) };
 
                 if (*compressedData != 0x78) {
-                    continue; // the compressed data is zlib compressed, which is 99% of the time described by the magic 78 DA
+                    continue; // the compressed data is zlib compressed, which is 99% of the time described by the magic
+                              // 78 DA
                 }
 
                 std::filesystem::path outFile{ outDir / sfname };
@@ -126,7 +133,6 @@ namespace {
                         continue;
                     }
 
-
                     utils::WriteValue(os, &header, sizeof(header));
                     utils::WriteValue(os, compressedData, sf.compressedLen);
                     utils::WriteValue(os, bytecodeData, sf.bytecodeLen);
@@ -138,7 +144,8 @@ namespace {
             return any;
         }
 
-        bool HandleScriptParseTree(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx) {
+        bool HandleScriptParseTree(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
+                                   fastfile::FastFileContext& ctx) {
             bool any{};
 
             { // spt string search
@@ -147,7 +154,8 @@ namespace {
                     int32_t len;
                     int32_t pad;
                     int64_t buffer;
-                }; static_assert(sizeof(ScriptParseTree) == 0x18);
+                };
+                static_assert(sizeof(ScriptParseTree) == 0x18);
                 // dump spt dbg
                 ScriptParseTree sptSearch{};
                 ScriptParseTree sptMask{};
@@ -170,10 +178,10 @@ namespace {
                     const char* name{ buff.ReadString() };
 
                     std::string_view sw{ name };
-                    if (spt.len < 8 || !(sw.ends_with(".gsc") || sw.ends_with(".csc") || sw.ends_with(".gsh") || sw.ends_with(".csh"))) {
+                    if (spt.len < 8 || !(sw.ends_with(".gsc") || sw.ends_with(".csc") || sw.ends_with(".gsh") ||
+                                         sw.ends_with(".csh"))) {
                         continue; // not a candidate
                     }
-
 
                     LOG_TRACE("spt {} -> 0x{:x}", name, spt.len);
 
@@ -184,7 +192,7 @@ namespace {
 
                     if ((*(uint64_t*)data & 0xFFFFFFFFFFFFF) != tool::gsc::opcode::VMI_TRE_BASE) {
                         if ((*(uint64_t*)data & 0xFFFFFFFFFFFFF) != tool::gsc::opcode::VMI_DBG_TRE_BASE) {
-                            //LOG_ERROR("Bad gsc magic {:x}", *(uint64_t*)data); // not a gscc file
+                            // LOG_ERROR("Bad gsc magic {:x}", *(uint64_t*)data); // not a gscc file
                         }
                         continue; // bad magic
                     }
@@ -193,8 +201,7 @@ namespace {
                     std::filesystem::create_directories(outFile.parent_path());
                     if (!utils::WriteFile(outFile, data, spt.len)) {
                         LOG_ERROR("Error when dumping");
-                    }
-                    else {
+                    } else {
                         LOG_OPT_INFO("Dump into {}", outFile.string());
                     }
                     any = true;
@@ -202,14 +209,14 @@ namespace {
                 }
             }
             {
-                struct ScriptParseTreeDBG
-                {
+                struct ScriptParseTreeDBG {
                     uintptr_t name;
                     int gdbLen;
                     int srcLen;
                     uintptr_t gdb;
                     uintptr_t src;
-                }; static_assert(sizeof(ScriptParseTreeDBG) == 0x20);
+                };
+                static_assert(sizeof(ScriptParseTreeDBG) == 0x20);
 
                 // dump spt
                 ScriptParseTreeDBG sptSearch{};
@@ -235,10 +242,10 @@ namespace {
                     const char* name{ buff.ReadString() };
 
                     std::string_view sw{ name };
-                    if (spt.gdbLen < 8 || !(sw.ends_with(".gsc") || sw.ends_with(".csc") || sw.ends_with(".gsh") || sw.ends_with(".csh"))) {
+                    if (spt.gdbLen < 8 || !(sw.ends_with(".gsc") || sw.ends_with(".csc") || sw.ends_with(".gsh") ||
+                                            sw.ends_with(".csh"))) {
                         continue; // not a candidate
                     }
-
 
                     LOG_OPT_INFO("dbg {} -> 0x{:x}", name, spt.gdbLen);
 
@@ -250,7 +257,7 @@ namespace {
                     if ((*(uint64_t*)data & 0xFFFFFFFFFFFFF) != tool::gsc::opcode::VMI_DBG_TRE_BASE) {
                         // bad magic
                         if ((*(uint64_t*)data & 0xFFFFFFFFFFFFF) != tool::gsc::opcode::VMI_TRE_BASE) {
-                            //LOG_ERROR("Bad gsc magic {:x}", *(uint64_t*)data); // not a dbg file
+                            // LOG_ERROR("Bad gsc magic {:x}", *(uint64_t*)data); // not a dbg file
                         }
                         continue;
                     }
@@ -259,8 +266,7 @@ namespace {
                         std::filesystem::create_directories(outFile.parent_path());
                         if (!utils::WriteFile(outFile, data, spt.gdbLen)) {
                             LOG_ERROR("Error when dumping");
-                        }
-                        else {
+                        } else {
                             LOG_OPT_INFO("Dump into {}", outFile.string());
                         }
                     }
@@ -275,15 +281,15 @@ namespace {
                         std::filesystem::create_directories(outFile.parent_path());
                         if (!utils::WriteFile(outFile, datasrc, spt.srcLen)) {
                             LOG_ERROR("Error when dumping");
-                        }
-                        else {
+                        } else {
                             LOG_OPT_INFO("Dump into {}", outFile.string());
                         }
                         any = true;
                     }
                 }
             }
-            if (any) return true; // found
+            if (any)
+                return true; // found
 
             // search scriptparsetreedbg
             uint64_t dbgMagic{ 0xA0D42444780 };
@@ -304,7 +310,8 @@ namespace {
                 byte* start{ buff.Ptr<byte>() };
                 while (true) {
                     loc = buff.FindMasked((byte*)&magic, (byte*)&magicMask, sizeof(magic));
-                    if (loc == std::string::npos) break;
+                    if (loc == std::string::npos)
+                        break;
                     struct T8GSCOBJ {
                         byte magic[8];
                         int32_t crc;
@@ -335,7 +342,6 @@ namespace {
                         continue;
                     }
 
-
                     uint64_t smagic{ *reinterpret_cast<uint64_t*>(obj) };
 
                     size_t size;
@@ -359,18 +365,16 @@ namespace {
                     // to the buffer will constantly be -1 because it is not linked yet
                     if (((T8SPT*)sptCan)->buffer == 0xFFFFFFFFFFFFFFFF) {
                         size = ((T8SPT*)sptCan)->size & 0x7FFFFFFF;
-                    }
-                    else if (((T8SPTOld*)sptCan)->buffer == 0xFFFFFFFFFFFFFFFF) {
+                    } else if (((T8SPTOld*)sptCan)->buffer == 0xFFFFFFFFFFFFFFFF) {
                         size = ((T8SPTOld*)sptCan)->size & 0x7FFFFFFF;
-                    }
-                    else {
+                    } else {
                         LOG_ERROR("Can't get size 0x{:x} for loc 0x{:x}", smagic, loc);
                         loc++;
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size, hashutils::ExtractTmpScript(obj->name));
-
+                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size,
+                              hashutils::ExtractTmpScript(obj->name));
 
                     if (!buff.CanRead(size)) {
                         loc++;
@@ -384,8 +388,7 @@ namespace {
 
                     if (!utils::WriteFile(outFile, obj->magic, size)) {
                         LOG_ERROR("Can't write {}", outFile.string());
-                    }
-                    else {
+                    } else {
                         LOG_OPT_INFO("Dump {} ({})", outFile.string(), hashutils::ExtractTmpScript(obj->name));
                         count++;
                     }
@@ -394,7 +397,6 @@ namespace {
 
                     loc++;
                 }
-
             }
             // search gscobj
             {
@@ -407,7 +409,8 @@ namespace {
                 byte* start{ buff.Ptr<byte>() };
                 while (true) {
                     loc = buff.FindMasked((byte*)&magic, (byte*)&magicMask, sizeof(magic));
-                    if (loc == std::string::npos) break;
+                    if (loc == std::string::npos)
+                        break;
                     struct GscObjEntry {
                         uint64_t name;
                         uint32_t len;
@@ -425,10 +428,10 @@ namespace {
                     GscObjEntry* entry{ buff.ReadPtr<GscObjEntry>() };
 
                     if (!entry->name) {
-                        LOG_ERROR("0x{:x} INVALID {}/{} for 0x{:x}", smagic, entry->obj, hashutils::ExtractTmpScript(entry->name), loc);
+                        LOG_ERROR("0x{:x} INVALID {}/{} for 0x{:x}", smagic, entry->obj,
+                                  hashutils::ExtractTmpScript(entry->name), loc);
                         continue;
                     }
-
 
                     if (!buff.CanRead(entry->len)) {
                         loc++;
@@ -436,7 +439,8 @@ namespace {
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, entry->len, hashutils::ExtractTmpScript(entry->name));
+                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, entry->len,
+                              hashutils::ExtractTmpScript(entry->name));
 
                     byte* obj{ buff.ReadPtr<byte>(entry->len) };
 
@@ -445,8 +449,7 @@ namespace {
 
                     if (!utils::WriteFile(outFile, obj, entry->len)) {
                         LOG_ERROR("Can't write {}", outFile.string());
-                    }
-                    else {
+                    } else {
                         LOG_OPT_INFO("Dump {} ({})", outFile.string(), hashutils::ExtractTmpScript(entry->name));
                         count++;
                     }
@@ -456,16 +459,18 @@ namespace {
 
                     loc++;
                 }
-
             }
             return any;
         }
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx) override {
-            if (HandleScriptParseTree(opt, buff, ctx)) return;
-            if (HandleScriptFile(opt, buff, ctx)) return;
+        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
+                    fastfile::FastFileContext& ctx) override {
+            if (HandleScriptParseTree(opt, buff, ctx))
+                return;
+            if (HandleScriptFile(opt, buff, ctx))
+                return;
         }
     };
 
     utils::ArrayAdder<GscFFHandler, fastfile::FFHandler> arr{ fastfile::GetHandlers() };
-}
+} // namespace

@@ -2,7 +2,7 @@
 
 #ifndef UNICODE
 #define UNICODE
-#endif 
+#endif
 
 #include <includes_shared.hpp>
 #include <utils/utils.hpp>

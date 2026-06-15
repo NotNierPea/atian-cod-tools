@@ -8,42 +8,33 @@ namespace deps::ntdll {
     class NtDll {
         hook::library::Library ntdll;
         NtDll() : ntdll("ntdll.dll", true) {
-            if (!ntdll) throw std::runtime_error("Can't load ntdll.dll");
+            if (!ntdll)
+                throw std::runtime_error("Can't load ntdll.dll");
             NtSuspendProcess = GetProc<decltype(NtSuspendProcess)>("NtSuspendProcess");
             NtResumeProcess = GetProc<decltype(NtResumeProcess)>("NtResumeProcess");
             NtCreateThreadEx = GetProc<decltype(NtCreateThreadEx)>("NtCreateThreadEx");
             ZwContinue = GetProc<decltype(ZwContinue)>("ZwContinue");
             KiUserExceptionDispatcher = GetProc<decltype(KiUserExceptionDispatcher)>("KiUserExceptionDispatcher");
         }
-    public:
 
+      public:
         template<typename ProcType>
         ProcType GetProc(const char* name) {
             ProcType proc{ ntdll.GetProc<ProcType>(name) };
-            if (!proc) throw std::runtime_error(std::format("Can't load {}::{}", ntdll, name));
+            if (!proc)
+                throw std::runtime_error(std::format("Can't load {}::{}", ntdll, name));
             LOG_TRACE("loaded {}::{}", ntdll, name);
             return proc;
         }
-        VOID(NTAPI* KiUserExceptionDispatcher)(
-            _In_ PEXCEPTION_RECORD ExceptionRecord,
-            _In_ PCONTEXT ContextRecord
-            );
+        VOID(NTAPI* KiUserExceptionDispatcher)(_In_ PEXCEPTION_RECORD ExceptionRecord, _In_ PCONTEXT ContextRecord);
         NTSTATUS(NTAPI* ZwContinue)(PCONTEXT Context, BOOLEAN TestAlert);
         LONG(NTAPI* NtSuspendProcess)(IN HANDLE ProcessHandle);
         LONG(NTAPI* NtResumeProcess)(IN HANDLE ProcessHandle);
-        NTSTATUS(NTAPI* NtCreateThreadEx)(
-            _Out_ PHANDLE ThreadHandle,
-            _In_ ACCESS_MASK DesiredAccess,
-            _In_opt_ LPVOID  ObjectAttributes,
-            _In_ HANDLE ProcessHandle,
-            _In_ LPVOID StartRoutine,
-            _In_opt_ uintptr_t Argument,
-            _In_ ULONG CreateFlags,
-            _In_ SIZE_T ZeroBits,
-            _In_ SIZE_T StackSize,
-            _In_ SIZE_T MaximumStackSize,
-            _In_opt_ LPVOID AttributeList
-            );
+        NTSTATUS(NTAPI* NtCreateThreadEx)(_Out_ PHANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess,
+                                          _In_opt_ LPVOID ObjectAttributes, _In_ HANDLE ProcessHandle,
+                                          _In_ LPVOID StartRoutine, _In_opt_ uintptr_t Argument, _In_ ULONG CreateFlags,
+                                          _In_ SIZE_T ZeroBits, _In_ SIZE_T StackSize, _In_ SIZE_T MaximumStackSize,
+                                          _In_opt_ LPVOID AttributeList);
 
         /*
          * Get the ndll instance
@@ -51,45 +42,30 @@ namespace deps::ntdll {
         static NtDll& GetInstance();
     };
 
-    inline LONG NtSuspendProcess(
-        IN HANDLE ProcessHandle
-    ) {
+    inline LONG NtSuspendProcess(IN HANDLE ProcessHandle) {
         return NtDll::GetInstance().NtSuspendProcess(ProcessHandle);
     }
 
-    inline LONG NtResumeProcess(
-        IN HANDLE ProcessHandle
-    ) {
-        return NtDll::GetInstance().NtResumeProcess(ProcessHandle);
-    }
+    inline LONG NtResumeProcess(IN HANDLE ProcessHandle) { return NtDll::GetInstance().NtResumeProcess(ProcessHandle); }
 
-    inline NTSTATUS NtCreateThreadEx(
-        _Out_ PHANDLE ThreadHandle,
-        _In_ ACCESS_MASK DesiredAccess,
-        _In_opt_ LPVOID  ObjectAttributes,
-        _In_ HANDLE ProcessHandle,
-        _In_ LPVOID StartRoutine,
-        _In_opt_ uintptr_t Argument,
-        _In_ ULONG CreateFlags,
-        _In_ SIZE_T ZeroBits,
-        _In_ SIZE_T StackSize,
-        _In_ SIZE_T MaximumStackSize,
-        _In_opt_ LPVOID AttributeList
-    ) {
-        return NtDll::GetInstance().NtCreateThreadEx(ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, StartRoutine, Argument, CreateFlags, ZeroBits, StackSize, MaximumStackSize, AttributeList);
+    inline NTSTATUS NtCreateThreadEx(_Out_ PHANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess,
+                                     _In_opt_ LPVOID ObjectAttributes, _In_ HANDLE ProcessHandle,
+                                     _In_ LPVOID StartRoutine, _In_opt_ uintptr_t Argument, _In_ ULONG CreateFlags,
+                                     _In_ SIZE_T ZeroBits, _In_ SIZE_T StackSize, _In_ SIZE_T MaximumStackSize,
+                                     _In_opt_ LPVOID AttributeList) {
+        return NtDll::GetInstance().NtCreateThreadEx(ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle,
+                                                     StartRoutine, Argument, CreateFlags, ZeroBits, StackSize,
+                                                     MaximumStackSize, AttributeList);
     }
 
     inline NTSTATUS ZwContinue(PCONTEXT Context, BOOLEAN TestAlert) {
         return NtDll::GetInstance().ZwContinue(Context, TestAlert);
     }
 
-    inline VOID KiUserExceptionDispatcher(
-        _In_ PEXCEPTION_RECORD ExceptionRecord,
-        _In_ PCONTEXT ContextRecord
-    ) {
+    inline VOID KiUserExceptionDispatcher(_In_ PEXCEPTION_RECORD ExceptionRecord, _In_ PCONTEXT ContextRecord) {
         return NtDll::GetInstance().KiUserExceptionDispatcher(ExceptionRecord, ContextRecord);
     }
-}
+} // namespace deps::ntdll
 
 #else
 

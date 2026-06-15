@@ -4,9 +4,7 @@
 #include <QTextCharFormat>
 #include <QRegularExpression>
 
-GscHighlighter::GscHighlighter(QTextDocument* parent) : QSyntaxHighlighter(parent) {
-    setupRules();
-}
+GscHighlighter::GscHighlighter(QTextDocument* parent) : QSyntaxHighlighter(parent) { setupRules(); }
 void GscHighlighter::highlightBlock(const QString& text) {
     for (const auto& rule : rules) {
         auto it = rule.pattern.globalMatch(text);
@@ -21,8 +19,7 @@ void GscHighlighter::highlightBlock(const QString& text) {
         setFormat(0, text.length(), devBlockFormat);
 }
 
-namespace GscColors
-{
+namespace GscColors {
     // Keywords (function, if, else, class…)
     constexpr auto Keyword = "#0033cc";
 
@@ -40,10 +37,9 @@ namespace GscColors
 
     // Dev blocks (/# … #/)
     constexpr auto DevBlock = Comment;
-}
+} // namespace GscColors
 
-void GscHighlighter::setupRules()
-{
+void GscHighlighter::setupRules() {
     rules.clear();
 
     //
@@ -54,21 +50,16 @@ void GscHighlighter::setupRules()
     keywordFormat.setFontWeight(QFont::Bold);
 
     auto addKeyword = [&](const char* kw) {
-        rules.push_back({
-            QRegularExpression(QStringLiteral("\\b%1\\b").arg(kw)),
-            keywordFormat
-            });
-        };
+        rules.push_back({ QRegularExpression(QStringLiteral("\\b%1\\b").arg(kw)), keywordFormat });
+    };
 
     const char* keywords[] = {
-        "function", "private", "autoexec", "event_handler", "detour",
-        "thread", "childthread", "threadendon", "builtin",
-        "for", "while", "do", "foreach", "in",
-        "if", "else", "switch", "case", "default",
-        "class", "new", "is", "not",
-        "var",
+        "function",    "private",  "autoexec", "event_handler", "detour",  "thread",  "childthread",
+        "threadendon", "builtin",  "for",      "while",         "do",      "foreach", "in",
+        "if",          "else",     "switch",   "case",          "default", "class",   "new",
+        "is",          "not",      "var",
 
-        "break", "continue", "goto", "return", "wait", "jumpdev"
+        "break",       "continue", "goto",     "return",        "wait",    "jumpdev"
     };
     for (auto* kw : keywords)
         addKeyword(kw);
@@ -80,16 +71,10 @@ void GscHighlighter::setupRules()
     ppFormat.setForeground(QColor(GscColors::Preprocessor));
     ppFormat.setFontWeight(QFont::Bold);
 
-    const char* pp[] = {
-        "#include", "#using", "#using_animtree", "#precache",
-        "#define", "#undef", "#if", "#elif", "#else", "#endif",
-        "#namespace", "#file", "#constexpr"
-    };
+    const char* pp[] = { "#include", "#using", "#using_animtree", "#precache",  "#define", "#undef",    "#if",
+                         "#elif",    "#else",  "#endif",          "#namespace", "#file",   "#constexpr" };
     for (auto* kw : pp) {
-        rules.push_back({
-            QRegularExpression(QStringLiteral("%1\\b").arg(kw)),
-            ppFormat
-            });
+        rules.push_back({ QRegularExpression(QStringLiteral("%1\\b").arg(kw)), ppFormat });
     }
 
     //
@@ -100,10 +85,7 @@ void GscHighlighter::setupRules()
 
     const char* bools[] = { "true", "false", "undefined" };
     for (auto* b : bools) {
-        rules.push_back({
-            QRegularExpression(QStringLiteral("\\b%1\\b").arg(b)),
-            boolFormat
-            });
+        rules.push_back({ QRegularExpression(QStringLiteral("\\b%1\\b").arg(b)), boolFormat });
     }
 
     //
@@ -113,20 +95,12 @@ void GscHighlighter::setupRules()
     numberFormat.setForeground(QColor(GscColors::Constants));
 
     // Integer: hex, binary, octal, decimal
-    rules.push_back({
-        QRegularExpression(
-            R"(\b-?(0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]+|[1-9][0-9]*|0)\b)"
-        ),
-        numberFormat
-        });
+    rules.push_back(
+        { QRegularExpression(R"(\b-?(0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]+|[1-9][0-9]*|0)\b)"), numberFormat });
 
     // Float
-    rules.push_back({
-        QRegularExpression(
-            R"(\b-?((\d*\.\d+|\d+\.\d*)([eE][+-]?\d+)?|\d+[eE][+-]?\d+)\b)"
-        ),
-        numberFormat
-        });
+    rules.push_back(
+        { QRegularExpression(R"(\b-?((\d*\.\d+|\d+\.\d*)([eE][+-]?\d+)?|\d+[eE][+-]?\d+)\b)"), numberFormat });
 
     //
     // --- STRINGS / ISTRING / HASHSTRING ---
@@ -134,20 +108,11 @@ void GscHighlighter::setupRules()
     QTextCharFormat stringFormat;
     stringFormat.setForeground(QColor(GscColors::String));
 
-    rules.push_back({
-        QRegularExpression(R"STR("([^"\\]|\\.)*")STR"),
-        stringFormat
-        });
+    rules.push_back({ QRegularExpression(R"STR("([^"\\]|\\.)*")STR"), stringFormat });
 
-    rules.push_back({
-        QRegularExpression(R"STR(&"([^"\\]|\\.)*")STR"),
-        stringFormat
-        });
+    rules.push_back({ QRegularExpression(R"STR(&"([^"\\]|\\.)*")STR"), stringFormat });
 
-    rules.push_back({
-        QRegularExpression(R"STR((?:s|r|#|@|t|%|o)"([^"\\]|\\.)*")STR"),
-        stringFormat
-        });
+    rules.push_back({ QRegularExpression(R"STR((?:s|r|#|@|t|%|o)"([^"\\]|\\.)*")STR"), stringFormat });
 
     //
     // --- COMMENTS ---
@@ -155,10 +120,7 @@ void GscHighlighter::setupRules()
     QTextCharFormat commentFormat;
     commentFormat.setForeground(QColor(GscColors::Comment));
 
-    rules.push_back({
-        QRegularExpression(R"(//[^\n]*)"),
-        commentFormat
-        });
+    rules.push_back({ QRegularExpression(R"(//[^\n]*)"), commentFormat });
 
     //
     // --- DEV BLOCKS (/# ... #/) ---

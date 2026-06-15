@@ -4,8 +4,8 @@
 
 namespace fastfile::bdiff {
     // used for the checksum
-	using BDiffType = ActsAPIFastFile_BDiffType;
-	using BDiffState = ActsAPIFastFile_BDiffState;
+    using BDiffType = ActsAPIFastFile_BDiffType;
+    using BDiffState = ActsAPIFastFile_BDiffState;
 
     using vcSourceCB_t = ActsAPIFastFile_sourceCallback;
     using vcDiffCB_t = ActsAPIFastFile_diffCallback;
@@ -20,5 +20,6 @@ namespace fastfile::bdiff {
      * @param type bdiff type, used for checksum validation
      * @param winsize max window size, used to avoid reallocation
      */
-    std::vector<byte> bdiff(core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData, BDiffType type = BDT_UNKNOWN, size_t winsize = 0x100000);
-}
+    std::vector<byte> bdiff(core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData,
+                            BDiffType type = BDT_UNKNOWN, size_t winsize = 0x100000);
+} // namespace fastfile::bdiff

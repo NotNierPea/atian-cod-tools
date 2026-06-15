@@ -13,7 +13,7 @@
 #endif
 
 namespace platform {
-	PIMAGE_DOS_HEADER PImageDosHeader(void* mod = nullptr);
-	PIMAGE_NT_HEADERS PImageNtHeader(void* mod = nullptr);
-	PIMAGE_OPTIONAL_HEADER PImageOptHeader(void* mod = nullptr);
-}
+    PIMAGE_DOS_HEADER PImageDosHeader(void* mod = nullptr);
+    PIMAGE_NT_HEADERS PImageNtHeader(void* mod = nullptr);
+    PIMAGE_OPTIONAL_HEADER PImageOptHeader(void* mod = nullptr);
+} // namespace platform

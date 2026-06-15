@@ -21,12 +21,12 @@ namespace {
         uint64_t magic = *(uint64_t*)mainBuff.data();
 
         VmInfo* vmInfo{};
-        
+
         if (!IsValidVmMagic(magic, vmInfo)) {
             LOG_ERROR("Unknown magic: {:x}!", magic);
             return false;
         }
-        
+
         tool::gsc::vm::GscVm* readerBuilder = tool::gsc::vm::GetGscReader(vmInfo->vmMagic);
 
         if (!readerBuilder) {
@@ -34,7 +34,8 @@ namespace {
             return tool::BASIC_ERROR;
         }
 
-        std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)mainBuff.data(), mainBuff.size()) };
+        std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)mainBuff.data(),
+                                                                                     mainBuff.size()) };
 
         if (!handler->IsValidHeader(mainBuff.size())) {
             LOG_ERROR("Invalid header for vm {}", vmInfo->name);
@@ -59,7 +60,6 @@ namespace {
             byte* exp = handler->Ptr(handler->GetExportsOffset() + i * handler->GetExportSize());
             exportReader->SetHandle(exp);
 
-
             dataset[exportReader->GetNamespace()].insert(exportReader->GetName());
             if (!vmInfo->HasFlag(VmFlags::VMF_NO_FILE_NAMESPACE)) {
                 dataset[exportReader->GetFileNamespace()].insert(exportReader->GetName());
@@ -67,7 +67,6 @@ namespace {
         }
 
         std::vector<std::filesystem::path> files{};
-
 
         utils::GetFileRecurse(argv[3], files, [](const std::filesystem::path& p) {
             auto s = p.string();
@@ -83,7 +82,6 @@ namespace {
             }
 
             handler->SetFile((byte*)fileBuff.data(), fileBuff.size());
-
 
             if (!handler->IsValidHeader(fileBuff.size())) {
                 LOG_TRACE("Invalid magic {}, ignore {:x} != {:x}", p.string(), magic, *(uint64_t*)fileBuff.data());
@@ -101,7 +99,6 @@ namespace {
             }
             LOG_INFO("Loading {} ({})...", p.string(), hashutils::ExtractTmpScript(handler->GetName()));
 
-
             uintptr_t import_location = reinterpret_cast<uintptr_t>(handler->Ptr(handler->GetImportsOffset()));
             for (size_t i = 0; i < handler->GetImportsCount(); i++) {
                 uint64_t name_space;
@@ -117,8 +114,7 @@ namespace {
                     flags = imp->flags;
                     numAddress = imp->num_address;
                     impSize = sizeof(*imp);
-                }
-                else {
+                } else {
                     const auto* imp = reinterpret_cast<tool::gsc::T8GSCImport*>(import_location);
                     name_space = imp->import_namespace;
                     name = imp->name;
@@ -129,16 +125,16 @@ namespace {
 
                 byte remapedFlags = handler->RemapFlagsImport(flags);
 
-
                 auto it = dataset.find(name_space);
 
                 if (it != dataset.end() && it->second.contains(name)) {
                     if (!(remapedFlags & tool::gsc::T8GSCImportFlags::DEV_CALL)) {
                         // not a dev call we can check it
                         used[handler->GetName()][name_space].insert(name);
-                    }
-                    else {
-                        LOG_DEBUG("devcall {} {}::{}", hashutils::ExtractTmpScript(handler->GetName()), hashutils::ExtractTmp("namespace", name_space), hashutils::ExtractTmp("function", name));
+                    } else {
+                        LOG_DEBUG("devcall {} {}::{}", hashutils::ExtractTmpScript(handler->GetName()),
+                                  hashutils::ExtractTmp("namespace", name_space),
+                                  hashutils::ExtractTmp("function", name));
                     }
                 }
                 import_location += impSize + sizeof(uint32_t) * numAddress;
@@ -158,12 +154,12 @@ namespace {
             for (const auto& [script, usedd] : used) {
                 for (const auto& [ns, names] : usedd) {
                     for (uint64_t name : names) {
-                        LOG_INFO("{}::{} (from {})", hashutils::ExtractTmp("namespace", ns), hashutils::ExtractTmp("function", name), hashutils::ExtractTmpScript(script));
+                        LOG_INFO("{}::{} (from {})", hashutils::ExtractTmp("namespace", ns),
+                                 hashutils::ExtractTmp("function", name), hashutils::ExtractTmpScript(script));
                     }
                 }
             }
         }
-
 
         return tool::OK;
     }
@@ -209,7 +205,6 @@ namespace {
         hashutils::ReadDefaultFile();
         LOG_INFO("Reading dump...");
 
-
         for (const std::filesystem::path& file : files) {
             if (!utils::ReadFile(file, mainBuff) || mainBuff.size() < sizeof(uint64_t)) {
                 LOG_ERROR("{} : Can't read", file.string());
@@ -232,7 +227,8 @@ namespace {
                 continue;
             }
 
-            std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)mainBuff.data(), mainBuff.size()) };
+            std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)mainBuff.data(),
+                                                                                         mainBuff.size()) };
 
             if (!handler->IsValidHeader(mainBuff.size())) {
                 LOG_ERROR("{} : Invalid header for vm {}", file.string(), vmInfo->name);
@@ -289,7 +285,7 @@ namespace {
                     for (size_t i = 0; i < handler->GetExportsCount(); i++) {
                         exportReader->SetHandle(exports + handler->GetExportSize() * i);
 
-                        //d.exportsFNS[exportReader->GetFileNamespace()] = exportReader->GetName();
+                        // d.exportsFNS[exportReader->GetFileNamespace()] = exportReader->GetName();
                         d.exports[exportReader->GetNamespace()] = exportReader->GetName();
                     }
 
@@ -303,7 +299,8 @@ namespace {
                     auto iti = scs.find(*usings);
 
                     if (iti == scs.end()) {
-                        LOG_ERROR("{} : The include '{}' is missing", sc.fileSys.string(), hashutils::ExtractTmpScript(*usings));
+                        LOG_ERROR("{} : The include '{}' is missing", sc.fileSys.string(),
+                                  hashutils::ExtractTmpScript(*usings));
                         continue; // can't explore
                     }
 
@@ -313,7 +310,7 @@ namespace {
                 }
 
                 handler->SetFile((byte*)sc.bufferData, sc.bufferDataLen);
-                
+
                 // read imports
 
                 uintptr_t import_location = reinterpret_cast<uintptr_t>(handler->Ptr(handler->GetImportsOffset()));
@@ -331,8 +328,7 @@ namespace {
                         flags = imp->flags;
                         numAddress = imp->num_address;
                         impSize = sizeof(*imp);
-                    }
-                    else {
+                    } else {
                         const auto* imp = reinterpret_cast<tool::gsc::T8GSCImport*>(import_location);
                         name_space = imp->import_namespace;
                         name = imp->name;
@@ -350,25 +346,21 @@ namespace {
 
                         int calltype = remapedFlags & tool::gsc::T8GSCImportFlags::CALLTYPE_MASK;
 
-                       
                         // todo: split script/engine function in remapedFlags or allow to use a dump
                         //       of the engine functions.
-
-
                     }
 
                     import_location += impSize + sizeof(uint32_t) * numAddress;
                 }
             }
-
         }
-
 
         return tool::OK;
     }
 
-    ADD_TOOL(gschook, "gsc", " [base] [dump]", "find all the linked functions of a script from a dump", nullptr, gschook);
+    ADD_TOOL(gschook, "gsc", " [base] [dump]", "find all the linked functions of a script from a dump", nullptr,
+             gschook);
 #ifndef CI_BUILD
     ADD_TOOL(gsclerr, "gsc", " [dump]", "find all the link errors in a gsc dump", nullptr, gsclerr);
 #endif
-}
+} // namespace

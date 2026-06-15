@@ -5,9 +5,8 @@
 #include <tools/utils/data_utils.hpp>
 
 namespace {
-	using namespace fastfile::handlers::bo4;
-	using namespace games::bo4::pool;
-
+    using namespace fastfile::handlers::bo4;
+    using namespace games::bo4::pool;
 
     static const char* itemGroupNames[] = {
         "weapon_smg",
@@ -41,65 +40,16 @@ namespace {
     };
 
     static const char* attachmentsNames[] = {
-        "none",
-        "acog",
-        "adsreload",
-        "barrelchoke",
-        "clantag",
-        "custom1",
-        "custom2",
-        "custom3",
-        "custom4",
-        "custom5",
-        "damage",
-        "damage2",
-        "dualoptic",
-        "dw",
-        "dynzoom",
-        "elo",
-        "extbarrel",
-        "extbarrel2",
-        "extclip",
-        "extclip2",
-        "extrapellets",
-        "fastlockon",
-        "fastreload",
-        "fastreload2",
-        "fmj",
-        "fmj2",
-        "gl",
-        "grip",
-        "grip2",
-        "hipgrip",
-        "holdbreath",
-        "holo",
-        "ir",
-        "is",
-        "killcounter",
-        "mixclip",
-        "mk",
-        "mms",
-        "null",
-        "pistolscope",
-        "quickdraw",
-        "quickdraw2",
-        "rangefinder",
-        "reddot",
-        "reflex",
-        "rf",
-        "sf",
-        "speedreloader",
-        "stackfire",
-        "stalker",
-        "stalker2",
-        "steadyaim",
-        "steadyaim2",
-        "supply",
-        "suppressed",
-        "swayreduc",
-        "tacknife",
-        "uber",
-        "vzoom"
+        "none",        "acog",      "adsreload",    "barrelchoke", "clantag",     "custom1",
+        "custom2",     "custom3",   "custom4",      "custom5",     "damage",      "damage2",
+        "dualoptic",   "dw",        "dynzoom",      "elo",         "extbarrel",   "extbarrel2",
+        "extclip",     "extclip2",  "extrapellets", "fastlockon",  "fastreload",  "fastreload2",
+        "fmj",         "fmj2",      "gl",           "grip",        "grip2",       "hipgrip",
+        "holdbreath",  "holo",      "ir",           "is",          "killcounter", "mixclip",
+        "mk",          "mms",       "null",         "pistolscope", "quickdraw",   "quickdraw2",
+        "rangefinder", "reddot",    "reflex",       "rf",          "sf",          "speedreloader",
+        "stackfire",   "stalker",   "stalker2",     "steadyaim",   "steadyaim2",  "supply",
+        "suppressed",  "swayreduc", "tacknife",     "uber",        "vzoom"
     };
 
     static const char* loadoutSlotNames[]{
@@ -211,7 +161,6 @@ namespace {
     };
     static_assert(sizeof(UnlockableItem) == 0x140);
 
-
     struct UnlockableItemTable {
         XHash name;
         uint32_t unk10;
@@ -236,15 +185,13 @@ namespace {
 
             UnlockableItem& asset{ *(UnlockableItem*)ptr };
 
-
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "unlockableitem"
-                / std::format("{}.json", hashutils::ExtractTmp("file", asset.name.name)) };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "unlockableitem" /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", asset.name.name)) };
             std::filesystem::create_directories(outFile.parent_path());
 
             BO4JsonWriter json{};
 
             LOG_OPT_INFO("Dump playeroutfit {}", outFile.string());
-
 
             json.BeginObject();
 
@@ -255,8 +202,10 @@ namespace {
             json.WriteFieldValueXHash("description", asset.description);
             json.WriteFieldValueXHash("wzDescription", asset.wzDescription);
             json.WriteFieldValueXHash("zmDescription", asset.zmDescription);
-            if (asset.nameHash) json.WriteFieldValueHash("nameHash", asset.nameHash);
-            if (asset.refHash) json.WriteFieldValueHash("refHash", asset.refHash);
+            if (asset.nameHash)
+                json.WriteFieldValueHash("nameHash", asset.nameHash);
+            if (asset.refHash)
+                json.WriteFieldValueHash("refHash", asset.refHash);
             json.WriteFieldValueXAsset("previewImage", XAssetType::ASSET_TYPE_IMAGE, asset.previewImage);
             json.WriteFieldValueXAsset("previewImageLarge", XAssetType::ASSET_TYPE_IMAGE, asset.previewImageLarge);
             json.WriteFieldValueXAsset("wzPreviewImage", XAssetType::ASSET_TYPE_IMAGE, asset.wzPreviewImage);
@@ -269,14 +218,18 @@ namespace {
             json.WriteFieldValueNumber("lowestScoreToUnlockAllowed", asset.lowestScoreToUnlockAllowed);
             json.WriteFieldValueNumber("allocation", asset.allocation);
             json.WriteFieldValueNumber("modes", asset.modes);
-            json.WriteFieldValueString("loadoutSlotIndex", asset.loadoutSlotIndex >= ACTS_ARRAYSIZE(loadoutSlotNames) ? "<invalid>" : loadoutSlotNames[asset.loadoutSlotIndex]);
+            json.WriteFieldValueString("loadoutSlotIndex", asset.loadoutSlotIndex >= ACTS_ARRAYSIZE(loadoutSlotNames)
+                                                               ? "<invalid>"
+                                                               : loadoutSlotNames[asset.loadoutSlotIndex]);
             json.WriteFieldValueBool("isNullItem", asset.isNullItem);
             json.WriteFieldValueBool("isPassive", asset.isPassive);
             json.WriteFieldValueBool("isValid", asset.isValid);
             json.WriteFieldValueBool("isLootItem", asset.isLootItem);
             json.WriteFieldValueBool("attributeItems", asset.attributeItems);
-            if (asset.unke8) json.WriteFieldValueNumber("unke8", asset.unke8);
-            if (asset.unkec) json.WriteFieldValueNumber("unkec", asset.unkec);
+            if (asset.unke8)
+                json.WriteFieldValueNumber("unke8", asset.unke8);
+            if (asset.unkec)
+                json.WriteFieldValueNumber("unkec", asset.unkec);
 
             for (size_t i = 0; i < eModes::MODE_COUNT; i++) {
                 if (asset.unkbc[i]) {
@@ -284,19 +237,22 @@ namespace {
                 }
             }
 
-
             json.WriteFieldValueUnknown("unka8", asset.unka8);
             json.WriteFieldValueUnknown("unkb0", asset.unkb0);
             json.WriteFieldValueUnknown("unkd4", asset.unkd4);
             json.WriteFieldValueUnknown("unkf4", asset.unkf4);
 
-            json.WriteFieldValueString("itemGroupIndex", asset.itemGroupIndex >= ACTS_ARRAYSIZE(itemGroupNames) ? "<invalid>" : itemGroupNames[asset.itemGroupIndex]);
+            json.WriteFieldValueString("itemGroupIndex", asset.itemGroupIndex >= ACTS_ARRAYSIZE(itemGroupNames)
+                                                             ? "<invalid>"
+                                                             : itemGroupNames[asset.itemGroupIndex]);
 
             if (asset.attachments) {
                 json.WriteFieldNameString("attachments");
                 json.BeginArray();
                 for (size_t i = 0; i < asset.attachmentsCount; i++) {
-                    json.WriteValueString(asset.attachments[i] >= ACTS_ARRAYSIZE(attachmentsNames) ? "<invalid>" : attachmentsNames[asset.attachments[i]]);
+                    json.WriteValueString(asset.attachments[i] >= ACTS_ARRAYSIZE(attachmentsNames)
+                                              ? "<invalid>"
+                                              : attachmentsNames[asset.attachments[i]]);
                 }
                 json.EndArray();
             }
@@ -319,15 +275,13 @@ namespace {
 
             UnlockableItemTable& asset{ *(UnlockableItemTable*)ptr };
 
-
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "unlockableitem" / "table"
-                / std::format("{}.json", hashutils::ExtractTmp("file", asset.name.name)) };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "unlockableitem" / "table" /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", asset.name.name)) };
             std::filesystem::create_directories(outFile.parent_path());
 
             BO4JsonWriter json{};
 
             LOG_OPT_INFO("Dump playeroutfit {}", outFile.string());
-
 
             json.BeginObject();
 
@@ -338,14 +292,16 @@ namespace {
             json.WriteFieldValueNumber("talisman", asset.talisman);
             json.WriteFieldValueNumber("talent", asset.talent);
             json.WriteFieldValueNumber("bonuscard", asset.bonuscard);
-            
+
             json.WriteFieldValueNumber("unk10", asset.unk10);
             json.WriteFieldValueNumber("unk3c", asset.unk3c);
             json.WriteFieldValueUnknown("unk20", asset.unk20);
             json.WriteFieldValueUnknown("unk44", asset.unk44);
 
-            json.WriteFieldValueXAssetArray("elements1", XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM, asset.count1, asset.elements1);
-            json.WriteFieldValueXAssetArray("elements2", XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM, asset.count2, asset.elements2);
+            json.WriteFieldValueXAssetArray("elements1", XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM, asset.count1,
+                                            asset.elements1);
+            json.WriteFieldValueXAssetArray("elements2", XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM, asset.count2,
+                                            asset.elements2);
             json.EndObject();
 
             if (!json.WriteToFile(outFile)) {
@@ -354,6 +310,7 @@ namespace {
         }
     };
 
-	utils::MapAdder<ImplWorker, XAssetType, Worker> impl{ GetWorkers(), XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM };
-	utils::MapAdder<ImplTableWorker, XAssetType, Worker> implt{ GetWorkers(), XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM_TABLE };
-}
+    utils::MapAdder<ImplWorker, XAssetType, Worker> impl{ GetWorkers(), XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM };
+    utils::MapAdder<ImplTableWorker, XAssetType, Worker> implt{ GetWorkers(),
+                                                                XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM_TABLE };
+} // namespace

@@ -7,62 +7,62 @@
 #include "callbacks.hpp"
 
 namespace {
-	int DecryptGSCFile(cw::T9GSCOBJ* script) {
-		uintptr_t str_location = reinterpret_cast<uintptr_t>(&script->magic[script->string_offset]);
+    int DecryptGSCFile(cw::T9GSCOBJ* script) {
+        uintptr_t str_location = reinterpret_cast<uintptr_t>(&script->magic[script->string_offset]);
 
-		auto decrypted = 0;
-		for (size_t i = 0; i < script->string_count; i++) {
+        auto decrypted = 0;
+        for (size_t i = 0; i < script->string_count; i++) {
 
-			const auto* str = reinterpret_cast<cw::T8GSCString*>(str_location);
+            const auto* str = reinterpret_cast<cw::T8GSCString*>(str_location);
 
-			byte* encryptedString = &script->magic[str->string];
+            byte* encryptedString = &script->magic[str->string];
 
-			auto* sd = reinterpret_cast<const char*>(core::DecryptString(encryptedString));
+            auto* sd = reinterpret_cast<const char*>(core::DecryptString(encryptedString));
 
-			decrypted++;
+            decrypted++;
 
-			const auto* strings = reinterpret_cast<const uint32_t*>(&str[1]);
+            const auto* strings = reinterpret_cast<const uint32_t*>(&str[1]);
 
-			str_location += sizeof(*str) + sizeof(*strings) * str->num_address;
-		}
+            str_location += sizeof(*str) + sizeof(*strings) * str->num_address;
+        }
 
-		return decrypted;
-	}
+        return decrypted;
+    }
 
-	void PostInit(uint64_t id) {
-		callbacks::RegisterRenderImGui([](void* ev) {
-			const char** notif = reinterpret_cast<const char**>(ev);
+    void PostInit(uint64_t id) {
+        callbacks::RegisterRenderImGui([](void* ev) {
+            const char** notif = reinterpret_cast<const char**>(ev);
 
-			if (ImGui::Button("Dump gsc")) {
+            if (ImGui::Button("Dump gsc")) {
 
-				auto& pool = core::xassetpools[cw::ASSET_TYPE_SCRIPTPARSETREE];
+                auto& pool = core::xassetpools[cw::ASSET_TYPE_SCRIPTPARSETREE];
 
-				auto* spts = pool.pool.spt;
+                auto* spts = pool.pool.spt;
 
-				std::filesystem::path dumpDir = "scriptparsetree_cw_decrypt";
-				std::filesystem::create_directories(dumpDir);
+                std::filesystem::path dumpDir = "scriptparsetree_cw_decrypt";
+                std::filesystem::create_directories(dumpDir);
 
-				for (size_t i = 0; i < pool.itemAllocCount; i++) {
-					auto& spt = spts[i];
+                for (size_t i = 0; i < pool.itemAllocCount; i++) {
+                    auto& spt = spts[i];
 
-					if (!spt.buffer || !spt.len) {
-						continue;
-					}
+                    if (!spt.buffer || !spt.len) {
+                        continue;
+                    }
 
-					// decrypt strings
-					DecryptGSCFile(spt.buffer);
+                    // decrypt strings
+                    DecryptGSCFile(spt.buffer);
 
-					auto out = dumpDir / utils::va("script_%llx.gscc", spt.buffer->name);
+                    auto out = dumpDir / utils::va("script_%llx.gscc", spt.buffer->name);
 
-					if (!utils::WriteFile(out, spt.buffer, spt.len)) {
-						LOG_ERROR("Can't dump buffer {}", out.string());
-					}
-				}
+                    if (!utils::WriteFile(out, spt.buffer, spt.len)) {
+                        LOG_ERROR("Can't dump buffer {}", out.string());
+                    }
+                }
 
-				*notif = "gsc dumped";
-				return;
-			}
-		});
-	}
-}
+                *notif = "gsc dumped";
+                return;
+            }
+        });
+    }
+} // namespace
 REGISTER_SYSTEM(menu_dump, nullptr, PostInit);

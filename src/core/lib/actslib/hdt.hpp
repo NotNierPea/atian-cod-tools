@@ -4,284 +4,247 @@
 #include "rdf/parser.hpp"
 
 namespace actslib::hdt {
-	constexpr const char HDT_COOKIE_MAGIC[] = "$HDT";
+    constexpr const char HDT_COOKIE_MAGIC[] = "$HDT";
 
-	enum HDTCookieType : uint8_t {
-		HCT_UNKNOWN = 0,
-		HCT_GLOBAL,
-		HCT_HEADER,
-		HCT_DICTIONARY,
-		HCT_TRIPLES,
-		HCT_INDEX,
-		HCT_QEPCORE_MERGE,
-		HCT_COUNT
-	};
+    enum HDTCookieType : uint8_t {
+        HCT_UNKNOWN = 0,
+        HCT_GLOBAL,
+        HCT_HEADER,
+        HCT_DICTIONARY,
+        HCT_TRIPLES,
+        HCT_INDEX,
+        HCT_QEPCORE_MERGE,
+        HCT_COUNT
+    };
 
-	const char* FormatName(HDTCookieType type);
+    const char* FormatName(HDTCookieType type);
 
-	class HDTCookie {
-		HDTCookieType type;
-		std::string format;
-		std::unordered_map<std::string, std::string> props{};
-	public:
-		using iterator = decltype(props)::iterator;
-		using const_iterator = decltype(props)::const_iterator;
+    class HDTCookie {
+        HDTCookieType type;
+        std::string format;
+        std::unordered_map<std::string, std::string> props{};
 
-		HDTCookie(HDTCookieType type, std::string format) : type(type), format(format) {}
+      public:
+        using iterator = decltype(props)::iterator;
+        using const_iterator = decltype(props)::const_iterator;
 
-		void LoadCookie(std::istream& is) {
-			actslib::crc::CRC16 crc{};
-			char buffer[sizeof(HDT_COOKIE_MAGIC) - 1];
-			is.read(buffer, sizeof(HDT_COOKIE_MAGIC) - 1);
+        HDTCookie(HDTCookieType type, std::string format) : type(type), format(format) {}
 
-			if (memcmp(buffer, HDT_COOKIE_MAGIC, sizeof(HDT_COOKIE_MAGIC) - 1)) {
-				throw std::runtime_error("Invalid HDT cookie magic");
-			}
-			crc.Update(buffer, 0, sizeof(HDT_COOKIE_MAGIC) - 1);
+        void LoadCookie(std::istream& is) {
+            actslib::crc::CRC16 crc{};
+            char buffer[sizeof(HDT_COOKIE_MAGIC) - 1];
+            is.read(buffer, sizeof(HDT_COOKIE_MAGIC) - 1);
 
-			type = (HDTCookieType)is.get();
-			crc.Update((const char)type);
+            if (memcmp(buffer, HDT_COOKIE_MAGIC, sizeof(HDT_COOKIE_MAGIC) - 1)) {
+                throw std::runtime_error("Invalid HDT cookie magic");
+            }
+            crc.Update(buffer, 0, sizeof(HDT_COOKIE_MAGIC) - 1);
 
-			std::getline(is, format, '\0');
-			crc.Update(format.data(), 0, format.size() + 1);
+            type = (HDTCookieType)is.get();
+            crc.Update((const char)type);
 
-			std::string propsVal;
-			std::getline(is, propsVal, '\0');
+            std::getline(is, format, '\0');
+            crc.Update(format.data(), 0, format.size() + 1);
 
-			crc.Update(propsVal.data(), 0, propsVal.size() + 1);
+            std::string propsVal;
+            std::getline(is, propsVal, '\0');
 
-			size_t off{};
-			while (off < propsVal.size()) {
-				size_t idx = propsVal.find(';', off);
+            crc.Update(propsVal.data(), 0, propsVal.size() + 1);
 
-				if (idx == std::string::npos) {
-					idx = propsVal.size();
-				}
+            size_t off{};
+            while (off < propsVal.size()) {
+                size_t idx = propsVal.find(';', off);
 
-				size_t idxeq = propsVal.find('=', off);
+                if (idx == std::string::npos) {
+                    idx = propsVal.size();
+                }
 
-				if (idxeq != std::string::npos && idxeq < idx) {
-					// split
-					props[propsVal.substr(off, idxeq - off)] = propsVal.substr(idxeq + 1, idx - idxeq - 1);
-				}
+                size_t idxeq = propsVal.find('=', off);
 
-				off = idx + 1;
-			}
+                if (idxeq != std::string::npos && idxeq < idx) {
+                    // split
+                    props[propsVal.substr(off, idxeq - off)] = propsVal.substr(idxeq + 1, idx - idxeq - 1);
+                }
 
-			if (!crc.CheckCRC(is)) {
-				throw std::runtime_error("Invalid HDT cookie CRC");
-			}
-		}
+                off = idx + 1;
+            }
 
-		HDTCookie(std::istream& is) {
-			LoadCookie(is);
-		}
+            if (!crc.CheckCRC(is)) {
+                throw std::runtime_error("Invalid HDT cookie CRC");
+            }
+        }
 
-		void Save(std::ostream& os) const {
-			actslib::crc::CRC16 crc{};
-			os.write(HDT_COOKIE_MAGIC, sizeof(HDT_COOKIE_MAGIC) - 1);
-			crc.Update(HDT_COOKIE_MAGIC, 0, sizeof(HDT_COOKIE_MAGIC) - 1);
+        HDTCookie(std::istream& is) { LoadCookie(is); }
 
-			os.put((char)type);
-			crc.Update(type);
+        void Save(std::ostream& os) const {
+            actslib::crc::CRC16 crc{};
+            os.write(HDT_COOKIE_MAGIC, sizeof(HDT_COOKIE_MAGIC) - 1);
+            crc.Update(HDT_COOKIE_MAGIC, 0, sizeof(HDT_COOKIE_MAGIC) - 1);
 
-			os.write(format.data(), format.size() + 1);
-			crc.Update(format.data(), 0, format.size() + 1);
+            os.put((char)type);
+            crc.Update(type);
 
-			for (const auto& [key, val] : props) {
+            os.write(format.data(), format.size() + 1);
+            crc.Update(format.data(), 0, format.size() + 1);
 
-				os.write(key.data(), key.size());
-				crc.Update(key.data(), 0, key.size());
+            for (const auto& [key, val] : props) {
 
-				os.put('=');
-				crc.Update('=');
+                os.write(key.data(), key.size());
+                crc.Update(key.data(), 0, key.size());
 
-				os.write(val.data(), val.size());
-				crc.Update(val.data(), 0, val.size());
+                os.put('=');
+                crc.Update('=');
 
-				os.put(';');
-				crc.Update(';');
-			}
+                os.write(val.data(), val.size());
+                crc.Update(val.data(), 0, val.size());
 
-			os.put(0);
-			crc.Update(0);
-
-			crc.WriteCRC(os);
-		}
-
-		void Save(std::filesystem::path path) const {
-			std::ofstream os{ path, std::ios::binary };
-
-			if (!os) {
-				throw std::runtime_error("Can't open file");
-			}
-
-			Save(os);
-
-			os.close();
-		}
-
-		constexpr HDTCookieType GetType() const {
-			return type;
-		}
-
-		constexpr const std::string& GetFormat() const {
-			return format;
-		}
-
-		constexpr const std::unordered_map<std::string, std::string>& GetProperties() const {
-			return props;
-		}
+                os.put(';');
+                crc.Update(';');
+            }
 
-		std::string& operator[](const std::string& key) {
-			return props[key];
-		}
+            os.put(0);
+            crc.Update(0);
 
-		std::string& operator[](const char* key) {
-			return props[key];
-		}
+            crc.WriteCRC(os);
+        }
 
-		const_iterator find(const std::string& key) const {
-			return props.find(key);
-		}
+        void Save(std::filesystem::path path) const {
+            std::ofstream os{ path, std::ios::binary };
 
-		const_iterator find(const char* key) const {
-			return props.find(key);
-		}
+            if (!os) {
+                throw std::runtime_error("Can't open file");
+            }
 
-		iterator begin() {
-			return props.begin();
-		}
+            Save(os);
 
-		iterator end() {
-			return props.end();
-		}
+            os.close();
+        }
 
-		const_iterator cbegin() const {
-			return props.cbegin();
-		}
+        constexpr HDTCookieType GetType() const { return type; }
 
-		const_iterator cend() const {
-			return props.cend();
-		}
+        constexpr const std::string& GetFormat() const { return format; }
 
-		int64_t GetInteger(const std::string& key, int64_t defaultVal = 0) {
-			const_iterator it = find(key);
+        constexpr const std::unordered_map<std::string, std::string>& GetProperties() const { return props; }
 
-			if (it == cend()) {
-				return defaultVal;
-			}
+        std::string& operator[](const std::string& key) { return props[key]; }
 
-			try {
-				return std::strtoll(it->second.c_str(), nullptr, 10);
-			}
-			catch ([[maybe_unused]]std::invalid_argument& e) {
-				return defaultVal;
-			}
-		}
-	};
+        std::string& operator[](const char* key) { return props[key]; }
 
-	class Header {
-	public:
-		std::vector<rdf::TripleAlloc*> data{};
-		using iterator = decltype(data)::iterator;
-		using const_iterator = decltype(data)::const_iterator;
-		Header() {}
+        const_iterator find(const std::string& key) const { return props.find(key); }
 
-		virtual ~Header() {
-			for (auto* t : data) {
-				delete t;
-			}
-		}
+        const_iterator find(const char* key) const { return props.find(key); }
 
-		iterator begin() {
-			return data.begin();
-		}
+        iterator begin() { return props.begin(); }
 
-		iterator end() {
-			return data.end();
-		}
+        iterator end() { return props.end(); }
 
-		const_iterator cbegin() const {
-			return data.cbegin();
-		}
+        const_iterator cbegin() const { return props.cbegin(); }
 
-		const_iterator cend() const {
-			return data.cend();
-		}
+        const_iterator cend() const { return props.cend(); }
 
-	};
+        int64_t GetInteger(const std::string& key, int64_t defaultVal = 0) {
+            const_iterator it = find(key);
 
-	class PlainHeader : public Header {
-		HDTCookie cookie;
-	public:
-		PlainHeader(std::istream& is, HDTCookie& cookie) : cookie(cookie) {
-			if (cookie.GetType() != HCT_HEADER) {
-				throw std::invalid_argument("Cookie not valid for plain header");
-			}
+            if (it == cend()) {
+                return defaultVal;
+            }
 
-			int64_t length = cookie.GetInteger("length", -1);
+            try {
+                return std::strtoll(it->second.c_str(), nullptr, 10);
+            } catch ([[maybe_unused]] std::invalid_argument& e) {
+                return defaultVal;
+            }
+        }
+    };
 
-			if (length < 0) {
-				throw std::invalid_argument("Cookie doesn't contain a valid length");
-			}
+    class Header {
+      public:
+        std::vector<rdf::TripleAlloc*> data{};
+        using iterator = decltype(data)::iterator;
+        using const_iterator = decltype(data)::const_iterator;
+        Header() {}
 
-			std::string raw{};
-			raw.resize(length);
-			is.read(raw.data(), length);
+        virtual ~Header() {
+            for (auto* t : data) {
+                delete t;
+            }
+        }
 
-			std::stringstream ss{ raw, std::ios::in };
+        iterator begin() { return data.begin(); }
 
-			rdf::RDFParserNTriple parser{ ss };
+        iterator end() { return data.end(); }
 
-			while (parser) {
-				const auto& triple = *parser;
+        const_iterator cbegin() const { return data.cbegin(); }
 
-				data.emplace_back(new rdf::TripleAlloc(triple));
+        const_iterator cend() const { return data.cend(); }
+    };
 
-				++parser;
-			}
+    class PlainHeader : public Header {
+        HDTCookie cookie;
 
-		}
+      public:
+        PlainHeader(std::istream& is, HDTCookie& cookie) : cookie(cookie) {
+            if (cookie.GetType() != HCT_HEADER) {
+                throw std::invalid_argument("Cookie not valid for plain header");
+            }
 
-	};
+            int64_t length = cookie.GetInteger("length", -1);
 
-	Header* LoadHeader(std::istream& is);
+            if (length < 0) {
+                throw std::invalid_argument("Cookie doesn't contain a valid length");
+            }
 
-	constexpr const char HDTV1[] = "<http://purl.org/HDT/hdt#HDTv1>";
+            std::string raw{};
+            raw.resize(length);
+            is.read(raw.data(), length);
 
-	class HDT {
-		Header* header{};
-		HDTCookie cookie{ HCT_GLOBAL, HDTV1 };
+            std::stringstream ss{ raw, std::ios::in };
 
-	public:
-		HDT() {}
-		~HDT() {
-			if (header) delete header;
-		}
+            rdf::RDFParserNTriple parser{ ss };
 
+            while (parser) {
+                const auto& triple = *parser;
 
-		void LoadStream(std::istream& is) {
-			if (header) {
-				delete header;
-			}
-			header = nullptr;
+                data.emplace_back(new rdf::TripleAlloc(triple));
 
-			cookie.LoadCookie(is);
+                ++parser;
+            }
+        }
+    };
 
-			if (cookie.GetType() != HCT_GLOBAL || cookie.GetFormat() != HDTV1) {
-				throw std::runtime_error(actslib::va("Global HDT v1 cookie excepted, find %s/%s", FormatName(cookie.GetType()), cookie.GetFormat().c_str()));
-			}
+    Header* LoadHeader(std::istream& is);
 
-			header = LoadHeader(is);
-		}
+    constexpr const char HDTV1[] = "<http://purl.org/HDT/hdt#HDTv1>";
 
-		const HDTCookie& GetCookie() const {
-			return cookie;
-		}
+    class HDT {
+        Header* header{};
+        HDTCookie cookie{ HCT_GLOBAL, HDTV1 };
 
-		const Header* GetHeader() const {
-			return header;
-		}
-	};
-}
+      public:
+        HDT() {}
+        ~HDT() {
+            if (header)
+                delete header;
+        }
+
+        void LoadStream(std::istream& is) {
+            if (header) {
+                delete header;
+            }
+            header = nullptr;
+
+            cookie.LoadCookie(is);
+
+            if (cookie.GetType() != HCT_GLOBAL || cookie.GetFormat() != HDTV1) {
+                throw std::runtime_error(actslib::va("Global HDT v1 cookie excepted, find %s/%s",
+                                                     FormatName(cookie.GetType()), cookie.GetFormat().c_str()));
+            }
+
+            header = LoadHeader(is);
+        }
+
+        const HDTCookie& GetCookie() const { return cookie; }
+
+        const Header* GetHeader() const { return header; }
+    };
+} // namespace actslib::hdt

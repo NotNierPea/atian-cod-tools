@@ -18,14 +18,12 @@ namespace acts {
                 core::system::PostInit();
                 scan.Save();
                 LOG_INFO("ACTS Loaded");
-            }
-            catch (std::exception& e) {
+            } catch (std::exception& e) {
                 LOG_ERROR("Error at acts DLL post unpack: {}", e.what());
                 MessageBoxA(NULL, utils::CloneString(e.what()), "Error at acts DLL post unpack", MB_ICONERROR);
                 *reinterpret_cast<byte*>(0x123456789) = 2;
             }
         }
-
 
         int GetSystemMetrics_Stub(int nIndex) {
             static std::once_flag of{};
@@ -42,26 +40,26 @@ namespace acts {
                 }
                 return false;
             }
-        
+
             bo3::dvar_t** ui_level_sv{ r[0].GetRelative<int32_t, bo3::dvar_t**>(3) };
             return *ui_level_sv != nullptr;
         }
 
-	    void Main() {
+        void Main() {
             try {
                 core::logs::setfile("acts-bo3.log");
                 hook::library::Library main{};
                 LOG_INFO("init bo3 dll pid={} name={}", GetCurrentProcessId(), main.GetName());
                 core::config::SyncConfig(false);
 
-                core::config::ConfigEnumData logNames[]{
-                    { "trace", core::logs::LVL_TRACE_PATH },
-                    { "debug", core::logs::LVL_DEBUG },
-                    { "info", core::logs::LVL_INFO },
-                    { "warning", core::logs::LVL_WARNING },
-                    { "error", core::logs::LVL_ERROR} };
+                core::config::ConfigEnumData logNames[]{ { "trace", core::logs::LVL_TRACE_PATH },
+                                                         { "debug", core::logs::LVL_DEBUG },
+                                                         { "info", core::logs::LVL_INFO },
+                                                         { "warning", core::logs::LVL_WARNING },
+                                                         { "error", core::logs::LVL_ERROR } };
 
-                core::logs::setlevel(core::config::GetEnumVal<core::logs::loglevel>("logger.level", logNames, ACTS_ARRAYSIZE(logNames), core::logs::LVL_INFO));
+                core::logs::setlevel(core::config::GetEnumVal<core::logs::loglevel>(
+                    "logger.level", logNames, ACTS_ARRAYSIZE(logNames), core::logs::LVL_INFO));
 
                 core::config::SaveConfig();
 
@@ -83,25 +81,20 @@ namespace acts {
                     std::filesystem::remove(start);
                 }
 
-
                 core::system::Init();
-            }
-            catch (std::exception& e) {
+            } catch (std::exception& e) {
                 LOG_ERROR("Error at acts DLL startup: {}", e.what());
                 MessageBoxA(NULL, utils::CloneString(e.what()), "Error at acts DLL startup", MB_ICONERROR);
                 *reinterpret_cast<byte*>(0x123456789) = 2;
             }
         }
-    }
+    } // namespace
 
-
-    hook::scan_container::ScanContainer& Scan() {
-        return scan;
-    }
-}
+    hook::scan_container::ScanContainer& Scan() { return scan; }
+} // namespace acts
 BOOL WINAPI DllMain(HMODULE hModule, DWORD Reason, LPVOID lpVoid) {
-	if (Reason == DLL_PROCESS_ATTACH) {
-		acts::Main();
-	}
-	return TRUE;
+    if (Reason == DLL_PROCESS_ATTACH) {
+        acts::Main();
+    }
+    return TRUE;
 }

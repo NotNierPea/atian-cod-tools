@@ -3,7 +3,7 @@
 #include <dll_includes.hpp>
 
 namespace find_linking {
-	constexpr auto ERROR_LINKING = 1670707254;
+    constexpr auto ERROR_LINKING = 1670707254;
 
-	int CheckLinkingError(scriptinstance::ScriptInstance inst);
-}
+    int CheckLinkingError(scriptinstance::ScriptInstance inst);
+} // namespace find_linking

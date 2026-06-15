@@ -59,4 +59,4 @@ namespace tool::gsc {
         uint32_t address_str1;
         uint32_t address_str2;
     };
-}
+} // namespace tool::gsc

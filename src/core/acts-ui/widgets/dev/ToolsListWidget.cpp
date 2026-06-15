@@ -3,49 +3,48 @@
 #include <QVBoxLayout>
 #include <QStandardItem>
 
-
 ToolsListWidget::ToolsListWidget(QWidget* parent) : QWidget(parent) {
-	setObjectName("ToolsListWidgetClass");
-	resize(600, 400);
-	setWindowTitle("Tools List");
-	QMetaObject::connectSlotsByName(this);
+    setObjectName("ToolsListWidgetClass");
+    resize(600, 400);
+    setWindowTitle("Tools List");
+    QMetaObject::connectSlotsByName(this);
 
-	QVBoxLayout* layout{ new QVBoxLayout() };
+    QVBoxLayout* layout{ new QVBoxLayout() };
 
-	table = new QTableWidget();
+    table = new QTableWidget();
 
-	layout->addWidget(table);
-	layout->setContentsMargins(0, 0, 0, 0);
-	setLayout(layout);
-	setMinimumWidth(700);
-	setMinimumHeight(400);
-	
-	std::vector<ui3::tools::AbstractUITool*>& tools{ ui3::tools::GetTools() };
+    layout->addWidget(table);
+    layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(layout);
+    setMinimumWidth(700);
+    setMinimumHeight(400);
 
-	table->setRowCount((int)tools.size());
-	table->setColumnCount(6);
-	table->setSortingEnabled(true);
-	QStringList headers{ "ID", "Name", "Path", "Extensions", "Allow Duplicates", "Needs Initialization" };
-	table->setHorizontalHeaderLabels(headers);
-	for (size_t i = 0; i < tools.size(); i++) {
-		ui3::tools::AbstractUITool* tool{ tools[i] };
+    std::vector<ui3::tools::AbstractUITool*>& tools{ ui3::tools::GetTools() };
 
-		QTableWidgetItem* idItem{ new QTableWidgetItem(tool->id) };
-		QTableWidgetItem* nameItem{ new QTableWidgetItem(tool->name ? tool->name : "") };
-		QTableWidgetItem* pathItem{ new QTableWidgetItem(tool->path ? tool->path : "") };
-		QTableWidgetItem* extItem{ new QTableWidgetItem(tool->extensions ? tool->extensions : "") };
-		QTableWidgetItem* allowDupeItem{ new QTableWidgetItem(tool->allowDupe ? "true" : "false") };
-		QTableWidgetItem* initItem{ new QTableWidgetItem(tool->needsInitialization ? "true" : "false") };
+    table->setRowCount((int)tools.size());
+    table->setColumnCount(6);
+    table->setSortingEnabled(true);
+    QStringList headers{ "ID", "Name", "Path", "Extensions", "Allow Duplicates", "Needs Initialization" };
+    table->setHorizontalHeaderLabels(headers);
+    for (size_t i = 0; i < tools.size(); i++) {
+        ui3::tools::AbstractUITool* tool{ tools[i] };
 
-		table->setItem((int)i, 0, idItem);
-		table->setItem((int)i, 1, nameItem);
-		table->setItem((int)i, 2, pathItem);
-		table->setItem((int)i, 3, extItem);
-		table->setItem((int)i, 4, allowDupeItem);
-		table->setItem((int)i, 5, initItem);
-	}
+        QTableWidgetItem* idItem{ new QTableWidgetItem(tool->id) };
+        QTableWidgetItem* nameItem{ new QTableWidgetItem(tool->name ? tool->name : "") };
+        QTableWidgetItem* pathItem{ new QTableWidgetItem(tool->path ? tool->path : "") };
+        QTableWidgetItem* extItem{ new QTableWidgetItem(tool->extensions ? tool->extensions : "") };
+        QTableWidgetItem* allowDupeItem{ new QTableWidgetItem(tool->allowDupe ? "true" : "false") };
+        QTableWidgetItem* initItem{ new QTableWidgetItem(tool->needsInitialization ? "true" : "false") };
 
-	table->resizeColumnsToContents();
+        table->setItem((int)i, 0, idItem);
+        table->setItem((int)i, 1, nameItem);
+        table->setItem((int)i, 2, pathItem);
+        table->setItem((int)i, 3, extItem);
+        table->setItem((int)i, 4, allowDupeItem);
+        table->setItem((int)i, 5, initItem);
+    }
+
+    table->resizeColumnsToContents();
 }
 
 ToolsListWidget::~ToolsListWidget() {}

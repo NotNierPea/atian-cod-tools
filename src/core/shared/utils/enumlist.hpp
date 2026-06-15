@@ -1,74 +1,71 @@
 #pragma once
 
 namespace utils {
-	template<typename Type, Type invalidValue, size_t maxValue = (size_t)invalidValue>
-	class EnumList {
-		std::function<Type(const char* type)> Lookup;
-		uint8_t buffer[((maxValue - 1) >> 3) + 1]{};
-		bool empty{};
-	public:
-		EnumList(std::function<Type(const char* type)> Lookup) : Lookup(Lookup) {}
+    template<typename Type, Type invalidValue, size_t maxValue = (size_t)invalidValue>
+    class EnumList {
+        std::function<Type(const char* type)> Lookup;
+        uint8_t buffer[((maxValue - 1) >> 3) + 1]{};
+        bool empty{};
 
-		void Clear() {
-			std::memset(buffer, 0, sizeof(buffer));
-			empty = true;
-		}
+      public:
+        EnumList(std::function<Type(const char* type)> Lookup) : Lookup(Lookup) {}
 
-		bool operator[](Type value) const {
-			return buffer[value >> 3] & (1 << (value & 7));
-		}
+        void Clear() {
+            std::memset(buffer, 0, sizeof(buffer));
+            empty = true;
+        }
 
-		void Set(Type value, bool val) {
-			if (val) {
-				empty = false;
-				buffer[value >> 3] |= 1 << (value & 7);
-			}
-			else {
-				buffer[value >> 3] &= ~(1 << (value & 7));
-			}
-		}
+        bool operator[](Type value) const { return buffer[value >> 3] & (1 << (value & 7)); }
 
-		constexpr bool Empty() const {
-			return empty;
-		}
+        void Set(Type value, bool val) {
+            if (val) {
+                empty = false;
+                buffer[value >> 3] |= 1 << (value & 7);
+            } else {
+                buffer[value >> 3] &= ~(1 << (value & 7));
+            }
+        }
 
-		void Add(const char* name) {
-			Type t{ Lookup ? Lookup(name) : invalidValue };
+        constexpr bool Empty() const { return empty; }
 
-			if (t == invalidValue) {
-				throw std::runtime_error(std::format("Invalid enum name '{}'", name));
-			}
+        void Add(const char* name) {
+            Type t{ Lookup ? Lookup(name) : invalidValue };
 
-			Set(t, true);
-		}
+            if (t == invalidValue) {
+                throw std::runtime_error(std::format("Invalid enum name '{}'", name));
+            }
 
-		void LoadConfig(const char* cfg) {
-			if (!cfg || !*cfg) return;
+            Set(t, true);
+        }
 
-			std::string c{ cfg };
+        void LoadConfig(const char* cfg) {
+            if (!cfg || !*cfg)
+                return;
 
-			size_t idx{};
+            std::string c{ cfg };
 
-			while (idx < c.size()) {
-				while (c[idx] == ',') {
-					idx++;
-					if (idx == c.size()) return; // end
-				}
+            size_t idx{};
 
-				size_t next{ c.find(',', idx) };
+            while (idx < c.size()) {
+                while (c[idx] == ',') {
+                    idx++;
+                    if (idx == c.size())
+                        return; // end
+                }
 
-				if (next == std::string::npos) {
-					next = c.size() + 1;
-				}
-				else {
-					c[next] = 0;
-				}
+                size_t next{ c.find(',', idx) };
 
-				Add(&c[idx]);
+                if (next == std::string::npos) {
+                    next = c.size() + 1;
+                } else {
+                    c[next] = 0;
+                }
 
-				idx = next + 1;
-			}
-		}
-	};
+                Add(&c[idx]);
 
-}
+                idx = next + 1;
+            }
+        }
+    };
+
+} // namespace utils

@@ -30,8 +30,7 @@ int poolscripts(Process& proc, int argc, const char* argv[]) {
     const char* outFile;
     if (argc == 2) {
         outFile = "pool.csv";
-    }
-    else {
+    } else {
         outFile = argv[2];
     }
 
@@ -48,9 +47,9 @@ int poolscripts(Process& proc, int argc, const char* argv[]) {
 
     for (size_t i = 0; i < poolSize; i++) {
         const auto& ref = buffer[i];
-        out << i << "," << hashutils::ExtractTmp("script", ref.name) << "," << ref.size << "," << std::hex << ref.buffer << std::dec << "\n";
+        out << i << "," << hashutils::ExtractTmp("script", ref.name) << "," << ref.size << "," << std::hex << ref.buffer
+            << std::dec << "\n";
     }
-
 
     out.close();
     delete[] buffer;
@@ -64,7 +63,7 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
     T8ScriptParseTreeEntry* buffer = new T8ScriptParseTreeEntry[poolSize];
     std::cout << std::hex << "pool: " << poolPtr << ", elements: " << std::dec << poolSize << "\n";
 
-    if (!proc.ReadMemory(buffer, poolPtr, sizeof * buffer * poolSize)) {
+    if (!proc.ReadMemory(buffer, poolPtr, sizeof *buffer * poolSize)) {
         std::cerr << "Can't read pool data\n";
         delete[] buffer;
         return -1;
@@ -76,13 +75,12 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
     const char* outFile;
     if (argc == 2) {
         outFile = "scriptparsetree";
-    }
-    else {
+    } else {
         outFile = argv[2];
     }
 
     int readFile = 0;
-    int readFileOrigin[3] = {0,0,0};
+    int readFileOrigin[3] = { 0, 0, 0 };
     std::error_code ec;
 
     size_t allocated = 0x1000;
@@ -97,9 +95,9 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
             if (ns) {
                 allocated = ref.size + 100;
                 storage = ns;
-            }
-            else {
-                std::cerr << "Can't allocate buffer for address " << std::hex << ref.buffer << " of size " << std::dec << ref.size << "\n";
+            } else {
+                std::cerr << "Can't allocate buffer for address " << std::hex << ref.buffer << " of size " << std::dec
+                          << ref.size << "\n";
                 continue; // bad size?
             }
         }
@@ -107,12 +105,13 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
         sprintf_s(nameBuffer, "%s/script_%llx.gscc", outFile, ref.name);
 
         if (!proc.ReadMemory(storage, ref.buffer, ref.size)) {
-            std::cerr << "Can't read pooled buffer at address " << std::hex << ref.buffer << " of size " << std::dec << ref.size << " for file " << nameBuffer << "\n";
+            std::cerr << "Can't read pooled buffer at address " << std::hex << ref.buffer << " of size " << std::dec
+                      << ref.size << " for file " << nameBuffer << "\n";
             continue;
         }
 
         std::filesystem::path file(nameBuffer);
-        
+
         std::filesystem::create_directories(file.parent_path(), ec);
         if (!std::filesystem::exists(file, ec)) {
             readFile++;
@@ -125,10 +124,8 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
 
     delete[] buffer;
 
-
-
     uint32_t bufferCount[2];
-    if (!proc.ReadMemory(bufferCount, proc[offset::gObjFileInfoCount], sizeof * bufferCount * 2)) {
+    if (!proc.ReadMemory(bufferCount, proc[offset::gObjFileInfoCount], sizeof *bufferCount * 2)) {
         std::cerr << "Can't read pool count data\n";
         return -1;
     }
@@ -136,7 +133,7 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
     const int size = 650;
     T8ObjFileInfo* bufferLinked = new T8ObjFileInfo[2 * size];
 
-    if (!proc.ReadMemory(bufferLinked, proc[offset::gObjFileInfo], sizeof * bufferLinked * size * 2)) {
+    if (!proc.ReadMemory(bufferLinked, proc[offset::gObjFileInfo], sizeof *bufferLinked * size * 2)) {
         std::cerr << "Can't read linked data\n";
         delete[] bufferLinked;
         return -1;
@@ -147,16 +144,19 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
     const uint64_t magicLong = *(uint64_t*)(&magic[0]);
 
     for (size_t inst = 0; inst < scriptinstance::SI_COUNT; inst++) {
-        std::cout << std::dec << "Reading " << bufferCount[inst] << " " << scriptinstance::Name(inst) << " linked script(s)\n";
+        std::cout << std::dec << "Reading " << bufferCount[inst] << " " << scriptinstance::Name(inst)
+                  << " linked script(s)\n";
         for (size_t i = 0; i < bufferCount[inst]; i++) {
             const auto& ref = bufferLinked[i + size * inst];
 
             if (!proc.ReadMemory(&gsc, ref.activeVersion, sizeof gsc)) {
-                std::cerr << "Can't read memory from location " << std::hex << ref.activeVersion << ", index: " << i << "\n";
+                std::cerr << "Can't read memory from location " << std::hex << ref.activeVersion << ", index: " << i
+                          << "\n";
                 continue;
             }
             if (*(uint64_t*)(&gsc.magic[0]) != magicLong) {
-                std::cerr << "Bad magic for location " << std::hex << ref.activeVersion << " " << *(uint64_t*)(&gsc.magic[0]) << " != " << magicLong << "\n";
+                std::cerr << "Bad magic for location " << std::hex << ref.activeVersion << " "
+                          << *(uint64_t*)(&gsc.magic[0]) << " != " << magicLong << "\n";
                 continue;
             }
 
@@ -165,9 +165,9 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
                 if (ns) {
                     allocated = gsc.script_size + 100;
                     storage = ns;
-                }
-                else {
-                    std::cerr << "Can't allocate buffer for address " << std::hex << ref.activeVersion << " of size " << std::dec << gsc.script_size << "\n";
+                } else {
+                    std::cerr << "Can't allocate buffer for address " << std::hex << ref.activeVersion << " of size "
+                              << std::dec << gsc.script_size << "\n";
                     continue; // bad size?
                 }
             }
@@ -175,7 +175,8 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
             sprintf_s(nameBuffer, "%s/script_%llx.gscc", outFile, gsc.name);
 
             if (!proc.ReadMemory(storage, ref.activeVersion, gsc.script_size)) {
-                std::cerr << "Can't read pooled buffer at address " << std::hex << ref.activeVersion << " of size " << std::dec << gsc.script_size << " for file " << nameBuffer << "\n";
+                std::cerr << "Can't read pooled buffer at address " << std::hex << ref.activeVersion << " of size "
+                          << std::dec << gsc.script_size << " for file " << nameBuffer << "\n";
                 continue;
             }
 
@@ -185,7 +186,7 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
             if (!std::filesystem::exists(file, ec)) {
                 readFile++;
                 readFileOrigin[1 + inst]++;
-                //std::cout << "The script " << nameBuffer << " is linked, but wasn't found in the pool\n";
+                // std::cout << "The script " << nameBuffer << " is linked, but wasn't found in the pool\n";
             }
             if (!utils::WriteFile(file, storage, gsc.script_size)) {
                 std::cerr << "Error when writing " << nameBuffer << "\n";
@@ -194,10 +195,9 @@ int writepoolscripts(Process& proc, int argc, const char* argv[]) {
     }
 
     std::cout << std::dec << readFile << " new file(s) created.\n"
-        << "Pool ... " << readFileOrigin[0] << "\n"
-        << "Linked . " << readFileOrigin[1] << " (" << scriptinstance::Name(0) << ")\n"
-        << "Linked . " << readFileOrigin[2] << " (" << scriptinstance::Name(1) << ")\n";
-    
+              << "Pool ... " << readFileOrigin[0] << "\n"
+              << "Linked . " << readFileOrigin[1] << " (" << scriptinstance::Name(0) << ")\n"
+              << "Linked . " << readFileOrigin[2] << " (" << scriptinstance::Name(1) << ")\n";
 
     std::free(storage);
     delete[] bufferLinked;
@@ -221,12 +221,10 @@ int linkedscripts(Process& proc, int argc, const char* argv[]) {
         return -1;
     }
 
-
     const char* outFile;
     if (argc == 2) {
         outFile = "linked.csv";
-    }
-    else {
+    } else {
         outFile = argv[2];
     }
 
@@ -241,13 +239,11 @@ int linkedscripts(Process& proc, int argc, const char* argv[]) {
         return -1;
     }
 
-
-
     // csv header
     out << "pool,name,slot,refcount,groupid,address\n";
 
     T8GSCSimpleHeader gsc;
-    const byte magic[8] = { 0x80, 0x47, 0x53, 0x43, 0x0D, 0x0A, 0x00, 0x36};
+    const byte magic[8] = { 0x80, 0x47, 0x53, 0x43, 0x0D, 0x0A, 0x00, 0x36 };
     const uint64_t magicLong = *(uint64_t*)(&magic[0]);
 
     for (size_t inst = 0; inst < scriptinstance::SI_COUNT; inst++) {
@@ -256,24 +252,21 @@ int linkedscripts(Process& proc, int argc, const char* argv[]) {
             const auto& ref = buffer[i + size * inst];
 
             if (!proc.ReadMemory(&gsc, ref.activeVersion, sizeof gsc)) {
-                std::cerr << "Can't read memory from location " << std::hex << ref.activeVersion << ", index: " << i << "\n";
+                std::cerr << "Can't read memory from location " << std::hex << ref.activeVersion << ", index: " << i
+                          << "\n";
                 continue;
             }
             if (*reinterpret_cast<uint64_t*>(gsc.magic) != magicLong) {
-                std::cerr << "Bad magic for location " << std::hex << ref.activeVersion << " " << *reinterpret_cast<uint64_t*>(gsc.magic) << " != " << magicLong << "\n";
+                std::cerr << "Bad magic for location " << std::hex << ref.activeVersion << " "
+                          << *reinterpret_cast<uint64_t*>(gsc.magic) << " != " << magicLong << "\n";
                 continue;
             }
 
-            out << std::dec << scriptinstance::Name(inst) 
-                << "," << hashutils::ExtractTmp("script", gsc.name)
-                << "," << ref.slot
-                << "," << ref.refCount
-                << "," << ref.groupId
-                << "," << std::hex << ref.activeVersion
+            out << std::dec << scriptinstance::Name(inst) << "," << hashutils::ExtractTmp("script", gsc.name) << ","
+                << ref.slot << "," << ref.refCount << "," << ref.groupId << "," << std::hex << ref.activeVersion
                 << "\n";
         }
     }
-
 
     out.close();
     delete[] buffer;
@@ -285,7 +278,7 @@ int events(Process& proc, int argc, const char* argv[]) {
     const int size = 512;
     T8EventMapObj* buffer = new T8EventMapObj[2 * size];
 
-    if (!proc.ReadMemory(buffer, proc[offset::VM_EVENT], sizeof * buffer * size * 2)) {
+    if (!proc.ReadMemory(buffer, proc[offset::VM_EVENT], sizeof *buffer * size * 2)) {
         std::cerr << "Can't read event data\n";
         delete[] buffer;
         return -1;
@@ -294,8 +287,7 @@ int events(Process& proc, int argc, const char* argv[]) {
     const char* outFile;
     if (argc == 2) {
         outFile = "events.csv";
-    }
-    else {
+    } else {
         outFile = argv[2];
     }
 
@@ -321,20 +313,19 @@ int events(Process& proc, int argc, const char* argv[]) {
             if (!ref.name) {
                 continue; // ignore empty
             }
-            out << scriptinstance::Name(inst) << "," << hashutils::ExtractTmp("event", ref.name) << "," << (ref.gameSideRegistered ? "true" : "false") << "\n";
+            out << scriptinstance::Name(inst) << "," << hashutils::ExtractTmp("event", ref.name) << ","
+                << (ref.gameSideRegistered ? "true" : "false") << "\n";
             read++;
         }
     }
 
     std::cout << std::dec << "Read " << read << " event(s)\n";
 
-
     out.close();
     delete[] buffer;
 
     return 0;
 }
-
 
 int dumpfunctions(Process& proc, int argc, const char* argv[]) {
     // cache reading to avoid writing empty file
@@ -343,8 +334,7 @@ int dumpfunctions(Process& proc, int argc, const char* argv[]) {
     const char* outFile;
     if (argc == 2) {
         outFile = "funcs.csv";
-    }
-    else {
+    } else {
         outFile = argv[2];
     }
 
@@ -376,13 +366,9 @@ int dumpfunctions(Process& proc, int argc, const char* argv[]) {
         }
         for (size_t j = 0; j < pool.size; j++) {
             const auto& func = buffer[j];
-            out << std::hex << (pool.instance ? "CSC" : "GSC") << "-" << (pool.methodPool ? "Method" : "Function") << "-" << pool.offset
-                << std::dec
-                << "," << hashutils::ExtractTmp("function", func.name)
-                << "," << func.minArgs
-                << "," << func.maxArgs
-                << "," << func.type
-                << ",";
+            out << std::hex << (pool.instance ? "CSC" : "GSC") << "-" << (pool.methodPool ? "Method" : "Function")
+                << "-" << pool.offset << std::dec << "," << hashutils::ExtractTmp("function", func.name) << ","
+                << func.minArgs << "," << func.maxArgs << "," << func.type << ",";
             proc.WriteLocation(out, func.function) << "\n";
         }
     }
@@ -409,8 +395,7 @@ int dumpcmdfunctions(Process& proc, int argc, const char* argv[]) {
     const char* outFile;
     if (argc == 2) {
         outFile = "cfuncs.csv";
-    }
-    else {
+    } else {
         outFile = argv[2];
     }
 
@@ -466,8 +451,7 @@ int dumpsvcmdfunctions(Process& proc, int argc, const char* argv[]) {
     const char* outFile;
     if (argc == 2) {
         outFile = "csfuncs.csv";
-    }
-    else {
+    } else {
         outFile = argv[2];
     }
 
@@ -525,13 +509,12 @@ namespace {
         const char* outFile;
         if (argc == 2) {
             outFile = "dfields.csv";
-        }
-        else {
+        } else {
             outFile = argv[2];
         }
         typedef uint32_t ScrVarIndex_t;
 
-        struct ScrVar_t  {
+        struct ScrVar_t {
             uint64_t nameIndex;
             struct {
                 unsigned __int32 nameType : 3;
@@ -542,7 +525,8 @@ namespace {
             uint32_t prevSibling;
             uint32_t parentId;
             uint32_t nameSearchHashList;
-        }; static_assert(sizeof(ScrVar_t) == 0x20);
+        };
+        static_assert(sizeof(ScrVar_t) == 0x20);
 
         union ScrVarObjectInfo1_t {
             uint64_t object_o;
@@ -557,12 +541,13 @@ namespace {
         };
 
         struct scrVarGlob_t {
-            uintptr_t scriptNameSearchHashList; // ScrVarIndex_t*
-            uintptr_t scriptVariables; // ScrVar_t*
+            uintptr_t scriptNameSearchHashList;   // ScrVarIndex_t*
+            uintptr_t scriptVariables;            // ScrVar_t*
             uintptr_t scriptVariablesObjectInfo1; // ScrVarObjectInfo1_t*
             uintptr_t scriptVariablesObjectInfo2; // ScrVarObjectInfo2_t*
-            uintptr_t scriptValues; // ScrVarValue_t*
-        }; static_assert(sizeof(scrVarGlob_t) == 0x28);
+            uintptr_t scriptValues;               // ScrVarValue_t*
+        };
+        static_assert(sizeof(scrVarGlob_t) == 0x28);
 
         struct ScrClassStruct_t {
             uint32_t id;
@@ -570,8 +555,8 @@ namespace {
             char charId;
             uintptr_t name; // const char*
             bool instancedPerLocalClient;
-        }; static_assert(sizeof(ScrClassStruct_t) == 0x20);
-
+        };
+        static_assert(sizeof(ScrClassStruct_t) == 0x20);
 
         auto [vals, ok] = proc.ReadMemoryArray<uintptr_t>(proc[0x4EED230], 2);
 
@@ -604,7 +589,6 @@ namespace {
 
         out << "vm,index,id,entArrayId,name,charId,instancedPerLocalClient,nameIndex" << std::flush;
 
-
         for (size_t i = 0; i < 2; i++) {
             std::unordered_map<uint32_t, ScrClassStruct_t*> structMap{};
 
@@ -621,48 +605,39 @@ namespace {
                 ScrClassStruct_t* cls;
                 if (it == structMap.end()) {
                     return false;
-                }
-                else {
+                } else {
                     cls = it->second;
                 }
 
-                out
-                    << "\n"
-                    << scriptinstance::Name(i) << ","
-                    << std::dec << structId << ","
-                    << cls->id << ","
-                    << cls->entArrayId << ","
-                    << proc.ReadStringTmp(cls->name) << ","
-                    << cls->charId << ","
-                    << (cls->instancedPerLocalClient ? "true" : "false")
-                    << std::flush
-                    ;
+                out << "\n"
+                    << scriptinstance::Name(i) << "," << std::dec << structId << "," << cls->id << ","
+                    << cls->entArrayId << "," << proc.ReadStringTmp(cls->name) << "," << cls->charId << ","
+                    << (cls->instancedPerLocalClient ? "true" : "false") << std::flush;
                 return true;
             };
 
             constexpr size_t scriptNameSearchHashListLen = 0x80000;
-            auto [scriptNameSearchHashList, ok3] = proc.ReadMemoryArray<ScrVarIndex_t>(gScrVarGlob[i].scriptNameSearchHashList, scriptNameSearchHashListLen);
+            auto [scriptNameSearchHashList, ok3] = proc.ReadMemoryArray<ScrVarIndex_t>(
+                gScrVarGlob[i].scriptNameSearchHashList, scriptNameSearchHashListLen);
 
             if (!ok3) {
                 LOG_ERROR("Can't scriptNameSearchHashList for vm {}", i);
                 continue;
             }
-            
+
             ScrVar_t var{};
             for (size_t j = 0; j < scriptNameSearchHashListLen; j++) {
                 ScrVarIndex_t h = scriptNameSearchHashList[j];
                 while (h) {
                     // can be unused, so we check first
 
-                    if (!proc.ReadMemory(&var, gScrVarGlob[i].scriptVariables + h * sizeof(var), sizeof(var)) || !printStart(var.parentId)) {
-                        //LOG_ERROR("Can't hash var for 0x{:x}", h);
+                    if (!proc.ReadMemory(&var, gScrVarGlob[i].scriptVariables + h * sizeof(var), sizeof(var)) ||
+                        !printStart(var.parentId)) {
+                        // LOG_ERROR("Can't hash var for 0x{:x}", h);
                         break;
                     }
 
-                    out
-                        << ","
-                        << hashutils::ExtractTmp("var", var.nameIndex)
-                        ;
+                    out << "," << hashutils::ExtractTmp("var", var.nameIndex);
 
                     h = var.nameSearchHashList;
                 }
@@ -677,31 +652,10 @@ namespace {
     }
 
     const char* fieldTypeNames[]{
-        "int",
-        "short",
-        "byte",
-        "float",
-        "lstring",
-        "string",
-        "hash",
-        "vector",
-        "entity",
-        "enthandle",
-        "actor",
-        "sentient",
-        "sentienthandle",
-        "client",
-        "pathnode",
-        "actorgroup",
-        "object",
-        "xmodel_index",
-        "xmodel",
-        "bitflag",
-        "bitflag64",
-        "fx",
-        "weapon",
-        "rumble",
-        "scriptbundle",
+        "int",      "short",      "byte",      "float",        "lstring",  "string",         "hash",
+        "vector",   "entity",     "enthandle", "actor",        "sentient", "sentienthandle", "client",
+        "pathnode", "actorgroup", "object",    "xmodel_index", "xmodel",   "bitflag",        "bitflag64",
+        "fx",       "weapon",     "rumble",    "scriptbundle",
     };
     enum fieldtype_t : uint32_t {
         F_INT = 0x0,
@@ -740,17 +694,16 @@ namespace {
         int32_t size;
         uintptr_t setter;
         uintptr_t getter;
-    }; static_assert(0x28 == sizeof(ent_field_t));
+    };
+    static_assert(0x28 == sizeof(ent_field_t));
 
-    
     int wef(Process& proc, int argc, const char* argv[]) {
         hashutils::ReadDefaultFile();
 
         const char* outFile;
         if (argc == 2) {
             outFile = "efields.csv";
-        }
-        else {
+        } else {
             outFile = argv[2];
         }
         constexpr size_t count{ 36 };
@@ -772,14 +725,11 @@ namespace {
 
         for (size_t i = 0; i < count; i++) {
             const ent_field_t& field{ fields[i] };
-            out
-                << "\n"
+            out << "\n"
                 << hashutils::ExtractTmp("var", field.canonId) << ","
                 << (field.type < F_COUNT ? fieldTypeNames[field.type] : "<error>") << ","
-                << (field.isReadOnly ? "true" : "false") << ","
-                << std::hex << "0x" << field.ofs << ","
-                << std::hex << "0x" << field.size << ","
-                ;
+                << (field.isReadOnly ? "true" : "false") << "," << std::hex << "0x" << field.ofs << "," << std::hex
+                << "0x" << field.size << ",";
             proc.WriteLocation(out, field.setter) << ",";
             proc.WriteLocation(out, field.getter);
         }
@@ -806,8 +756,7 @@ namespace {
         const char* outFile;
         if (argc == 2) {
             outFile = "gfxworld.json";
-        }
-        else {
+        } else {
             outFile = argv[2];
         }
 
@@ -1584,7 +1533,7 @@ namespace {
             uint64_t unk17e0;
             uint64_t unk17e8;
             uint64_t unk17f0;
-            uintptr_t lighting; // GfxLighting*
+            uintptr_t lighting;      // GfxLighting*
             uintptr_t streamerworld; // StreamerWorld*
             uint64_t unk1808;
             uint64_t unk1810;
@@ -1663,8 +1612,7 @@ namespace {
             uint64_t unk1a58;
             uintptr_t unk1a60[10]; // GfxImage*
         };
-        struct GfxVolumeDecal
-        {
+        struct GfxVolumeDecal {
             uint64_t id;
             byte hidden;
             vec3_t localToWld[4];
@@ -1674,15 +1622,15 @@ namespace {
             vec4_t revealTextureUV;
             vec4_t uvBaseAndScale;
             vec4_t unka8;
-            uintptr_t material; // Material*
+            uintptr_t material;        // Material*
             uintptr_t forwardMaterial; // Material*
             uint32_t unkc8;
             uint32_t targetName;
             uint64_t unkd0;
-        }; static_assert(sizeof(GfxVolumeDecal) == 0xd8);
+        };
+        static_assert(sizeof(GfxVolumeDecal) == 0xd8);
 
-        struct static_model_info
-        {
+        struct static_model_info {
             uintptr_t model; // XModel*
             uint64_t unk8;
             uint64_t unk10;
@@ -1700,7 +1648,7 @@ namespace {
             LOG_ERROR("Can't read memory pointer data");
             return tool::BASIC_ERROR;
         }
-        
+
         std::ofstream out{ outFile };
         if (!out) {
             LOG_ERROR("Can't open {}", outFile);
@@ -1714,37 +1662,47 @@ namespace {
         utils::Padding(out << "\n", 1) << "\"name\": \"#" << hashutils::ExtractTmp("hash", info->name.name) << "\",";
         utils::Padding(out << "\n", 1) << "\"baseName\": \"" << proc.ReadStringTmp(info->baseName) << "\",";
         utils::Padding(out << "\n", 1) << "\"checksum\": " << std::dec << info->checksum << ",";
-        //utils::Padding(out << "\n", 1) << "\"surfaceCount\": " << std::dec << info->surfaceCount << ",";
+        // utils::Padding(out << "\n", 1) << "\"surfaceCount\": " << std::dec << info->surfaceCount << ",";
 
         if (info->lighting) {
-            utils::Padding(out << "\n", 1) << "\"lighting\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->lighting)) << "\",";
+            utils::Padding(out << "\n", 1)
+                << "\"lighting\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->lighting))
+                << "\",";
         }
 
         if (info->streamerworld) {
-            utils::Padding(out << "\n", 1) << "\"streamerworld\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->streamerworld)) << "\",";
+            utils::Padding(out << "\n", 1)
+                << "\"streamerworld\": \"#"
+                << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->streamerworld)) << "\",";
         }
-        
+
         for (size_t i = 0; i < ACTS_ARRAYSIZE(info->unk550); i++) {
             if (info->unk550[i]) {
-                utils::Padding(out << "\n", 1) << "\"lut" << i << "\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->unk550[i] + 0x20)) << "\",";
+                utils::Padding(out << "\n", 1)
+                    << "\"lut" << i << "\": \"#"
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->unk550[i] + 0x20)) << "\",";
             }
         }
 
         for (size_t i = 0; i < ACTS_ARRAYSIZE(info->unk1a60); i++) {
             if (info->unk1a60[i]) {
-                utils::Padding(out << "\n", 1) << "\"unk1a60_" << i << "\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->unk1a60[i] + 0x20)) << "\",";
+                utils::Padding(out << "\n", 1)
+                    << "\"unk1a60_" << i << "\": \"#"
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->unk1a60[i] + 0x20)) << "\",";
             }
         }
 
         if (info->volumeDecalRevealTexture) {
-            utils::Padding(out << "\n", 1) << "\"volumeDecalRevealTexture\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->volumeDecalRevealTexture + 0x20)) << "\",";
+            utils::Padding(out << "\n", 1)
+                << "\"volumeDecalRevealTexture\": \"#"
+                << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(info->volumeDecalRevealTexture + 0x20))
+                << "\",";
         }
 
         utils::Padding(out << "\n", 1) << "\"decals\": ";
 
         if (info->volumeDecalCount) {
             out << "[";
-
 
             auto [decals, ok2] = proc.ReadMemoryArray<GfxVolumeDecal>(info->volumeDecals, info->volumeDecalCount);
 
@@ -1763,30 +1721,36 @@ namespace {
                 utils::Padding(out << "\n", 3) << "\"id\": \"" << hashutils::ExtractTmp("hash", decal.id) << "\",";
                 if (decal.targetName) {
                     const char* targetName = tool::pool::ReadMTString(proc, decal.targetName);
-                    utils::Padding(out << "\n", 3) << "\"targetName\": \"" << (targetName ? targetName : utils::va("<invalid:%d>", decal.targetName)) << "\",";
+                    utils::Padding(out << "\n", 3)
+                        << "\"targetName\": \""
+                        << (targetName ? targetName : utils::va("<invalid:%d>", decal.targetName)) << "\",";
                 }
                 if (decal.material) {
                     uint64_t material = proc.ReadMemory<uint64_t>(decal.material);
                     if (material) {
-                        utils::Padding(out << "\n", 3) << "\"material\": \"#" << hashutils::ExtractTmp("hash", material) << "\",";
+                        utils::Padding(out << "\n", 3)
+                            << "\"material\": \"#" << hashutils::ExtractTmp("hash", material) << "\",";
                     }
                 }
                 if (decal.forwardMaterial) {
                     uint64_t material = proc.ReadMemory<uint64_t>(decal.forwardMaterial);
                     if (material) {
-                        utils::Padding(out << "\n", 3) << "\"forwardMaterial\": \"#" << hashutils::ExtractTmp("hash", material) << "\",";
+                        utils::Padding(out << "\n", 3)
+                            << "\"forwardMaterial\": \"#" << hashutils::ExtractTmp("hash", material) << "\",";
                     }
                 }
 
                 utils::Padding(out << "\n", 3) << "\"localToWld\": [";
                 for (size_t i = 0; i < 4; i++) {
-                    if (i) out << ",";
+                    if (i)
+                        out << ",";
                     utils::Padding(out << "\n", 4) << "\"" << decal.localToWld[i] << "\"";
                 }
                 utils::Padding(out << "\n", 3) << "],";
                 utils::Padding(out << "\n", 3) << "\"wldToLocal\": [";
                 for (size_t i = 0; i < 4; i++) {
-                    if (i) out << ",";
+                    if (i)
+                        out << ",";
                     utils::Padding(out << "\n", 4) << "\"" << decal.wldToLocal[i] << "\"";
                 }
                 utils::Padding(out << "\n", 3) << "],";
@@ -1798,14 +1762,13 @@ namespace {
                 utils::Padding(out << "\n", 3) << "\"unka8\": \"" << decal.unka8 << "\",";
 
                 utils::Padding(out << "\n", 3) << "\"hidden\": " << (decal.hidden ? "true" : "false");
-                //tool::pool::WriteHex(out << "\n", info->volumeDecals + sizeof(decal) * i, &decal, sizeof(decal), proc);
+                // tool::pool::WriteHex(out << "\n", info->volumeDecals + sizeof(decal) * i, &decal, sizeof(decal),
+                // proc);
                 utils::Padding(out << "\n", 2) << "}";
             }
 
-
             utils::Padding(out << "\n", 1) << "]";
-        }
-        else {
+        } else {
             out << "[]";
         }
         utils::Padding(out << ",\n", 1) << "\"static_models\": ";
@@ -1813,8 +1776,8 @@ namespace {
         if (info->static_model_count) {
             out << "[";
 
-
-            auto [static_models, ok2] = proc.ReadMemoryArray<static_model_info>(info->static_model, info->static_model_count);
+            auto [static_models, ok2] =
+                proc.ReadMemoryArray<static_model_info>(info->static_model, info->static_model_count);
 
             if (!ok2) {
                 LOG_ERROR("Can't read decal info");
@@ -1824,20 +1787,21 @@ namespace {
             for (size_t i = 0; i < info->static_model_count; i++) {
                 static_model_info& model = static_models[i];
 
-                if (!model.model) continue;
+                if (!model.model)
+                    continue;
 
                 if (i) {
                     out << ",";
                 }
-                //utils::Padding(out << "\n", 2) << "{";
-                utils::Padding(out << "\n", 2) << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(model.model)) << "\"";
-                //tool::pool::WriteHex(out << "\n", info->static_model + sizeof(model) * i, &model, sizeof(model), proc);
-                //utils::Padding(out << "\n", 2) << "}";
+                // utils::Padding(out << "\n", 2) << "{";
+                utils::Padding(out << "\n", 2)
+                    << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(model.model)) << "\"";
+                // tool::pool::WriteHex(out << "\n", info->static_model + sizeof(model) * i, &model, sizeof(model),
+                // proc); utils::Padding(out << "\n", 2) << "}";
             }
 
             utils::Padding(out << "\n", 1) << "]";
-        }
-        else {
+        } else {
             out << "[]";
         }
         out << "\n";
@@ -1845,7 +1809,6 @@ namespace {
         out << "}\n";
 
         LOG_INFO("Dump into {}", outFile);
-
 
         return tool::OK;
     }
@@ -1856,8 +1819,7 @@ namespace {
         const char* outFile;
         if (argc == 2) {
             outFile = "storage.json";
-        }
-        else {
+        } else {
             outFile = argv[2];
         }
 
@@ -1868,8 +1830,7 @@ namespace {
         }
         utils::CloseEnd outce{ [&out] { out.close(); } };
 
-        struct unk_ddl_storage
-        {
+        struct unk_ddl_storage {
             uint64_t unk00;
             uint64_t unk08;
             uint64_t unk10;
@@ -1878,8 +1839,9 @@ namespace {
         };
         auto [storages, ok] = proc.ReadMemoryArray<unk_ddl_storage>(proc[0xF8F2C30], 0x29);
 
-        if (!ok) return tool::BASIC_ERROR;
-        
+        if (!ok)
+            return tool::BASIC_ERROR;
+
         for (size_t i = 0; i < 0x29; i++) {
             auto& storage = storages[i];
             out << "#" << i << "\n";
@@ -1888,13 +1850,12 @@ namespace {
         }
         LOG_INFO("Dump into {}", outFile);
 
-
-
         return tool::OK;
     }
 
     int dvehfields(int argc, const char* argv[]) {
-        if (tool::NotEnoughParam(argc, 1)) return tool::BAD_USAGE;
+        if (tool::NotEnoughParam(argc, 1))
+            return tool::BAD_USAGE;
 
         const char* out{ tool::NotEnoughParam(argc, 2) ? "vehfields.csv" : argv[3] };
 
@@ -1913,7 +1874,8 @@ namespace {
             uint64_t whichbits;
             void* setter; // ScriptCallbackVehicle
             void* getter; // ScriptCallbackVehicle
-        }; static_assert(sizeof(vehicle_fields_t) == 0x30);
+        };
+        static_assert(sizeof(vehicle_fields_t) == 0x30);
 
         {
             utils::OutFileCE os{ out, true };
@@ -1921,17 +1883,19 @@ namespace {
             os << "name,type,isReadOnly,offset,size,whichbits,getter,setter";
 
             for (const vehicle_fields_t* fields = mod->Get<vehicle_fields_t>(0x49B6AA0); fields->canonId; fields++) {
-                os
-                    << std::hex
-                    << "\n" << hashutils::ExtractTmp("var", fields->canonId)
-                    << "," << (fields->type < F_COUNT ? fieldTypeNames[fields->type] : "<error>")
-                    << "," << (fields->isReadOnly ? "true" : "false")
-                    << ",0x" << fields->ofs
-                    << ",0x" << fields->size
-                    << ",0x" << fields->whichbits
-                    ;
-                if (fields->getter) os << "," << hook::library::CodePointer{ fields->getter }; else os << ",NULL";
-                if (fields->setter) os << "," << hook::library::CodePointer{ fields->setter }; else os << ",NULL";
+                os << std::hex << "\n"
+                   << hashutils::ExtractTmp("var", fields->canonId) << ","
+                   << (fields->type < F_COUNT ? fieldTypeNames[fields->type] : "<error>") << ","
+                   << (fields->isReadOnly ? "true" : "false") << ",0x" << fields->ofs << ",0x" << fields->size << ",0x"
+                   << fields->whichbits;
+                if (fields->getter)
+                    os << "," << hook::library::CodePointer{ fields->getter };
+                else
+                    os << ",NULL";
+                if (fields->setter)
+                    os << "," << hook::library::CodePointer{ fields->setter };
+                else
+                    os << ",NULL";
             }
         }
 
@@ -1951,7 +1915,8 @@ namespace {
     }
 
     int dmatbo4texturenames(int argc, const char* argv[]) {
-        if (tool::NotEnoughParam(argc, 1)) return tool::BAD_USAGE;
+        if (tool::NotEnoughParam(argc, 1))
+            return tool::BAD_USAGE;
 
         const char* out{ tool::NotEnoughParam(argc, 2) ? "mttxtnames.csv" : argv[3] };
 
@@ -1960,7 +1925,6 @@ namespace {
             LOG_ERROR("Can't map module");
             return tool::BASIC_ERROR;
         }
-
 
         {
             utils::OutFileCE os{ out, true };
@@ -1971,15 +1935,9 @@ namespace {
 
             for (size_t i = 0; i < 102; i++) {
                 const char* cc = mod->Rebase<const char>(names[i]);
-                os
-                    << "\n" << cc
-                    << ",0x" << std::hex << MaterialHash(cc)
-                    << ",hash_" << std::hex << hash::Hash64(cc)
-                    ;
+                os << "\n" << cc << ",0x" << std::hex << MaterialHash(cc) << ",hash_" << std::hex << hash::Hash64(cc);
             }
         }
-
-
 
         LOG_INFO("Dump into {}", out);
 
@@ -1987,7 +1945,8 @@ namespace {
     }
 
     int dmattesthash(int argc, const char* argv[]) {
-        if (tool::NotEnoughParam(argc, 1)) return tool::BAD_USAGE;
+        if (tool::NotEnoughParam(argc, 1))
+            return tool::BAD_USAGE;
 
         const char* out{ tool::NotEnoughParam(argc, 2) ? "mttxtout.csv" : argv[3] };
 
@@ -1997,17 +1956,15 @@ namespace {
         std::string line{};
 
         while (*input && std::getline(*input, line, '\n')) {
-            os
-                << "\n"
-                << "0x" << std::hex << MaterialHash(line.c_str())
-                << "," << line;
+            os << "\n"
+               << "0x" << std::hex << MaterialHash(line.c_str()) << "," << line;
         }
 
         LOG_INFO("Dump into {}", out);
 
         return tool::OK;
     }
-}
+} // namespace
 
 ADD_TOOL(dps, "bo4", " [output=pool.csv]", "dump pooled scripts", L"BlackOps4.exe", poolscripts);
 ADD_TOOL(wpsbo4, "bo4", " [output=scriptparsetree]", "write pooled scripts", L"BlackOps4.exe", writepoolscripts);
@@ -2023,6 +1980,5 @@ ADD_TOOL(dstorage, "bo4", " [output=storage.json]", "dump storage", L"BlackOps4.
 ADD_TOOL(dvehfields, "bo4", " [exe] [output=vehfields.csv]", "dump vehicle fields", dvehfields);
 ADD_TOOL(dmatbo4texturenames, "bo4", " [exe] [output=mttxtnames.csv]", "test hash", dmatbo4texturenames);
 ADD_TOOL(dmattesthash, "bo4", " [csv] [output=mttxtout.csv]", "test hash", dmattesthash);
-
 
 #endif // _WIN32

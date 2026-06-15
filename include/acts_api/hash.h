@@ -25,20 +25,20 @@ typedef uint64_t (*ActsAPIHash_HashFunction)(const char* text);
 
 // Hash type
 typedef struct {
-	// internal id
-	const char* id;
-	// hash description
-	const char* desc;
-	// hash function
-	ActsAPIHash_HashFunction hashFunc;
+    // internal id
+    const char* id;
+    // hash description
+    const char* desc;
+    // hash function
+    ActsAPIHash_HashFunction hashFunc;
 } ActsAPIHash_HashType;
 
 // Hash types list
 typedef struct {
-	// values
-	ActsAPIHash_HashType* values;
-	// count
-	size_t count;
+    // values
+    ActsAPIHash_HashType* values;
+    // count
+    size_t count;
 } ActsAPIHash_HashTypeList;
 
 // Decoded error code (bo4/cw)

@@ -16,79 +16,76 @@
 #define EXPORT extern "C" __declspec(dllexport)
 
 namespace inject {
-	enum DllType {
-		DLLTYPE_UNKNOWN = 0,
-		DLLTYPE_CLIENT,
-		DLLTYPE_EXTENSION,
-	};
+    enum DllType {
+        DLLTYPE_UNKNOWN = 0,
+        DLLTYPE_CLIENT,
+        DLLTYPE_EXTENSION,
+    };
 
-	extern DllType g_dllType;
+    extern DllType g_dllType;
 
-	extern cli::clisync::CliSyncData g_cliData;
+    extern cli::clisync::CliSyncData g_cliData;
 
-	struct InjectedSystem {
-		static void InjectSystem(InjectedSystem* sys);
-		static std::vector<InjectedSystem*>& GetSystems();
+    struct InjectedSystem {
+        static void InjectSystem(InjectedSystem* sys);
+        static std::vector<InjectedSystem*>& GetSystems();
 
-		const char* name;
-		UINT level;
-		std::function<void()> preinit;
-		std::function<void()> postinit;
+        const char* name;
+        UINT level;
+        std::function<void()> preinit;
+        std::function<void()> postinit;
 
-		inline InjectedSystem(const char* name, UINT level, std::function<void()> preinit = nullptr, std::function<void()> postinit = nullptr)
-		: name(name), level(level), preinit(preinit), postinit(postinit) {
-			assert(name && "a system name can't be null");
-			InjectSystem(this);
-		}
-	};
+        inline InjectedSystem(const char* name, UINT level, std::function<void()> preinit = nullptr,
+                              std::function<void()> postinit = nullptr)
+            : name(name), level(level), preinit(preinit), postinit(postinit) {
+            assert(name && "a system name can't be null");
+            InjectSystem(this);
+        }
+    };
 
-	enum DetourTime {
-		PRE_INIT,
-		POST_INIT
-	};
+    enum DetourTime { PRE_INIT, POST_INIT };
 
-	struct DetourRegistryData {
-		const char* title;
-		void* pointer;
-		void* detour;
-		DetourTime time;
-	};
+    struct DetourRegistryData {
+        const char* title;
+        void* pointer;
+        void* detour;
+        DetourTime time;
+    };
 
-	void RegisterDetour(DetourRegistryData* data);
+    void RegisterDetour(DetourRegistryData* data);
 
-	template<typename Output, typename... Args>
-	class DetourInfo {
-	public:
-		typedef Output(__fastcall* Func)(Args...);
-		// function to detour location
-		Func m_pointer;
-		// detour function
-		Func m_detour;
-		// registry info
-		DetourRegistryData data;
-	public:
-		DetourInfo(const char* title, void* location, Func detour, DetourTime time = POST_INIT)
-			: m_pointer(reinterpret_cast<Func>(location)), m_detour(detour),
-			data(title, &m_pointer, m_detour, time) {
-			RegisterDetour(&data);
-		}
+    template<typename Output, typename... Args>
+    class DetourInfo {
+      public:
+        typedef Output(__fastcall* Func)(Args...);
+        // function to detour location
+        Func m_pointer;
+        // detour function
+        Func m_detour;
+        // registry info
+        DetourRegistryData data;
 
-		DetourInfo(const char* title, uintptr_t location, Func detour, DetourTime time = POST_INIT)
-			: m_pointer(reinterpret_cast<Func>(&(hook::process::BasePtr()[location]))), m_detour(detour),
-			data(title, &m_pointer, m_detour, time) {
-			RegisterDetour(&data);
-		}
+      public:
+        DetourInfo(const char* title, void* location, Func detour, DetourTime time = POST_INIT)
+            : m_pointer(reinterpret_cast<Func>(location)), m_detour(detour), data(title, &m_pointer, m_detour, time) {
+            RegisterDetour(&data);
+        }
 
-		inline Output operator()(Args... args) {
-			return m_pointer(args...);
-		}
-	};
+        DetourInfo(const char* title, uintptr_t location, Func detour, DetourTime time = POST_INIT)
+            : m_pointer(reinterpret_cast<Func>(&(hook::process::BasePtr()[location]))), m_detour(detour),
+              data(title, &m_pointer, m_detour, time) {
+            RegisterDetour(&data);
+        }
 
-	enum INJECT_PRIORITY : UINT {
-		PRIORITY_INIT = 0,
-		PRIORITY_NORMAL = 0x1000,
-		PRIORITY_DETOURS = 0xFFFFFFFF,
-	};
-}
+        inline Output operator()(Args... args) { return m_pointer(args...); }
+    };
 
-#define ADD_INJECTED_SYSTEM(id, ...) static inject::InjectedSystem alloc_sys_##id { __VA_ARGS__ }
+    enum INJECT_PRIORITY : UINT {
+        PRIORITY_INIT = 0,
+        PRIORITY_NORMAL = 0x1000,
+        PRIORITY_DETOURS = 0xFFFFFFFF,
+    };
+} // namespace inject
+
+#define ADD_INJECTED_SYSTEM(id, ...)                                                                                   \
+    static inject::InjectedSystem alloc_sys_##id { __VA_ARGS__ }

@@ -36,7 +36,7 @@ namespace tool::gsc {
 
     // cli options
     class GscInfoOption {
-    public:
+      public:
         bool m_dcomp{};
         bool m_dasm{};
         bool m_help{};
@@ -91,10 +91,9 @@ namespace tool::gsc {
         opcode::Platform m_platform{ opcode::Platform::PLATFORM_PC };
         opcode::VMId m_vm{ opcode::VMId::VMI_UNKNOWN };
         const formatter::FormatterInfo* m_formatter{};
-        const char* (*LookupLocalizedFunc)(uint64_t hash) {};
-        void (*WriteAsmFunction)(const char* str, size_t len, void* ud) {};
+        const char* (*LookupLocalizedFunc)(uint64_t hash){};
+        void (*WriteAsmFunction)(const char* str, size_t len, void* ud){};
         void* udWriteAsmFunction{};
-
 
         std::vector<const char*> m_inputFiles{};
 
@@ -143,7 +142,9 @@ namespace tool::gsc {
         std::unordered_map<uint64_t, GscDecompilerGDBData*> gdbData{};
         size_t decompiledFiles{};
         size_t hardErrors{};
-        std::unordered_map<uint64_t, std::unordered_map<uint64_t, std::unordered_set<NameLocated, NameLocatedHash, NameLocatedEquals>>> vtables{};
+        std::unordered_map<
+            uint64_t, std::unordered_map<uint64_t, std::unordered_set<NameLocated, NameLocatedHash, NameLocatedEquals>>>
+            vtables{};
         std::unordered_map<NameLocated, GscExportInformation, NameLocatedHash, NameLocatedEquals> exportInfos{};
         std::unordered_map<uint64_t, std::unordered_set<uint32_t>>* opcodesLocs{};
         std::unordered_set<std::string>* dumpStringsStore{};
@@ -152,6 +153,7 @@ namespace tool::gsc {
         bool WarningType(GscDecompilerGlobalContextWarn warn);
     };
 
-    int DecompileGsc(byte* data, size_t size, std::filesystem::path fsPath, GscDecompilerGlobalContext& gdctx, byte* dbgData = nullptr, size_t dbgSize = 0);
+    int DecompileGsc(byte* data, size_t size, std::filesystem::path fsPath, GscDecompilerGlobalContext& gdctx,
+                     byte* dbgData = nullptr, size_t dbgSize = 0);
 
-}
+} // namespace tool::gsc

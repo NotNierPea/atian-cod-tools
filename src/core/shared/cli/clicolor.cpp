@@ -4,18 +4,16 @@
 #include <platform/platform.hpp>
 
 namespace cli::clicolor {
-	bool ConsoleAllowColor() {
-		return platform::PlatformConsoleAllowColor();
-	}
+    bool ConsoleAllowColor() { return platform::PlatformConsoleAllowColor(); }
 
-}
+} // namespace cli::clicolor
 std::ostream& operator<<(std::ostream& out, cli::clicolor::ColorData data) {
-	if (data) {
-		if (data & cli::clicolor::CD_BACKGROUND) {
-			return out << "\033[48;5;" << std::dec << (int)(data & cli::clicolor::CD_COLOR_MASK) << "m";
-		}
-		return out << "\033[38;5;" << std::dec << (int)(data & cli::clicolor::CD_COLOR_MASK) << "m";
-	}
+    if (data) {
+        if (data & cli::clicolor::CD_BACKGROUND) {
+            return out << "\033[48;5;" << std::dec << (int)(data & cli::clicolor::CD_COLOR_MASK) << "m";
+        }
+        return out << "\033[38;5;" << std::dec << (int)(data & cli::clicolor::CD_COLOR_MASK) << "m";
+    }
 
-	return out << "\033[0m";
+    return out << "\033[0m";
 }

@@ -3,37 +3,30 @@
 #include <hook/scan_container.hpp>
 
 namespace hook::module_mapper {
-	class Module {
-		bool freeOnExit{};
-		hook::library::Library lib{ (void*)0 };
-		hook::scan_container::ScanContainer scanContainer{ true };
-		hook::library::ScanLogger logger{};
-	public:
-		Module(bool freeOnExit = false);
-		Module(const Module& other) = delete;
-		Module(Module&& other) = delete;
-		~Module();
+    class Module {
+        bool freeOnExit{};
+        hook::library::Library lib{ (void*)0 };
+        hook::scan_container::ScanContainer scanContainer{ true };
+        hook::library::ScanLogger logger{};
 
-		bool Load(const std::filesystem::path& path, bool patchIAT = true, bool absolute = true);
-		void Free();
+      public:
+        Module(bool freeOnExit = false);
+        Module(const Module& other) = delete;
+        Module(Module&& other) = delete;
+        ~Module();
 
-		constexpr operator bool() {
-			return lib;
-		}
+        bool Load(const std::filesystem::path& path, bool patchIAT = true, bool absolute = true);
+        void Free();
 
-		constexpr const hook::library::Library* operator->() const {
-			return &lib;
-		}
+        constexpr operator bool() { return lib; }
 
-		constexpr const hook::library::Library& operator*() const {
-			return lib;
-		}
+        constexpr const hook::library::Library* operator->() const { return &lib; }
 
-		constexpr const hook::library::Library& GetLibrary() const {
-			return lib;
-		}
+        constexpr const hook::library::Library& operator*() const { return lib; }
 
-		hook::scan_container::ScanContainer& GetScanContainer();
-		hook::library::ScanLogger& GetScanLogger();
-	};
-}
+        constexpr const hook::library::Library& GetLibrary() const { return lib; }
+
+        hook::scan_container::ScanContainer& GetScanContainer();
+        hook::library::ScanLogger& GetScanLogger();
+    };
+} // namespace hook::module_mapper

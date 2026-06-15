@@ -1,25 +1,22 @@
 #include <includes_shared.hpp>
 #include "oodle.hpp"
 
-
 namespace deps::oodle {
 
-	Oodle& GetInstance() {
-		static Oodle oodle{};
-		static std::once_flag of{};
+    Oodle& GetInstance() {
+        static Oodle oodle{};
+        static std::once_flag of{};
 
-		std::call_once(of, [] {
-			if (!oodle.LoadAny()) {
-				throw std::runtime_error("Can't load oodle");
-			}
-		});
+        std::call_once(of, [] {
+            if (!oodle.LoadAny()) {
+                throw std::runtime_error("Can't load oodle");
+            }
+        });
 
-		return oodle;
-	}
-
-    Oodle::Oodle(const char* libname) {
-        LoadOodle(libname);
+        return oodle;
     }
+
+    Oodle::Oodle(const char* libname) { LoadOodle(libname); }
     namespace {
         void DefaultPrintF(int unk, const char* filename, int len, const char* fmt, ...) {
             if (HAS_LOG_LEVEL(core::logs::LVL_INFO)) {
@@ -31,7 +28,7 @@ namespace deps::oodle {
                 va_end(va);
             }
         }
-    }
+    } // namespace
 
     bool Oodle::LoadOodle(const char* libname) {
         FreeOodle();
@@ -51,8 +48,9 @@ namespace deps::oodle {
             LOG_TRACE("Loaded oodle version 0x{:x}", GetVersion());
         }
 
-        if ((OodleLZ_GetCompressedBufferSizeNeeded.v8 = oodle.GetProc<POodleLZ_GetCompressedBufferSizeNeededV8>("OodleLZ_GetCompressedBufferSizeNeeded"))
-            && (OodleLZ_Compress = oodle.GetProc<POodleLZ_Compress>("OodleLZ_Compress"))) {
+        if ((OodleLZ_GetCompressedBufferSizeNeeded.v8 =
+                 oodle.GetProc<POodleLZ_GetCompressedBufferSizeNeededV8>("OodleLZ_GetCompressedBufferSizeNeeded")) &&
+            (OodleLZ_Compress = oodle.GetProc<POodleLZ_Compress>("OodleLZ_Compress"))) {
             LOG_TRACE("Loaded oodle compress");
 
             useV8 = OodleLZ_GetCompressedBufferSizeNeeded.v8(deps::oodle::OODLE_COMP_KRAKEN, 10000) > 10000;
@@ -72,7 +70,8 @@ namespace deps::oodle {
             std::string libname{ std::format(OO2CORE_PATTERN, i) };
             oodle.SetModule(libname, false, platform::LSF_SEARCH_DEFAULT_DIRS);
 
-            if (!oodle) continue;
+            if (!oodle)
+                continue;
 
             if (!(OodleLZ_Decompress = oodle.GetProc<POodleLZ_Decompress>("OodleLZ_Decompress"))) {
                 LOG_ERROR("Can't load find OodleLZ_Decompress in lib {}, is this an oodle dll?", libname);
@@ -83,14 +82,16 @@ namespace deps::oodle {
                 LOG_TRACE("Loaded oodle version 0x{:x}", GetVersion());
             }
 
-            if ((OodleLZ_GetCompressedBufferSizeNeeded.v8 = oodle.GetProc<POodleLZ_GetCompressedBufferSizeNeededV8>("OodleLZ_GetCompressedBufferSizeNeeded"))
-                && (OodleLZ_Compress = oodle.GetProc<POodleLZ_Compress>("OodleLZ_Compress"))) {
+            if ((OodleLZ_GetCompressedBufferSizeNeeded.v8 = oodle.GetProc<POodleLZ_GetCompressedBufferSizeNeededV8>(
+                     "OodleLZ_GetCompressedBufferSizeNeeded")) &&
+                (OodleLZ_Compress = oodle.GetProc<POodleLZ_Compress>("OodleLZ_Compress"))) {
                 LOG_TRACE("Loaded oodle compress");
 
                 useV8 = OodleLZ_GetCompressedBufferSizeNeeded.v8(deps::oodle::OODLE_COMP_KRAKEN, 10000) >= 10000;
             }
 
-            if (OodleCore_Plugins_SetPrintf = oodle.GetProc<POodleCore_Plugins_SetPrintf>("OodleCore_Plugins_SetPrintf")) {
+            if (OodleCore_Plugins_SetPrintf =
+                    oodle.GetProc<POodleCore_Plugins_SetPrintf>("OodleCore_Plugins_SetPrintf")) {
                 OodleCore_Plugins_SetPrintf(DefaultPrintF);
             }
 
@@ -125,7 +126,8 @@ namespace deps::oodle {
         Oodle_GetConfigValues(cfg);
     }
 
-    int Oodle::Compress(OodleCompressor compressor, const void* src, int32_t srcLen, void* dest, OodleCompressionLevel level) const {
+    int Oodle::Compress(OodleCompressor compressor, const void* src, int32_t srcLen, void* dest,
+                        OodleCompressionLevel level) const {
         if (!OodleLZ_Compress) {
             throw std::runtime_error("OodleLZ_Compress not available or oodle not loaded");
         }
@@ -138,8 +140,7 @@ namespace deps::oodle {
         }
         if (useV8) {
             return OodleLZ_GetCompressedBufferSizeNeeded.v8(compressor, rawSize);
-        }
-        else {
+        } else {
             return OodleLZ_GetCompressedBufferSizeNeeded.v67(rawSize);
         }
     }
@@ -157,14 +158,16 @@ namespace deps::oodle {
         OodleCore_Plugins_SetPrintf(func);
     }
 
-    int Oodle::Decompress(
-        const void* src, uint32_t srcLen, void* dest, uint32_t destLen, OodleFuzeSafe fuzeSafe, OodleCheckCrcValues checkCrc, OodleVerbosity verbosity, OodleThreadPhase threadPhase,
-        byte* decBufBase, uint64_t decBufSize, OodleDecompressCallback fpCallback , void* callbackUserData, byte* decoderMemory, uint64_t decoderMemorySize) const {
+    int Oodle::Decompress(const void* src, uint32_t srcLen, void* dest, uint32_t destLen, OodleFuzeSafe fuzeSafe,
+                          OodleCheckCrcValues checkCrc, OodleVerbosity verbosity, OodleThreadPhase threadPhase,
+                          byte* decBufBase, uint64_t decBufSize, OodleDecompressCallback fpCallback,
+                          void* callbackUserData, byte* decoderMemory, uint64_t decoderMemorySize) const {
         if (!OodleLZ_Decompress) {
             throw std::runtime_error("Oodle not loaded");
         }
 
-        return OodleLZ_Decompress(src, srcLen, dest, destLen, fuzeSafe, checkCrc, verbosity, decBufBase, decBufSize, fpCallback, callbackUserData, decoderMemory, decoderMemorySize, threadPhase);
+        return OodleLZ_Decompress(src, srcLen, dest, destLen, fuzeSafe, checkCrc, verbosity, decBufBase, decBufSize,
+                                  fpCallback, callbackUserData, decoderMemory, decoderMemorySize, threadPhase);
     }
 
-}
+} // namespace deps::oodle

@@ -16,4 +16,4 @@ namespace tool::gsc {
         uint32_t unk38;
         uint32_t unk3c;
     };
-}
+} // namespace tool::gsc

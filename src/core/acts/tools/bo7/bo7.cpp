@@ -5,7 +5,6 @@
 #include <hook/module_mapper.hpp>
 #include <games/cod/asset_names.hpp>
 
-
 namespace tool::bo7 {
     namespace {
         const char* poolNames[]{
@@ -402,9 +401,7 @@ namespace tool::bo7 {
         return it->second;
     }
 
-    SatHashAssetType PoolId(const char* name) {
-        return (SatHashAssetType)hash::HashX32(name);
-    }
+    SatHashAssetType PoolId(const char* name) { return (SatHashAssetType)hash::HashX32(name); }
 
     constexpr const char* defaultBoLuaFuncObject = "default";
     static struct {
@@ -419,18 +416,14 @@ namespace tool::bo7 {
 
     void NullStub() {}
     template<typename T, T val>
-    T ReturnStub() { return val; }
-
-    void BoLoadLuaPop(void* vm, size_t count) {
-        boLuaData.currentFunc = defaultBoLuaFuncObject;
-    }
-    void BoLoadLuaPush(void* vm, int a2, const char* category) {
-        boLuaData.currentFunc = category;
+    T ReturnStub() {
+        return val;
     }
 
-    void BoLoadLuaFunc(void* vm, uint64_t hash, void* func) {
-        boLuaData.funcs[boLuaData.currentFunc][hash] = func;
-    }
+    void BoLoadLuaPop(void* vm, size_t count) { boLuaData.currentFunc = defaultBoLuaFuncObject; }
+    void BoLoadLuaPush(void* vm, int a2, const char* category) { boLuaData.currentFunc = category; }
+
+    void BoLoadLuaFunc(void* vm, uint64_t hash, void* func) { boLuaData.funcs[boLuaData.currentFunc][hash] = func; }
     void BoLoadLuaFuncStr(void* vm, const char* str, void* func) {
         uint64_t hash{ hash::Hash64A(str) };
         hashutils::AddPrecomputed(hash, str, true);
@@ -438,7 +431,8 @@ namespace tool::bo7 {
     }
 
     int bo7_lua_dump(int argc, const char* argv[]) {
-        if (tool::NotEnoughParam(argc, 2)) return tool::BAD_USAGE;
+        if (tool::NotEnoughParam(argc, 2))
+            return tool::BAD_USAGE;
 
         std::filesystem::path exe{ argv[2] };
 
@@ -455,31 +449,39 @@ namespace tool::bo7 {
         boLuaData.Cleanup();
 
         // remove lua things if false it creates some useless calls
-        hook::memory::RedirectJmp(mod->ScanSingle("E8 ?? ?? ?? ?? 48 63 5D ?? 83 F8", "BoLuaUnkReturn").GetRelative<int32_t>(1), ReturnStub<bool, true>); // 88F5390
+        hook::memory::RedirectJmp(
+            mod->ScanSingle("E8 ?? ?? ?? ?? 48 63 5D ?? 83 F8", "BoLuaUnkReturn").GetRelative<int32_t>(1),
+            ReturnStub<bool, true>); // 88F5390
 
         // registry function
-        hook::memory::RedirectJmp(mod->ScanSingle("E8 ?? ?? ?? ?? 48 8B 9C 24 ?? ?? ?? ?? 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8B 8D", "BoLoadLuaPop").GetRelative<int32_t>(1), BoLoadLuaPop); // 88F5390
-        hook::memory::RedirectJmp(mod->ScanSingle("E8 ?? ?? ?? ?? BA FE FF FF FF 48 8B CE E8 ?? ?? ?? ?? 48 8B BC 24", "BoLoadLuaPush").GetRelative<int32_t>(1), BoLoadLuaPush); // 88F5390
+        hook::memory::RedirectJmp(
+            mod->ScanSingle("E8 ?? ?? ?? ?? 48 8B 9C 24 ?? ?? ?? ?? 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8B 8D",
+                            "BoLoadLuaPop")
+                .GetRelative<int32_t>(1),
+            BoLoadLuaPop); // 88F5390
+        hook::memory::RedirectJmp(
+            mod->ScanSingle("E8 ?? ?? ?? ?? BA FE FF FF FF 48 8B CE E8 ?? ?? ?? ?? 48 8B BC 24", "BoLoadLuaPush")
+                .GetRelative<int32_t>(1),
+            BoLoadLuaPush); // 88F5390
 
-        void* stub{ mod->ScanSingle("E8 ?? ?? ?? ?? 48 BA EA C8 1A 47 1B 60 F9 08", "BoLoadLuaFunc").GetRelative<int32_t>(1) }; // BoLoadLuaFunc(luastate*, 0xhash, func)
-        void* stubStr{ mod->ScanSingle("E8 ?? ?? ?? ?? 4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 49 8B CD", "BoLoadLuaFuncStr").GetRelative<int32_t>(1) }; // BoLoadLuaFuncStr(luastate*, "str", func)
+        void* stub{
+            mod->ScanSingle("E8 ?? ?? ?? ?? 48 BA EA C8 1A 47 1B 60 F9 08", "BoLoadLuaFunc").GetRelative<int32_t>(1)
+        }; // BoLoadLuaFunc(luastate*, 0xhash, func)
+        void* stubStr{ mod->ScanSingle("E8 ?? ?? ?? ?? 4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 49 8B CD",
+                                       "BoLoadLuaFuncStr")
+                           .GetRelative<int32_t>(1) }; // BoLoadLuaFuncStr(luastate*, "str", func)
 
         LOG_INFO("redirect hash . {}", hook::library::CodePointer{ stub });
         LOG_INFO("redirect str .. {}", hook::library::CodePointer{ stubStr });
 
-        hook::memory::RedirectJmp(
-            stub,
-            BoLoadLuaFunc
-        );
+        hook::memory::RedirectJmp(stub, BoLoadLuaFunc);
 
-        hook::memory::RedirectJmp(
-            stubStr,
-            BoLoadLuaFuncStr
-        );
+        hook::memory::RedirectJmp(stubStr, BoLoadLuaFuncStr);
 
         // 71b36f0bb44547d4 / bb69baec8be93d50 ?
-        mod->ScanSingle("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 48 89 4C 24 ?? 57 41 54 41 55 41 56 41 57 48 83 EC ?? 4C 8D 05 ?? ?? ?? ?? BA EE D8 FF FF E8")
-            .GetPtr<void(*)(void*)>()(nullptr);// load_funcs(luastate*)
+        mod->ScanSingle("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 48 89 4C 24 ?? 57 41 54 41 55 41 56 41 57 48 83 "
+                        "EC ?? 4C 8D 05 ?? ?? ?? ?? BA EE D8 FF FF E8")
+            .GetPtr<void (*)(void*)>()(nullptr); // load_funcs(luastate*)
 
         utils::OutFileCE os{ argv[3], true };
 
@@ -489,18 +491,19 @@ namespace tool::bo7 {
 
         for (auto& [cat, funcs] : boLuaData.funcs) {
             for (auto& [name, func] : funcs) {
-                os << "\n" << cat << "," << hashutils::ExtractTmp("hash", name) << "," << hook::library::CodePointer{ func };
+                os << "\n"
+                   << cat << "," << hashutils::ExtractTmp("hash", name) << "," << hook::library::CodePointer{ func };
             }
         }
 
         boLuaData.Cleanup();
 
-
         return tool::OK;
     }
 
     int bo7_ncs_dump(int argc, const char* argv[]) {
-        if (tool::NotEnoughParam(argc, 2)) return tool::BAD_USAGE;
+        if (tool::NotEnoughParam(argc, 2))
+            return tool::BAD_USAGE;
 
         std::filesystem::path exe{ argv[2] };
 
@@ -519,8 +522,7 @@ namespace tool::bo7 {
         LOG_INFO("Loaded");
 
         // init data
-        mod->ScanSingle("48 89 5C 24 10 48 89 7C 24 18 55 48 8B EC 48 83 EC 20 48 8D")
-            .GetPtr<void(*)()>()();
+        mod->ScanSingle("48 89 5C 24 10 48 89 7C 24 18 55 48 8B EC 48 83 EC 20 48 8D").GetPtr<void (*)()>()();
 
         struct NCSInfo {
             const char* precache;
@@ -532,23 +534,19 @@ namespace tool::bo7 {
         };
         static_assert(sizeof(NCSInfo) == 0x28);
 
-
-
-        NCSInfo* nsci{ mod->ScanSingle("48 89 05 ?? ?? ?? ?? C6 45 10 00 E8 ?? ?? ?? ?? 33 FF").GetRelative<int32_t, NCSInfo*>(3) };
+        NCSInfo* nsci{
+            mod->ScanSingle("48 89 05 ?? ?? ?? ?? C6 45 10 00 E8 ?? ?? ?? ?? 33 FF").GetRelative<int32_t, NCSInfo*>(3)
+        };
         LOG_INFO("load info at {}", hook::library::CodePointer{ nsci });
 
         utils::OutFileCE os{ argv[3], true };
         os << "id,name,type,precache,bundleCategory,unk24";
 
         for (size_t i = 0; i < 90; i++) {
-            os
-                << "\n" << std::dec << i
-                << "," << utils::PtrOrElse(nsci[i].name, "null")
-                << "," << names.GetTypeName(nsci[i].type)
-                << "," << utils::PtrOrElse(nsci[i].precache, "null")
-                << "," << utils::PtrOrElse(nsci[i].bundleCategory, "null")
-                << "," << (nsci[i].unk24 ? "true" : "false")
-                ;
+            os << "\n"
+               << std::dec << i << "," << utils::PtrOrElse(nsci[i].name, "null") << ","
+               << names.GetTypeName(nsci[i].type) << "," << utils::PtrOrElse(nsci[i].precache, "null") << ","
+               << utils::PtrOrElse(nsci[i].bundleCategory, "null") << "," << (nsci[i].unk24 ? "true" : "false");
         }
 
         LOG_INFO("dumped into {}", argv[3]);
@@ -556,15 +554,12 @@ namespace tool::bo7 {
         return tool::OK;
     }
 
-
     typedef uint32_t ScrString_t;
 
     struct {
         std::unordered_map<ScrString_t, std::string> strings{};
 
-        void Clear() {
-            strings.clear();
-        }
+        void Clear() { strings.clear(); }
     } constStrings;
 
     static ScrString_t* ConstStrings_SL_GetString(ScrString_t* ret, const char* string, int user, bool cst) {
@@ -580,7 +575,8 @@ namespace tool::bo7 {
     }
 
     int bo7_cststr_dump(int argc, const char* argv[]) {
-        if (tool::NotEnoughParam(argc, 2)) return tool::BAD_USAGE;
+        if (tool::NotEnoughParam(argc, 2))
+            return tool::BAD_USAGE;
 
         std::filesystem::path exe{ argv[2] };
 
@@ -591,18 +587,24 @@ namespace tool::bo7 {
             LOG_ERROR("Can't load module");
             return tool::BASIC_ERROR;
         }
-        void(*SL_RegisterConstStrings)() { mod->ScanSingle("E8 ?? ?? ?? ?? 48 B8 94 0A 26 27 C3 45 FA FD", "SL_RegisterConstStrings").GetRelative<int32_t, void(*)()>(1) };
-        if (!hook::library::ScanMatch(SL_RegisterConstStrings, "48 83 EC 28 33 D2 48 8D 0D ?? ?? ?? ?? 41 B8 ?? ?? ?? ??")) {
+        void (*SL_RegisterConstStrings)(){ mod->ScanSingle("E8 ?? ?? ?? ?? 48 B8 94 0A 26 27 C3 45 FA FD",
+                                                           "SL_RegisterConstStrings")
+                                               .GetRelative<int32_t, void (*)()>(1) };
+        if (!hook::library::ScanMatch(SL_RegisterConstStrings,
+                                      "48 83 EC 28 33 D2 48 8D 0D ?? ?? ?? ?? 41 B8 ?? ?? ?? ??")) {
             throw std::runtime_error("Can't match register info");
         }
-        void* SL_GetString{ mod->ScanSingle("E8 ?? ?? ?? ?? 8B 18 49 8B CC", "SL_GetString").GetRelative<int32_t, void*>(1) };
+        void* SL_GetString{
+            mod->ScanSingle("E8 ?? ?? ?? ?? 8B 18 49 8B CC", "SL_GetString").GetRelative<int32_t, void*>(1)
+        };
         hook::memory::RedirectJmp(SL_GetString, ConstStrings_SL_GetString);
 
         ScrString_t* scrConstStrings{ hook::library::GetRelative<int32_t, ScrString_t*>(SL_RegisterConstStrings, 9) };
         uint32_t count{ *(uint32_t*)((byte*)SL_RegisterConstStrings + 15) / sizeof(ScrString_t) };
 
-        LOG_INFO("stub: {}, ptr: {}, count:{}", hook::library::CodePointer{ SL_RegisterConstStrings },hook::library::CodePointer{ scrConstStrings }, count);
-        
+        LOG_INFO("stub: {}, ptr: {}, count:{}", hook::library::CodePointer{ SL_RegisterConstStrings },
+                 hook::library::CodePointer{ scrConstStrings }, count);
+
         if (count > 10000) {
             throw std::runtime_error("Invalid count");
         }
@@ -612,10 +614,8 @@ namespace tool::bo7 {
         SL_RegisterConstStrings();
 
         utils::OutFileCE os{ argv[3], true };
-        os 
-            << 
-                "typedef uint32_t ScrString_t;\n"
-                "struct ConstScrStrings {\n";
+        os << "typedef uint32_t ScrString_t;\n"
+              "struct ConstScrStrings {\n";
 
         std::unordered_map<uint64_t, size_t> counts{};
 
@@ -628,18 +628,18 @@ namespace tool::bo7 {
                 utils::Padding(os, 1) << "uint32_t unk" << std::hex << (i * sizeof(scrConstStrings[i])) << ";\n";
                 continue;
             }
-            
+
             const char* def{ core::strings::GetCppIdentifier(it->second.data()) };
             size_t cnt{ counts[hash::Hash64A(def)]++ };
 
             utils::Padding(os, 1) << "ScrString_t ";
             if (*def) {
                 os << "field_" << def;
-            }
-            else {
+            } else {
                 os << "empty";
             }
-            if (cnt) os << "_" << cnt;
+            if (cnt)
+                os << "_" << cnt;
             os << ";\n";
         }
         os << "};\n";
@@ -653,4 +653,4 @@ namespace tool::bo7 {
     ADD_TOOL(bo7_lua_dump, "bo7", " [exe] [func]", "Dump lua function data from an exe dump", bo7_lua_dump);
     ADD_TOOL(bo7_ncs_dump, "bo7", " [exe] [dump]", "Dump netconststrings data from an exe dump", bo7_ncs_dump);
     ADD_TOOL(bo7_cststr_dump, "bo7", " [exe] [dump]", "Dump scrstring struct data from an exe dump", bo7_cststr_dump);
-}
+} // namespace tool::bo7

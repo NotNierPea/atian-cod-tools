@@ -5,5 +5,5 @@
 #include <stb_image.h>
 
 namespace {
-	using namespace fastfile::linker::bo4;
+    using namespace fastfile::linker::bo4;
 }

@@ -4,18 +4,20 @@
 
 namespace tool::cordycep::dump {
 
-	class PoolOption {
-	public:
-		virtual const char* AddString(const char* str) = 0;
-	};
-	int ForEachEntry(Process& proc, compatibility::scobalula::csi::XAssetPool64& pool, std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)> func);
+    class PoolOption {
+      public:
+        virtual const char* AddString(const char* str) = 0;
+    };
+    int ForEachEntry(Process& proc, compatibility::scobalula::csi::XAssetPool64& pool,
+                     std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)> func);
 
-	typedef int (*dumpfunc)(Process& proc, compatibility::scobalula::csi::CordycepProc& cordycep, int argc, const char* argv[]);
-	struct CordycepDumper {
-		compatibility::scobalula::csi::CordycepGame game;
-		dumpfunc dump;
-		size_t numpools;
-	};
+    typedef int (*dumpfunc)(Process& proc, compatibility::scobalula::csi::CordycepProc& cordycep, int argc,
+                            const char* argv[]);
+    struct CordycepDumper {
+        compatibility::scobalula::csi::CordycepGame game;
+        dumpfunc dump;
+        size_t numpools;
+    };
 
-	std::vector<CordycepDumper*>& GetDumpers();
-}
+    std::vector<CordycepDumper*>& GetDumpers();
+} // namespace tool::cordycep::dump

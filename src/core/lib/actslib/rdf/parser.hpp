@@ -2,175 +2,169 @@
 #include "rdf.hpp"
 
 namespace actslib::rdf {
-	enum RDFFormat {
-		RF_NTRIPLES = 0,
-		RF_COUNT
-	};
+    enum RDFFormat { RF_NTRIPLES = 0, RF_COUNT };
 
-	class RDFParser {
-	public:
-		virtual operator bool() = 0;
-		bool operator!() {
-			return !(bool)*this;
-		}
-		virtual const Triple& operator*() = 0;
-		virtual RDFParser& operator++() = 0;
+    class RDFParser {
+      public:
+        virtual operator bool() = 0;
+        bool operator!() { return !(bool)*this; }
+        virtual const Triple& operator*() = 0;
+        virtual RDFParser& operator++() = 0;
 
-		const Triple* operator->() {
-			return &**this;
-		}
-	};
+        const Triple* operator->() { return &**this; }
+    };
 
-	class RDFParserNTriple : public RDFParser {
-		std::istream& is;
-		Component s{}, p{}, o{};
-		Triple next{ &s, &p, &o };
-		bool loaded{};
-		std::string lineBuffer{};
-	public:
-		RDFParserNTriple(std::istream& is) : is(is) {}
+    class RDFParserNTriple : public RDFParser {
+        std::istream& is;
+        Component s{}, p{}, o{};
+        Triple next{ &s, &p, &o };
+        bool loaded{};
+        std::string lineBuffer{};
 
-		const Triple& operator*() override {
-			if (!*this) {
-				throw std::runtime_error("Empty iterator");
-			}
-			return next;
-		}
+      public:
+        RDFParserNTriple(std::istream& is) : is(is) {}
 
-		RDFParser& operator++() override {
-			loaded = false;
-			return *this;
-		}
+        const Triple& operator*() override {
+            if (!*this) {
+                throw std::runtime_error("Empty iterator");
+            }
+            return next;
+        }
 
-		static size_t FindNextSpace(const char* str, size_t start, size_t end) {
-			for (size_t i = start; i < end; i++) {
-				if (isspace(str[i])) {
-					return i;
-				}
-			}
-			return std::string::npos;
-		}
+        RDFParser& operator++() override {
+            loaded = false;
+            return *this;
+        }
 
-		virtual operator bool() {
-			if (loaded) {
-				return true;
-			}
-			// we have to compute the next
+        static size_t FindNextSpace(const char* str, size_t start, size_t end) {
+            for (size_t i = start; i < end; i++) {
+                if (isspace(str[i])) {
+                    return i;
+                }
+            }
+            return std::string::npos;
+        }
 
-			while (is && std::getline(is, lineBuffer)) {
-				size_t start{};
-				while (start < lineBuffer.length() && isspace(lineBuffer[start])) {
-					start++;
-				}
+        virtual operator bool() {
+            if (loaded) {
+                return true;
+            }
+            // we have to compute the next
 
-				if (start == lineBuffer.length() || lineBuffer[start] == '#') {
-					continue; // ignore comments/empty lines
-				}
+            while (is && std::getline(is, lineBuffer)) {
+                size_t start{};
+                while (start < lineBuffer.length() && isspace(lineBuffer[start])) {
+                    start++;
+                }
 
-				size_t end{ lineBuffer.length() - 1 };
+                if (start == lineBuffer.length() || lineBuffer[start] == '#') {
+                    continue; // ignore comments/empty lines
+                }
 
-				while (isspace(lineBuffer[end])) {
-					end--;
-					continue;
-				}
+                size_t end{ lineBuffer.length() - 1 };
 
-				if (lineBuffer[end] != '.') {
-					continue; // invalid line, no end '.'
-				}
+                while (isspace(lineBuffer[end])) {
+                    end--;
+                    continue;
+                }
 
-				while (start < end && isspace(lineBuffer[--end])) {
-					continue;
-				}
+                if (lineBuffer[end] != '.') {
+                    continue; // invalid line, no end '.'
+                }
 
-				if (start == end) {
-					continue; // invalid line only one '.'
-				}
+                while (start < end && isspace(lineBuffer[--end])) {
+                    continue;
+                }
 
-				// subject load
-				{
-					size_t b1 = start;
-					size_t b2 = FindNextSpace(lineBuffer.data(), b1, end);
+                if (start == end) {
+                    continue; // invalid line only one '.'
+                }
 
-					if (b2 == std::string::npos) {
-						continue; // not enought component
-					}
+                // subject load
+                {
+                    size_t b1 = start;
+                    size_t b2 = FindNextSpace(lineBuffer.data(), b1, end);
 
-					// match IRI
-					if (lineBuffer[b1] == '<') {
-						b1++;
-						if (lineBuffer[b2 - 1] == '>') {
-							b2--;
-						}
-					}
+                    if (b2 == std::string::npos) {
+                        continue; // not enought component
+                    }
 
-					s.buffer = lineBuffer.data();
-					s.offset = b1;
-					s.length = b2 - b1;
+                    // match IRI
+                    if (lineBuffer[b1] == '<') {
+                        b1++;
+                        if (lineBuffer[b2 - 1] == '>') {
+                            b2--;
+                        }
+                    }
 
-					start = b2 + 1;
-				}
+                    s.buffer = lineBuffer.data();
+                    s.offset = b1;
+                    s.length = b2 - b1;
 
-				while (start < end && isspace(lineBuffer[start])) {
-					start++;
-				}
+                    start = b2 + 1;
+                }
 
-				if (start == end) {
-					continue; // not enought component
-				}
+                while (start < end && isspace(lineBuffer[start])) {
+                    start++;
+                }
 
-				// predicate load
-				{
-					size_t b1 = start;
-					size_t b2 = FindNextSpace(lineBuffer.data(), b1, end);
+                if (start == end) {
+                    continue; // not enought component
+                }
 
-					if (b2 == std::string::npos) {
-						continue; // not enought component
-					}
+                // predicate load
+                {
+                    size_t b1 = start;
+                    size_t b2 = FindNextSpace(lineBuffer.data(), b1, end);
 
-					// match IRI
-					if (lineBuffer[b1] == '<') {
-						b1++;
-						if (lineBuffer[b2 - 1] == '>') {
-							b2--;
-						}
-					}
+                    if (b2 == std::string::npos) {
+                        continue; // not enought component
+                    }
 
-					p.buffer = lineBuffer.data();
-					p.offset = b1;
-					p.length = b2 - b1;
+                    // match IRI
+                    if (lineBuffer[b1] == '<') {
+                        b1++;
+                        if (lineBuffer[b2 - 1] == '>') {
+                            b2--;
+                        }
+                    }
 
-					start = b2 + 1;
-				}
+                    p.buffer = lineBuffer.data();
+                    p.offset = b1;
+                    p.length = b2 - b1;
 
-				while (start < end && isspace(lineBuffer[start])) {
-					start++;
-				}
+                    start = b2 + 1;
+                }
 
-				if (start == end) {
-					continue; // not enought component
-				}
+                while (start < end && isspace(lineBuffer[start])) {
+                    start++;
+                }
 
-				// match IRI
-				if (lineBuffer[start] == '<') {
-					start++;
-					if (lineBuffer[end] == '>') {
-						end--;
-					}
-				}
+                if (start == end) {
+                    continue; // not enought component
+                }
 
-				o.buffer = lineBuffer.data();
-				o.offset = start;
-				o.length = end - start + 1;
+                // match IRI
+                if (lineBuffer[start] == '<') {
+                    start++;
+                    if (lineBuffer[end] == '>') {
+                        end--;
+                    }
+                }
 
-				loaded = true;
+                o.buffer = lineBuffer.data();
+                o.offset = start;
+                o.length = end - start + 1;
 
-				return true;
-			}
-			return false;
-		}
-	};
+                loaded = true;
 
-	RDFFormat GuessFormat(const std::filesystem::path& path);
-	const char* FormatName(RDFFormat format);
-	std::unique_ptr<RDFParser> CreateParser(RDFFormat format, std::istream& is, const std::string& baseUri);
-}
+                return true;
+            }
+            return false;
+        }
+    };
+
+    RDFFormat GuessFormat(const std::filesystem::path& path);
+    const char* FormatName(RDFFormat format);
+    std::unique_ptr<RDFParser> CreateParser(RDFFormat format, std::istream& is, const std::string& baseUri);
+} // namespace actslib::rdf

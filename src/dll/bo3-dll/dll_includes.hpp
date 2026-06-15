@@ -9,5 +9,5 @@
 #define EXPORT extern "C" __declspec(dllexport)
 
 namespace acts {
-	hook::scan_container::ScanContainer& Scan();
+    hook::scan_container::ScanContainer& Scan();
 }

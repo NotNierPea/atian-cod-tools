@@ -5,7 +5,7 @@
  * Atian Tools Event API
  */
 
- // event type
+// event type
 typedef enum {
     EVT_REGISTER_GSC = 0xc25bddd9c1f2adfc,
     EVT_REGISTER_FASTFILE = 0x17686c4ce86af089,
@@ -20,7 +20,6 @@ typedef struct {
 } ActsAPIEvent_RegisterFastFileData;
 
 typedef void ActsAPIEvent_Callback(void* data);
-
 
 /*
  * Register an event callback, the callback will be called when the event is triggered.

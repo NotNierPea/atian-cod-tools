@@ -8,219 +8,199 @@
 #include <QCheckBox>
 
 namespace ui3::config {
-	template<class>
-	inline constexpr bool always_false_v = false;
+    template<class>
+    inline constexpr bool always_false_v = false;
 
-	enum PropertyType {
-		PT_BOOL,
-		PT_INT,
-		PT_DOUBLE,
-		PT_STRING,
-	};
+    enum PropertyType {
+        PT_BOOL,
+        PT_INT,
+        PT_DOUBLE,
+        PT_STRING,
+    };
 
-	struct PropertyEntry {
-		void* ptr{};
-		const char* path;
-		const char* description;
-		const std::type_info* type;
-		PropertyType ptype;
-		void (*Load)(void* ptr);
-	};
+    struct PropertyEntry {
+        void* ptr{};
+        const char* path;
+        const char* description;
+        const std::type_info* type;
+        PropertyType ptype;
+        void (*Load)(void* ptr);
+    };
 
-	template<typename T>
-	constexpr PropertyType GetPropertyType() {
-		if constexpr (std::is_same_v<T, bool>) {
-			return PT_BOOL;
-		}
-		else if constexpr (std::is_same_v<T, int64_t>) {
-			return PT_INT;
-		}
-		else if constexpr (std::is_same_v<T, double>) {
-			return PT_DOUBLE;
-		}
-		else if constexpr (std::is_same_v<T, QString>) {
-			return PT_STRING;
-		}
-		else {
-			static_assert(always_false_v<T>, "Unsupported type for Config");
-		}
-	}
+    template<typename T>
+    constexpr PropertyType GetPropertyType() {
+        if constexpr (std::is_same_v<T, bool>) {
+            return PT_BOOL;
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return PT_INT;
+        } else if constexpr (std::is_same_v<T, double>) {
+            return PT_DOUBLE;
+        } else if constexpr (std::is_same_v<T, QString>) {
+            return PT_STRING;
+        } else {
+            static_assert(always_false_v<T>, "Unsupported type for Config");
+        }
+    }
 
-	void SyncConfigVals();
-	void SaveConfig();
-	std::unordered_map<uint64_t, PropertyEntry>& GetPropertyMap();
-	std::vector<PropertyEntry*>& GetPropertyList();
+    void SyncConfigVals();
+    void SaveConfig();
+    std::unordered_map<uint64_t, PropertyEntry>& GetPropertyMap();
+    std::vector<PropertyEntry*>& GetPropertyList();
 
-	class PropertyNotifier : public QObject {
-		Q_OBJECT
-		using QObject::QObject;
-	signals:
-		void changed();
-	};
+    class PropertyNotifier : public QObject {
+        Q_OBJECT
+        using QObject::QObject;
+      signals:
+        void changed();
+    };
 
-	template<typename T>
-	class PropertyContainer{
-		PropertyEntry& entry;
-		PropertyNotifier notifier{ nullptr };
-		QProperty<T> prop;
-	public:
-		PropertyContainer(PropertyEntry& entry, T defaultVal)
-			: entry(entry), prop(defaultVal) {
-		}
+    template<typename T>
+    class PropertyContainer {
+        PropertyEntry& entry;
+        PropertyNotifier notifier{ nullptr };
+        QProperty<T> prop;
 
-		void Load() {
-			T v{ prop.value() };
+      public:
+        PropertyContainer(PropertyEntry& entry, T defaultVal) : entry(entry), prop(defaultVal) {}
 
-			constexpr PropertyType pt = GetPropertyType<T>();
+        void Load() {
+            T v{ prop.value() };
 
-			if constexpr (pt == PropertyType::PT_BOOL) {
-				v = ActsAPIConfig_GetBool(entry.path, v);
-			}
-			else if constexpr (pt == PropertyType::PT_INT) {
-				v = (T)ActsAPIConfig_GetInteger(entry.path, (int64_t)v);
-			}
-			else if constexpr (pt == PropertyType::PT_DOUBLE) {
-				v = (T)ActsAPIConfig_GetDouble(entry.path, v);
-			}
-			else if constexpr (pt == PropertyType::PT_STRING) {
-				QByteArray arr{ v.toUtf8() };
-				v = ActsAPIConfig_GetString(entry.path, arr.constData());
-			}
-			else {
-				static_assert(always_false_v<T>, "Unsupported type for ConfigVal::Load");
-			}
+            constexpr PropertyType pt = GetPropertyType<T>();
 
-			prop.setValue(v);
-			emit notifier.changed();
-		}
-		void Set(T v) {
-			constexpr PropertyType pt = GetPropertyType<T>();
+            if constexpr (pt == PropertyType::PT_BOOL) {
+                v = ActsAPIConfig_GetBool(entry.path, v);
+            } else if constexpr (pt == PropertyType::PT_INT) {
+                v = (T)ActsAPIConfig_GetInteger(entry.path, (int64_t)v);
+            } else if constexpr (pt == PropertyType::PT_DOUBLE) {
+                v = (T)ActsAPIConfig_GetDouble(entry.path, v);
+            } else if constexpr (pt == PropertyType::PT_STRING) {
+                QByteArray arr{ v.toUtf8() };
+                v = ActsAPIConfig_GetString(entry.path, arr.constData());
+            } else {
+                static_assert(always_false_v<T>, "Unsupported type for ConfigVal::Load");
+            }
 
-			if constexpr (pt == PropertyType::PT_BOOL) {
-				ActsAPIConfig_SetBool(entry.path, v);
-			}
-			else if constexpr (pt == PropertyType::PT_INT) {
-				ActsAPIConfig_SetInteger(entry.path, (int64_t)v);
-			}
-			else if constexpr (pt == PropertyType::PT_DOUBLE) {
-				ActsAPIConfig_SetDouble(entry.path, v);
-			}
-			else if constexpr (pt == PropertyType::PT_STRING) {
-				QByteArray arr{ v.toUtf8() };
-				ActsAPIConfig_SetString(entry.path, arr.constData());
-			}
-			else {
-				static_assert(always_false_v<T>, "Unsupported type for ConfigVal::Set");
-			}
-			SaveConfig();
+            prop.setValue(v);
+            emit notifier.changed();
+        }
+        void Set(T v) {
+            constexpr PropertyType pt = GetPropertyType<T>();
 
-			prop.setValue(v);
-			emit notifier.changed();
-		}
-		constexpr QProperty<T>& GetProperty() { return prop; }
-		constexpr PropertyNotifier& GetNotifier() { return notifier; }
-		T Get() { return prop.value(); }
-	};
+            if constexpr (pt == PropertyType::PT_BOOL) {
+                ActsAPIConfig_SetBool(entry.path, v);
+            } else if constexpr (pt == PropertyType::PT_INT) {
+                ActsAPIConfig_SetInteger(entry.path, (int64_t)v);
+            } else if constexpr (pt == PropertyType::PT_DOUBLE) {
+                ActsAPIConfig_SetDouble(entry.path, v);
+            } else if constexpr (pt == PropertyType::PT_STRING) {
+                QByteArray arr{ v.toUtf8() };
+                ActsAPIConfig_SetString(entry.path, arr.constData());
+            } else {
+                static_assert(always_false_v<T>, "Unsupported type for ConfigVal::Set");
+            }
+            SaveConfig();
 
-	template<typename T>
-	class ConfigVal {
-		PropertyContainer<T>& container;
-	public:
-		ConfigVal(const char* path, T v = {}, const char* description = "") 
-			: container(CreateContainer(path, description, v)) {
-		}
+            prop.setValue(v);
+            emit notifier.changed();
+        }
+        constexpr QProperty<T>& GetProperty() { return prop; }
+        constexpr PropertyNotifier& GetNotifier() { return notifier; }
+        T Get() { return prop.value(); }
+    };
 
-		void Set(T v) { container.Set(v); }
-		T Get() { return container.Get(); }
+    template<typename T>
+    class ConfigVal {
+        PropertyContainer<T>& container;
 
-		template<typename Widget>
-			requires std::same_as<Widget, QLineEdit> && std::same_as<T, QString>
-		void Bind(Widget* edit) {
-			PropertyContainer<T>& cc{ container };
-			QObject::connect(edit, &QLineEdit::textChanged,
-				&container.GetNotifier(), [&cc](const QString& s) { cc.Set(s); });
-			QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed,
-				edit, [&cc, edit]() { edit->setText(cc.Get()); });
+      public:
+        ConfigVal(const char* path, T v = {}, const char* description = "")
+            : container(CreateContainer(path, description, v)) {}
 
-			edit->setText(Get());
-		}
+        void Set(T v) { container.Set(v); }
+        T Get() { return container.Get(); }
 
-		template<typename Widget>
-			requires std::same_as<Widget, QComboBox> && std::same_as<T, QString>
-		void Bind(Widget* edit) {
-			PropertyContainer<T>& cc{ container };
-			QObject::connect(edit, &QComboBox::currentTextChanged,
-				&container.GetNotifier(), [&cc](const QString& s) { cc.Set(s); });
-			QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed,
-				edit, [&cc, edit]() { edit->setCurrentText(cc.Get()); });
+        template<typename Widget>
+            requires std::same_as<Widget, QLineEdit> && std::same_as<T, QString>
+        void Bind(Widget* edit) {
+            PropertyContainer<T>& cc{ container };
+            QObject::connect(edit, &QLineEdit::textChanged, &container.GetNotifier(),
+                             [&cc](const QString& s) { cc.Set(s); });
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, edit,
+                             [&cc, edit]() { edit->setText(cc.Get()); });
 
-			edit->setCurrentText(Get());
-		}
+            edit->setText(Get());
+        }
 
-		template<typename Widget>
-		requires std::same_as<Widget, QCheckBox> && std::same_as<T, bool>
-		void Bind(Widget* box) {
-			PropertyContainer<T>& cc{ container };
-			QObject::connect(box, &QCheckBox::toggled,
-				&container.GetNotifier(), [&cc, box](bool val) { cc.Set(val); });
+        template<typename Widget>
+            requires std::same_as<Widget, QComboBox> && std::same_as<T, QString>
+        void Bind(Widget* edit) {
+            PropertyContainer<T>& cc{ container };
+            QObject::connect(edit, &QComboBox::currentTextChanged, &container.GetNotifier(),
+                             [&cc](const QString& s) { cc.Set(s); });
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, edit,
+                             [&cc, edit]() { edit->setCurrentText(cc.Get()); });
 
-			QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed,
-				box, [box, &cc] { box->setChecked(cc.Get()); });
+            edit->setCurrentText(Get());
+        }
 
-			box->setChecked(Get());
-		}
+        template<typename Widget>
+            requires std::same_as<Widget, QCheckBox> && std::same_as<T, bool>
+        void Bind(Widget* box) {
+            PropertyContainer<T>& cc{ container };
+            QObject::connect(box, &QCheckBox::toggled, &container.GetNotifier(), [&cc, box](bool val) { cc.Set(val); });
 
-		void OnUpdate(QObject* receiver, std::function<void(T)> action) {
-			PropertyContainer<T>& cc{ container };
-			QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed,
-				receiver, [action, &cc]() { action(cc.Get()); });
-		}
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, box,
+                             [box, &cc] { box->setChecked(cc.Get()); });
 
-		void OnUpdate(QObject* receiver, std::function<void()> action) {
-			QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed,
-				receiver, [action]() { action(); });
-		}
+            box->setChecked(Get());
+        }
 
-		operator T() {
-			return Get();
-		}
+        void OnUpdate(QObject* receiver, std::function<void(T)> action) {
+            PropertyContainer<T>& cc{ container };
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, receiver,
+                             [action, &cc]() { action(cc.Get()); });
+        }
 
-		T operator=(T other) {
-			Set(other);
-			return other;
-		}
-	private:
-		PropertyContainer<T>& CreateContainer(const char* path, const char* description, T defaultValue) {
-			std::unordered_map<uint64_t, PropertyEntry>& map{ GetPropertyMap() };
+        void OnUpdate(QObject* receiver, std::function<void()> action) {
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, receiver, [action]() { action(); });
+        }
 
-			uint64_t ph{ hash::Hash64A(path) };
-			PropertyEntry& entry{ map[ph] };
+        operator T() { return Get(); }
 
-			if (entry.ptr) {
-				if (*(entry.type) != typeid(T)) {
-					throw std::runtime_error(
-						std::format(
-							"Config path'{}' type mismatch: {} != {}", 
-							path, entry.type->name(), typeid(T).name()
-						)
-					);
-				}
-				return *static_cast<PropertyContainer<T>*>(entry.ptr);
-			}
+        T operator=(T other) {
+            Set(other);
+            return other;
+        }
 
-			PropertyContainer<T>* cnt{ new PropertyContainer<T>(entry, defaultValue) };
-			entry.ptr = cnt;
-			entry.type = &typeid(T);
-			entry.ptype = GetPropertyType<T>();
-			entry.path = path;
-			entry.description = description;
-			entry.Load = [](void* p) {((PropertyContainer<T>*)p)->Load(); };
-			GetPropertyList().emplace_back(&entry);
-			return *cnt;
-		}
-	};
-}
+      private:
+        PropertyContainer<T>& CreateContainer(const char* path, const char* description, T defaultValue) {
+            std::unordered_map<uint64_t, PropertyEntry>& map{ GetPropertyMap() };
+
+            uint64_t ph{ hash::Hash64A(path) };
+            PropertyEntry& entry{ map[ph] };
+
+            if (entry.ptr) {
+                if (*(entry.type) != typeid(T)) {
+                    throw std::runtime_error(std::format("Config path'{}' type mismatch: {} != {}", path,
+                                                         entry.type->name(), typeid(T).name()));
+                }
+                return *static_cast<PropertyContainer<T>*>(entry.ptr);
+            }
+
+            PropertyContainer<T>* cnt{ new PropertyContainer<T>(entry, defaultValue) };
+            entry.ptr = cnt;
+            entry.type = &typeid(T);
+            entry.ptype = GetPropertyType<T>();
+            entry.path = path;
+            entry.description = description;
+            entry.Load = [](void* p) { ((PropertyContainer<T>*)p)->Load(); };
+            GetPropertyList().emplace_back(&entry);
+            return *cnt;
+        }
+    };
+} // namespace ui3::config
 
 // name, path, defaultValue, description
-#define UI_CONFIG_VAL(name, path, defaultVal, description) \
-static ui3::config::ConfigVal<decltype(defaultVal)> name{ path, defaultVal, description }
+#define UI_CONFIG_VAL(name, path, defaultVal, description)                                                             \
+    static ui3::config::ConfigVal<decltype(defaultVal)> name { path, defaultVal, description }

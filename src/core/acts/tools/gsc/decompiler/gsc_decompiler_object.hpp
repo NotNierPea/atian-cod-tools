@@ -52,13 +52,12 @@ namespace tool::gsc {
         std::unordered_map<uint64_t, GscDetourInfo> detours{};
     };
 
-
-
     // Result context for T8GSCOBJ::PatchCode
     class T8GSCOBJContext {
-    private:
+      private:
         std::unordered_map<uint64_t, char*> m_allocatedStrings{};
-    public:
+
+      public:
         std::unordered_map<NameLocated, opcode::ASMContext, NameLocatedHash, NameLocatedEquals> contextes{};
         std::unordered_map<uint16_t, uint64_t> m_gvars{};
         std::unordered_map<uint32_t, const char*> m_stringRefs{};
@@ -91,8 +90,7 @@ namespace tool::gsc {
         constexpr bool SwitchEndian() const {
             if (isBigEndian) {
                 return std::endian::native != std::endian::big;
-            }
-            else {
+            } else {
                 return std::endian::native != std::endian::little;
             }
         }
@@ -175,13 +173,15 @@ namespace tool::gsc {
     namespace opcode {
         struct DecompContext;
         class ASMContext;
-    }
+    } // namespace opcode
 
-    void DumpFunctionHeader(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx, tool::gsc::opcode::ASMContext& asmctx, int padding, const char* forceName, const char** currentAnimTree);
-    int DumpAsm(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx, tool::gsc::opcode::ASMContext& asmctx);
-    DumpVTableAnswer DumpVTable(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx, opcode::ASMContext& ctx, opcode::DecompContext& dctxt);
-
-
+    void DumpFunctionHeader(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx,
+                            tool::gsc::opcode::ASMContext& asmctx, int padding, const char* forceName,
+                            const char** currentAnimTree);
+    int DumpAsm(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx,
+                tool::gsc::opcode::ASMContext& asmctx);
+    DumpVTableAnswer DumpVTable(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile,
+                                T8GSCOBJContext& objctx, opcode::ASMContext& ctx, opcode::DecompContext& dctxt);
 
     enum GscObjHandlerBuildFlags : uint64_t {
         GOHF_GLOBAL = 0x1,
@@ -197,13 +197,13 @@ namespace tool::gsc {
         GOHF_FOREACH_TYPE_V2 = 0x400,
         GOHF_FOREACH_TYPE_V3 = 0x800,
 
-        GOHF_FOREACH_TYPE_T8 = GOHF_FOREACH_TYPE_V1, // 100
-        GOHF_FOREACH_TYPE_T9 = GOHF_FOREACH_TYPE_V2, // 010
+        GOHF_FOREACH_TYPE_T8 = GOHF_FOREACH_TYPE_V1,                         // 100
+        GOHF_FOREACH_TYPE_T9 = GOHF_FOREACH_TYPE_V2,                         // 010
         GOHF_FOREACH_TYPE_JUP = GOHF_FOREACH_TYPE_V1 | GOHF_FOREACH_TYPE_V2, // 110
-        GOHF_FOREACH_TYPE_T7 = GOHF_FOREACH_TYPE_V3, // 001
+        GOHF_FOREACH_TYPE_T7 = GOHF_FOREACH_TYPE_V3,                         // 001
         // for later
-        GOHF_FOREACH_TYPE_5 = GOHF_FOREACH_TYPE_V1 | GOHF_FOREACH_TYPE_V3, // 101
-        GOHF_FOREACH_TYPE_6 = GOHF_FOREACH_TYPE_V2 | GOHF_FOREACH_TYPE_V3, // 110
+        GOHF_FOREACH_TYPE_5 = GOHF_FOREACH_TYPE_V1 | GOHF_FOREACH_TYPE_V3,                        // 101
+        GOHF_FOREACH_TYPE_6 = GOHF_FOREACH_TYPE_V2 | GOHF_FOREACH_TYPE_V3,                        // 110
         GOHF_FOREACH_TYPE_7 = GOHF_FOREACH_TYPE_V1 | GOHF_FOREACH_TYPE_V2 | GOHF_FOREACH_TYPE_V3, // 111
         GOHF_FOREACH_TYPE_MASK = GOHF_FOREACH_TYPE_V1 | GOHF_FOREACH_TYPE_V2 | GOHF_FOREACH_TYPE_V3,
         GOHF_SUPPORT_GET_API_SCRIPT = 0x1000,
@@ -217,13 +217,13 @@ namespace tool::gsc {
         GOHF_SWITCH_TYPE_V3 = 0x100000,
         GOHF_NOTIFY_CRC_XHASH = 0x200000,
 
-        GOHF_SWITCH_TYPE_IFTABLE = 0, // 000 default value
-        GOHF_SWITCH_TYPE_T89 = GOHF_SWITCH_TYPE_V1, // 100
-        GOHF_SWITCH_TYPE_T7 = GOHF_SWITCH_TYPE_V2, // 010
-        GOHF_SWITCH_TYPE_IW = GOHF_SWITCH_TYPE_V1 | GOHF_SWITCH_TYPE_V2, // 110
-        GOHF_SWITCH_TYPE_4 = GOHF_SWITCH_TYPE_V3, // 001
-        GOHF_SWITCH_TYPE_5 = GOHF_SWITCH_TYPE_V1 | GOHF_SWITCH_TYPE_V3, // 101
-        GOHF_SWITCH_TYPE_6 = GOHF_SWITCH_TYPE_V2 | GOHF_SWITCH_TYPE_V3, // 110
+        GOHF_SWITCH_TYPE_IFTABLE = 0,                                                         // 000 default value
+        GOHF_SWITCH_TYPE_T89 = GOHF_SWITCH_TYPE_V1,                                           // 100
+        GOHF_SWITCH_TYPE_T7 = GOHF_SWITCH_TYPE_V2,                                            // 010
+        GOHF_SWITCH_TYPE_IW = GOHF_SWITCH_TYPE_V1 | GOHF_SWITCH_TYPE_V2,                      // 110
+        GOHF_SWITCH_TYPE_4 = GOHF_SWITCH_TYPE_V3,                                             // 001
+        GOHF_SWITCH_TYPE_5 = GOHF_SWITCH_TYPE_V1 | GOHF_SWITCH_TYPE_V3,                       // 101
+        GOHF_SWITCH_TYPE_6 = GOHF_SWITCH_TYPE_V2 | GOHF_SWITCH_TYPE_V3,                       // 110
         GOHF_SWITCH_TYPE_7 = GOHF_SWITCH_TYPE_V1 | GOHF_SWITCH_TYPE_V2 | GOHF_SWITCH_TYPE_V3, // 111
         GOHF_SWITCH_TYPE_MASK = GOHF_SWITCH_TYPE_V1 | GOHF_SWITCH_TYPE_V2 | GOHF_SWITCH_TYPE_V3,
     };
@@ -263,7 +263,8 @@ namespace tool::gsc {
     class GSCOBJHandler {
         byte* file;
         size_t fileSize;
-    public:
+
+      public:
         std::filesystem::path* originalFile{};
         uint64_t buildFlags;
 
@@ -274,9 +275,7 @@ namespace tool::gsc {
          * @param flag flag
          * @return if the flag is present
          */
-        constexpr bool HasFlag(GscObjHandlerBuildFlags flag) {
-            return (buildFlags & flag) != 0;
-        }
+        constexpr bool HasFlag(GscObjHandlerBuildFlags flag) { return (buildFlags & flag) != 0; }
 
         virtual void SetFile(byte* file, size_t fileSize);
 
@@ -326,9 +325,7 @@ namespace tool::gsc {
             return *PtrAlign<T, R>(shift);
         }
 
-        constexpr uint64_t GetMagic() {
-            return Ref<uint64_t>();
-        }
+        constexpr uint64_t GetMagic() { return Ref<uint64_t>(); }
 
         // Read functions
         virtual uint64_t GetName() = 0;
@@ -348,9 +345,7 @@ namespace tool::gsc {
         virtual uint32_t GetGVarsOffset() = 0;
         virtual uint16_t GetTokensCount();
         virtual uint32_t GetTokensOffset();
-        uint32_t GetFileSize() const {
-            return (uint32_t)fileSize;
-        };
+        uint32_t GetFileSize() const { return (uint32_t)fileSize; };
         virtual int64_t GetDefaultChecksum(bool client) = 0;
         virtual const char* GetDefaultName(bool client) = 0;
 
@@ -424,4 +419,4 @@ namespace tool::gsc {
         virtual opcode::Platform ComputePlatform(T8GSCOBJContext& ctx);
     };
 
-}
+} // namespace tool::gsc

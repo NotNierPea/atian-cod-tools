@@ -12,7 +12,7 @@ namespace tool::gsc::vm {
     using namespace tool::gsc::gdb;
 
     class GscGdbActsAddon : public GscGdb {
-    public:
+      public:
         GscGdbActsAddon() : GscGdb(shared::gsc::acts_addons::MAGIC) {}
 
         void DbgLoad(T8GSCOBJContext& ctx, core::bytebuffer::ByteBuffer& dbgReader, std::ostream& asmout) override {
@@ -23,10 +23,10 @@ namespace tool::gsc::vm {
             asmout << "// ACTS addon compiled file, file version 0x" << std::hex << (int)dbg->version << "\n";
 
             asmout << "// flags ....";
-            if (!dbg->flags) asmout << " NONE";
+            if (!dbg->flags)
+                asmout << " NONE";
             else {
                 // read known flags
-
             }
 
             asmout << "\n";
@@ -38,15 +38,14 @@ namespace tool::gsc::vm {
                     if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC_STRING)) {
                         if (dbg->crc_offset > ctx.scriptfile->GetFileSize()) {
                             asmout << "INVALID LOC";
+                        } else {
+                            utils::PrintFormattedString(asmout << "\"",
+                                                        ctx.scriptfile->Ptr<const char>(dbg->crc_offset))
+                                << "\"";
                         }
-                        else {
-                            utils::PrintFormattedString(asmout << "\"", ctx.scriptfile->Ptr<const char>(dbg->crc_offset)) << "\"";
-                        }
-                    }
-                    else if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC)) {
+                    } else if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC)) {
                         asmout << ctx.GetFLocName(dbg->crc_offset);
-                    }
-                    else {
+                    } else {
                         asmout << "USELESS"; // why?
                     }
 
@@ -72,4 +71,4 @@ namespace tool::gsc::vm {
             }
         }
     };
-}
+} // namespace tool::gsc::vm

@@ -16,7 +16,6 @@ namespace tool::gsc::compiler {
     struct InputInfo {
         core::preprocessor::StringContainer container{};
 
-
         Token* GetToken(ParseTree* tree) const {
             while (tree && tree->getTreeType() != TREE_TERMINAL && tree->children.size()) {
                 tree = tree->children[0];
@@ -37,8 +36,10 @@ namespace tool::gsc::compiler {
             LOG_LVL(lvl, msg);
         }
     };
-}
+} // namespace tool::gsc::compiler
 
-#define IS_RULE_TYPE(rule, index) (rule && rule->getTreeType() == TREE_RULE && dynamic_cast<RuleContext*>(rule)->getRuleIndex() == index)
-#define IS_TERMINAL_TYPE(term, index) (term && term->getTreeType() == TREE_TERMINAL && dynamic_cast<TerminalNode*>(term)->getSymbol()->getType() == index)
+#define IS_RULE_TYPE(rule, index)                                                                                      \
+    (rule && rule->getTreeType() == TREE_RULE && dynamic_cast<RuleContext*>(rule)->getRuleIndex() == index)
+#define IS_TERMINAL_TYPE(term, index)                                                                                  \
+    (term && term->getTreeType() == TREE_TERMINAL && dynamic_cast<TerminalNode*>(term)->getSymbol()->getType() == index)
 #define IS_IDF(rule) (IS_RULE_TYPE((rule), gscParser::RuleIdf) || IS_TERMINAL_TYPE((rule), gscParser::IDENTIFIER))

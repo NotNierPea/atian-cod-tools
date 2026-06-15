@@ -198,3 +198,4 @@ if (NOT STATIC_ACTS)
     load_dir_recurse(exe)
 endif()
 
+include(cmake/format.cmake)

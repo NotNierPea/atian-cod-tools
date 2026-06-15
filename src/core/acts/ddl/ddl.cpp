@@ -29,7 +29,7 @@ enum ACTSDDLType {
 };
 
 class DDLCompilerOption {
-public:
+  public:
     bool m_help{};
     const char* m_ddl{};
     const char* m_bin{};
@@ -42,21 +42,17 @@ public:
 
             if (!strcmp("-?", arg) || !_strcmpi("--help", arg) || !strcmp("-h", arg)) {
                 m_help = true;
-            }
-            else if (*arg == '-') {
+            } else if (*arg == '-') {
                 if (arg[1] == 'D' && arg[2] && m_processorOpt.AddDefineConfig(arg + 2)) {
                     continue;
                 }
 
-
                 LOG_ERROR("Unknown option: {}!", arg);
                 return false;
-            }
-            else {
+            } else {
                 if (!m_ddl) {
                     m_ddl = arg;
-                }
-                else if (!m_bin) {
+                } else if (!m_bin) {
                     m_bin = arg;
                 }
                 // don't care
@@ -70,7 +66,6 @@ public:
         LOG_INFO("-D[name]               : Define variable");
     }
 
-
     std::ostream& PrintLineMessage(std::ostream& out, size_t line, size_t charPositionInLine) {
         out << m_ddl << "#" << line;
         if (charPositionInLine) {
@@ -79,7 +74,8 @@ public:
         return out << " ";
     }
     inline std::ostream& PrintLineMessage(std::ostream& out, Token* token) {
-        return PrintLineMessage(out, token->getLine(), token->getCharPositionInLine()) << "(near \"" << token->getText() << "\") ";
+        return PrintLineMessage(out, token->getLine(), token->getCharPositionInLine())
+               << "(near \"" << token->getText() << "\") ";
     }
     std::ostream& PrintLineMessage(std::ostream& out, ParseTree* token) {
         if (token->getTreeType() == TREE_TERMINAL) {
@@ -111,8 +107,7 @@ DDLData ReadDDLMember(uint64_t offset, ACTSDDLType type, uint64_t size, byte* ra
     if ((offset & 7) == 0 && (size & 7) == 0) {
         // byte aligned, no need to work
         memcpy(buffer, raw + (offset >> 3), ((size - 1) >> 3) + 1);
-    }
-    else {
+    } else {
         // TODO: directly copy by chunk instead of copy by bit
         // or maybe it's reversed?
         for (size_t i = 0; i < size; i++) {
@@ -120,7 +115,7 @@ DDLData ReadDDLMember(uint64_t offset, ACTSDDLType type, uint64_t size, byte* ra
             buffer[i >> 3] |= ((raw[idx >> 3] >> (idx & 7)) & 1) << (i & 7);
         }
     }
- 
+
     switch (type) {
     case DDL_BYTE_TYPE:
     case DDL_UINT_TYPE:
@@ -135,12 +130,10 @@ DDLData ReadDDLMember(uint64_t offset, ACTSDDLType type, uint64_t size, byte* ra
         if (data.intValue & (1ull << (size - 1))) {
             // negative, we need to add 1 bit at the end
             data.uintValue = val | (~0ull << size);
-        }
-        else {
+        } else {
             data.intValue = (int64_t)val;
         }
-    }
-        break;
+    } break;
     case DDL_FLOAT_TYPE:
     case DDL_FIXEDPOINT_TYPE:
         data.doubleValue = *(FLOAT*)buffer;
@@ -153,9 +146,8 @@ DDLData ReadDDLMember(uint64_t offset, ACTSDDLType type, uint64_t size, byte* ra
     return data;
 }
 
-
 class DDLMember {
-public:
+  public:
     uint64_t name;
     uint64_t typeName;
     ACTSDDLType type{ DLL_INVALID };
@@ -187,7 +179,7 @@ public:
             tmp[DDL_PAD_TYPE] = { hash::Hash64("pad"), DDL_PAD_TYPE, 1 };
 
             size_t idx = DDL_CLASS_TYPE;
-            
+
             tmp[idx++] = { hash::Hash64("bool"), DDL_UINT_TYPE, 1 };
             tmp[idx++] = { hash::Hash64("double"), DDL_FLOAT_TYPE, 64 };
 
@@ -200,13 +192,13 @@ public:
             }
         });
 
-        auto it = std::find_if(std::begin(tmp), std::end(tmp), [typeName](const TmpTypeInfo& nfo) { return nfo.tname == typeName; });
+        auto it = std::find_if(std::begin(tmp), std::end(tmp),
+                               [typeName](const TmpTypeInfo& nfo) { return nfo.tname == typeName; });
 
         if (it != std::end(tmp)) {
             type = it->val;
             size = it->size;
-        }
-        else {
+        } else {
             type = DDL_CLASS_TYPE;
             // size is computed during the checks
         }
@@ -214,13 +206,13 @@ public:
 };
 
 class DDLStruct {
-public:
+  public:
     uint64_t size{};
     std::vector<DDLMember> values{};
 };
 
 class DDLEnum {
-public:
+  public:
     std::vector<uint64_t> values{};
 
     uint64_t GetSize() const {
@@ -239,17 +231,16 @@ public:
 };
 
 class DDLCompiled {
-public:
+  public:
     uint64_t name;
     uint32_t version{};
     uint64_t metatable{};
     std::unordered_map<uint64_t, DDLEnum> enums{};
     std::unordered_map<uint64_t, DDLStruct> structs{};
 
-
     DDLCompiled(uint64_t name) : name(name) {}
 
-private:
+  private:
     bool CompleteStruct(DDLStruct& current, std::vector<uint64_t>& types) {
         if (current.size) {
             return true; // already computed
@@ -260,8 +251,7 @@ private:
             if (sub.type != DDL_CLASS_TYPE) {
                 if (sub.isArray) {
                     current.size += sub.size * sub.arraySize;
-                }
-                else {
+                } else {
                     current.size += sub.size;
                 }
                 continue; // by default ok
@@ -272,8 +262,7 @@ private:
                 sub.size = ite->second.GetSize();
                 if (sub.isArray) {
                     current.size += sub.size * sub.arraySize;
-                }
-                else {
+                } else {
                     current.size += sub.size;
                 }
                 continue; // ok
@@ -299,17 +288,15 @@ private:
             types.pop_back();
             if (sub.isArray) {
                 current.size += sub.size * sub.arraySize;
-            }
-            else {
+            } else {
                 current.size += sub.size;
             }
         }
         return true;
     }
-public:
-    bool StructEnumExists(uint64_t name) const {
-        return enums.contains(name) || structs.contains(name);
-    }
+
+  public:
+    bool StructEnumExists(uint64_t name) const { return enums.contains(name) || structs.contains(name); }
 
     bool CompleteStruct() {
         std::vector<uint64_t> types{};
@@ -333,16 +320,12 @@ public:
 };
 
 class FullDDLCompiled {
-public:
+  public:
     std::vector<DDLCompiled> compiled{};
 
-    bool HasFirst() {
-        return compiled.size();
-    }
+    bool HasFirst() { return compiled.size(); }
 
-    DDLCompiled& Last() {
-        return compiled[compiled.size() - 1];
-    }
+    DDLCompiled& Last() { return compiled[compiled.size() - 1]; }
 };
 
 namespace {
@@ -355,12 +338,18 @@ namespace {
     int64_t ReadInt(ParseTree* pt) {
         auto str = pt->getText();
 
-        if (str.starts_with("-0x")) return -std::strtoll(str.c_str() + 3, nullptr, 16);
-        if (str.starts_with("0x")) return std::strtoll(str.c_str() + 2, nullptr, 16);
-        if (str.starts_with("-0b")) return -std::strtoll(str.c_str() + 3, nullptr, 2);
-        if (str.starts_with("0b")) return std::strtoll(str.c_str() + 2, nullptr, 2);
-        if (str.starts_with("-0")) return -std::strtoll(str.c_str() + 2, nullptr, 8);
-        if (str.starts_with("0")) return std::strtoll(str.c_str() + 1, nullptr, 8);
+        if (str.starts_with("-0x"))
+            return -std::strtoll(str.c_str() + 3, nullptr, 16);
+        if (str.starts_with("0x"))
+            return std::strtoll(str.c_str() + 2, nullptr, 16);
+        if (str.starts_with("-0b"))
+            return -std::strtoll(str.c_str() + 3, nullptr, 2);
+        if (str.starts_with("0b"))
+            return std::strtoll(str.c_str() + 2, nullptr, 2);
+        if (str.starts_with("-0"))
+            return -std::strtoll(str.c_str() + 2, nullptr, 8);
+        if (str.starts_with("0"))
+            return std::strtoll(str.c_str() + 1, nullptr, 8);
         return std::strtoll(str.c_str(), nullptr, 10);
     }
 
@@ -375,8 +364,7 @@ namespace {
                         comment = 0;
                         continue;
                     }
-                }
-                else if (comment == 2) {
+                } else if (comment == 2) {
                     if (ddlText[0] == '*' && ddlText[1] == '/') {
                         comment = 0;
                         ddlText[0] = ' ';
@@ -411,30 +399,30 @@ namespace {
 
     class ACTSErrorListener : public ConsoleErrorListener {
         DDLCompilerOption& m_info;
-    public:
-        ACTSErrorListener(DDLCompilerOption& info) : m_info(info) {
-        }
+
+      public:
+        ACTSErrorListener(DDLCompilerOption& info) : m_info(info) {}
 
         void syntaxError(Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
-            const std::string& msg, std::exception_ptr e) override {
+                         const std::string& msg, std::exception_ptr e) override {
             if (charPositionInLine) {
                 LOG_ERROR("{}:{}#{} : {}", m_info.m_ddl, line, charPositionInLine, msg);
-            }
-            else if (line) {
+            } else if (line) {
                 LOG_ERROR("{}:{} : {}", m_info.m_ddl, line, msg);
-            }
-            else {
+            } else {
                 LOG_ERROR("{} : {}", m_info.m_ddl, msg);
             }
         }
     };
 
-    bool ComputeDDLCheck(DDLCompilerOption& opt, std::string& ddlText, byte* binary, size_t binarySize, FullDDLCompiled& ddl) {
+    bool ComputeDDLCheck(DDLCompilerOption& opt, std::string& ddlText, byte* binary, size_t binarySize,
+                         FullDDLCompiled& ddl) {
         LOG_INFO("Compiling DDL file...");
 
-        opt.m_processorOpt.ApplyPreProcessor(ddlText, 
-            [&opt](core::logs::loglevel lvl, size_t line, const std::string& message) { LOG_LVLF(lvl, "{}:{} : {}", opt.m_ddl, line, message); }
-        );
+        opt.m_processorOpt.ApplyPreProcessor(ddlText,
+                                             [&opt](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                                                 LOG_LVLF(lvl, "{}:{} : {}", opt.m_ddl, line, message);
+                                             });
 
         ANTLRInputStream is{ ddlText.data() };
 
@@ -458,7 +446,6 @@ namespace {
             return false;
         }
 
-
         auto* eof = prog->EOF();
 
         for (auto& e : prog->children) {
@@ -481,7 +468,8 @@ namespace {
                 auto idf = e->children[0]->getText();
 
                 if (idf == "begin") {
-                    if (e->children[1]->getTreeType() != TREE_TERMINAL || dynamic_cast<TerminalNode*>(e->children[1])->getSymbol()->getType() != ddlParser::STRING) {
+                    if (e->children[1]->getTreeType() != TREE_TERMINAL ||
+            dynamic_cast<TerminalNode*>(e->children[1])->getSymbol()->getType() != ddlParser::STRING) {
                         opt.PrintLineMessage(std::cerr, e) << "begin should be set using a string value\n";
                         return false;
                     }
@@ -504,7 +492,8 @@ namespace {
                         opt.PrintLineMessage(std::cerr, e) << "Can't set metatable without begin\n";
                         return false;
                     }
-                    if (e->children[1]->getTreeType() != TREE_TERMINAL || dynamic_cast<TerminalNode*>(e->children[1])->getSymbol()->getType() != ddlParser::STRING) {
+                    if (e->children[1]->getTreeType() != TREE_TERMINAL ||
+            dynamic_cast<TerminalNode*>(e->children[1])->getSymbol()->getType() != ddlParser::STRING) {
                         opt.PrintLineMessage(std::cerr, e) << "metatable should be set using a string value\n";
                         return false;
                     }
@@ -546,7 +535,8 @@ namespace {
                         continue;
                     }
 
-                    assert(child->getTreeType() == TREE_TERMINAL && dynamic_cast<TerminalNode&>(*child).getSymbol()->getType() == ddlParser::STRING);
+                    assert(child->getTreeType() == TREE_TERMINAL &&
+            dynamic_cast<TerminalNode&>(*child).getSymbol()->getType() == ddlParser::STRING);
 
                     auto enumVal = ReadString(child);
                     enumData.values.emplace_back(hash::Hash64Pattern(enumVal.c_str()));
@@ -665,7 +655,6 @@ namespace {
         for (auto& ver : ddl.compiled) {
             auto& root = ver.GetRoot();
 
-
             LOG_INFO("Vers: {}", ver.version);
             LOG_INFO("Size: 0x{:x} bits ({})", root.size, root.size);
             LOG_INFO("    | 0x{:x} bytes ({})", (root.size >> 3), (root.size >> 3));
@@ -682,27 +671,33 @@ namespace {
                 if (res != Z_OK) {
                     const char* ermsg;
                     switch (res) {
-                        case Z_MEM_ERROR: ermsg = "Not enough memory"; break;
-                        case Z_BUF_ERROR: ermsg = "Not enough room in the output buffer"; break;
-                        case Z_DATA_ERROR: ermsg = "Corrupted data"; break;
-                        default: ermsg = "unknown"; break;
+                    case Z_MEM_ERROR:
+                        ermsg = "Not enough memory";
+                        break;
+                    case Z_BUF_ERROR:
+                        ermsg = "Not enough room in the output buffer";
+                        break;
+                    case Z_DATA_ERROR:
+                        ermsg = "Corrupted data";
+                        break;
+                    default:
+                        ermsg = "unknown";
+                        break;
                     }
                     LOG_ERROR("Can't uncompress zlib buffer: {}", ermsg);
                     return false;
                 }
                 LOG_INFO("zlib decompressed");
-            }
-            else {
+            } else {
                 memcpy(&decompiledBuffer[0], binary, binarySize);
             }
             LOG_INFO("len: {}", len);
             break; // only use first version
-
         }
         return true;
     }
 
-	int ddlcheck(Process& proc, int argc, const char* argv[]) {
+    int ddlcheck(Process& proc, int argc, const char* argv[]) {
         DDLCompilerOption opt{};
 
         if (!opt.Compute(argv, 2, argc) || opt.m_help) {
@@ -726,9 +721,8 @@ namespace {
 
         auto res = ComputeDDLCheck(opt, ddl, reinterpret_cast<byte*>(bin.data()), bin.size(), ddlCompiled);
 
-		return res ? tool::OK : tool::BASIC_ERROR;
-	}
+        return res ? tool::OK : tool::BASIC_ERROR;
+    }
 
-
-}
+} // namespace
 ADD_TOOL(ddlcheck, "common", "", "ddl check", nullptr, ddlcheck);

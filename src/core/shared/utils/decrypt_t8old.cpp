@@ -5,147 +5,146 @@
 
 // idc
 #pragma warning(push)
-#pragma warning(disable:6385)
-#pragma warning(disable:4244)
-#pragma warning(disable:4101)
+#pragma warning(disable : 6385)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4101)
 
 static byte* DecryptStringT8Old0(byte* str) {
 #pragma region Vars
-    byte* v1; // r15
-    __int64 v2; // rcx
-    byte* v3; // r11
-    unsigned __int64 v4; // r9
-    unsigned __int64 v5; // r8
-    char v6; // r10
-    unsigned int v7; // eax
-    unsigned int v8; // edx
-    int v9; // eax
-    byte* v10; // r11
-    unsigned __int64 v11; // r9
-    unsigned __int64 v12; // r8
-    char v13; // r10
-    unsigned int v14; // eax
-    unsigned int v15; // edx
-    int v16; // eax
-    byte* v17; // r11
-    unsigned __int64 v18; // r9
-    unsigned __int64 v19; // r8
-    char v20; // r10
-    unsigned int v21; // eax
-    unsigned int v22; // edx
-    int v23; // eax
-    byte* v24; // r11
-    unsigned __int64 v25; // r9
-    char v26; // r10
-    unsigned int v27; // eax
-    unsigned __int64 v28; // r8
-    unsigned int v29; // edx
-    int v30; // eax
-    byte* v31; // r11
-    unsigned __int64 v32; // r9
-    char v33; // r10
-    unsigned int v34; // eax
-    unsigned __int64 v35; // r8
-    unsigned int v36; // edx
-    int v37; // eax
-    byte* v38; // r11
-    unsigned __int64 v39; // r9
-    char v40; // r10
-    unsigned int v41; // eax
-    unsigned __int64 v42; // r8
-    unsigned int v43; // edx
-    int v44; // eax
-    byte* v45; // r11
-    unsigned __int64 v46; // r9
-    unsigned __int64 v47; // r8
-    char v48; // r10
-    unsigned int v49; // eax
-    unsigned int v50; // edx
-    int v51; // eax
-    byte* v52; // r11
-    unsigned __int64 v53; // r9
-    unsigned __int64 v54; // r8
-    char v55; // r10
-    unsigned int v56; // eax
-    unsigned int v57; // edx
-    int v58; // eax
-    char v59; // r8
-    __int64 v60; // rax
-    byte* v61; // r11
-    unsigned __int64 v62; // r9
-    char v63; // r10
-    unsigned int v64; // eax
-    unsigned __int64 v65; // r8
-    unsigned int v66; // edx
-    int v67; // eax
-    unsigned __int64 v68; // r8
-    byte* v69; // r11
-    unsigned __int64 v70; // r9
-    char v71; // r10
-    unsigned int v72; // eax
-    unsigned __int64 v73; // r8
-    unsigned int v74; // edx
-    int v75; // eax
-    char v76; // r8
-    byte* v77; // r11
-    unsigned __int64 v78; // r9
-    unsigned __int64 v79; // r8
-    char v80; // r10
-    unsigned int v81; // eax
-    unsigned int v82; // edx
-    int v83; // eax
-    byte* v84; // r11
-    unsigned __int64 v85; // r9
-    char v86; // r10
-    unsigned int v87; // eax
-    unsigned __int64 v88; // r8
-    unsigned int v89; // edx
-    int v90; // eax
-    byte* v91; // r11
-    unsigned __int64 v92; // r9
-    unsigned __int64 v93; // r8
-    char v94; // r10
-    unsigned int v95; // eax
-    unsigned int v96; // edx
-    int v97; // eax
-    char v98; // r8
-    byte* v99; // rdx
-    byte* v100; // r11
+    byte* v1;              // r15
+    __int64 v2;            // rcx
+    byte* v3;              // r11
+    unsigned __int64 v4;   // r9
+    unsigned __int64 v5;   // r8
+    char v6;               // r10
+    unsigned int v7;       // eax
+    unsigned int v8;       // edx
+    int v9;                // eax
+    byte* v10;             // r11
+    unsigned __int64 v11;  // r9
+    unsigned __int64 v12;  // r8
+    char v13;              // r10
+    unsigned int v14;      // eax
+    unsigned int v15;      // edx
+    int v16;               // eax
+    byte* v17;             // r11
+    unsigned __int64 v18;  // r9
+    unsigned __int64 v19;  // r8
+    char v20;              // r10
+    unsigned int v21;      // eax
+    unsigned int v22;      // edx
+    int v23;               // eax
+    byte* v24;             // r11
+    unsigned __int64 v25;  // r9
+    char v26;              // r10
+    unsigned int v27;      // eax
+    unsigned __int64 v28;  // r8
+    unsigned int v29;      // edx
+    int v30;               // eax
+    byte* v31;             // r11
+    unsigned __int64 v32;  // r9
+    char v33;              // r10
+    unsigned int v34;      // eax
+    unsigned __int64 v35;  // r8
+    unsigned int v36;      // edx
+    int v37;               // eax
+    byte* v38;             // r11
+    unsigned __int64 v39;  // r9
+    char v40;              // r10
+    unsigned int v41;      // eax
+    unsigned __int64 v42;  // r8
+    unsigned int v43;      // edx
+    int v44;               // eax
+    byte* v45;             // r11
+    unsigned __int64 v46;  // r9
+    unsigned __int64 v47;  // r8
+    char v48;              // r10
+    unsigned int v49;      // eax
+    unsigned int v50;      // edx
+    int v51;               // eax
+    byte* v52;             // r11
+    unsigned __int64 v53;  // r9
+    unsigned __int64 v54;  // r8
+    char v55;              // r10
+    unsigned int v56;      // eax
+    unsigned int v57;      // edx
+    int v58;               // eax
+    char v59;              // r8
+    __int64 v60;           // rax
+    byte* v61;             // r11
+    unsigned __int64 v62;  // r9
+    char v63;              // r10
+    unsigned int v64;      // eax
+    unsigned __int64 v65;  // r8
+    unsigned int v66;      // edx
+    int v67;               // eax
+    unsigned __int64 v68;  // r8
+    byte* v69;             // r11
+    unsigned __int64 v70;  // r9
+    char v71;              // r10
+    unsigned int v72;      // eax
+    unsigned __int64 v73;  // r8
+    unsigned int v74;      // edx
+    int v75;               // eax
+    char v76;              // r8
+    byte* v77;             // r11
+    unsigned __int64 v78;  // r9
+    unsigned __int64 v79;  // r8
+    char v80;              // r10
+    unsigned int v81;      // eax
+    unsigned int v82;      // edx
+    int v83;               // eax
+    byte* v84;             // r11
+    unsigned __int64 v85;  // r9
+    char v86;              // r10
+    unsigned int v87;      // eax
+    unsigned __int64 v88;  // r8
+    unsigned int v89;      // edx
+    int v90;               // eax
+    byte* v91;             // r11
+    unsigned __int64 v92;  // r9
+    unsigned __int64 v93;  // r8
+    char v94;              // r10
+    unsigned int v95;      // eax
+    unsigned int v96;      // edx
+    int v97;               // eax
+    char v98;              // r8
+    byte* v99;             // rdx
+    byte* v100;            // r11
     unsigned __int64 v101; // r9
-    char v102; // r10
-    unsigned int v103; // eax
+    char v102;             // r10
+    unsigned int v103;     // eax
     unsigned __int64 v104; // r8
-    unsigned int v105; // edx
-    int v106; // eax
-    byte* v107; // r11
+    unsigned int v105;     // edx
+    int v106;              // eax
+    byte* v107;            // r11
     unsigned __int64 v108; // r9
-    char v109; // r10
-    unsigned int v110; // eax
+    char v109;             // r10
+    unsigned int v110;     // eax
     unsigned __int64 v111; // r8
-    unsigned int v112; // edx
-    int v113; // eax
-    char v114; // r8
-    byte* v115; // rdx
-    byte* v116; // r11
+    unsigned int v112;     // edx
+    int v113;              // eax
+    char v114;             // r8
+    byte* v115;            // rdx
+    byte* v116;            // r11
     unsigned __int64 v117; // r9
-    char v118; // r10
-    unsigned int v119; // eax
+    char v118;             // r10
+    unsigned int v119;     // eax
     unsigned __int64 v120; // r8
-    unsigned int v121; // edx
-    int v122; // eax
+    unsigned int v121;     // edx
+    int v122;              // eax
     unsigned __int64 v123; // r8
-    byte* v124; // rbx
-    signed __int64 v125; // rcx
-    signed __int64 v127; // rcx
+    byte* v124;            // rbx
+    signed __int64 v125;   // rcx
+    signed __int64 v127;   // rcx
 
 #pragma endregion
 
     v1 = str;
     if ((*str & 0xC0) != 0x80)
         return v1;
-    //sub_232DFE0(&qword_10748F50);
-    switch (*v1)
-    {
+    // sub_232DFE0(&qword_10748F50);
+    switch (*v1) {
     case 0x80:
     case 0x85:
     case 0x8C:
@@ -160,12 +159,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v6 = 0;
         v7 = -931419029;
         v2 = 2176146861i64;
-        do
-        {
-            if (v7 > 0x883B8359)
-            {
-                switch (v7)
-                {
+        do {
+            if (v7 > 0x883B8359) {
+                switch (v7) {
                 case 0xAEAE34E0:
                     v4 = 0x9F314572A2178897ui64;
                     v2 = 535442350i64;
@@ -183,11 +179,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 895562544i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v7)
-                {
+            } else {
+                switch (v7) {
                 case 0x883B8359:
                     v4 = 0x4000BDDFBE0C2F6i64;
                     v2 = 2994962370i64;
@@ -220,18 +213,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v3)
             goto LABEL_1190;
         v2 = 0x8FDA4E3CB979DEFi64;
-        do
-        {
+        do {
             v8 = -76377883;
             v9 = 233675035;
-            do
-            {
-                if (v8 > 0x62AD5CE0)
-                {
-                    if (v8 > 0xA874CFA9)
-                    {
-                        switch (v8)
-                        {
+            do {
+                if (v8 > 0x62AD5CE0) {
+                    if (v8 > 0xA874CFA9) {
+                        switch (v8) {
                         case 0xBD13E2E1:
                             v6 = (v5 ^ (v5 >> 5)) & 0xE;
                             v9 = -1078355130;
@@ -255,11 +243,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v9 = 857001675;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v8)
-                        {
+                    } else {
+                        switch (v8) {
                         case 0xA874CFA9:
                             v5 = 0x9E3779B97F4A7C15ui64 * ((v5 >> 27) ^ v5);
                             v9 = 448576545;
@@ -287,16 +272,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v8 == 1655528672)
-                {
+                } else if (v8 == 1655528672) {
                     ++v3;
                     v9 = -1598668233;
-                }
-                else if (v8 > 0x165C815B)
-                {
-                    switch (v8)
-                    {
+                } else if (v8 > 0x165C815B) {
+                    switch (v8) {
                     case 0x3D5BCAEFu:
                         --v3;
                         v9 = -570944893;
@@ -311,11 +291,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v9 = -782582612;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v8)
-                    {
+                } else {
+                    switch (v8) {
                     case 0x165C815Bu:
                         *v3 = ROTL8(*v3, v6);
                         v9 = -1280872253;
@@ -352,12 +329,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v13 = 0;
         v14 = 3925385;
         v2 = 107663353i64;
-        do
-        {
-            if (v14 > 0x431792DC)
-            {
-                switch (v14)
-                {
+        do {
+            if (v14 > 0x431792DC) {
+                switch (v14) {
                 case 0x8F2375B6:
                     v11 = 0x24F95C879E71C72Ei64;
                     v2 = 130653061i64;
@@ -375,11 +349,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 2563345169i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v14)
-                {
+            } else {
+                switch (v14) {
                 case 0x431792DCu:
                     v11 = 0x282107D42F4AC8DFi64;
                     v2 = 4030761645i64;
@@ -412,18 +383,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v10)
             goto LABEL_1190;
         v2 = 0xD2265A27524C6F3i64;
-        while (1)
-        {
+        while (1) {
             v15 = -713050806;
             v16 = 1721079514;
-            do
-            {
-                if (v15 > 0x70A9598B)
-                {
-                    if (v15 <= 0xA94D62FA)
-                    {
-                        switch (v15)
-                        {
+            do {
+                if (v15 > 0x70A9598B) {
+                    if (v15 <= 0xA94D62FA) {
+                        switch (v15) {
                         case 0xA94D62FA:
                             v12 = 0xB779BEDE97B23Fi64 * ((v12 >> 34) ^ v12);
                             v16 = -1319504595;
@@ -451,8 +417,7 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v16 = -68438974;
                         goto LABEL_144;
                     }
-                    switch (v15)
-                    {
+                    switch (v15) {
                     case 0xB3F79A7F:
                         v11 += 0xD2265A27524C6F3i64;
                         v16 = 888808851;
@@ -474,19 +439,14 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v16 = 240084261;
                         break;
                     }
-                }
-                else
-                {
-                    if (v15 == 1890146699)
-                    {
+                } else {
+                    if (v15 == 1890146699) {
                         v12 = 0xF89696CA5355C33i64 * ((v12 >> 30) ^ v12);
                         v16 = 1690473147;
                         goto LABEL_145;
                     }
-                    if (v15 > 0x2C889869)
-                    {
-                        switch (v15)
-                        {
+                    if (v15 > 0x2C889869) {
+                        switch (v15) {
                         case 0x5471DDD1u:
                             v11 += 0x329CAB636CA9789Ci64;
                             v16 = 2079540768;
@@ -503,11 +463,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v16 = -151375374;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v15)
-                        {
+                    } else {
+                        switch (v15) {
                         case 0x2C889869u:
                             v12 = 0x94D049BB133111EBui64 * ((v12 >> 27) ^ v12);
                             v16 = 598184820;
@@ -546,12 +503,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v20 = 0;
         v21 = -551500727;
         v2 = 1540563594i64;
-        do
-        {
-            if (v21 > 0x5E6343C6)
-            {
-                switch (v21)
-                {
+        do {
+            if (v21 > 0x5E6343C6) {
+                switch (v21) {
                 case 0x72E19960u:
                     v18 = 0xAD13EC8772126BA8ui64;
                     v2 = 3040326504i64;
@@ -569,11 +523,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 3178008743i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v21)
-                {
+            } else {
+                switch (v21) {
                 case 0x5E6343C6u:
                     v18 = 0x25BFBE5DD7089A00i64;
                     v2 = 2705825371i64;
@@ -606,18 +557,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v17)
             goto LABEL_1190;
         v2 = 0x9CB81477B161416i64;
-        do
-        {
+        do {
             v22 = 253934731;
             v23 = -1030963178;
-            do
-            {
-                if (v22 > 0x5BF7FE46)
-                {
-                    if (v22 > 0x6BAC7148)
-                    {
-                        switch (v22)
-                        {
+            do {
+                if (v22 > 0x5BF7FE46) {
+                    if (v22 > 0x6BAC7148) {
+                        switch (v22) {
                         case 0x8F2375A5:
                             v19 = 0xD84C1A36101682FDui64 * ((v19 >> 30) ^ v19);
                             v23 = 208938875;
@@ -636,11 +582,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v23 = -1668177132;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v22)
-                        {
+                    } else {
+                        switch (v22) {
                         case 0x6BAC7148u:
                             v20 = v19 ^ (v19 >> 31);
                             v23 = 984259460;
@@ -663,16 +606,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v22 == 1542979142)
-                {
+                } else if (v22 == 1542979142) {
                     v19 = 0xBF58476D1CE4E5B9ui64 * ((v19 >> 30) ^ v19);
                     v23 = -1396036582;
-                }
-                else if (v22 > 0xE301330)
-                {
-                    switch (v22)
-                    {
+                } else if (v22 > 0xE301330) {
+                    switch (v22) {
                     case 0xF22BC8Bu:
                         v18 -= 0x61C8864680B583EBi64;
                         v19 = v18;
@@ -694,11 +632,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v2 = 0x9CB81477B161416i64;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v22)
-                    {
+                } else {
+                    switch (v22) {
                     case 0xE301330u:
                         v18 += 0x5101CCBD3B72D72i64;
                         v19 = v18;
@@ -737,12 +672,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v26 = 0;
         v27 = 752357553;
         v2 = 4248434306i64;
-        do
-        {
-            if (v27 > 0x6474FD67)
-            {
-                switch (v27)
-                {
+        do {
+            if (v27 > 0x6474FD67) {
+                switch (v27) {
                 case 0x847DCC71:
                     v25 = 0x760726386EAC733Ai64;
                     v2 = 1007971419i64;
@@ -760,11 +692,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 179959896i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v27)
-                {
+            } else {
+                switch (v27) {
                 case 0x6474FD67u:
                     v25 = 0x315B115C6745D51Fi64;
                     v2 = 2595865i64;
@@ -798,33 +727,22 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v24)
             goto LABEL_1190;
         v2 = 0x4381848D5AF2933i64;
-        do
-        {
+        do {
             v29 = 118923631;
             v30 = 1708732887;
-            do
-            {
-                if (v29 > 0x4D5DDD89)
-                {
-                    if (v29 > 0xB8A015AD)
-                    {
-                        if (v29 > 0xEE286F1A)
-                        {
-                            if (v29 == -237223806)
-                            {
+            do {
+                if (v29 > 0x4D5DDD89) {
+                    if (v29 > 0xB8A015AD) {
+                        if (v29 > 0xEE286F1A) {
+                            if (v29 == -237223806) {
                                 v28 = 0xD4119085E7221B28ui64 * ((v28 >> 27) ^ v28);
                                 v30 = 195913167;
-                            }
-                            else if (v29 == -198369830)
-                            {
+                            } else if (v29 == -198369830) {
                                 v26 = v28 ^ (v28 >> 31);
                                 v30 = -1183793069;
                             }
-                        }
-                        else
-                        {
-                            switch (v29)
-                            {
+                        } else {
+                            switch (v29) {
                             case 0xEE286F1A:
                                 *v24 = ROTL8(*v24, v26);
                                 v30 = -1921559572;
@@ -845,30 +763,20 @@ static byte* DecryptStringT8Old0(byte* str) {
                                 break;
                             }
                         }
-                    }
-                    else if (v29 == -1197468243)
-                    {
+                    } else if (v29 == -1197468243) {
                         v26 = (v28 ^ (v28 >> 31)) & 0x30;
                         v30 = 229880412;
-                    }
-                    else if (v29 > 0x8BE0283B)
-                    {
-                        if (v29 == -1414703491)
-                        {
+                    } else if (v29 > 0x8BE0283B) {
+                        if (v29 == -1414703491) {
                             v28 = 0x9E3779B97F4A7C15ui64 * ((v28 >> 27) ^ v28);
                             v30 = 241351381;
-                        }
-                        else if (v29 == -1271946727)
-                        {
+                        } else if (v29 == -1271946727) {
                             v25 -= 0x40A7B892E31B1A47i64;
                             v28 = v25;
                             v30 = -828233518;
                         }
-                    }
-                    else
-                    {
-                        switch (v29)
-                        {
+                    } else {
+                        switch (v29) {
                         case 0x8BE0283B:
                             v28 = 0x94D049BB133111EBui64 * ((v28 >> 27) ^ v28);
                             v30 = 2144155105;
@@ -888,30 +796,20 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v29 == 1297997193)
-                {
+                } else if (v29 == 1297997193) {
                     *v24 = ROTR8(*v24, v26);
                     v30 = 59613559;
                     v2 = 0x4381848D5AF2933i64;
-                }
-                else if (v29 > 0x15BA90D4)
-                {
-                    if (v29 == 860605378)
-                    {
+                } else if (v29 > 0x15BA90D4) {
+                    if (v29 == 860605378) {
                         v26 = v28 ^ (v28 >> 31);
                         v30 = 180933661;
-                    }
-                    else if (v29 == 1165943240)
-                    {
+                    } else if (v29 == 1165943240) {
                         v28 = 0x8938D993B83B1CFDui64 * ((v28 >> 49) ^ v28);
                         v30 = 202902915;
                     }
-                }
-                else
-                {
-                    switch (v29)
-                    {
+                } else {
+                    switch (v29) {
                     case 0x15BA90D4u:
                         v28 = 0x824BEC454199E73Cui64 * ((v28 >> 13) ^ v28);
                         v30 = -822495423;
@@ -944,12 +842,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v33 = 0;
         v34 = -496002011;
         v2 = 2014592924i64;
-        do
-        {
-            if (v34 > 0x83D26B39)
-            {
-                switch (v34)
-                {
+        do {
+            if (v34 > 0x83D26B39) {
+                switch (v34) {
                 case 0xE02113BF:
                     v32 = 0xE365B4D910E3FA2Cui64;
                     v2 = 2314527010i64;
@@ -967,11 +862,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 2687381186i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v34)
-                {
+            } else {
+                switch (v34) {
                 case 0x83D26B39:
                     v32 = 0x716F2D628649C85Ai64;
                     v2 = 1071951775i64;
@@ -1005,18 +897,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v31)
             goto LABEL_1190;
         v2 = 0x3F65D85C935DD998i64;
-        while (1)
-        {
+        while (1) {
             v36 = 1508192851;
             v37 = 1832427028;
-            do
-            {
-                if (v36 > 0x6E924AA6)
-                {
-                    if (v36 > 0xD041D7A6)
-                    {
-                        switch (v36)
-                        {
+            do {
+                if (v36 > 0x6E924AA6) {
+                    if (v36 > 0xD041D7A6) {
+                        switch (v36) {
                         case 0xD25C7B46:
                             v37 = -1536323606;
                         LABEL_363:
@@ -1041,11 +928,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v37 = 1623544943;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v36)
-                        {
+                    } else {
+                        switch (v36) {
                         case 0xD041D7A6:
                             v35 = 0x94D049BB133111EBui64 * ((v35 >> 27) ^ v35);
                             v37 = 35499232;
@@ -1074,25 +958,19 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else
-                {
-                    if (v36 == 1855081126)
-                    {
+                } else {
+                    if (v36 == 1855081126) {
                         --v31;
                         v37 = -1089420212;
                         goto LABEL_364;
                     }
-                    if (v36 > 0x166E7585)
-                    {
-                        if (v36 == 1370367667)
-                        {
+                    if (v36 > 0x166E7585) {
+                        if (v36 == 1370367667) {
                             v35 = 0x9E3779B97F4A7C15ui64 * ((v35 >> 27) ^ v35);
                             v37 = -1120305509;
                             goto LABEL_364;
                         }
-                        if (v36 == 1508192851)
-                        {
+                        if (v36 == 1508192851) {
                             v32 -= 0x61C8864680B583EBi64;
                             v35 = v32;
                             v37 = 1334527958;
@@ -1103,8 +981,7 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v37 = 188380219;
                         goto LABEL_363;
                     }
-                    switch (v36)
-                    {
+                    switch (v36) {
                     case 0x166E7585u:
                         v35 = 0xBF58476D1CE4E5B9ui64 * ((v35 >> 30) ^ v35);
                         v37 = -969956829;
@@ -1141,12 +1018,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v40 = 0;
         v41 = 1833549073;
         v2 = 3715072166i64;
-        do
-        {
-            if (v41 > 0x832A80F3)
-            {
-                switch (v41)
-                {
+        do {
+            if (v41 > 0x832A80F3) {
+                switch (v41) {
                 case 0x973FA955:
                     v39 = 0x44F338054CB28178i64;
                     v2 = 4220637891i64;
@@ -1164,11 +1038,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 449077881i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v41)
-                {
+            } else {
+                switch (v41) {
                 case 0x832A80F3:
                     v39 = 0x5A39A4C2A2D329C8i64;
                     v2 = 1669092925i64;
@@ -1202,18 +1073,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v38)
             goto LABEL_1190;
         v2 = 0x689E82D9D2C6275i64;
-        while (1)
-        {
+        while (1) {
             v43 = 39801023;
             v44 = 1425913246;
-            do
-            {
-                if (v43 > 0x5AB9B9A8)
-                {
-                    if (v43 > 0x81968229)
-                    {
-                        switch (v43)
-                        {
+            do {
+                if (v43 > 0x5AB9B9A8) {
+                    if (v43 > 0x81968229) {
+                        switch (v43) {
                         case 0xA71B55CF:
                             *v38 = ROTL8(*v38, v40);
                             v44 = -1572000749;
@@ -1233,11 +1099,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v44 = 207253586;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v43)
-                        {
+                    } else {
+                        switch (v43) {
                         case 0x81968229:
                             v42 = 0xFB62C2D72D1C3AD6ui64 * ((v42 >> 27) ^ v42);
                             v44 = 1782863337;
@@ -1261,16 +1124,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v43 == 1522121128)
-                {
+                } else if (v43 == 1522121128) {
                     v42 = 0x94D049BB133111EBui64 * ((v42 >> 30) ^ v42);
                     v44 = -696076716;
-                }
-                else if (v43 > 0x17CAC865)
-                {
-                    switch (v43)
-                    {
+                } else if (v43 > 0x17CAC865) {
+                    switch (v43) {
                     case 0x1B71F6B7u:
                         v42 = 0x97CDA3BCB7C8E32i64 * ((v42 >> 34) ^ v42);
                         v44 = 2118567422;
@@ -1289,11 +1147,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v44 = -856798833;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v43)
-                    {
+                } else {
+                    switch (v43) {
                     case 0x17CAC865u:
                         --v38;
                         v44 = -119342831;
@@ -1335,12 +1190,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v48 = 0;
         v49 = 256482108;
         v2 = 2132630961i64;
-        do
-        {
-            if (v49 > 0x5F766D1E)
-            {
-                switch (v49)
-                {
+        do {
+            if (v49 > 0x5F766D1E) {
+                switch (v49) {
                 case 0x60A5CEA9u:
                     v46 = 0x4290209F43CD2D41i64;
                     v2 = 1517341095i64;
@@ -1358,11 +1210,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 2845798134i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v49)
-                {
+            } else {
+                switch (v49) {
                 case 0x5F766D1Eu:
                     v46 = 0x122CC42501318E87i64;
                     v2 = 1323474149i64;
@@ -1395,18 +1244,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v45)
             goto LABEL_1190;
         v2 = 0x7C7862ACBFDE728Ci64;
-        while (1)
-        {
+        while (1) {
             v50 = 266409416;
             v51 = 1320456643;
-            do
-            {
-                if (v50 > 0x65E3E622)
-                {
-                    if (v50 > 0xC311097F)
-                    {
-                        switch (v50)
-                        {
+            do {
+                if (v50 > 0x65E3E622) {
+                    if (v50 > 0xC311097F) {
+                        switch (v50) {
                         case 0xCF2D55FF:
                             v51 = 1860036729;
                             goto LABEL_509;
@@ -1423,11 +1267,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v51 = -1979991742;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v50)
-                        {
+                    } else {
+                        switch (v50) {
                         case 0xC311097F:
                             v47 = 0xBF58476D1CE4E5B9ui64 * ((v47 >> 30) ^ v47);
                             v51 = -191883346;
@@ -1455,20 +1296,15 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else
-                {
-                    if (v50 == 1709434402)
-                    {
+                } else {
+                    if (v50 == 1709434402) {
                         *v45 = ROTR8(*v45, v48);
                         v51 = -1511407254;
                         v2 = 0x7C7862ACBFDE728Ci64;
                         goto LABEL_510;
                     }
-                    if (v50 > 0x1A6841A0)
-                    {
-                        switch (v50)
-                        {
+                    if (v50 > 0x1A6841A0) {
+                        switch (v50) {
                         case 0x1F152264u:
                             v51 = 2062992454;
                         LABEL_509:
@@ -1488,11 +1324,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v51 = 680803509;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v50)
-                        {
+                    } else {
+                        switch (v50) {
                         case 0x1A6841A0u:
                             v48 = (v47 ^ (v47 >> 21)) & 0x25;
                             v51 = -1448024722;
@@ -1533,12 +1366,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v55 = 0;
         v56 = 40785073;
         v2 = 1088198438i64;
-        do
-        {
-            if (v56 > 0x83A8D1CD)
-            {
-                switch (v56)
-                {
+        do {
+            if (v56 > 0x83A8D1CD) {
+                switch (v56) {
                 case 0xA22DBE56:
                     v53 = 0x4E3587932FFDBB7Di64;
                     v2 = 594730866i64;
@@ -1556,11 +1386,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 197611758i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v56)
-                {
+            } else {
+                switch (v56) {
                 case 0x83A8D1CD:
                     v53 = 0xB4BD70EB93AADC27ui64;
                     v2 = 164659801i64;
@@ -1593,18 +1420,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v52)
             goto LABEL_1190;
         v2 = 0x3AC5C4F1F90B35i64;
-        do
-        {
+        do {
             v57 = 494124569;
             v58 = -785491034;
-            do
-            {
-                if (v57 > 0x58467BCE)
-                {
-                    if (v57 > 0xAA71A623)
-                    {
-                        switch (v57)
-                        {
+            do {
+                if (v57 > 0x58467BCE) {
+                    if (v57 > 0xAA71A623) {
+                        switch (v57) {
                         case 0xBCA74C96:
                             --v52;
                             v58 = 10745627;
@@ -1622,11 +1444,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v58 = 159775648;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v57)
-                        {
+                    } else {
+                        switch (v57) {
                         case 0xAA71A623:
                             v54 = 0x5B73AFF6DD141896i64 * ((v54 >> 27) ^ v54);
                             v58 = 236819108;
@@ -1650,16 +1469,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v57 == 1481014222)
-                {
+                } else if (v57 == 1481014222) {
                     v54 = 0xD8F0BC4B95F6FA94ui64 * ((v54 >> 53) ^ v54);
                     v58 = 442892225;
-                }
-                else if (v57 > 0x1D8BD55D)
-                {
-                    switch (v57)
-                    {
+                } else if (v57 > 0x1D8BD55D) {
+                    switch (v57) {
                     case 0x227CC749u:
                         ++v52;
                         v58 = -1315018185;
@@ -1679,11 +1493,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v2 = 0x3AC5C4F1F90B35i64;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v57)
-                    {
+                } else {
+                    switch (v57) {
                     case 0x1D8BD55Du:
                         v55 = (v54 ^ (v54 >> 18)) & 2;
                         v58 = -1622738146;
@@ -1722,8 +1533,7 @@ static byte* DecryptStringT8Old0(byte* str) {
         v2 = 0i64;
         if ((unsigned __int8)v1[1] - 1 <= 0)
             goto LABEL_1116;
-        do
-        {
+        do {
             v59 = v1[(int)v2 + 2];
             if (v59 != -91 - (byte)v2)
                 v1[(int)v2 + 2] = v59 ^ (-91 - v2);
@@ -1738,12 +1548,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v63 = 0;
         v64 = -1948946138;
         v2 = 2367463449i64;
-        do
-        {
-            if (v64 > 0x5B27F5AE)
-            {
-                switch (v64)
-                {
+        do {
+            if (v64 > 0x5B27F5AE) {
+                switch (v64) {
                 case 0x85F66098:
                     v62 = 0xC7B3F8CBD5AF0EAAui64;
                     v2 = 1423250238i64;
@@ -1761,11 +1568,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 1537525171i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v64)
-                {
+            } else {
+                switch (v64) {
                 case 0x5B27F5AEu:
                     v62 = 0x1A980CE2B089ECEFi64;
                     v2 = 2403540760i64;
@@ -1799,18 +1603,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v61)
             goto LABEL_1190;
         v2 = 0x6614AE11995502i64;
-        while (1)
-        {
+        while (1) {
             v66 = -527083371;
             v67 = 230941981;
-            do
-            {
-                if (v66 > 0x56DB7928)
-                {
-                    if (v66 > 0xE15F9E72)
-                    {
-                        switch (v66)
-                        {
+            do {
+                if (v66 > 0x56DB7928) {
+                    if (v66 > 0xE15F9E72) {
+                        switch (v66) {
                         case 0xE59C3F2C:
                             v68 = (v65 >> 30) ^ v65;
                             v67 = 1807951407;
@@ -1833,33 +1632,23 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v67 = -977938203;
                             break;
                         }
-                    }
-                    else
-                    {
-                        if (v66 == -513827214)
-                        {
+                    } else {
+                        if (v66 == -513827214) {
                             v65 = 0xBF58476D1CE4E5B9ui64 * ((v65 >> 30) ^ v65);
                             v67 = 751246452;
                             goto LABEL_661;
                         }
-                        if (v66 > 0xCD988206)
-                        {
-                            if (v66 == -669763075)
-                            {
+                        if (v66 > 0xCD988206) {
+                            if (v66 == -669763075) {
                                 v65 = 0x9E3779B97F4A7C15ui64 * ((v65 >> 27) ^ v65);
                                 v67 = -1519619693;
-                            }
-                            else if (v66 == -527083371)
-                            {
+                            } else if (v66 == -527083371) {
                                 v62 -= 0x61C8864680B583EBi64;
                                 v65 = v62;
                                 v67 = 30066407;
                             }
-                        }
-                        else
-                        {
-                            switch (v66)
-                            {
+                        } else {
+                            switch (v66) {
                             case 0xCD988206:
                                 v68 = (v65 >> 27) ^ v65;
                                 v67 = 870544369;
@@ -1883,16 +1672,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             }
                         }
                     }
-                }
-                else if (v66 == 1457223976)
-                {
+                } else if (v66 == 1457223976) {
                     ++v61;
                     v67 = 412958586;
-                }
-                else if (v66 > 0x28648899)
-                {
-                    switch (v66)
-                    {
+                } else if (v66 > 0x28648899) {
+                    switch (v66) {
                     case 0x3BCE2912u:
                         *v61 = ROTR8(*v61, v63);
                         v67 = 1830113338;
@@ -1907,11 +1691,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v67 = 32673623;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v66)
-                    {
+                } else {
+                    switch (v66) {
                     case 0x28648899u:
                         v65 = 0xC4706BBDCB391BC2ui64 * ((v65 >> 30) ^ v65);
                         v67 = -1666881128;
@@ -1944,12 +1725,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v71 = 0;
         v72 = 590120983;
         v2 = 4236448200i64;
-        do
-        {
-            if (v72 > 0xAF68A91B)
-            {
-                switch (v72)
-                {
+        do {
+            if (v72 > 0xAF68A91B) {
+                switch (v72) {
                 case 0xBC1AD21D:
                     v70 = 0x1C9FDF5370E6673Di64;
                     v2 = 4059650618i64;
@@ -1967,11 +1745,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 167686592i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v72)
-                {
+            } else {
+                switch (v72) {
                 case 0xAF68A91B:
                     v70 = 0x164B2E5525DB057Fi64;
                     v2 = 228745979i64;
@@ -2005,18 +1780,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v69)
             goto LABEL_1190;
         v2 = 0x6412416FB593CF90i64;
-        while (1)
-        {
+        while (1) {
             v74 = -1382582623;
             v75 = -578933597;
-            do
-            {
-                if (v74 > 0x17CDF804)
-                {
-                    if (v74 > 0xA4B04784)
-                    {
-                        switch (v74)
-                        {
+            do {
+                if (v74 > 0x17CDF804) {
+                    if (v74 > 0xA4B04784) {
+                        switch (v74) {
                         case 0xAD9776A1:
                             v70 -= 0x61C8864680B583EBi64;
                             v75 = -1168470363;
@@ -2035,11 +1805,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v75 = -1050752986;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v74)
-                        {
+                    } else {
+                        switch (v74) {
                         case 0xA4B04784:
                             v71 = (v73 ^ (v73 >> 31)) & 0x15;
                             v75 = -518993615;
@@ -2062,19 +1829,14 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else
-                {
-                    if (v74 == 399374340)
-                    {
+                } else {
+                    if (v74 == 399374340) {
                         v73 = 0xBF58476D1CE4E5B9ui64 * ((v73 >> 30) ^ v73);
                         v75 = 95749233;
                         goto LABEL_734;
                     }
-                    if (v74 > 0xD83E2C3)
-                    {
-                        switch (v74)
-                        {
+                    if (v74 > 0xD83E2C3) {
+                        switch (v74) {
                         case 0xE872B06u:
                             v70 -= 0x40A7B892E31B1A47i64;
                             v75 = 1923148625;
@@ -2094,11 +1856,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v75 = -667074074;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v74)
-                        {
+                    } else {
+                        switch (v74) {
                         case 0xD83E2C3u:
                             v73 = 0x96EC2BEC23F49BB4ui64 * ((v73 >> 30) ^ v73);
                             v75 = 1172741088;
@@ -2138,8 +1897,7 @@ static byte* DecryptStringT8Old0(byte* str) {
         v2 = 0i64;
         if ((unsigned __int8)v1[1] - 1 <= 0)
             goto LABEL_1116;
-        do
-        {
+        do {
             v76 = v1[(int)v2 + 2];
             if (v76 != (byte)v2 - 81)
                 v1[(int)v2 + 2] = v76 ^ (v2 - 81);
@@ -2155,12 +1913,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v80 = 0;
         v81 = 1569604019;
         v2 = 2749655138i64;
-        do
-        {
-            if (v81 > 0x868BA6BB)
-            {
-                switch (v81)
-                {
+        do {
+            if (v81 > 0x868BA6BB) {
+                switch (v81) {
                 case 0x9B7F4B91:
                     v78 = 0xC9267F3C557FCD22ui64;
                     v2 = 4192580925i64;
@@ -2178,11 +1933,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 2031136148i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v81)
-                {
+            } else {
+                switch (v81) {
                 case 0x868BA6BB:
                     v78 = 0xC4EAFDE7908E6320ui64;
                     v2 = 2907953303i64;
@@ -2215,18 +1967,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v77)
             goto LABEL_1190;
         v2 = 0x24B71D6314DC6B17i64;
-        do
-        {
+        do {
             v82 = 1574360;
             v83 = 266897268;
-            do
-            {
-                if (v82 > 0x5AC4AC18)
-                {
-                    if (v82 > 0xACF4F8D1)
-                    {
-                        switch (v82)
-                        {
+            do {
+                if (v82 > 0x5AC4AC18) {
+                    if (v82 > 0xACF4F8D1) {
+                        switch (v82) {
                         case 0xB5D05176:
                             ++v77;
                             v83 = 128950258;
@@ -2244,11 +1991,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v83 = 1155580641;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v82)
-                        {
+                    } else {
+                        switch (v82) {
                         case 0xACF4F8D1:
                             v79 = 0x94D049BB133111EBui64 * ((v79 >> 30) ^ v79);
                             v83 = 1600099422;
@@ -2272,17 +2016,12 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v82 == 1522838552)
-                {
+                } else if (v82 == 1522838552) {
                     v78 += 0x24B71D6314DC6B17i64;
                     v79 = v78;
                     v83 = 1585723890;
-                }
-                else if (v82 > 0x1CB4E969)
-                {
-                    switch (v82)
-                    {
+                } else if (v82 > 0x1CB4E969) {
+                    switch (v82) {
                     case 0x1F7734C0u:
                         v79 = 0x9D76DCD12E37899i64 * ((v79 >> 33) ^ v79);
                         v83 = 1665077706;
@@ -2300,11 +2039,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v83 = -1082231191;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v82)
-                    {
+                } else {
+                    switch (v82) {
                     case 0x1CB4E969u:
                         v80 = (v79 ^ (v79 >> 55)) & 0x3C;
                         v83 = -1125415559;
@@ -2346,12 +2082,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v86 = 0;
         v87 = -720331145;
         v2 = 2984848294i64;
-        do
-        {
-            if (v87 > 0xABC4C849)
-            {
-                switch (v87)
-                {
+        do {
+            if (v87 > 0xABC4C849) {
+                switch (v87) {
                 case 0xAC498014:
                     v85 = 0xC6CBB7FA0CF690C6ui64;
                     v2 = 166375324i64;
@@ -2369,11 +2102,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 3133789275i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v87)
-                {
+            } else {
+                switch (v87) {
                 case 0xABC4C849:
                     v85 = 0x26531466E8003B7Fi64;
                     v2 = 228584197i64;
@@ -2407,18 +2137,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v84)
             goto LABEL_1190;
         v2 = 0xBA623075F071EABi64;
-        while (1)
-        {
+        while (1) {
             v89 = -672113044;
             v90 = 1190474386;
-            do
-            {
-                if (v89 > 0x6AC1CDB2)
-                {
-                    if (v89 <= 0xD0B22558)
-                    {
-                        switch (v89)
-                        {
+            do {
+                if (v89 > 0x6AC1CDB2) {
+                    if (v89 <= 0xD0B22558) {
+                        switch (v89) {
                         case 0xD0B22558:
                             v88 = 0x9E3779B97F4A7C15ui64 * ((v88 >> 27) ^ v88);
                             v90 = 1939521616;
@@ -2442,8 +2167,7 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v90 = -701468375;
                         goto LABEL_883;
                     }
-                    switch (v89)
-                    {
+                    switch (v89) {
                     case 0xD7F05E6C:
                         v85 -= 0x61C8864680B583EBi64;
                         v90 = 766437527;
@@ -2462,19 +2186,14 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v90 = -867287673;
                         break;
                     }
-                }
-                else
-                {
-                    if (v89 == 1791086002)
-                    {
+                } else {
+                    if (v89 == 1791086002) {
                         v85 += 0xBA623075F071EABi64;
                         v90 = -885743394;
                         goto LABEL_883;
                     }
-                    if (v89 > 0x2696EC3F)
-                    {
-                        switch (v89)
-                        {
+                    if (v89 > 0x2696EC3F) {
+                        switch (v89) {
                         case 0x36108B7Cu:
                             v88 = 0x94D049BB133111EBui64 * ((v88 >> 27) ^ v88);
                             v90 = 342604250;
@@ -2494,11 +2213,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v90 = 4992639;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v89)
-                        {
+                    } else {
+                        switch (v89) {
                         case 0x2696EC3Fu:
                             v86 = (v88 ^ (v88 >> 31)) & 0x21;
                             v90 = 458795342;
@@ -2541,12 +2257,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v94 = 0;
         v95 = 2072509062;
         v2 = 3743988976i64;
-        do
-        {
-            if (v95 > 0x73ED4E61)
-            {
-                switch (v95)
-                {
+        do {
+            if (v95 > 0x73ED4E61) {
+                switch (v95) {
                 case 0x7B87FA86u:
                     v92 = 0xF0F151E56813C624ui64;
                     v2 = 363557606i64;
@@ -2564,11 +2277,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 36999782i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v95)
-                {
+            } else {
+                switch (v95) {
                 case 0x73ED4E61u:
                     v92 = 0xB75AB0670334A98Aui64;
                     v2 = 15285923i64;
@@ -2601,18 +2311,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v91)
             goto LABEL_1190;
         v2 = 0x48AC152B1907C8C0i64;
-        do
-        {
+        do {
             v96 = -786248412;
             v97 = -229841500;
-            do
-            {
-                if (v96 > 0x732292F0)
-                {
-                    if (v96 > 0xD122CD24)
-                    {
-                        switch (v96)
-                        {
+            do {
+                if (v96 > 0x732292F0) {
+                    if (v96 > 0xD122CD24) {
+                        switch (v96) {
                         case 0xE6A999B4:
                             v93 = 0xBF58476D1CE4E5B9ui64 * ((v93 >> 30) ^ v93);
                             v97 = 1320292763;
@@ -2635,30 +2340,20 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v97 = 96561236;
                             break;
                         }
-                    }
-                    else if (v96 == -786248412)
-                    {
+                    } else if (v96 == -786248412) {
                         v92 -= 0x61C8864680B583EBi64;
                         v93 = v92;
                         v97 = 931878032;
-                    }
-                    else if (v96 > 0xA5D0793E)
-                    {
-                        if (v96 == -1511428012)
-                        {
+                    } else if (v96 > 0xA5D0793E) {
+                        if (v96 == -1511428012) {
                             v94 = (v93 ^ (v93 >> 13)) & 0x24;
                             v97 = 975196444;
-                        }
-                        else if (v96 == -1474590673)
-                        {
+                        } else if (v96 == -1474590673) {
                             v93 = 0x94D049BB133111EBui64 * ((v93 >> 27) ^ v93);
                             v97 = 789819613;
                         }
-                    }
-                    else
-                    {
-                        switch (v96)
-                        {
+                    } else {
+                        switch (v96) {
                         case 0xA5D0793E:
                             ++v91;
                             v97 = -1952131928;
@@ -2678,16 +2373,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v96 == 1931645680)
-                {
+                } else if (v96 == 1931645680) {
                     v94 = v93 ^ (v93 >> 31);
                     v97 = -185376054;
-                }
-                else if (v96 > 0x17BA4043)
-                {
-                    switch (v96)
-                    {
+                } else if (v96 > 0x17BA4043) {
+                    switch (v96) {
                     case 0x185A18BCu:
                         --v91;
                         v97 = 397693495;
@@ -2703,11 +2393,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v2 = 0x48AC152B1907C8C0i64;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v96)
-                    {
+                } else {
+                    switch (v96) {
                     case 0x17BA4043u:
                         v93 = 0xCCEF5D168DC5B69Eui64 * ((v93 >> 61) ^ v93);
                         v97 = -768796870;
@@ -2738,8 +2425,7 @@ static byte* DecryptStringT8Old0(byte* str) {
         if ((unsigned __int8)v1[1] - 1 <= 0)
             goto LABEL_1116;
         v99 = v1 + 2;
-        do
-        {
+        do {
             v98 += v2;
             if (*v99 != -71 - v98)
                 *v99 ^= -71 - v98;
@@ -2755,12 +2441,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v102 = 0;
         v103 = 1005169899;
         v2 = 119450667i64;
-        do
-        {
-            if (v103 > 0x8424B51F)
-            {
-                switch (v103)
-                {
+        do {
+            if (v103 > 0x8424B51F) {
+                switch (v103) {
                 case 0x9F1A54EF:
                     v101 = 0x458C73BB912F0DFCi64;
                     v2 = 267793702i64;
@@ -2778,11 +2461,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 3404121852i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v103)
-                {
+            } else {
+                switch (v103) {
                 case 0x8424B51F:
                     v101 = 0x5DF9E5E9BBCDE548i64;
                     v2 = 3766371013i64;
@@ -2816,18 +2496,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v100)
             goto LABEL_1190;
         v2 = 0x3260DEAC281D7C95i64;
-        do
-        {
+        do {
             v105 = -1247531378;
             v106 = 1900985024;
-            do
-            {
-                if (v105 > 0x69D3C912)
-                {
-                    if (v105 > 0xC1837EF8)
-                    {
-                        switch (v105)
-                        {
+            do {
+                if (v105 > 0x69D3C912) {
+                    if (v105 > 0xC1837EF8) {
+                        switch (v105) {
                         case 0xC3AF4D3E:
                             v104 = 0xA60B6154DEC4157i64 * (HIDWORD(v104) ^ v104);
                             v106 = 1574384286;
@@ -2850,30 +2525,20 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v106 = -801525621;
                             break;
                         }
-                    }
-                    else if (v105 == -1048346888)
-                    {
+                    } else if (v105 == -1048346888) {
                         --v100;
                         v106 = 1070297887;
-                    }
-                    else if (v105 > 0x9F65B820)
-                    {
-                        if (v105 == -1388695124)
-                        {
+                    } else if (v105 > 0x9F65B820) {
+                        if (v105 == -1388695124) {
                             v104 = 0xBF58476D1CE4E5B9ui64 * ((v104 >> 30) ^ v104);
                             v106 = 845121932;
-                        }
-                        else if (v105 == -1247531378)
-                        {
+                        } else if (v105 == -1247531378) {
                             v101 -= 0x61C8864680B583EBi64;
                             v104 = v101;
                             v106 = 413015842;
                         }
-                    }
-                    else
-                    {
-                        switch (v105)
-                        {
+                    } else {
+                        switch (v105) {
                         case 0x9F65B820:
                             v104 = 0x94D049BB133111EBui64 * ((v104 >> 27) ^ v104);
                             v106 = 1542024789;
@@ -2894,16 +2559,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v105 == 1775487250)
-                {
+                } else if (v105 == 1775487250) {
                     v104 = 0x94D049BB133111EBui64 * ((v104 >> 30) ^ v104);
                     v106 = 1801028085;
-                }
-                else if (v105 > 0x578736C)
-                {
-                    switch (v105)
-                    {
+                } else if (v105 > 0x578736C) {
+                    switch (v105) {
                     case 0xCA4B067u:
                         v102 = v104 ^ (v104 >> 31);
                         v106 = 686686123;
@@ -2918,11 +2578,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v106 = -1180167464;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v105)
-                    {
+                } else {
+                    switch (v105) {
                     case 0x578736Cu:
                         v104 = 0x4BC4F7EACF27BE59i64 * ((v104 >> 57) ^ v104);
                         v106 = -1436896699;
@@ -2953,12 +2610,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v109 = 0;
         v110 = 194008443;
         v2 = 680340319i64;
-        do
-        {
-            if (v110 > 0xB0292653)
-            {
-                switch (v110)
-                {
+        do {
+            if (v110 > 0xB0292653) {
+                switch (v110) {
                 case 0xB3985B2F:
                     v108 = 0xFB6EE49552A67DEBui64;
                     v2 = 3484647773i64;
@@ -2976,11 +2630,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 1943286648i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v110)
-                {
+            } else {
+                switch (v110) {
                 case 0xB0292653:
                     v108 = 0x6DC606FF309BDAE7i64;
                     v2 = 4256091642i64;
@@ -3014,18 +2665,13 @@ static byte* DecryptStringT8Old0(byte* str) {
         if (!*v107)
             goto LABEL_1190;
         v2 = 0x2571B2978DD26D68i64;
-        do
-        {
+        do {
             v112 = -826402112;
             v113 = -1007740820;
-            do
-            {
-                if (v112 > 0x3F37C43A)
-                {
-                    if (v112 > 0xA58CAA26)
-                    {
-                        switch (v112)
-                        {
+            do {
+                if (v112 > 0x3F37C43A) {
+                    if (v112 > 0xA58CAA26) {
+                        switch (v112) {
                         case 0xA8378D74:
                             v111 = 0x9E3779B97F4A7C15ui64 * ((v111 >> 27) ^ v111);
                             v113 = 1565254254;
@@ -3044,11 +2690,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                             v113 = 2125174366;
                             break;
                         }
-                    }
-                    else
-                    {
-                        switch (v112)
-                        {
+                    } else {
+                        switch (v112) {
                         case 0xA58CAA26:
                             v111 = 0x94D049BB133111EBui64 * ((v111 >> 27) ^ v111);
                             v113 = -1698992612;
@@ -3072,16 +2715,11 @@ static byte* DecryptStringT8Old0(byte* str) {
                             break;
                         }
                     }
-                }
-                else if (v112 == 1060619322)
-                {
+                } else if (v112 == 1060619322) {
                     v109 = v111 ^ (v111 >> 31);
                     v113 = 2127862237;
-                }
-                else if (v112 > 0x2D1B3818)
-                {
-                    switch (v112)
-                    {
+                } else if (v112 > 0x2D1B3818) {
+                    switch (v112) {
                     case 0x33804DA8u:
                         --v107;
                         v113 = -227225929;
@@ -3100,11 +2738,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v113 = -428789103;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v112)
-                    {
+                } else {
+                    switch (v112) {
                     case 0x2D1B3818u:
                         v111 = 0x8E6A9338E8324DCi64 * ((v111 >> 63) ^ v111);
                         v113 = 708819522;
@@ -3142,11 +2777,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         *v1 = -111;
         v114 = 0;
         v2 = 0i64;
-        if ((unsigned __int8)v1[1] - 1 > 0)
-        {
+        if ((unsigned __int8)v1[1] - 1 > 0) {
             v115 = v1 + 2;
-            do
-            {
+            do {
                 v114 += v2;
                 if (*v115 != v114 - 67)
                     *v115 ^= v114 - 67;
@@ -3164,12 +2797,9 @@ static byte* DecryptStringT8Old0(byte* str) {
         v118 = 0;
         v119 = -731327823;
         v2 = 383669752i64;
-        do
-        {
-            if (v119 > 0xAE399097)
-            {
-                switch (v119)
-                {
+        do {
+            if (v119 > 0xAE399097) {
+                switch (v119) {
                 case 0xC06FD533:
                     v117 = 0x1CB3F9CA3636DD95i64;
                     v2 = 857977489i64;
@@ -3187,11 +2817,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                     v2 = 3640398362i64;
                     break;
                 }
-            }
-            else
-            {
-                switch (v119)
-                {
+            } else {
+                switch (v119) {
                 case 0xAE399097:
                     v117 = 0xBEF574393EE78112ui64;
                     v2 = 10908914i64;
@@ -3227,26 +2854,21 @@ static byte* DecryptStringT8Old0(byte* str) {
         v2 = 0xF0016A4A789F0i64;
         break;
     default:
-        //v127 = sub_2D4C170(v2);
-        //if (!--dword_10748F58)
+        // v127 = sub_2D4C170(v2);
+        // if (!--dword_10748F58)
         //{
-        //    while (v127 != _InterlockedCompareExchange64(&qword_10748F50, 0i64, v127))
-        //        ;
-        //}
+        //     while (v127 != _InterlockedCompareExchange64(&qword_10748F50, 0i64, v127))
+        //         ;
+        // }
         return v1;
     }
-    do
-    {
+    do {
         v121 = 56496386;
         v122 = 183339377;
-        do
-        {
-            if (v121 > 0x2E133DFE)
-            {
-                if (v121 > 0xBFC32CC2)
-                {
-                    switch (v121)
-                    {
+        do {
+            if (v121 > 0x2E133DFE) {
+                if (v121 > 0xBFC32CC2) {
+                    switch (v121) {
                     case 0xC5C22CD7:
                         v123 = (v120 >> 27) ^ v120;
                         v122 = 2054233881;
@@ -3264,11 +2886,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v122 = 250982505;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v121)
-                    {
+                } else {
+                    switch (v121) {
                     case 0xBFC32CC2:
                         v120 = 0x33BC575CE3A9F64i64 * ((v120 >> 30) ^ v120);
                         v122 = 287095326;
@@ -3293,19 +2912,14 @@ static byte* DecryptStringT8Old0(byte* str) {
                         break;
                     }
                 }
-            }
-            else
-            {
-                if (v121 == 773012990)
-                {
+            } else {
+                if (v121 == 773012990) {
                     v120 = 0x9E3779B97F4A7C15ui64 * ((v120 >> 27) ^ v120);
                     v122 = 1196524492;
                     goto LABEL_1187;
                 }
-                if (v121 > 0xCEFA467)
-                {
-                    switch (v121)
-                    {
+                if (v121 > 0xCEFA467) {
+                    switch (v121) {
                     case 0xE46CE3Bu:
                         v118 = (v120 ^ (v120 >> 12)) & 0x1F;
                         v122 = -407063973;
@@ -3326,11 +2940,8 @@ static byte* DecryptStringT8Old0(byte* str) {
                         v122 = -1321553058;
                         break;
                     }
-                }
-                else
-                {
-                    switch (v121)
-                    {
+                } else {
+                    switch (v121) {
                     case 0xCEFA467u:
                         v120 = 0xE95F131950146F75ui64 * ((v120 >> 27) ^ v120);
                         v122 = -1863752661;
@@ -3373,8 +2984,6 @@ LABEL_1191:
     v124 = &v1[v60];
     return v124;
 }
-char* decrypt::DecryptStringT8Old(char* str) {
-    return (char*)DecryptStringT8Old0((byte*)str);
-}
+char* decrypt::DecryptStringT8Old(char* str) { return (char*)DecryptStringT8Old0((byte*)str); }
 
 #pragma warning(pop)

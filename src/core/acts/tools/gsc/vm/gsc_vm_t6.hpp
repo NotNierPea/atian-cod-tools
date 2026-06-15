@@ -9,7 +9,9 @@ namespace tool::gsc {
     /*
     class T6GSCOBJHandler : public GSCOBJHandler {
     public:
-        T6GSCOBJHandler(byte* file, size_t fileSize) : GSCOBJHandler(file, fileSize, GOHF_STRING_NAMES | GOHF_INLINE_FUNC_PTR | GOHF_SUPPORT_VAR_VA | GOHF_SUPPORT_VAR_REF | GOHF_FOREACH_TYPE_T7 | GOHF_SUPPORT_GET_API_SCRIPT | GOHF_SWITCH_TYPE_T7) {}
+        T6GSCOBJHandler(byte* file, size_t fileSize) : GSCOBJHandler(file, fileSize, GOHF_STRING_NAMES |
+    GOHF_INLINE_FUNC_PTR | GOHF_SUPPORT_VAR_VA | GOHF_SUPPORT_VAR_REF | GOHF_FOREACH_TYPE_T7 |
+    GOHF_SUPPORT_GET_API_SCRIPT | GOHF_SWITCH_TYPE_T7) {}
 
         void SwitchHeaderEndian() override {
             throw std::runtime_error("SwitchHeaderEndian not implemented");

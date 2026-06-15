@@ -163,10 +163,9 @@ namespace tool::gsc {
         enum T8GSCLocalVarFlag : uint8_t {
             ARRAY_REF = 0x01,
             VARIADIC = 0x02,
-            T9_VAR_REF = 0x04, // T9
+            T9_VAR_REF = 0x04,        // T9
             IW_VARIADIC_COUNT = 0x80, // Special value
         };
-
 
         struct SubNodeContext {
             ASMContext& ctx;
@@ -175,7 +174,7 @@ namespace tool::gsc {
         };
 
         class ASMContextNode {
-        public:
+          public:
             ASMContextNodePriority m_priority;
             ASMContextNodeType m_type;
             bool m_renderRefIfAny = true;
@@ -193,13 +192,15 @@ namespace tool::gsc {
             virtual bool IsBoolConvertable(bool strict, ASMContext& ctx);
             virtual bool IsConstNumber() const { return IsIntConst() || m_type == TYPE_FLOAT; };
 
-            virtual void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&, ASMContext& ctx);
-            virtual void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx);
+            virtual void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&,
+                                        ASMContext& ctx);
+            virtual void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
+                                       SubNodeContext& ctx);
             friend std::ostream& operator<<(std::ostream& os, const ASMContextNode& obj);
         };
 
         class ASMContextLocationOp {
-        public:
+          public:
             const char* type;
             ASMContextLocationOp(const char* type) : type(type) {}
             virtual ~ASMContextLocationOp();
@@ -225,19 +226,16 @@ namespace tool::gsc {
             ASMContextLocation* location;
         };
 
-        enum ASMContextNodeBlockType {
-            BLOCK_DEFAULT,
-            BLOCK_DEV,
-            BLOCK_PADDING
-        };
+        enum ASMContextNodeBlockType { BLOCK_DEFAULT, BLOCK_DEV, BLOCK_PADDING };
 
         class ASMContextNodeBlock : public ASMContextNode {
-        public:
+          public:
             std::vector<ASMContextStatement> m_statements{};
             ASMContextNodeBlockType m_blockType;
             bool m_disabled;
             bool m_allowInline;
-            ASMContextNodeBlock(ASMContextNodeBlockType blockType = BLOCK_DEFAULT, bool disabled = false, bool allowInline = true);
+            ASMContextNodeBlock(ASMContextNodeBlockType blockType = BLOCK_DEFAULT, bool disabled = false,
+                                bool allowInline = true);
             ~ASMContextNodeBlock();
             void Dump(std::ostream& out, DecompContext& ctx) const override;
             ASMContextNode* Clone0() const override;
@@ -257,8 +255,10 @@ namespace tool::gsc {
 
             ASMContextStatement* FetchFirstForLocation(int64_t rloc);
 
-            void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&, ASMContext& ctx) override;
-            void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx) override;
+            void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&,
+                                ASMContext& ctx) override;
+            void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
+                               SubNodeContext& ctx) override;
         };
 
         struct ASMContextDevBlock {
@@ -273,7 +273,7 @@ namespace tool::gsc {
         };
 
         class ASMContext {
-        public:
+          public:
             uint32_t funcRloc;
             // cli opt
             const GscInfoOption& m_opt;
@@ -325,25 +325,18 @@ namespace tool::gsc {
             // file platform
             Platform m_platform;
 
-            ASMContext(byte* fonctionStart, GSCOBJHandler& gscReader, T8GSCOBJContext& objctx, const GscInfoOption& opt, uint64_t nsp, GSCExportReader& exp, void* m_readerHandle, uint64_t vm, Platform platform);
+            ASMContext(byte* fonctionStart, GSCOBJHandler& gscReader, T8GSCOBJContext& objctx, const GscInfoOption& opt,
+                       uint64_t nsp, GSCExportReader& exp, void* m_readerHandle, uint64_t vm, Platform platform);
             ~ASMContext();
 
             // @return relative location in the function
-            inline int32_t FunctionRelativeLocation() {
-                return FunctionRelativeLocation(m_bcl);
-            }
+            inline int32_t FunctionRelativeLocation() { return FunctionRelativeLocation(m_bcl); }
             // @return absolute location in the script
-            inline uint32_t ScriptAbsoluteLocation() {
-                return ScriptAbsoluteLocation(m_bcl);
-            }
+            inline uint32_t ScriptAbsoluteLocation() { return ScriptAbsoluteLocation(m_bcl); }
             // @return if we are in the script
-            inline bool IsInsideScript() {
-                return IsInsideScript(m_bcl);
-            }
+            inline bool IsInsideScript() { return IsInsideScript(m_bcl); }
             // @return Push the current location to the locations
-            inline ASMContextLocation& PushLocation() {
-                return PushLocation(m_bcl);
-            }
+            inline ASMContextLocation& PushLocation() { return PushLocation(m_bcl); }
             // @return Push a location to the locations and return it
             ASMContextLocation& PushLocation(byte* location);
 
@@ -377,9 +370,7 @@ namespace tool::gsc {
             // @return if the endian is switched
             bool SwitchEndian() const;
 
-            inline void CheckInsideScript() {
-                CheckInsideScript(m_bcl);
-            }
+            inline void CheckInsideScript() { CheckInsideScript(m_bcl); }
             // @return align and return m_bcl on a particular datatype
             template<typename Type>
             inline byte*& Aligned() {
@@ -476,69 +467,47 @@ namespace tool::gsc {
             /*
              * Compute the dev blocks
              */
-            inline void ComputeDevBlocks() {
-                m_funcBlock.ComputeDevBlocks(*this);
-            }
+            inline void ComputeDevBlocks() { m_funcBlock.ComputeDevBlocks(*this); }
             /*
              * Compute the switch blocks
              */
-            inline void ComputeSwitchBlocks() {
-                m_funcBlock.ComputeSwitchBlocks(*this);
-            }
+            inline void ComputeSwitchBlocks() { m_funcBlock.ComputeSwitchBlocks(*this); }
             /*
              * Compute the for blocks
              */
-            inline void ComputeForBlocks() {
-                m_funcBlock.ComputeForBlocks(*this);
-            }
+            inline void ComputeForBlocks() { m_funcBlock.ComputeForBlocks(*this); }
             /*
              * Compute the for each blocks
              */
-            inline void ComputeForEachBlocks() {
-                m_funcBlock.ComputeForEachBlocks(*this);
-            }
+            inline void ComputeForEachBlocks() { m_funcBlock.ComputeForEachBlocks(*this); }
             /*
              * Compute the while blocks
              */
-            inline void ComputeWhileBlocks() {
-                m_funcBlock.ComputeWhileBlocks(*this);
-            }
+            inline void ComputeWhileBlocks() { m_funcBlock.ComputeWhileBlocks(*this); }
             /*
              * Compute the if blocks
              */
-            inline void ComputeIfBlocks() {
-                m_funcBlock.ComputeIfBlocks(*this);
-            }
+            inline void ComputeIfBlocks() { m_funcBlock.ComputeIfBlocks(*this); }
             /*
              * Compute the return candidates
              */
-            inline void ComputeReturnJump() {
-                m_funcBlock.ComputeReturnJump(*this);
-            }
+            inline void ComputeReturnJump() { m_funcBlock.ComputeReturnJump(*this); }
             /*
              * Compute the boolean return candidates
              */
-            inline void ComputeBoolReturn() {
-                m_funcBlock.ComputeBoolReturn(*this);
-            }
+            inline void ComputeBoolReturn() { m_funcBlock.ComputeBoolReturn(*this); }
             /*
              * Compute the special pattern candidates
              */
-            inline void ComputeSpecialPattern() {
-                m_funcBlock.ComputeSpecialPattern(*this);
-            }
+            inline void ComputeSpecialPattern() { m_funcBlock.ComputeSpecialPattern(*this); }
             /*
              * Compute the special pattern candidates
              */
-            inline void ComputePreSpecialPattern() {
-                m_funcBlock.ComputePreSpecialPattern(*this);
-            }
+            inline void ComputePreSpecialPattern() { m_funcBlock.ComputePreSpecialPattern(*this); }
             /*
              * Compute the custom compiler pattern candidates
              */
-            inline void ComputeCustomCompilerPattern() {
-                m_funcBlock.ComputeCustomCompilerPattern(*this);
-            }
+            inline void ComputeCustomCompilerPattern() { m_funcBlock.ComputeCustomCompilerPattern(*this); }
 
             /*
              * Compute the for sub nodes
@@ -556,9 +525,7 @@ namespace tool::gsc {
             /*
              * Dump the function block
              */
-            inline void Dump(std::ostream& out, DecompContext& ctx) const {
-                m_funcBlock.Dump(out, ctx);
-            }
+            inline void Dump(std::ostream& out, DecompContext& ctx) const { m_funcBlock.Dump(out, ctx); }
             /*
              * Disable the decompiler
              */
@@ -576,7 +543,6 @@ namespace tool::gsc {
             return t;
         }
 
-
         size_t SizeNoEmptyNode(const std::vector<ASMContextStatement>& statements);
         ASMContextStatement* GetNoEmptyNode(std::vector<ASMContextStatement>& statements, size_t index);
         void PatchNumber(ASMContextNode*& node, double value);
@@ -592,7 +558,8 @@ namespace tool::gsc {
          * @return boolean version of node or node
          */
         ASMContextNode* ASMCNodeConvertToBool(ASMContextNode* node, ASMContext& ctx);
-    }
-}
+    } // namespace opcode
+} // namespace tool::gsc
 template<>
-struct std::formatter<tool::gsc::opcode::ASMContextNode, char> : utils::BasicFormatter<tool::gsc::opcode::ASMContextNode> {};
+struct std::formatter<tool::gsc::opcode::ASMContextNode, char>
+    : utils::BasicFormatter<tool::gsc::opcode::ASMContextNode> {};

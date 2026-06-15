@@ -7,172 +7,169 @@
 #include <core/hashes/hash_store.hpp>
 
 namespace deps::dzporter::cdb {
-	namespace {
-		void CDBRead(core::bytebuffer::FileReader& reader, std::function<void(uint64_t hash, const char* str)>& each, std::function<void* (size_t len)> allocMemory, std::mutex* loadMutex) {
+    namespace {
+        void CDBRead(core::bytebuffer::FileReader& reader, std::function<void(uint64_t hash, const char* str)>& each,
+                     std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
 
-			NameDatabaseHeader header;
-			reader.Read(&header, sizeof(header));
+            NameDatabaseHeader header;
+            reader.Read(&header, sizeof(header));
 
-			if (header.magic != CDB_MAGIC) {
-				throw std::runtime_error(std::format("invalid magic: {:x}", header.magic));
-			}
+            if (header.magic != CDB_MAGIC) {
+                throw std::runtime_error(std::format("invalid magic: {:x}", header.magic));
+            }
 
-			LOG_TRACE("cdb: entries: {}, compressedSize: {}, decompressedSize: {}", header.entries, header.compressedSize, header.decompressedSize);
+            LOG_TRACE("cdb: entries: {}, compressedSize: {}, decompressedSize: {}", header.entries,
+                      header.compressedSize, header.decompressedSize);
 
-			if (!header.entries) {
-				return; // nothing to read
-			}
+            if (!header.entries) {
+                return; // nothing to read
+            }
 
-			std::unique_ptr<byte[]> decompressed{ std::make_unique<byte[]>(header.decompressedSize) };
-			std::unique_ptr<byte[]> compressed{ reader.ReadArray<byte>(header.compressedSize) };
+            std::unique_ptr<byte[]> decompressed{ std::make_unique<byte[]>(header.decompressedSize) };
+            std::unique_ptr<byte[]> compressed{ reader.ReadArray<byte>(header.compressedSize) };
 
-			int r{ utils::compress::Decompress2(
-				utils::compress::COMP_LZ4,
-				decompressed.get(), header.decompressedSize,
-				compressed.get(), header.compressedSize)};
+            int r{ utils::compress::Decompress2(utils::compress::COMP_LZ4, decompressed.get(), header.decompressedSize,
+                                                compressed.get(), header.compressedSize) };
 
-			if (r < 0) {
-				throw std::runtime_error(std::format("can't decompress {}", utils::compress::DecompressResultName(r)));
-			}
+            if (r < 0) {
+                throw std::runtime_error(std::format("can't decompress {}", utils::compress::DecompressResultName(r)));
+            }
 
-			core::bytebuffer::ByteBuffer dreader{ decompressed.get(), header.decompressedSize };
+            core::bytebuffer::ByteBuffer dreader{ decompressed.get(), header.decompressedSize };
 
-			std::unique_ptr<size_t[]> refs{ std::make_unique<size_t[]>(header.entries) };
-			char* strsStart{ dreader.Ptr<char>() };
+            std::unique_ptr<size_t[]> refs{ std::make_unique<size_t[]>(header.entries) };
+            char* strsStart{ dreader.Ptr<char>() };
 
-			// skip the string entries, technically we can do that with
-			// dreader.Goto(decompressedSize - entries * sizeof(uint64_t))
-			// but I don't think we can trust anything from these people.
+            // skip the string entries, technically we can do that with
+            // dreader.Goto(decompressedSize - entries * sizeof(uint64_t))
+            // but I don't think we can trust anything from these people.
 
-			for (size_t i = 0; i < header.entries; i++) {
-				refs[i] = dreader.Loc();
-				dreader.ReadString();
-			}
+            for (size_t i = 0; i < header.entries; i++) {
+                refs[i] = dreader.Loc();
+                dreader.ReadString();
+            }
 
-			// we know the exact size of the strings, we can allocate them in one shot
-			char* strsizes;
-			if (allocMemory) {
-				size_t strVal{ dreader.Loc() };
-				strsizes = (char*)allocMemory(strVal);
-				std::memcpy(strsizes, strsStart, strVal);
-			}
-			else {
-				strsizes = strsStart;
-			}
+            // we know the exact size of the strings, we can allocate them in one shot
+            char* strsizes;
+            if (allocMemory) {
+                size_t strVal{ dreader.Loc() };
+                strsizes = (char*)allocMemory(strVal);
+                std::memcpy(strsizes, strsStart, strVal);
+            } else {
+                strsizes = strsStart;
+            }
 
-			uint64_t* keys{ dreader.ReadPtr<uint64_t>(header.entries) };
+            uint64_t* keys{ dreader.ReadPtr<uint64_t>(header.entries) };
 
-			{
-				core::async::opt_lock_guard lg{ loadMutex };
+            {
+                core::async::opt_lock_guard lg{ loadMutex };
 
-				for (size_t i = 0; i < header.entries; i++) {
-					each(keys[i], &strsizes[refs[i]]);
-				}
-			}
-		}
-	}
+                for (size_t i = 0; i < header.entries; i++) {
+                    each(keys[i], &strsizes[refs[i]]);
+                }
+            }
+        }
+    } // namespace
 
-	void CompressCDBFile(std::map<std::string, std::unordered_set<uint64_t>>& dataMap, const std::filesystem::path& out) {
+    void CompressCDBFile(std::map<std::string, std::unordered_set<uint64_t>>& dataMap,
+                         const std::filesystem::path& out) {
 
-		uint32_t count{};
+        uint32_t count{};
 
-		std::vector<byte> rawdata{};
-		for (auto& [str, hashVal] : dataMap) {
-			for (uint64_t hash : hashVal) {
-				utils::WriteString(rawdata, str.c_str());
-				count++;
-			}
-		}
-		for (auto& [str, hashVal] : dataMap) {
-			for (uint64_t hash : hashVal) {
-				utils::WriteValue(rawdata, hash);
-			}
-		}
+        std::vector<byte> rawdata{};
+        for (auto& [str, hashVal] : dataMap) {
+            for (uint64_t hash : hashVal) {
+                utils::WriteString(rawdata, str.c_str());
+                count++;
+            }
+        }
+        for (auto& [str, hashVal] : dataMap) {
+            for (uint64_t hash : hashVal) {
+                utils::WriteValue(rawdata, hash);
+            }
+        }
 
-		utils::OutFileCE os{ out, true, std::ios::binary };
+        utils::OutFileCE os{ out, true, std::ios::binary };
 
-		utils::compress::CompressionAlgorithm alg{ utils::compress::COMP_LZ4 | utils::compress::COMP_HIGH_COMPRESSION };
+        utils::compress::CompressionAlgorithm alg{ utils::compress::COMP_LZ4 | utils::compress::COMP_HIGH_COMPRESSION };
 
-		if (rawdata.size() >= utils::compress::MAX_LZ4_SIZE) {
-			throw std::runtime_error("File too big.");
-		}
+        if (rawdata.size() >= utils::compress::MAX_LZ4_SIZE) {
+            throw std::runtime_error("File too big.");
+        }
 
-		size_t bound = utils::compress::GetCompressSize(alg, rawdata.size());
+        size_t bound = utils::compress::GetCompressSize(alg, rawdata.size());
 
-		auto comp = std::make_unique<char[]>(bound + 1);
-		comp[bound] = 0;
+        auto comp = std::make_unique<char[]>(bound + 1);
+        comp[bound] = 0;
 
-		LOG_DEBUG("Compressing...");
+        LOG_DEBUG("Compressing...");
 
-		if (!utils::compress::Compress(alg, comp.get(), &bound, rawdata.data(), rawdata.size())) {
-			throw std::runtime_error("Failed to compress, abort.");
-		}
+        if (!utils::compress::Compress(alg, comp.get(), &bound, rawdata.data(), rawdata.size())) {
+            throw std::runtime_error("Failed to compress, abort.");
+        }
 
-		LOG_INFO(
-			"{} hash(es) compressed {}B -> {}B ({}% saved) into {}",
-			count, utils::FancyNumber(rawdata.size()), utils::FancyNumber(bound),
-			100 - 100 * bound / rawdata.size(),
-			out.string()
-		);
+        LOG_INFO("{} hash(es) compressed {}B -> {}B ({}% saved) into {}", count, utils::FancyNumber(rawdata.size()),
+                 utils::FancyNumber(bound), 100 - 100 * bound / rawdata.size(), out.string());
 
-		// header
-		deps::dzporter::cdb::NameDatabaseHeader header{};
-		header.magic = deps::dzporter::cdb::CDB_MAGIC;
-		header.compressedSize = (uint32_t)bound;
-		header.decompressedSize = (uint32_t)rawdata.size();
-		header.entries = count;
+        // header
+        deps::dzporter::cdb::NameDatabaseHeader header{};
+        header.magic = deps::dzporter::cdb::CDB_MAGIC;
+        header.compressedSize = (uint32_t)bound;
+        header.decompressedSize = (uint32_t)rawdata.size();
+        header.entries = count;
 
-		// buffer
-		utils::WriteValue(os, header);
-		utils::WriteValue(os, comp.get(), bound + 1);
-	}
+        // buffer
+        utils::WriteValue(os, header);
+        utils::WriteValue(os, comp.get(), bound + 1);
+    }
 
-	void CompressCDBFile(std::unordered_map<uint64_t, const char*>& dataMap, const std::filesystem::path& out) {
-		std::map<std::string, std::unordered_set<uint64_t>> rev{};
+    void CompressCDBFile(std::unordered_map<uint64_t, const char*>& dataMap, const std::filesystem::path& out) {
+        std::map<std::string, std::unordered_set<uint64_t>> rev{};
 
-		for (auto& [h, str] : dataMap) {
-			rev[str].insert(h);
-		}
+        for (auto& [h, str] : dataMap) {
+            rev[str].insert(h);
+        }
 
-		CompressCDBFile(rev, out);
-	}
+        CompressCDBFile(rev, out);
+    }
 
+    bool ReadCDBFile(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
+                     std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+        std::vector<byte> buff{};
+        LOG_DEBUG("Read {}", path.string());
 
-	bool ReadCDBFile(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each, std::function<void* (size_t len)> allocMemory, std::mutex* loadMutex) {
-		std::vector<byte> buff{};
-		LOG_DEBUG("Read {}", path.string());
+        utils::InFileCE is{ path, false, std::ios::binary };
+        if (!is) {
+            LOG_ERROR("Can't open {}", path.string());
+            return false;
+        }
+        core::bytebuffer::FileReader reader{ is };
 
-		utils::InFileCE is{ path, false, std::ios::binary };
-		if (!is) {
-			LOG_ERROR("Can't open {}", path.string());
-			return false;
-		}
-		core::bytebuffer::FileReader reader{ is };
+        try {
+            CDBRead(reader, each, allocMemory, loadMutex);
+            return true;
+        } catch (std::runtime_error& err) {
+            LOG_ERROR("Can't read {}: {}", path.string(), err.what());
+            return false;
+        }
+    }
 
-		try {
-			CDBRead(reader, each, allocMemory, loadMutex);
-			return true;
-		}
-		catch (std::runtime_error& err) {
-			LOG_ERROR("Can't read {}: {}", path.string(), err.what());
-			return false;
-		}
-	}
+    bool ReadCDBFiles(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
+                      std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+        std::vector<std::filesystem::path> paths{};
 
-	bool ReadCDBFiles(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each, std::function<void* (size_t len)> allocMemory, std::mutex* loadMutex) {
-		std::vector<std::filesystem::path> paths{};
+        utils::GetFileRecurseExt(path, paths, ".cdb\0");
 
-		utils::GetFileRecurseExt(path, paths, ".cdb\0");
+        for (const std::filesystem::path& p : paths) {
+            if (!ReadCDBFile(p, each, allocMemory, loadMutex))
+                return false;
+        }
+        return true;
+    }
 
-		for (const std::filesystem::path& p : paths) {
-			if (!ReadCDBFile(p, each, allocMemory, loadMutex)) return false;
-		}
-		return true;
-	}
-
-	void LoadHashFile(std::filesystem::path p) {
-		ReadCDBFiles(p, [](uint64_t hash, const char* str) {
-			core::hashes::AddPrecomputed(hash, str, false);
-		}, core::hashes::AllocHashMemory);
-	}
-}
+    void LoadHashFile(std::filesystem::path p) {
+        ReadCDBFiles(
+            p, [](uint64_t hash, const char* str) { core::hashes::AddPrecomputed(hash, str, false); },
+            core::hashes::AllocHashMemory);
+    }
+} // namespace deps::dzporter::cdb

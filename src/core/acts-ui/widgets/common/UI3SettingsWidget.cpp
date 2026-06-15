@@ -6,14 +6,14 @@
 #include <QScrollArea>
 #include <QLabel>
 
-
 namespace {
     QHBoxLayout* CreateEditor(ui3::config::PropertyEntry& entry) {
         QHBoxLayout* row{ new QHBoxLayout() };
-        QLabel* label{ new QLabel(QString::asprintf("%s (%s)", entry.description && *entry.description ? entry.description : entry.path, entry.path)) };
+        QLabel* label{ new QLabel(QString::asprintf(
+            "%s (%s)", entry.description && *entry.description ? entry.description : entry.path, entry.path)) };
         label->setMinimumWidth(300);
         row->addWidget(label);
-        
+
         switch (entry.ptype) {
         case ui3::config::PropertyType::PT_BOOL: {
             QCheckBox* box = new QCheckBox;
@@ -35,10 +35,9 @@ namespace {
         }
         return row;
     }
-}
-UI3SettingsWidget::UI3SettingsWidget(QWidget *parent)
-	: QWidget(parent) {
-	ui.setupUi(this);
+} // namespace
+UI3SettingsWidget::UI3SettingsWidget(QWidget* parent) : QWidget(parent) {
+    ui.setupUi(this);
 
     QScrollArea* scroll{ new QScrollArea(this) };
     scroll->setWidgetResizable(true);
@@ -59,6 +58,5 @@ UI3SettingsWidget::UI3SettingsWidget(QWidget *parent)
 }
 
 UI3SettingsWidget::~UI3SettingsWidget() {}
-
 
 ADD_UI_TOOL(UI3SettingsWidget, "Settings", "Utilities");

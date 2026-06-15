@@ -12,7 +12,7 @@ namespace tool::gsc::vm {
     using namespace tool::gsc::gdb;
 
     class GscGdbActs : public GscGdb {
-    public:
+      public:
         GscGdbActs() : GscGdb(shared::gsc::acts_debug::MAGIC) {}
 
         void DbgLoad(T8GSCOBJContext& ctx, core::bytebuffer::ByteBuffer& dbgReader, std::ostream& asmout) override {
@@ -24,7 +24,8 @@ namespace tool::gsc::vm {
 
             asmout << core::updater::GetVersionName((uint32_t)dbg->actsVersion);
 
-            if (core::actsinfo::VERSION_ID != core::actsinfo::DEV_VERSION_ID && dbg->actsVersion == core::actsinfo::VERSION_ID) {
+            if (core::actsinfo::VERSION_ID != core::actsinfo::DEV_VERSION_ID &&
+                dbg->actsVersion == core::actsinfo::VERSION_ID) {
                 asmout << "/current";
             }
 
@@ -34,18 +35,24 @@ namespace tool::gsc::vm {
 
             if (dbg->HasFeature(ADF_FLAGS)) {
                 asmout << "// flags ....";
-                if (!dbg->flags) asmout << " NONE";
+                if (!dbg->flags)
+                    asmout << " NONE";
                 else {
                     // read known flags
 
-                    if (dbg->HasFlag(ADFG_OBFUSCATED)) asmout << " OBFUSCATED";
-                    if (dbg->HasFlag(ADFG_DEBUG)) asmout << " DEBUG";
-                    if (dbg->HasFlag(ADFG_CLIENT)) asmout << " CLIENT";
+                    if (dbg->HasFlag(ADFG_OBFUSCATED))
+                        asmout << " OBFUSCATED";
+                    if (dbg->HasFlag(ADFG_DEBUG))
+                        asmout << " DEBUG";
+                    if (dbg->HasFlag(ADFG_CLIENT))
+                        asmout << " CLIENT";
 
                     uint32_t pltFlag = (dbg->flags & ADFG_PLATFORM_MASK) >> ADFG_PLATFORM_SHIFT;
                     if (pltFlag) {
                         Platform nplt{ (Platform)pltFlag };
-                        asmout << " PLT(" << utils::MapString(utils::CloneString(PlatformName(nplt)), [](char c) { return std::isspace(c) ? '_' : std::toupper(c); }) << ")";
+                        asmout << " PLT(" << utils::MapString(utils::CloneString(PlatformName(nplt)), [](char c) {
+                            return std::isspace(c) ? '_' : std::toupper(c);
+                        }) << ")";
 
                         // the script is saying which platform is was compiled, so we follow it
                         if (!ctx.opt.m_ignoreDebugPlatform && pltFlag < Platform::PLATFORM_COUNT) {
@@ -62,7 +69,8 @@ namespace tool::gsc::vm {
             if (dbg->HasFeature(ADF_CHECKSUM)) {
                 asmout << "// dbg crc .. " << "0x" << std::hex << dbg->checksum << "\n";
                 if (ctx.scriptfile->GetChecksum() && ctx.scriptfile->GetChecksum() != dbg->checksum) {
-                    LOG_WARNING("Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}", ctx.scriptfile->GetChecksum(), dbg->checksum);
+                    LOG_WARNING("Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}",
+                                ctx.scriptfile->GetChecksum(), dbg->checksum);
                     return;
                 }
             }
@@ -74,15 +82,14 @@ namespace tool::gsc::vm {
                     if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC_STRING)) {
                         if (dbg->crc_offset > ctx.scriptfile->GetFileSize()) {
                             asmout << "INVALID LOC";
+                        } else {
+                            utils::PrintFormattedString(asmout << "\"",
+                                                        ctx.scriptfile->Ptr<const char>(dbg->crc_offset))
+                                << "\"";
                         }
-                        else {
-                            utils::PrintFormattedString(asmout << "\"", ctx.scriptfile->Ptr<const char>(dbg->crc_offset)) << "\"";
-                        }
-                    }
-                    else if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC)) {
+                    } else if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC)) {
                         asmout << ctx.GetFLocName(dbg->crc_offset);
-                    }
-                    else {
+                    } else {
                         asmout << "USELESS"; // why?
                     }
 
@@ -92,7 +99,8 @@ namespace tool::gsc::vm {
             if (dbg->HasFeature(ADF_STRING)) {
                 dbgReader.Goto(dbg->strings_offset);
                 uint32_t* strOffsets = dbgReader.ReadPtr<uint32_t>(dbg->strings_count);
-                asmout << "// hashes ... " << std::dec << dbg->strings_count << " (offset: 0x" << std::hex << dbg->strings_offset << ")\n";
+                asmout << "// hashes ... " << std::dec << dbg->strings_count << " (offset: 0x" << std::hex
+                       << dbg->strings_offset << ")\n";
                 for (size_t i = 0; i < dbg->strings_count; i++) {
                     dbgReader.Goto(strOffsets[i]);
                     const char* str{ dbgReader.ReadString() };
@@ -121,8 +129,7 @@ namespace tool::gsc::vm {
                                     }
                                     hashutils::AddPrecomputed(hash, str, true);
                                 }
-                            }
-                            catch (std::exception&) {
+                            } catch (std::exception&) {
                                 // ignore
                             }
                         }
@@ -156,7 +163,8 @@ namespace tool::gsc::vm {
                 if (ctx.opt.m_header) {
                     dbgReader.Goto(dbg->devblock_offset);
                     uint32_t* dvOffsets = dbgReader.ReadPtr<uint32_t>(dbg->devblock_count);
-                    asmout << "// devblock . " << std::dec << dbg->devblock_count << " (offset: 0x" << std::hex << dbg->devblock_offset << ")\n";
+                    asmout << "// devblock . " << std::dec << dbg->devblock_count << " (offset: 0x" << std::hex
+                           << dbg->devblock_offset << ")\n";
                     for (size_t i = 0; i < dbg->devblock_count; i++) {
                         uint32_t off = dvOffsets[i];
                         asmout << "// - " << ctx.GetFLocName(off) << "\n";
@@ -166,20 +174,21 @@ namespace tool::gsc::vm {
             if (dbg->HasFeature(ADF_LAZYLINK)) {
                 // not used by acts decompiler, but can be useful for a vm
                 if (ctx.opt.m_header) {
-                    asmout << "// lazylink . " << std::dec << dbg->lazylink_count << " (offset: 0x" << std::hex << dbg->lazylink_offset << ")\n";
+                    asmout << "// lazylink . " << std::dec << dbg->lazylink_count << " (offset: 0x" << std::hex
+                           << dbg->lazylink_offset << ")\n";
 
                     dbgReader.Goto(dbg->lazylink_offset);
                     for (size_t i = 0; i < dbg->lazylink_count; i++) {
                         GSC_ACTS_LAZYLINK* lzOff = dbgReader.ReadPtr<GSC_ACTS_LAZYLINK>();
-                        asmout << "// "
-                            << hashutils::ExtractTmp("namespace", lzOff->name_space)
-                            << "<" << hashutils::ExtractTmpScript(lzOff->script) << ">::"
-                            << hashutils::ExtractTmp("function", lzOff->name) << "\n"
-                            << "// locs: ";
+                        asmout << "// " << hashutils::ExtractTmp("namespace", lzOff->name_space) << "<"
+                               << hashutils::ExtractTmpScript(lzOff->script)
+                               << ">::" << hashutils::ExtractTmp("function", lzOff->name) << "\n"
+                               << "// locs: ";
 
                         uint32_t* locs = dbgReader.ReadPtr<uint32_t>(lzOff->num_address);
                         for (size_t i = 0; i < lzOff->num_address; i++) {
-                            if (i) asmout << ", ";
+                            if (i)
+                                asmout << ", ";
                             asmout << ctx.GetFLocName(locs[i]);
                         }
                         asmout << "\n";
@@ -188,7 +197,8 @@ namespace tool::gsc::vm {
             }
             if (dbg->HasFeature(ADF_FILES)) {
                 if (ctx.opt.m_header) {
-                    asmout << "// files .... " << std::dec << dbg->files_count << " (offset: 0x" << std::hex << dbg->files_offset << ")\n";
+                    asmout << "// files .... " << std::dec << dbg->files_count << " (offset: 0x" << std::hex
+                           << dbg->files_offset << ")\n";
                     dbgReader.Goto(dbg->files_offset);
                     GSC_ACTS_FILES* linesOff = dbgReader.ReadPtr<GSC_ACTS_FILES>(dbg->files_count);
                     for (size_t i = 0; i < dbg->files_count; i++) {
@@ -198,22 +208,22 @@ namespace tool::gsc::vm {
                         const char* filename{ dbgReader.ReadString() };
                         asmout << "// - " << std::dec << filename << " " << l.lineStart << "->" << l.lineEnd << "\n";
                     }
-
                 }
             }
             if (dbg->HasFeature(ADF_LINES)) {
                 // not used by acts decompiler, but can be useful for a vm
                 if (ctx.opt.m_header) {
-                    asmout << "// lines .... " << std::dec << dbg->lines_count << " (offset: 0x" << std::hex << dbg->lines_offset << ")\n";
+                    asmout << "// lines .... " << std::dec << dbg->lines_count << " (offset: 0x" << std::hex
+                           << dbg->lines_offset << ")\n";
                     dbgReader.Goto(dbg->lines_offset);
                     GSC_ACTS_LINES* linesOff = dbgReader.ReadPtr<GSC_ACTS_LINES>(dbg->lines_count);
                     for (size_t i = 0; i < dbg->lines_count; i++) {
                         GSC_ACTS_LINES& l = linesOff[i];
-                        asmout << "// - " << std::dec << l.lineNum << " " << ctx.GetFLocName(l.start) << "->" << ctx.GetFLocName(l.end) << "\n";
+                        asmout << "// - " << std::dec << l.lineNum << " " << ctx.GetFLocName(l.start) << "->"
+                               << ctx.GetFLocName(l.end) << "\n";
                     }
-
                 }
             }
         }
     };
-}
+} // namespace tool::gsc::vm

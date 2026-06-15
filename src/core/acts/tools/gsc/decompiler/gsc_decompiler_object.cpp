@@ -40,17 +40,12 @@ namespace tool::gsc {
 
         if (maxPtr) {
             exp->SetHandle(maxPtr);
-            return utils::va(
-                "%s::%s@%x",
-                hashutils::ExtractTmpPath("namespace", exp->GetNamespace()),
-                hashutils::ExtractTmp("function", exp->GetName()),
-                floc - exp->GetAddress()
-            );
+            return utils::va("%s::%s@%x", hashutils::ExtractTmpPath("namespace", exp->GetNamespace()),
+                             hashutils::ExtractTmp("function", exp->GetName()), floc - exp->GetAddress());
         }
 
         return utils::va("unk:%lx", floc);
     }
-
 
     // apply ~ to ref to avoid using 0, 1, 2 which might already be used
 
@@ -69,9 +64,7 @@ namespace tool::gsc {
         }
         return f->second;
     }
-    void T8GSCOBJContext::AddStringRef(uint32_t floc, uint32_t str) {
-        m_stringRefsLoc[floc] = str;
-    }
+    void T8GSCOBJContext::AddStringRef(uint32_t floc, uint32_t str) { m_stringRefsLoc[floc] = str; }
 
     const char* T8GSCOBJContext::GetStringValueByLoc(uint32_t floc) {
         auto f = m_stringRefsLoc.find(floc);
@@ -86,9 +79,11 @@ namespace tool::gsc {
             return CloneString(utils::va("<badtoken:%x>", tokenRef));
         }
         GSCOBJTokenData& td{ m_tokens[tokenRef] };
-        if (td.isString) return td.val.str;
+        if (td.isString)
+            return td.val.str;
         const char* extracted{ tool::gsc::iw::GetOpaqueStringForVm(m_vmInfo->vmMagic, td.val.id, false) };
-        if (extracted) return extracted;
+        if (extracted)
+            return extracted;
         return CloneString(utils::va("ref_%x", td.val.id));
     }
 
@@ -135,7 +130,8 @@ namespace tool::gsc {
         return ptr;
     }
 
-    int DumpAsm(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx, ASMContext& ctx) {
+    int DumpAsm(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx,
+                ASMContext& ctx) {
         uint32_t baseloc{ exp.GetAddress() };
         uint64_t filename{ ctx.m_gscReader.GetName() };
         // main reading loop
@@ -160,39 +156,34 @@ namespace tool::gsc {
                 // print the stack and the fields
                 auto printStack = [&ctx, &out, &loc](const char* type) {
                     if (ctx.m_opt.m_dcomp && ctx.m_opt.m_display_stack) {
-                        out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << loc.rloc << ":"
-                            << std::setfill(' ') << std::setw(6) << std::left << " " << std::right
-                            << std::setfill(' ') << std::setw(26) << std::left << type << std::right
-                            << "stack(" << std::dec << ctx.m_stack.size() << "): "
-                            << std::flush;
+                        out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << loc.rloc
+                            << ":" << std::setfill(' ') << std::setw(6) << std::left << " " << std::right
+                            << std::setfill(' ') << std::setw(26) << std::left << type << std::right << "stack("
+                            << std::dec << ctx.m_stack.size() << "): " << std::flush;
 
                         for (const auto* node : ctx.m_stack) {
                             out << "<" << *node << "> ";
                         }
                         out << std::endl;
-                        out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << loc.rloc << ":"
-                            << std::setfill(' ') << std::setw(32) << std::left << " " << std::right
+                        out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << loc.rloc
+                            << ":" << std::setfill(' ') << std::setw(32) << std::left << " " << std::right
                             << "fieldid: <";
                         if (ctx.m_fieldId) {
                             out << *ctx.m_fieldId;
-                        }
-                        else {
+                        } else {
                             out << "none";
                         }
                         out << "> objectid: <";
                         if (ctx.m_objectId) {
                             out << *ctx.m_objectId;
-                        }
-                        else {
+                        } else {
                             out << "none";
                         }
-                        out << ">"
-                            << std::flush;
+                        out << ">" << std::flush;
 
                         out << std::endl;
                     }
-
-                    };
+                };
 
                 // compute the late operations (OR|AND)
                 for (const auto& lateop : loc.m_lateop) {
@@ -204,30 +195,30 @@ namespace tool::gsc {
 
                 if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) {
                     opCode = ctx.Read<uint16_t>(base);
-                }
-                else {
+                } else {
                     opCode = (uint16_t)ctx.Read<byte>(base);
                 }
 
-                //if (objctx.m_vmInfo->modToolFlag && (opCode & objctx.m_vmInfo->modToolFlag)) {
-                //    // modtool
-                //}
+                // if (objctx.m_vmInfo->modToolFlag && (opCode & objctx.m_vmInfo->modToolFlag)) {
+                //     // modtool
+                // }
 
                 const auto* handler = ctx.LookupOpCode(opCode);
 
                 if (ctx.m_opt.m_func_floc) {
-                    out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << (baseloc + loc.rloc);
+                    out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1)
+                        << (baseloc + loc.rloc);
                 }
 
                 if (ctx.m_opt.m_show_opcode_values) {
-                    out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << loc.rloc << ": " << std::flush;
+                    out << "." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << loc.rloc << ": "
+                        << std::flush;
                 }
 
                 const char* opcodeName{};
                 if (ctx.m_opt.m_use_internal_names) {
                     opcodeName = opcode::OpCodeName(handler->m_id);
-                }
-                else {
+                } else {
                     opcodeName = handler->m_name;
                 }
                 if (!opcodeName) {
@@ -235,22 +226,21 @@ namespace tool::gsc {
                 }
 
                 if (opCode > objctx.m_vmInfo->maxOpCode) {
-                    throw std::runtime_error(std::format("FIND errec {} (0x{:x} > 0x{:x})", opcodeName, opCode, objctx.m_vmInfo->maxOpCode));
+                    throw std::runtime_error(
+                        std::format("FIND errec {} (0x{:x} > 0x{:x})", opcodeName, opCode, objctx.m_vmInfo->maxOpCode));
                     opCode &= objctx.m_vmInfo->maxOpCode;
                     break;
                 }
 
                 if (ctx.m_opt.m_show_opcode_values) {
-                    out << std::hex << std::setfill('0') << std::setw(sizeof(int16_t) << 1) << opCode
-                        << " ";
+                    out << std::hex << std::setfill('0') << std::setw(sizeof(int16_t) << 1) << opCode << " ";
                 }
 
-                out << std::setfill(' ') << std::setw(25) << std::left
-                    << opcodeName
-                    << std::right << " " << std::flush;
+                out << std::setfill(' ') << std::setw(25) << std::left << opcodeName << std::right << " " << std::flush;
 
                 // dump translation data
-                uint32_t opcodeRloc{ (uint32_t)(reinterpret_cast<uint64_t>(base) - reinterpret_cast<uint64_t>(gscFile.Ptr())) };
+                uint32_t opcodeRloc{ (uint32_t)(reinterpret_cast<uint64_t>(base) -
+                                                reinterpret_cast<uint64_t>(gscFile.Ptr())) };
                 if (ctx.m_objctx.gdctx.opcodesLocs) {
                     (*ctx.m_objctx.gdctx.opcodesLocs)[filename].insert(opcodeRloc);
                 }
@@ -261,8 +251,7 @@ namespace tool::gsc {
 
                 if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) {
                     base += 2;
-                }
-                else {
+                } else {
                     base++;
                 }
 
@@ -279,8 +268,7 @@ namespace tool::gsc {
                         }
 
                         out << std::endl;
-                    }
-                    else {
+                    } else {
                         out << "// ERROR: NEW BASE AFTER OLD BASE" << std::endl;
                     }
                 }
@@ -299,7 +287,8 @@ namespace tool::gsc {
         return 0;
     }
 
-    DumpVTableAnswer DumpVTable(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx, ASMContext& ctx, DecompContext& dctxt) {
+    DumpVTableAnswer DumpVTable(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile,
+                                T8GSCOBJContext& objctx, ASMContext& ctx, DecompContext& dctxt) {
         using namespace tool::gsc::opcode;
         auto FetchCode = [&ctx, &dctxt, &out]() -> const OPCodeInfo* {
             dctxt.rloc = ctx.FunctionRelativeLocation();
@@ -310,8 +299,7 @@ namespace tool::gsc {
                 }
                 code = *(uint16_t*)ctx.m_bcl;
                 ctx.m_bcl += 2;
-            }
-            else {
+            } else {
                 code = (uint16_t)*ctx.m_bcl;
                 ctx.m_bcl += 1;
             }
@@ -322,7 +310,7 @@ namespace tool::gsc {
             }
 
             return ret;
-            };
+        };
 
         // main reading loop
         const OPCodeInfo* ccp = FetchCode();
@@ -346,7 +334,6 @@ namespace tool::gsc {
 
         const OPCodeInfo* preScriptCall = FetchCode();
 
-
         if (preScriptCall->m_id != OPCODE_PreScriptCall) {
             // dctxt.WritePadding(out) << "Bad vtable opcode: expected PreScriptCall\n";
             return DVA_NOT;
@@ -358,35 +345,37 @@ namespace tool::gsc {
             if (ctx.m_objctx.m_vmInfo->HasFlag(VmFlags::VMF_CRC_DUMP)) {
                 return DVA_OK; // crc dump
             }
-            // dctxt.WritePadding(out) << "Bad vtable opcode, expected ScriptFunctionCall vm" << std::hex << (int)ctx.m_vm << std::endl;
+            // dctxt.WritePadding(out) << "Bad vtable opcode, expected ScriptFunctionCall vm" << std::hex <<
+            // (int)ctx.m_vm << std::endl;
             return DVA_NOT;
         }
 
-        ctx.m_bcl += 1; // call params
+        ctx.m_bcl += 1;               // call params
         ctx.Aligned<uint64_t>() += 8; // assume that we have a spawnstruct
 
         auto AssertOpCode = [&FetchCode, &dctxt, &out](OPCode opc) -> bool {
             const OPCodeInfo* nfo{ FetchCode() };
             if (nfo->m_id != opc) {
-                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << nfo->m_name << ", expected " << OpCodeName(opc) << std::endl;
+                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << nfo->m_name << ", expected "
+                                        << OpCodeName(opc) << std::endl;
                 out << "}" << std::endl;
                 return false;
             }
             return true;
-            };
+        };
 
-        if (!AssertOpCode(OPCODE_GetZero)) return DVA_BAD;
+        if (!AssertOpCode(OPCODE_GetZero))
+            return DVA_BAD;
 
         if (gscFile.GetMagic() > VMI_T8_36) {
-            if (!AssertOpCode(OPCODE_T9_EvalFieldVariableFromGlobalObject)) return DVA_BAD;
+            if (!AssertOpCode(OPCODE_T9_EvalFieldVariableFromGlobalObject))
+                return DVA_BAD;
             ctx.Aligned<uint16_t>() += 2; // - classes
-        }
-        else if (gscFile.GetMagic() < VMI_T8_34) {
+        } else if (gscFile.GetMagic() < VMI_T8_34) {
             ctx.Aligned<uint16_t>() += 2; // GetClassesObject
 
             ctx.Aligned<uint16_t>() += 2; // EvalFieldVariableRef className
-        }
-        else {
+        } else {
             ctx.Aligned<uint16_t>() += 2; // GetGlobalObject
             ctx.Aligned<uint16_t>() += 2; // - classes
 
@@ -403,8 +392,7 @@ namespace tool::gsc {
         clsName += 4;
         if (ctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
             out << std::endl;
-        }
-        else {
+        } else {
             out << " ";
         }
         out << "{" << std::endl;
@@ -412,13 +400,13 @@ namespace tool::gsc {
         dctxt.WritePadding(out) << "// " << hashutils::ExtractTmp("class", name) << std::endl;
 
         if (gscFile.GetMagic() > VMI_T8_36) {
-            if (!AssertOpCode(OPCODE_T9_SetVariableFieldFromEvalArrayRef)) return DVA_BAD;
-        }
-        else {
+            if (!AssertOpCode(OPCODE_T9_SetVariableFieldFromEvalArrayRef))
+                return DVA_BAD;
+        } else {
             ctx.Aligned<uint16_t>() += 2; // EvalArrayRef
-            if (!AssertOpCode(OPCODE_SetVariableField)) return DVA_BAD;
+            if (!AssertOpCode(OPCODE_SetVariableField))
+                return DVA_BAD;
         }
-
 
         while (true) {
             const OPCodeInfo* funcOpCode = FetchCode();
@@ -432,7 +420,8 @@ namespace tool::gsc {
                 break; // end
             }
             if (funcOpCode->m_id != OPCODE_GetResolveFunction) {
-                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << funcOpCode->m_name << ", excepted GetResolveFunction or End" << std::endl;
+                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << funcOpCode->m_name
+                                        << ", excepted GetResolveFunction or End" << std::endl;
                 out << "}" << std::endl;
                 return DVA_BAD;
             }
@@ -445,7 +434,8 @@ namespace tool::gsc {
             const OPCodeInfo* uidCodeOpCode = FetchCode();
 
             if (!uidCodeOpCode) {
-                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << uidCodeOpCode->m_name << ", excepted Getter" << std::endl;
+                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << uidCodeOpCode->m_name
+                                        << ", excepted Getter" << std::endl;
                 out << "}" << std::endl;
                 return DVA_BAD;
             }
@@ -489,32 +479,32 @@ namespace tool::gsc {
                 ctx.m_bcl += 2;
                 break;
             default:
-                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << uidCodeOpCode->m_name << ", excepted Getter" << std::endl;
+                dctxt.WritePadding(out) << "Bad vtable opcode: " << std::hex << uidCodeOpCode->m_name
+                                        << ", excepted Getter" << std::endl;
                 out << "}" << std::endl;
                 return DVA_BAD;
             }
 
             if (methodClsName == name) {
                 cls.m_methods.push_back(methodName);
-            }
-            else {
+            } else {
                 cls.m_superClass.emplace(methodClsName);
             }
             cls.m_vtableMethods.emplace(NameLocated{ methodClsName, methodName });
             auto& mtd = cls.m_vtable[uid];
             mtd.name = methodName;
             mtd.nsp = methodClsName;
-            dctxt.WritePadding(out) << "0x" << std::hex << std::setfill('0') << std::setw(sizeof(uid)) << uid
-                << " -> &" << hashutils::ExtractTmp("class", methodClsName) << std::flush
-                << "::" << hashutils::ExtractTmp("function", methodName) << ";" << std::endl;
+            dctxt.WritePadding(out) << "0x" << std::hex << std::setfill('0') << std::setw(sizeof(uid)) << uid << " -> &"
+                                    << hashutils::ExtractTmp("class", methodClsName) << std::flush
+                                    << "::" << hashutils::ExtractTmp("function", methodName) << ";" << std::endl;
 
-            if (!AssertOpCode(OPCODE_GetZero)) return DVA_BAD;
+            if (!AssertOpCode(OPCODE_GetZero))
+                return DVA_BAD;
 
             if (gscFile.GetMagic() >= VMI_T8_34) {
                 ctx.Aligned<uint16_t>() += 2; // EvalGlobalObjectFieldVariable
                 ctx.Aligned<uint16_t>() += 2; // - gvar
-            }
-            else {
+            } else {
                 ctx.Aligned<uint16_t>() += 2; // GetClassesObject
                 ctx.Aligned<uint16_t>() += 2; // EvalFieldVariable
             }
@@ -526,8 +516,7 @@ namespace tool::gsc {
 
             if (gscFile.GetMagic() > VMI_T8_36) {
                 ctx.Aligned<uint16_t>() += 2; // SetVariableFieldFromEvalArrayRef
-            }
-            else {
+            } else {
                 ctx.Aligned<uint16_t>() += 2; // EvalArrayRef
                 ctx.Aligned<uint16_t>() += 2; // SetVariableField
             }
@@ -561,7 +550,8 @@ namespace tool::gsc {
         return DVA_OK;
     }
 
-    void DumpFunctionHeader(GSCExportReader& exp, std::ostream& asmout, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx, ASMContext& ctx, int padding, const char* forceName, const char** currentAnimTree) {
+    void DumpFunctionHeader(GSCExportReader& exp, std::ostream& asmout, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx,
+                            ASMContext& ctx, int padding, const char* forceName, const char** currentAnimTree) {
         auto remapedFlags = gscFile.RemapFlagsExport(exp.GetFlags());
         bool classMember = remapedFlags & (T8GSCExportFlags::CLASS_MEMBER | T8GSCExportFlags::CLASS_DESTRUCTOR);
 
@@ -572,7 +562,8 @@ namespace tool::gsc {
 
         if (ctx.useAnimTree && (objctx.opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_ANIM_REAL))) {
             if (!currentAnimTree || !*currentAnimTree || std::strcmp(*currentAnimTree, ctx.useAnimTree)) {
-                if (currentAnimTree) *currentAnimTree = ctx.useAnimTree; // new name
+                if (currentAnimTree)
+                    *currentAnimTree = ctx.useAnimTree; // new name
                 // write animtree
 
                 utils::Padding(asmout, padding) << "#using_animtree(";
@@ -597,48 +588,51 @@ namespace tool::gsc {
                 utils::Padding(asmout, padding) << "/*" << std::endl;
                 padding++;
                 prefix = "";
-            }
-            else {
+            } else {
                 prefix = "// ";
             }
 
             switch (headerFormat) {
             case tool::gsc::formatter::FFL_FUNC_HEADER_FORMAT_SERIOUS: {
-                utils::Padding(asmout, padding) << prefix << "Name: " << hashutils::ExtractTmp("function", exp.GetName()) << std::endl;
+                utils::Padding(asmout, padding)
+                    << prefix << "Name: " << hashutils::ExtractTmp("function", exp.GetName()) << std::endl;
                 if (exp.GetNamespace()) {
-                    utils::Padding(asmout, padding) << prefix << "Namespace: " << hashutils::ExtractTmp(classMember ? "class" : "namespace", exp.GetNamespace()) << std::endl;
+                    utils::Padding(asmout, padding)
+                        << prefix << "Namespace: "
+                        << hashutils::ExtractTmp(classMember ? "class" : "namespace", exp.GetNamespace()) << std::endl;
                 }
                 // no file namespace in this format, maybe later?
                 if (!ctx.m_objctx.m_vmInfo->HasFlag(VmFlags::VMF_EXPORT_NOCHECKSUM)) {
-                    utils::Padding(asmout, padding) << prefix << "Checksum: 0x" << std::hex << std::uppercase << exp.GetChecksum() << std::endl;
+                    utils::Padding(asmout, padding)
+                        << prefix << "Checksum: 0x" << std::hex << std::uppercase << exp.GetChecksum() << std::endl;
                 }
                 if (!objctx.m_vmInfo->HasFlag(VmFlags::VMF_GSCBIN)) {
-                    utils::Padding(asmout, padding) << prefix << "Offset: 0x" << std::hex << std::uppercase << exp.GetAddress() << std::endl;
+                    utils::Padding(asmout, padding)
+                        << prefix << "Offset: 0x" << std::hex << std::uppercase << exp.GetAddress() << std::endl;
                 }
 
                 uint32_t knownSize{ exp.GetSize() };
                 if (knownSize) {
-                    utils::Padding(asmout, padding) << prefix << std::hex << "Size: 0x" << std::hex << knownSize << std::endl;
-                }
-                else {
+                    utils::Padding(asmout, padding)
+                        << prefix << std::hex << "Size: 0x" << std::hex << knownSize << std::endl;
+                } else {
                     UINT size = ctx.FinalSize();
                     if (size > 1) { // at least one opcode
-                        utils::Padding(asmout, padding) << prefix << std::hex << "Size: 0x" << std::hex << size << std::endl;
+                        utils::Padding(asmout, padding)
+                            << prefix << std::hex << "Size: 0x" << std::hex << size << std::endl;
                     }
                 }
 
-
-                utils::Padding(asmout, padding) << prefix << "Parameters: " << std::dec << (int)exp.GetParamCount() << std::endl;
+                utils::Padding(asmout, padding)
+                    << prefix << "Parameters: " << std::dec << (int)exp.GetParamCount() << std::endl;
 
                 utils::Padding(asmout, padding) << prefix << "Flags: ";
 
                 if (!remapedFlags) {
                     asmout << "None";
-                }
-                else if (gscFile.IsVTableImportFlags(exp.GetFlags())) {
+                } else if (gscFile.IsVTableImportFlags(exp.GetFlags())) {
                     asmout << "VTable";
-                }
-                else {
+                } else {
                     const struct {
                         T8GSCExportFlags flag;
                         const char* name;
@@ -657,8 +651,7 @@ namespace tool::gsc {
                         }
                         if (def) {
                             asmout << ", ";
-                        }
-                        else {
+                        } else {
                             def = true;
                         }
                         asmout << kf.name;
@@ -674,36 +667,34 @@ namespace tool::gsc {
                 break;
             default: { // ACTS DEFAULT FORMAT
                 if (exp.GetNamespace()) {
-                    utils::Padding(asmout, padding) << prefix << "Namespace "
+                    utils::Padding(asmout, padding)
+                        << prefix << "Namespace "
                         << hashutils::ExtractTmp(classMember ? "class" : "namespace", exp.GetNamespace()) << std::flush;
 
                     uint64_t fileNamespace = exp.GetFileNamespace();
 
                     if (fileNamespace && !objctx.m_vmInfo->HasFlag(VmFlags::VMF_NO_FILE_NAMESPACE)) {
-                        // some VMs are only using the filename in the second namespace field, the others are using the full name (without .gsc?)
-                        // so it's better to use spaces. A flag was added to keep the same format.
+                        // some VMs are only using the filename in the second namespace field, the others are using the
+                        // full name (without .gsc?) so it's better to use spaces. A flag was added to keep the same
+                        // format.
                         if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_FULL_FILE_NAMESPACE)) {
                             asmout << " / ";
-                        }
-                        else {
+                        } else {
                             asmout << "/";
                         }
 
-                        asmout
-                            << ((remapedFlags & T8GSCExportFlags::EVENT)
-                                ? hashutils::ExtractTmp("event", fileNamespace)
-                                : hashutils::ExtractTmpPath("namespace", fileNamespace));
+                        asmout << ((remapedFlags & T8GSCExportFlags::EVENT)
+                                       ? hashutils::ExtractTmp("event", fileNamespace)
+                                       : hashutils::ExtractTmpPath("namespace", fileNamespace));
                     }
                     asmout << std::endl;
                 }
 
                 if (isDetour) {
                     auto det = detourVal->second;
-                    utils::Padding(asmout, padding) << prefix
-                        << "Detour " << hashutils::ExtractTmp("function", exp.GetName()) << " "
-                        << "Offset 0x" << std::hex << det.fixupOffset << "/0x" << det.fixupSize
-                        << std::endl
-                        ;
+                    utils::Padding(asmout, padding)
+                        << prefix << "Detour " << hashutils::ExtractTmp("function", exp.GetName()) << " "
+                        << "Offset 0x" << std::hex << det.fixupOffset << "/0x" << det.fixupSize << std::endl;
                 }
 
                 utils::Padding(asmout, padding) << prefix << "Params " << std::dec << (int)exp.GetParamCount();
@@ -727,9 +718,9 @@ namespace tool::gsc {
 
                 asmout << std::endl;
                 if (ctx.m_opt.m_rawhash) {
-                    utils::Padding(asmout, padding) << prefix
-                        << std::hex
-                        << "namespace_" << exp.GetNamespace() << "<file_" << exp.GetFileNamespace() << ">::function_" << exp.GetName() << std::endl;
+                    utils::Padding(asmout, padding)
+                        << prefix << std::hex << "namespace_" << exp.GetNamespace() << "<file_"
+                        << exp.GetFileNamespace() << ">::function_" << exp.GetName() << std::endl;
                 }
 
                 if (!objctx.m_vmInfo->HasFlag(VmFlags::VMF_GSCBIN)) {
@@ -744,8 +735,7 @@ namespace tool::gsc {
                 bool hasSize{ (bool)knownSize };
                 if (knownSize) {
                     utils::Padding(asmout, padding) << prefix << std::hex << "Size: 0x" << std::hex << knownSize;
-                }
-                else {
+                } else {
                     auto size = ctx.FinalSize();
                     if (size) { // at least one opcode
                         utils::Padding(asmout, padding) << prefix << std::hex << "Size: 0x" << size;
@@ -757,8 +747,7 @@ namespace tool::gsc {
 
                     if (hasSize) {
                         asmout << "," << " Type:";
-                    }
-                    else {
+                    } else {
                         utils::Padding(asmout, padding) << prefix << "Type:";
                     }
 
@@ -783,11 +772,13 @@ namespace tool::gsc {
         }
 
         bool specialClassMember = !ctx.m_opt.m_dasm && classMember &&
-            ((remapedFlags & T8GSCExportFlags::CLASS_DESTRUCTOR) || ctx.m_objctx.m_vmInfo->HashField("__constructor") == exp.GetName());
+                                  ((remapedFlags & T8GSCExportFlags::CLASS_DESTRUCTOR) ||
+                                   ctx.m_objctx.m_vmInfo->HashField("__constructor") == exp.GetName());
 
         utils::Padding(asmout, padding);
 
-        if (!specialClassMember && !ctx.noFunctionPrefix && !(ctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NO_FUNCTION_TITLE))) {
+        if (!specialClassMember && !ctx.noFunctionPrefix &&
+            !(ctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NO_FUNCTION_TITLE))) {
             asmout << "function ";
         }
         if (remapedFlags & T8GSCExportFlags::PRIVATE) {
@@ -801,8 +792,7 @@ namespace tool::gsc {
         }
 
         if (ctx.m_opt.m_dasm && (classMember || (remapedFlags & T8GSCExportFlags::CLASS_DESTRUCTOR))) {
-            asmout << hashutils::ExtractTmp("class", exp.GetNamespace())
-                << std::flush << "::";
+            asmout << hashutils::ExtractTmp("class", exp.GetNamespace()) << std::flush << "::";
 
             if (exp.GetFlags() & T8GSCExportFlags::CLASS_DESTRUCTOR) {
                 asmout << "~";
@@ -825,19 +815,17 @@ namespace tool::gsc {
                 asmout << "::";
             }
 
-            asmout
-                << hashutils::ExtractTmp("function", detour.replaceFunction) << std::flush;
-        }
-        else {
+            asmout << hashutils::ExtractTmp("function", detour.replaceFunction) << std::flush;
+        } else {
             asmout << (forceName ? forceName : hashutils::ExtractTmp("function", exp.GetName()));
         }
-
 
         asmout << std::flush << "(";
 
         // local var size = <empty>, <params>, <localvars> so we need to check that we have at least param_count + 1
         if (ctx.m_localvars.size() > exp.GetParamCount()) {
-            if (exp.GetParamCount() && (ctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_SPACE_BEFOREAFTER_PARAMS))) {
+            if (exp.GetParamCount() &&
+                (ctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_SPACE_BEFOREAFTER_PARAMS))) {
                 asmout << " ";
             }
 
@@ -854,12 +842,10 @@ namespace tool::gsc {
 
                 if (lvar.flags & T8GSCLocalVarFlag::VARIADIC) {
                     asmout << "...";
-                }
-                else {
+                } else {
                     if (lvar.flags & T8GSCLocalVarFlag::ARRAY_REF) {
                         asmout << "&";
-                    }
-                    else if (gscFile.GetMagic() != VMI_T8_36 && (lvar.flags & T8GSCLocalVarFlag::T9_VAR_REF)) {
+                    } else if (gscFile.GetMagic() != VMI_T8_36 && (lvar.flags & T8GSCLocalVarFlag::T9_VAR_REF)) {
                         asmout << "*";
                     }
 
@@ -882,15 +868,16 @@ namespace tool::gsc {
                 }
             }
 
-            if (exp.GetParamCount() && (ctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_SPACE_BEFOREAFTER_PARAMS))) {
+            if (exp.GetParamCount() &&
+                (ctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_SPACE_BEFOREAFTER_PARAMS))) {
                 asmout << " ";
             }
         }
         asmout << ")";
     }
 
-
-    GSCOBJHandler::GSCOBJHandler(byte* file, uint64_t fileSize, size_t buildFlags) : file(file), buildFlags(buildFlags), fileSize(fileSize) {}
+    GSCOBJHandler::GSCOBJHandler(byte* file, uint64_t fileSize, size_t buildFlags)
+        : file(file), buildFlags(buildFlags), fileSize(fileSize) {}
 
     void GSCOBJHandler::SetFile(byte* file, size_t fileSize) {
         this->file = file;
@@ -898,23 +885,13 @@ namespace tool::gsc {
     }
 
     // by default no remapping
-    byte GSCOBJHandler::RemapFlagsImport(byte flags) {
-        return flags;
-    }
-    byte GSCOBJHandler::RemapFlagsExport(byte flags) {
-        return flags;
-    }
+    byte GSCOBJHandler::RemapFlagsImport(byte flags) { return flags; }
+    byte GSCOBJHandler::RemapFlagsExport(byte flags) { return flags; }
 
-    byte GSCOBJHandler::MapFlagsImportToInt(byte flags) {
-        return flags;
-    }
-    byte GSCOBJHandler::MapFlagsExportToInt(byte flags) {
-        return flags;
-    }
+    byte GSCOBJHandler::MapFlagsImportToInt(byte flags) { return flags; }
+    byte GSCOBJHandler::MapFlagsExportToInt(byte flags) { return flags; }
 
-    void GSCOBJHandler::SetNameString(uint32_t name) {
-        throw std::runtime_error("can't set string name for this vm");
-    }
+    void GSCOBJHandler::SetNameString(uint32_t name) { throw std::runtime_error("can't set string name for this vm"); }
     void GSCOBJHandler::DumpHeaderInternal(std::ostream& asmout, const GscInfoOption& opt) {};
     void GSCOBJHandler::DumpHeader(std::ostream& asmout, const GscInfoOption& opt) {
         uint32_t checksum{ GetChecksum() };
@@ -923,62 +900,70 @@ namespace tool::gsc {
             asmout << "// crc: 0x" << std::hex << checksum << " (" << std::dec << checksum << ")" << std::endl;
         }
 
-        asmout
-            << std::left << std::setfill(' ')
-            << "// size ...... " << std::dec << std::setw(3) << GetFileSize() << " (0x" << std::hex << GetFileSize() << ")" << std::endl;
+        asmout << std::left << std::setfill(' ') << "// size ...... " << std::dec << std::setw(3) << GetFileSize()
+               << " (0x" << std::hex << GetFileSize() << ")" << std::endl;
 
         uint32_t includesOffset{ GetIncludesOffset() };
         uint32_t includesCount{ GetIncludesCount() };
         if (includesOffset) {
-            asmout << "// includes .. " << std::dec << std::setw(3) << includesCount << " (offset: 0x" << std::hex << includesOffset << ")" << std::endl;
+            asmout << "// includes .. " << std::dec << std::setw(3) << includesCount << " (offset: 0x" << std::hex
+                   << includesOffset << ")" << std::endl;
         }
 
         uint32_t stringsOffset{ GetStringsOffset() };
         uint32_t stringsCount{ GetStringsCount() };
         if (stringsOffset) {
-            asmout << "// strings ... " << std::dec << std::setw(3) << stringsCount << " (offset: 0x" << std::hex << stringsOffset << ")" << std::endl;
+            asmout << "// strings ... " << std::dec << std::setw(3) << stringsCount << " (offset: 0x" << std::hex
+                   << stringsOffset << ")" << std::endl;
         }
 
         uint32_t devStringsOffset{ GetDevStringsOffset() };
         uint32_t devStringsCount{ GetDevStringsCount() };
         if (devStringsOffset) {
-            asmout << "// dev strs .. " << std::dec << std::setw(3) << devStringsCount << " (offset: 0x" << std::hex << devStringsOffset << ")" << std::endl;
+            asmout << "// dev strs .. " << std::dec << std::setw(3) << devStringsCount << " (offset: 0x" << std::hex
+                   << devStringsOffset << ")" << std::endl;
         }
 
         uint32_t exportsOffset{ GetExportsOffset() };
         uint32_t exportsCount{ GetExportsCount() };
         if (exportsOffset) {
-            asmout << "// exports ... " << std::dec << std::setw(3) << exportsCount << " (offset: 0x" << std::hex << exportsOffset << ")" << std::endl;
+            asmout << "// exports ... " << std::dec << std::setw(3) << exportsCount << " (offset: 0x" << std::hex
+                   << exportsOffset << ")" << std::endl;
         }
 
         uint32_t csegOffset{ GetCSEGOffset() };
         uint32_t csegSize{ GetCSEGSize() };
         if (csegOffset + csegSize) {
-            asmout << "// cseg ...... 0x" << std::hex << csegOffset << " + 0x" << std::hex << csegSize << " (0x" << (csegOffset + csegSize) << ")" << std::endl;
+            asmout << "// cseg ...... 0x" << std::hex << csegOffset << " + 0x" << std::hex << csegSize << " (0x"
+                   << (csegOffset + csegSize) << ")" << std::endl;
         }
 
         uint32_t importsOffset{ GetImportsOffset() };
         uint32_t importsCount{ GetImportsCount() };
         if (importsOffset) {
-            asmout << "// imports ... " << std::dec << std::setw(3) << importsCount << " (offset: 0x" << std::hex << importsOffset << ")" << std::endl;
+            asmout << "// imports ... " << std::dec << std::setw(3) << importsCount << " (offset: 0x" << std::hex
+                   << importsOffset << ")" << std::endl;
         }
 
         uint32_t animSingleOffset{ GetAnimTreeSingleOffset() };
         uint32_t animSingleCount{ GetAnimTreeSingleCount() };
         if (animSingleOffset) {
-            asmout << "// animtree1 . " << std::dec << std::setw(3) << animSingleCount << " (offset: 0x" << std::hex << animSingleOffset << ")" << std::endl;
+            asmout << "// animtree1 . " << std::dec << std::setw(3) << animSingleCount << " (offset: 0x" << std::hex
+                   << animSingleOffset << ")" << std::endl;
         }
 
         uint32_t animDoubleOffset{ GetAnimTreeDoubleOffset() };
         uint32_t animDoubleCount{ GetAnimTreeDoubleCount() };
         if (animDoubleOffset) {
-            asmout << "// animtree2 . " << std::dec << std::setw(3) << animDoubleCount << " (offset: 0x" << std::hex << animDoubleOffset << ")" << std::endl;
+            asmout << "// animtree2 . " << std::dec << std::setw(3) << animDoubleCount << " (offset: 0x" << std::hex
+                   << animDoubleOffset << ")" << std::endl;
         }
 
         uint32_t globalsOffset{ GetGVarsOffset() };
         uint32_t globalsCount{ GetGVarsCount() };
         if (globalsOffset) {
-            asmout << "// globals .. " << std::dec << std::setw(3) << globalsCount << " (offset: 0x" << std::hex << globalsOffset << ")" << std::endl;
+            asmout << "// globals .. " << std::dec << std::setw(3) << globalsCount << " (offset: 0x" << std::hex
+                   << globalsOffset << ")" << std::endl;
         }
 
         DumpHeaderInternal(asmout, opt);
@@ -989,16 +974,10 @@ namespace tool::gsc {
         throw std::runtime_error("SwitchHeaderEndian not implemented for this vm");
     }
 
-    uint16_t GSCOBJHandler::GetTokensCount() {
-        return 0;
-    }
-    uint32_t GSCOBJHandler::GetTokensOffset() {
-        return 0;
-    }
+    uint16_t GSCOBJHandler::GetTokensCount() { return 0; }
+    uint32_t GSCOBJHandler::GetTokensOffset() { return 0; }
 
-    int GSCOBJHandler::PreLoadCode(T8GSCOBJContext& ctx, std::ostream& asmout) {
-        return tool::OK;
-    }
+    int GSCOBJHandler::PreLoadCode(T8GSCOBJContext& ctx, std::ostream& asmout) { return tool::OK; }
 
     opcode::Platform GSCOBJHandler::ComputePlatform(T8GSCOBJContext& ctx) {
         return PLATFORM_UNKNOWN; // can't compute platform for that
@@ -1035,8 +1014,7 @@ namespace tool::gsc {
                     if (ref > 256) {
                         LOG_ERROR("Too many animtrees single usage");
                         return tool::BASIC_ERROR;
-                    }
-                    else {
+                    } else {
                         for (size_t j = 0; j < unk2c->num_address; j++) {
                             Ref(vars[j]) = (byte)ref;
                             ctx.AddStringRef(vars[j], ref);
@@ -1057,22 +1035,20 @@ namespace tool::gsc {
                         }
                         if (ctx.dbgData && ctx.dbgSize) {
                             if (val->string >= ctx.dbgSize) {
-                                LOG_ERROR("Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}", val->string, ctx.dbgSize);
+                                LOG_ERROR("Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}",
+                                          val->string, ctx.dbgSize);
                                 str = ctx.CloneString(utils::va("<dev string:x%x>", val->string));
-                            }
-                            else {
+                            } else {
                                 str = (const char*)&ctx.dbgData[val->string];
                             }
-                        }
-                        else {
+                        } else {
                             // no gdb
                             if (ctx.m_formatter && ctx.m_formatter->HasFlag(tool::gsc::formatter::FFL_NOERROR_STR)) {
                                 break; // nothing
                             }
                             str = ctx.CloneString(utils::va("<dev string:x%x>", val->string));
                         }
-                    }
-                    else {
+                    } else {
                         str = "<dev string>";
                     }
 
@@ -1113,8 +1089,7 @@ namespace tool::gsc {
                         cstr = DecryptString(cstr);
                     }
                     rcstr = cstr;
-                }
-                else {
+                } else {
                     rcstr = "<invalid>";
                 }
                 if (ctx.gdctx.stringsLoc) {
@@ -1161,8 +1136,7 @@ namespace tool::gsc {
                         delta = 0;
                         break;
                     }
-                }
-                else {
+                } else {
                     delta = 0;
                 }
 
@@ -1227,15 +1201,14 @@ namespace tool::gsc {
                     if (tokens[i].type == GBTT_STRING) {
                         tdt.isString = true;
                         tdt.val.str = Ptr<const char>(tokens[i].val);
-                    }
-                    else {
+                    } else {
                         tdt.isString = false;
                         tdt.val.id = tokens[i].val;
                     }
                 }
             }
 
-            return tool::OK;// mwiii
+            return tool::OK; // mwiii
         }
         // patching imports unlink the script refs to write namespace::import_name instead of the address
         auto imports_count = (int)GetImportsCount();
@@ -1248,7 +1221,8 @@ namespace tool::gsc {
         for (size_t i = 0; i < imports_count; i++) {
             const auto* imp = reinterpret_cast<T8GSCImport*>(import_location);
             if (import_location - reinterpret_cast<uintptr_t>(file) + sizeof(uint32_t) * imp->num_address > fileSize) {
-                LOG_ERROR("Invalid import 0x{:x} with {} addresses", import_location - reinterpret_cast<uintptr_t>(file), imp->num_address);
+                LOG_ERROR("Invalid import 0x{:x} with {} addresses",
+                          import_location - reinterpret_cast<uintptr_t>(file), imp->num_address);
                 return tool::BASIC_ERROR;
             }
 
@@ -1259,8 +1233,8 @@ namespace tool::gsc {
 
                 if (imports[j] > fileSize) {
                     LOG_ERROR("Invalid import {}::{} address 0x{:x} > 0x{:x} for i{}#{}",
-                        hashutils::ExtractTmp("namespace", imp->import_namespace), hashutils::ExtractTmp("function", imp->name),
-                        imports[j], fileSize, i, j);
+                              hashutils::ExtractTmp("namespace", imp->import_namespace),
+                              hashutils::ExtractTmp("function", imp->name), imports[j], fileSize, i, j);
                     break;
                 }
 
@@ -1279,14 +1253,12 @@ namespace tool::gsc {
                     // what we'll find on the stack.
                     if (ctx.m_vmInfo->HasFlag(VmFlags::VMF_CALL_NO_PARAMS)) {
                         loc = PtrAlign<uint64_t, uint32_t>(imports[j] + opcodeSize);
-                    }
-                    else {
+                    } else {
                         Ref<byte>(imports[j] + opcodeSize) = imp->param_count;
                         loc = PtrAlign<uint64_t, uint32_t>(imports[j] + opcodeSize + 1);
                     }
 
-                }
-                                       break;
+                } break;
                 default:
                     loc = nullptr;
                     break;
@@ -1297,11 +1269,9 @@ namespace tool::gsc {
                     if (remapedFlags & T8GSCImportFlags::GET_CALL) {
                         // no need for namespace if we are getting the call dynamically (api or inside-code script)
                         loc[1] = 0xc1243180; // ""
-                    }
-                    else {
+                    } else {
                         loc[1] = imp->import_namespace;
                     }
-
                 }
             }
             import_location += sizeof(*imp) + sizeof(*imports) * imp->num_address;
@@ -1319,15 +1289,15 @@ namespace tool::gsc {
                 if (vars[j] >= GetFileSize() - sizeof(uint16_t)) {
                     LOG_ERROR("Invalid global variable: 0x{:x}", vars[j]);
                     return tool::BASIC_ERROR;
-                }
-                else {
+                } else {
                     Ref<uint16_t>(vars[j]) = ref;
                 }
             }
             gvars_location += sizeof(*globalvar) + sizeof(*vars) * globalvar->num_address;
         }
 
-        if (GetDevStringsOffset() && !(ctx.m_formatter && ctx.m_formatter->HasFlag(tool::gsc::formatter::FFL_NOERROR_STR))) {
+        if (GetDevStringsOffset() &&
+            !(ctx.m_formatter && ctx.m_formatter->HasFlag(tool::gsc::formatter::FFL_NOERROR_STR))) {
             T8GSCString* val = Ptr<T8GSCString>(GetDevStringsOffset());
             for (size_t i = 0; i < GetDevStringsCount(); i++) {
                 const char* str;
@@ -1339,22 +1309,20 @@ namespace tool::gsc {
                     // the acts compiler uses empty strings location when they're not compiled in the gdb
                     if (ctx.dbgData && ctx.dbgSize) {
                         if (val->string >= ctx.dbgSize) {
-                            LOG_ERROR("Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}", val->string, ctx.dbgSize);
+                            LOG_ERROR("Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}",
+                                      val->string, ctx.dbgSize);
                             str = ctx.CloneString(utils::va("<dev string:x%x>", val->string));
-                        }
-                        else {
+                        } else {
                             str = (const char*)&ctx.dbgData[val->string];
                         }
-                    }
-                    else {
+                    } else {
                         // no gdb
                         if (ctx.m_formatter && ctx.m_formatter->HasFlag(tool::gsc::formatter::FFL_NOERROR_STR)) {
                             break; // nothing
                         }
                         str = ctx.CloneString(utils::va("<dev string:x%x>", val->string));
                     }
-                }
-                else {
+                } else {
                     str = "<dev string>";
                 }
 
@@ -1373,14 +1341,14 @@ namespace tool::gsc {
                             std::string& str = it->second;
 
                             uint32_t strref = ctx.AddStringValue(str.c_str());
-                            //Ref<uint32_t>(loc[j]) = strref;
+                            // Ref<uint32_t>(loc[j]) = strref;
                             ctx.AddStringRef(loc[j], strref);
                             continue;
                         }
                     }
                     ctx.m_unkstrings[str].insert(loc[j]);
                     uint32_t strref = ctx.AddStringValue(str);
-                    //Ref<uint32_t>(loc[j]) = strref;
+                    // Ref<uint32_t>(loc[j]) = strref;
                     ctx.AddStringRef(loc[j], strref);
                 }
                 val = reinterpret_cast<T8GSCString*>(loc + val->num_address);
@@ -1399,8 +1367,7 @@ namespace tool::gsc {
                     cstr = DecryptString(cstr);
                 }
                 rcstr = cstr;
-            }
-            else {
+            } else {
                 rcstr = "<invalid>";
             }
             if (ctx.gdctx.stringsLoc) {
@@ -1419,7 +1386,7 @@ namespace tool::gsc {
                     break;
                 }
 
-                //Ref<uint32_t>(strings[j]) = ref;
+                // Ref<uint32_t>(strings[j]) = ref;
                 if (str->string || !ctx.GetStringValueByLoc(strings[j])) {
                     ctx.AddStringRef(strings[j], ref);
                 }
@@ -1469,17 +1436,17 @@ namespace tool::gsc {
                         loc[1] = ref2;
                         ctx.AddStringRef(rloc, ref1);
                         ctx.AddStringRef(rloc + sizeof(*loc), ref2);
-
                     }
                     vars2 += 2;
                 }
-                animt_location += sizeof(*animt) + sizeof(*vars) * (animt->num_tree_address + (size_t)animt->num_node_address * 4);
+                animt_location +=
+                    sizeof(*animt) + sizeof(*vars) * (animt->num_tree_address + (size_t)animt->num_node_address * 4);
             }
         }
         return tool::OK;
     }
 
-    void tool::gsc::GSCOBJHandler::DumpExperimental(std::ostream& asmout, const GscInfoOption& opt, T8GSCOBJContext& ctx) {
-    }
+    void tool::gsc::GSCOBJHandler::DumpExperimental(std::ostream& asmout, const GscInfoOption& opt,
+                                                    T8GSCOBJContext& ctx) {}
 
-}
+} // namespace tool::gsc

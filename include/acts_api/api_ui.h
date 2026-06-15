@@ -6,7 +6,6 @@
  * Atian Tools Common UI API commons
  */
 
-
 #if __cplusplus
 #define ACTS_DEFAULT(name, value) name = (value)
 #else // !__cplusplus
@@ -41,6 +40,5 @@
 #endif
 
 #endif
-
 
 #endif // __ACTS_API_API_UI_H__

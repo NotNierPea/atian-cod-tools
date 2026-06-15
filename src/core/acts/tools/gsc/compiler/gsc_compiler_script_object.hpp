@@ -7,10 +7,7 @@
 namespace tool::gsc::compiler {
     class CompileObject;
 
-    enum GscFileType {
-        FILE_GSC,
-        FILE_CSC
-    };
+    enum GscFileType { FILE_GSC, FILE_CSC };
 
     struct NumberOpCodesS {
         OPCode opcode;
@@ -22,7 +19,7 @@ namespace tool::gsc::compiler {
     };
 
     class StringObject {
-    public:
+      public:
         uint32_t location{};
         size_t forceLen{};
         bool devString{};
@@ -39,13 +36,13 @@ namespace tool::gsc::compiler {
         std::unordered_map<std::string, AnimObject> anims{};
     };
     class ImportObject {
-    public:
+      public:
         byte flags;
         byte params;
         std::vector<AscmNodeFunctionCall*> nodes{};
     };
     class GlobalVarObject {
-    public:
+      public:
         tool::gsc::opcode::GlobalVariableDef* def{};
         std::vector<AscmNodeGlobalVariable*> nodes{};
     };
@@ -57,7 +54,7 @@ namespace tool::gsc::compiler {
     };
 
     class CompileObject {
-    public:
+      public:
         union {
             AscmNode* opcode;
             uint32_t strlistener;
@@ -88,7 +85,8 @@ namespace tool::gsc::compiler {
         size_t emptyNameInc{};
         ClassCompileContext* clsCtx{};
 
-        CompileObject(CompilerConfig& config, GscFileType file, InputInfo& nfo, std::shared_ptr<tool::gsc::GSCOBJHandler> gscHandler);
+        CompileObject(CompilerConfig& config, GscFileType file, InputInfo& nfo,
+                      std::shared_ptr<tool::gsc::GSCOBJHandler> gscHandler);
 
         StringObject& RegisterString(const char* str);
 
@@ -97,7 +95,6 @@ namespace tool::gsc::compiler {
         void AddHash(const char* str);
 
         void AddHash(const std::string& str);
-
 
         void AddInclude(const std::string& data);
 
@@ -128,10 +125,10 @@ namespace tool::gsc::compiler {
 
         bool Compile(std::vector<byte>& data, std::vector<byte>* pdbgdata);
 
-        void AddImport(AscmNodeFunctionCall* funcCall, uint64_t funcNspHash, uint64_t funcHash, size_t paramCount, uint8_t importFlags);
+        void AddImport(AscmNodeFunctionCall* funcCall, uint64_t funcNspHash, uint64_t funcHash, size_t paramCount,
+                       uint8_t importFlags);
 
         void AddLazy(AscmNodeLazyLink* lazyLink);
     };
 
-
-}
+} // namespace tool::gsc::compiler

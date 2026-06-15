@@ -4,23 +4,28 @@
 
 namespace {
 
-	class GscXHashFFHandler : public fastfile::FFHandler {
+    class GscXHashFFHandler : public fastfile::FFHandler {
         size_t count{};
         bool anyDbg{};
-	public:
-		GscXHashFFHandler() : fastfile::FFHandler("gscxhash", "GSC Scripts XHash based", compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {
-		}
+
+      public:
+        GscXHashFFHandler()
+            : fastfile::FFHandler("gscxhash", "GSC Scripts XHash based",
+                                  compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {}
         void Init(fastfile::FastFileOption& opt) override {
             count = 0;
             anyDbg = false;
         }
 
         void Cleanup() override {
-            if (count) LOG_OPT_INFO("{} file(s) dumped", count);
-            if (anyDbg) LOG_WARNING("Debug file found");
+            if (count)
+                LOG_OPT_INFO("{} file(s) dumped", count);
+            if (anyDbg)
+                LOG_WARNING("Debug file found");
         }
 
-		void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx) override {
+        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
+                    fastfile::FastFileContext& ctx) override {
 
             // search scriptparsetreedbg
             uint64_t dbgMagic{ 0xA0D42444780 };
@@ -41,7 +46,8 @@ namespace {
                 byte* start{ buff.Ptr<byte>() };
                 while (true) {
                     loc = buff.FindMasked((byte*)&magic, (byte*)&magicMask, sizeof(magic));
-                    if (loc == std::string::npos) break;
+                    if (loc == std::string::npos)
+                        break;
                     struct T8GSCOBJ {
                         byte magic[8];
                         int32_t crc;
@@ -72,7 +78,6 @@ namespace {
                         continue;
                     }
 
-
                     uint64_t smagic{ *reinterpret_cast<uint64_t*>(obj) };
 
                     size_t size;
@@ -96,18 +101,16 @@ namespace {
                     // to the buffer will constantly be -1 because it is not linked yet
                     if (((T8SPT*)sptCan)->buffer == 0xFFFFFFFFFFFFFFFF) {
                         size = ((T8SPT*)sptCan)->size & 0x7FFFFFFF;
-                    }
-                    else if (((T8SPTOld*)sptCan)->buffer == 0xFFFFFFFFFFFFFFFF) {
+                    } else if (((T8SPTOld*)sptCan)->buffer == 0xFFFFFFFFFFFFFFFF) {
                         size = ((T8SPTOld*)sptCan)->size & 0x7FFFFFFF;
-                    }
-                    else {
+                    } else {
                         LOG_ERROR("Can't get size 0x{:x} for loc 0x{:x}", smagic, loc);
                         loc++;
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size, hashutils::ExtractTmpScript(obj->name));
-
+                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size,
+                              hashutils::ExtractTmpScript(obj->name));
 
                     if (!buff.CanRead(size)) {
                         loc++;
@@ -121,15 +124,13 @@ namespace {
 
                     if (!utils::WriteFile(outFile, obj->magic, size)) {
                         LOG_ERROR("Can't write {}", outFile.string());
-                    }
-                    else {
+                    } else {
                         LOG_OPT_INFO("Dump {} ({})", outFile.string(), hashutils::ExtractTmpScript(obj->name));
                         count++;
                     }
 
                     loc++;
                 }
-
             }
             // search gscobj
             {
@@ -142,7 +143,8 @@ namespace {
                 byte* start{ buff.Ptr<byte>() };
                 while (true) {
                     loc = buff.FindMasked((byte*)&magic, (byte*)&magicMask, sizeof(magic));
-                    if (loc == std::string::npos) break;
+                    if (loc == std::string::npos)
+                        break;
                     struct GscObjEntry {
                         uint64_t name;
                         uint32_t len;
@@ -160,10 +162,10 @@ namespace {
                     GscObjEntry* entry{ buff.ReadPtr<GscObjEntry>() };
 
                     if (!entry->name) {
-                        LOG_ERROR("0x{:x} INVALID {}/{} for 0x{:x}", smagic, entry->obj, hashutils::ExtractTmpScript(entry->name), loc);
+                        LOG_ERROR("0x{:x} INVALID {}/{} for 0x{:x}", smagic, entry->obj,
+                                  hashutils::ExtractTmpScript(entry->name), loc);
                         continue;
                     }
-
 
                     if (!buff.CanRead(entry->len)) {
                         loc++;
@@ -171,7 +173,8 @@ namespace {
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, entry->len, hashutils::ExtractTmpScript(entry->name));
+                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, entry->len,
+                              hashutils::ExtractTmpScript(entry->name));
 
                     byte* obj{ buff.ReadPtr<byte>(entry->len) };
 
@@ -180,20 +183,18 @@ namespace {
 
                     if (!utils::WriteFile(outFile, obj, entry->len)) {
                         LOG_ERROR("Can't write {}", outFile.string());
-                    }
-                    else {
+                    } else {
                         LOG_OPT_INFO("Dump {} ({})", outFile.string(), hashutils::ExtractTmpScript(entry->name));
                         count++;
                     }
 
                     loc++;
                 }
-
             }
-		}
-	};
+        }
+    };
 
 #ifndef CI_BUILD
-	utils::ArrayAdder<GscXHashFFHandler, fastfile::FFHandler> arr{ fastfile::GetHandlers() };
+    utils::ArrayAdder<GscXHashFFHandler, fastfile::FFHandler> arr{ fastfile::GetHandlers() };
 #endif // CI_BUILD
-}
+} // namespace

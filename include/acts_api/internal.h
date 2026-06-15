@@ -3,18 +3,18 @@
 #include "api.h"
 /*
  * Internal API used by Atian Tools
- * IMPORTANT: None of these functions are meant to be used by external systems, they are not ABI safe and may change without any notice.
- * If you want to use ACTS API, please refer to api.h
+ * IMPORTANT: None of these functions are meant to be used by external systems, they are not ABI safe and may change
+ * without any notice. If you want to use ACTS API, please refer to api.h
  */
 
- /*
-  * Init ACTS common API, remove ACTS options from argc/argv and update them if needed
-  * @param cli cli mode
-  * @param argc argc
-  * @param argv argv
-  * @param version acts API version, used to check for version mismatch between the API and the common library
-  * @return ret code
-  */
+/*
+ * Init ACTS common API, remove ACTS options from argc/argv and update them if needed
+ * @param cli cli mode
+ * @param argc argc
+ * @param argv argv
+ * @param version acts API version, used to check for version mismatch between the API and the common library
+ * @return ret code
+ */
 ACTS_COMMON_API int InitActsAPI(bool cli, int* argc, const char*** argv, uint32_t version);
 
 /*
@@ -36,7 +36,9 @@ ACTS_COMMON_API int MainActs(int argc, const char* argv[], void* hInstance = nul
  * @param description description
  * @param func function callback
  */
-ACTS_COMMON_API void RegisterActsTool(const char* name, const char* filename, size_t line, const char* category, const char* usage, const char* description, int(*func)(int argc, const char* argv[]));
+ACTS_COMMON_API void RegisterActsTool(const char* name, const char* filename, size_t line, const char* category,
+                                      const char* usage, const char* description,
+                                      int (*func)(int argc, const char* argv[]));
 
 /*
  * Register a new tool category
@@ -57,7 +59,6 @@ ACTS_COMMON_API void* GetActsSharedConfig();
  * @param cfg the shared config
  */
 ACTS_COMMON_API void SetActsSharedConfig(void* cfg);
-
 
 ACTS_COMMON_API const char* ActsAPIGscInjection_InjectPC(const char* path, const char* hook);
 ACTS_COMMON_API const char* ActsAPIGscInjection_InjectPS4(const char* path, const char* hook, const char* ps4ip);

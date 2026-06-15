@@ -4,437 +4,425 @@
 #include <core/memory_allocator.hpp>
 #include <deps/mio.hpp>
 
-
 namespace {
 
-#define SWAP_ENDIAN_64(l) ((((l) >> 56) & 0x00000000000000FFLL) \
-                         | (((l) >> 40) & 0x000000000000FF00LL) \
-                         | (((l) >> 24) & 0x0000000000FF0000LL) \
-                         | (((l) >> 8) & 0x00000000FF000000LL) \
-                         | (((l) << 8) & 0x000000FF00000000LL) \
-                         | (((l) << 24) & 0x0000FF0000000000LL) \
-                         | (((l) << 40) & 0x00FF000000000000LL) \
-                         | (((l) << 56) & 0xFF00000000000000LL))
+#define SWAP_ENDIAN_64(l)                                                                                              \
+    ((((l) >> 56) & 0x00000000000000FFLL) | (((l) >> 40) & 0x000000000000FF00LL) |                                     \
+     (((l) >> 24) & 0x0000000000FF0000LL) | (((l) >> 8) & 0x00000000FF000000LL) |                                      \
+     (((l) << 8) & 0x000000FF00000000LL) | (((l) << 24) & 0x0000FF0000000000LL) |                                      \
+     (((l) << 40) & 0x00FF000000000000LL) | (((l) << 56) & 0xFF00000000000000LL))
 
 #ifdef assert
 #undef assert
 #endif
-#define assert(x) if (!(x)) throw std::runtime_error(std::format("Assert error: !(" #x ")"))
-	constexpr uint64_t ReadLittleEndian(uint64_t le) {
-		if constexpr (std::endian::native == std::endian::little) {
-			return le;
-		}
-		else {
-			return SWAP_ENDIAN_64(le);
-		}
-	}
+#define assert(x)                                                                                                      \
+    if (!(x))                                                                                                          \
+    throw std::runtime_error(std::format("Assert error: !(" #x ")"))
+    constexpr uint64_t ReadLittleEndian(uint64_t le) {
+        if constexpr (std::endian::native == std::endian::little) {
+            return le;
+        } else {
+            return SWAP_ENDIAN_64(le);
+        }
+    }
 
-	uint64_t NumWords(int bitsField, uint64_t total) {
-		return (bitsField * total + 63) / 64;
-	}
+    uint64_t NumWords(int bitsField, uint64_t total) { return (bitsField * total + 63) / 64; }
 
-	uint64_t LastWordNumBits(int bitsField, uint64_t total) {
-		uint64_t totalBits = bitsField * total;
-		if (totalBits == 0) {
-			return 0;
-		}
-		return (totalBits - 1) % 64 + 1;
-	}
-	class HDTBitmapTriplesIndex;
+    uint64_t LastWordNumBits(int bitsField, uint64_t total) {
+        uint64_t totalBits = bitsField * total;
+        if (totalBits == 0) {
+            return 0;
+        }
+        return (totalBits - 1) % 64 + 1;
+    }
+    class HDTBitmapTriplesIndex;
 
-	class SequenceLog {
-		int numBits{};
-		byte* data{};
-		size_t datasize{};
-		uint64_t numwords{};
-		uint64_t lastWord{};
-		uint64_t numentries{};
-	public:
-		SequenceLog() {}
-		void Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx);
-		constexpr uint64_t GetNumEntries() const {
-			return numentries;
-		}
+    class SequenceLog {
+        int numBits{};
+        byte* data{};
+        size_t datasize{};
+        uint64_t numwords{};
+        uint64_t lastWord{};
+        uint64_t numentries{};
 
-		inline uint64_t GetWord(size_t idx) const {
-			assert(idx < numwords);
-			if (idx + 1 == numwords) {
-				return ReadLittleEndian(lastWord);
-			}
-			return ReadLittleEndian(((uint64_t*)data)[idx]);
-		}
+      public:
+        SequenceLog() {}
+        void Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx);
+        constexpr uint64_t GetNumEntries() const { return numentries; }
 
-		uint64_t operator[](size_t idx) const {
-			if (!numBits) {
-				return 0;
-			}
+        inline uint64_t GetWord(size_t idx) const {
+            assert(idx < numwords);
+            if (idx + 1 == numwords) {
+                return ReadLittleEndian(lastWord);
+            }
+            return ReadLittleEndian(((uint64_t*)data)[idx]);
+        }
 
-			size_t bitPos{ idx * numBits };
-			size_t i{ bitPos >> 6 };
-			size_t j{ bitPos & 63 };
-			if (j + numBits <= 64) {
-				return (GetWord(i) << (64ull - j - numBits)) >> (64ull - numBits);
-			}
-			else {
-				return (GetWord(i) >> j) | ((GetWord(i + 1) << ((64ull << 1) - j - numBits)) >> (64ull - numBits));
-			}
-		}
-	};
-	class Bitmap64 {
-		byte* data{};
-		size_t datasize{};
-		size_t words{};
-		size_t numbits{};
-	public:
-		Bitmap64() {}
+        uint64_t operator[](size_t idx) const {
+            if (!numBits) {
+                return 0;
+            }
 
-		void Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx);
+            size_t bitPos{ idx * numBits };
+            size_t i{ bitPos >> 6 };
+            size_t j{ bitPos & 63 };
+            if (j + numBits <= 64) {
+                return (GetWord(i) << (64ull - j - numBits)) >> (64ull - numBits);
+            } else {
+                return (GetWord(i) >> j) | ((GetWord(i + 1) << ((64ull << 1) - j - numBits)) >> (64ull - numBits));
+            }
+        }
+    };
+    class Bitmap64 {
+        byte* data{};
+        size_t datasize{};
+        size_t words{};
+        size_t numbits{};
 
-		constexpr uint64_t GetNumEntries() const {
-			return numbits;
-		}
+      public:
+        Bitmap64() {}
 
-		bool operator[](size_t idx) const {
-			size_t word{ idx >> 3 };
-			size_t bitIndex{ idx & 7 };
-			assert(word < words);
-			return data[word] & (1L << bitIndex);
-		}
-	};
+        void Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx);
 
-	class HDTBitmapTriplesIndex;
+        constexpr uint64_t GetNumEntries() const { return numbits; }
 
-	struct TripleID {
-		uint64_t s{}, p{}, o{};
+        bool operator[](size_t idx) const {
+            size_t word{ idx >> 3 };
+            size_t bitIndex{ idx & 7 };
+            assert(word < words);
+            return data[word] & (1L << bitIndex);
+        }
+    };
 
-		TripleID() {};
-		TripleID(uint64_t s, uint64_t p, uint64_t o) : s(s), p(p), o(o) {};
-		TripleID(TripleID& other) : s(other.s), p(other.p), o(other.o) {}
+    class HDTBitmapTriplesIndex;
 
-		bool operator<(const TripleID& other) {
-			if (s != other.s) {
-				return s < other.s;
-			}
-			if (p != other.p) {
-				return p < other.p;
-			}
-			return o < other.o;
-		}
-	};
+    struct TripleID {
+        uint64_t s{}, p{}, o{};
 
-	std::ostream& operator<<(std::ostream& os, const TripleID& id) {
-		return os << "(s=" << id.s << ",p=" << id.p << ",o=" << id.o << ")";
-	}
-}
+        TripleID() {};
+        TripleID(uint64_t s, uint64_t p, uint64_t o) : s(s), p(p), o(o) {};
+        TripleID(TripleID& other) : s(other.s), p(other.p), o(other.o) {}
+
+        bool operator<(const TripleID& other) {
+            if (s != other.s) {
+                return s < other.s;
+            }
+            if (p != other.p) {
+                return p < other.p;
+            }
+            return o < other.o;
+        }
+    };
+
+    std::ostream& operator<<(std::ostream& os, const TripleID& id) {
+        return os << "(s=" << id.s << ",p=" << id.p << ",o=" << id.o << ")";
+    }
+} // namespace
 template<>
 struct std::formatter<TripleID, char> : utils::BasicFormatter<TripleID> {};
 namespace {
 
-	class HDTBitmapTriplesIndexIterator {
-		HDTBitmapTriplesIndex& src;
-		TripleID curr{};
-		uint64_t y{};
-		uint64_t z{};
-		uint64_t end{};
-	public:
-		HDTBitmapTriplesIndexIterator(HDTBitmapTriplesIndex& src);
+    class HDTBitmapTriplesIndexIterator {
+        HDTBitmapTriplesIndex& src;
+        TripleID curr{};
+        uint64_t y{};
+        uint64_t z{};
+        uint64_t end{};
 
-		const TripleID& operator*() const {
-			return curr;
-		}
+      public:
+        HDTBitmapTriplesIndexIterator(HDTBitmapTriplesIndex& src);
 
-		const TripleID* operator->() const {
-			return &curr;
-		}
+        const TripleID& operator*() const { return curr; }
 
-		constexpr operator bool() const {
-			return z < end;
-		}
+        const TripleID* operator->() const { return &curr; }
 
-		HDTBitmapTriplesIndexIterator& operator++();
-	};
+        constexpr operator bool() const { return z < end; }
 
-	enum TripleComponent : int {
-		TC_SUBJECT = 0,
-		TC_PREDICATE = 1,
-		TC_OBJECT = 2,
-		TC_GRAPH = 3,
-	};
+        HDTBitmapTriplesIndexIterator& operator++();
+    };
 
-	enum TripleOrder : uint64_t {
-		TO_UNKNOWN = 0,
+    enum TripleComponent : int {
+        TC_SUBJECT = 0,
+        TC_PREDICATE = 1,
+        TC_OBJECT = 2,
+        TC_GRAPH = 3,
+    };
 
-		TO_SHIFT_SUB = TC_SUBJECT * 2,
-		TO_SHIFT_PRE = TC_PREDICATE * 2,
-		TO_SHIFT_OBJ = TC_OBJECT * 2,
-		TO_SHIFT_GRA = TC_GRAPH * 2,
-		TO_MASK = 3,
+    enum TripleOrder : uint64_t {
+        TO_UNKNOWN = 0,
 
-		TO_SPO = (TC_SUBJECT << TO_SHIFT_SUB) | (TC_PREDICATE << TO_SHIFT_PRE) | (TC_OBJECT << TO_SHIFT_OBJ) | (TC_GRAPH << TO_SHIFT_GRA),
-		TO_SOP = (TC_SUBJECT << TO_SHIFT_SUB) | (TC_OBJECT << TO_SHIFT_PRE) | (TC_PREDICATE << TO_SHIFT_OBJ) | (TC_GRAPH << TO_SHIFT_GRA),
-		TO_PSO = (TC_PREDICATE << TO_SHIFT_SUB) | (TC_SUBJECT << TO_SHIFT_PRE) | (TC_OBJECT << TO_SHIFT_OBJ) | (TC_GRAPH << TO_SHIFT_GRA),
-		TO_POS = (TC_PREDICATE << TO_SHIFT_SUB) | (TC_OBJECT << TO_SHIFT_PRE) | (TC_SUBJECT << TO_SHIFT_OBJ) | (TC_GRAPH << TO_SHIFT_GRA),
-		TO_OPS = (TC_OBJECT << TO_SHIFT_SUB) | (TC_PREDICATE << TO_SHIFT_PRE) | (TC_SUBJECT << TO_SHIFT_OBJ) | (TC_GRAPH << TO_SHIFT_GRA),
-		TO_OSP = (TC_OBJECT << TO_SHIFT_SUB) | (TC_SUBJECT << TO_SHIFT_PRE) | (TC_PREDICATE << TO_SHIFT_OBJ) | (TC_GRAPH << TO_SHIFT_GRA),
-	};
+        TO_SHIFT_SUB = TC_SUBJECT * 2,
+        TO_SHIFT_PRE = TC_PREDICATE * 2,
+        TO_SHIFT_OBJ = TC_OBJECT * 2,
+        TO_SHIFT_GRA = TC_GRAPH * 2,
+        TO_MASK = 3,
 
-	constexpr TripleComponent GetTripleMapping(TripleOrder order, TripleComponent comp) {
-		return (TripleComponent)((order >> (comp << 1)) & TO_MASK);
-	}
+        TO_SPO = (TC_SUBJECT << TO_SHIFT_SUB) | (TC_PREDICATE << TO_SHIFT_PRE) | (TC_OBJECT << TO_SHIFT_OBJ) |
+                 (TC_GRAPH << TO_SHIFT_GRA),
+        TO_SOP = (TC_SUBJECT << TO_SHIFT_SUB) | (TC_OBJECT << TO_SHIFT_PRE) | (TC_PREDICATE << TO_SHIFT_OBJ) |
+                 (TC_GRAPH << TO_SHIFT_GRA),
+        TO_PSO = (TC_PREDICATE << TO_SHIFT_SUB) | (TC_SUBJECT << TO_SHIFT_PRE) | (TC_OBJECT << TO_SHIFT_OBJ) |
+                 (TC_GRAPH << TO_SHIFT_GRA),
+        TO_POS = (TC_PREDICATE << TO_SHIFT_SUB) | (TC_OBJECT << TO_SHIFT_PRE) | (TC_SUBJECT << TO_SHIFT_OBJ) |
+                 (TC_GRAPH << TO_SHIFT_GRA),
+        TO_OPS = (TC_OBJECT << TO_SHIFT_SUB) | (TC_PREDICATE << TO_SHIFT_PRE) | (TC_SUBJECT << TO_SHIFT_OBJ) |
+                 (TC_GRAPH << TO_SHIFT_GRA),
+        TO_OSP = (TC_OBJECT << TO_SHIFT_SUB) | (TC_SUBJECT << TO_SHIFT_PRE) | (TC_PREDICATE << TO_SHIFT_OBJ) |
+                 (TC_GRAPH << TO_SHIFT_GRA),
+    };
 
-	TripleOrder GetTripleOrderByName(const char* name) {
-		if (!_strcmpi(name, "SPO")) return TO_SPO;
-		if (!_strcmpi(name, "SOP")) return TO_SOP;
-		if (!_strcmpi(name, "PSO")) return TO_PSO;
-		if (!_strcmpi(name, "POS")) return TO_POS;
-		if (!_strcmpi(name, "OPS")) return TO_OPS;
-		if (!_strcmpi(name, "OSP")) return TO_OSP;
-		return TO_UNKNOWN;
-	}
+    constexpr TripleComponent GetTripleMapping(TripleOrder order, TripleComponent comp) {
+        return (TripleComponent)((order >> (comp << 1)) & TO_MASK);
+    }
 
-	class HDTBitmapTriplesIndex {
-		SequenceLog seqY;
-		Bitmap64 bitY;
-		SequenceLog seqZ;
-		Bitmap64 bitZ;
-		TripleOrder order;
-		core::memory_allocator::MemoryAllocator alloc{};
-	public:
-		const bool memory;
-		HDTBitmapTriplesIndex(core::bytebuffer::ByteBuffer& buff, bool memory = false) : memory(memory) {
-			constexpr const char magic[] = "$HDTIDX";
-			char magicTmp[sizeof(magic)]{};
-			buff.Read(&magicTmp[0], sizeof(magic) - 1);
+    TripleOrder GetTripleOrderByName(const char* name) {
+        if (!_strcmpi(name, "SPO"))
+            return TO_SPO;
+        if (!_strcmpi(name, "SOP"))
+            return TO_SOP;
+        if (!_strcmpi(name, "PSO"))
+            return TO_PSO;
+        if (!_strcmpi(name, "POS"))
+            return TO_POS;
+        if (!_strcmpi(name, "OPS"))
+            return TO_OPS;
+        if (!_strcmpi(name, "OSP"))
+            return TO_OSP;
+        return TO_UNKNOWN;
+    }
 
-			if (std::memcmp(magicTmp, magic, sizeof(magic) - 1)) {
-				throw std::runtime_error(std::format("Invalid MAGIC {}", magicTmp));
-			}
+    class HDTBitmapTriplesIndex {
+        SequenceLog seqY;
+        Bitmap64 bitY;
+        SequenceLog seqZ;
+        Bitmap64 bitZ;
+        TripleOrder order;
+        core::memory_allocator::MemoryAllocator alloc{};
 
-			char version{ buff.Read<char>() };
+      public:
+        const bool memory;
+        HDTBitmapTriplesIndex(core::bytebuffer::ByteBuffer& buff, bool memory = false) : memory(memory) {
+            constexpr const char magic[] = "$HDTIDX";
+            char magicTmp[sizeof(magic)]{};
+            buff.Read(&magicTmp[0], sizeof(magic) - 1);
 
-			LOG_DEBUG("Loading version {}", version);
+            if (std::memcmp(magicTmp, magic, sizeof(magic) - 1)) {
+                throw std::runtime_error(std::format("Invalid MAGIC {}", magicTmp));
+            }
 
-			switch (version) {
-			case '0':
-				// nothing
-				break;
-			case '1':
-				buff.Skip(8); // signature
-				break;
-			default:
-				throw std::runtime_error(std::format("Invalid version {}", version));
-			}
+            char version{ buff.Read<char>() };
 
-			std::string idxOrder{ buff.ReadVByteInvSizedString() };
-			order = GetTripleOrderByName(idxOrder.data());
-			if (!order) {
-				throw std::runtime_error(std::format("Invalid index order: {}", idxOrder));
-			}
-			LOG_DEBUG("order: {} {}", idxOrder, (uint64_t)order);
+            LOG_DEBUG("Loading version {}", version);
 
-			seqY.Load(buff, *this);
-			bitY.Load(buff, *this);
+            switch (version) {
+            case '0':
+                // nothing
+                break;
+            case '1':
+                buff.Skip(8); // signature
+                break;
+            default:
+                throw std::runtime_error(std::format("Invalid version {}", version));
+            }
 
-			if (seqY.GetNumEntries() != bitY.GetNumEntries()) {
-				throw std::runtime_error(std::format("Invalid num entries for seqy/bity: {} != {}", seqY.GetNumEntries(), bitY.GetNumEntries()));
-			}
+            std::string idxOrder{ buff.ReadVByteInvSizedString() };
+            order = GetTripleOrderByName(idxOrder.data());
+            if (!order) {
+                throw std::runtime_error(std::format("Invalid index order: {}", idxOrder));
+            }
+            LOG_DEBUG("order: {} {}", idxOrder, (uint64_t)order);
 
-			seqZ.Load(buff, *this);
-			bitZ.Load(buff, *this);
+            seqY.Load(buff, *this);
+            bitY.Load(buff, *this);
 
-			if (seqY.GetNumEntries() != bitY.GetNumEntries()) {
-				throw std::runtime_error(std::format("Invalid num entries for seqy/bity: {} != {}", seqY.GetNumEntries(), bitY.GetNumEntries()));
-			}
-			LOG_DEBUG("remaining: 0x{:x}", buff.Remaining());
-		}
-		const SequenceLog& GetSeqY() const { return seqY; }
-		const Bitmap64& GetBitY() const { return bitY; }
-		const SequenceLog& GetSeqZ() const { return seqZ; }
-		const Bitmap64& GetBitZ() const { return bitZ; }
+            if (seqY.GetNumEntries() != bitY.GetNumEntries()) {
+                throw std::runtime_error(std::format("Invalid num entries for seqy/bity: {} != {}",
+                                                     seqY.GetNumEntries(), bitY.GetNumEntries()));
+            }
 
-		core::memory_allocator::MemoryAllocator& GetAlloc() {
-			return alloc;
-		}
+            seqZ.Load(buff, *this);
+            bitZ.Load(buff, *this);
 
-		HDTBitmapTriplesIndexIterator CreateIterator() {
-			return HDTBitmapTriplesIndexIterator(*this);
-		}
+            if (seqY.GetNumEntries() != bitY.GetNumEntries()) {
+                throw std::runtime_error(std::format("Invalid num entries for seqy/bity: {} != {}",
+                                                     seqY.GetNumEntries(), bitY.GetNumEntries()));
+            }
+            LOG_DEBUG("remaining: 0x{:x}", buff.Remaining());
+        }
+        const SequenceLog& GetSeqY() const { return seqY; }
+        const Bitmap64& GetBitY() const { return bitY; }
+        const SequenceLog& GetSeqZ() const { return seqZ; }
+        const Bitmap64& GetBitZ() const { return bitZ; }
 
-		constexpr size_t GetNumEntries() {
-			return seqZ.GetNumEntries();
-		}
-	};
+        core::memory_allocator::MemoryAllocator& GetAlloc() { return alloc; }
 
+        HDTBitmapTriplesIndexIterator CreateIterator() { return HDTBitmapTriplesIndexIterator(*this); }
 
-	void Bitmap64::Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx) {
-		if (buff.Read<byte>() != 1) {
-			throw std::runtime_error("Not a bitmap plain");
-		}
+        constexpr size_t GetNumEntries() { return seqZ.GetNumEntries(); }
+    };
 
-		numbits = buff.ReadVByteInv();
-		buff.Skip<uint8_t>(); // skip crc
+    void Bitmap64::Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx) {
+        if (buff.Read<byte>() != 1) {
+            throw std::runtime_error("Not a bitmap plain");
+        }
 
-		if (numbits > 0) {
-			words = ((numbits - 1) >> 3) + 1;
+        numbits = buff.ReadVByteInv();
+        buff.Skip<uint8_t>(); // skip crc
 
-			// should be converted to LE if required
-			LOG_TRACE("Loaded Bitmap64 with {} bits ({} words)", numbits, words);
-			data = buff.ReadPtr<byte>(datasize = words);
-		}
-		else {
-			words = 0;
-			datasize = 0;
-			data = nullptr;
-		}
+        if (numbits > 0) {
+            words = ((numbits - 1) >> 3) + 1;
 
-		if (datasize && idx.memory) {
-			void* d{ idx.GetAlloc().Alloc(datasize) };
-			std::memcpy(d, data, datasize);
-			data = (byte*)d;
-		}
+            // should be converted to LE if required
+            LOG_TRACE("Loaded Bitmap64 with {} bits ({} words)", numbits, words);
+            data = buff.ReadPtr<byte>(datasize = words);
+        } else {
+            words = 0;
+            datasize = 0;
+            data = nullptr;
+        }
 
-		buff.Skip<uint32_t>(); // skip crc
-	}
-	void SequenceLog::Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx) {
-		if (buff.Read<byte>() != 1) {
-			throw std::runtime_error("Not a sequence log: Invalid type");
-		}
+        if (datasize && idx.memory) {
+            void* d{ idx.GetAlloc().Alloc(datasize) };
+            std::memcpy(d, data, datasize);
+            data = (byte*)d;
+        }
 
-		numBits = (int)buff.Read<byte>();
-		numentries = buff.ReadVByteInv();
+        buff.Skip<uint32_t>(); // skip crc
+    }
+    void SequenceLog::Load(core::bytebuffer::ByteBuffer& buff, HDTBitmapTriplesIndex& idx) {
+        if (buff.Read<byte>() != 1) {
+            throw std::runtime_error("Not a sequence log: Invalid type");
+        }
 
-		buff.Skip(1); // crc check
+        numBits = (int)buff.Read<byte>();
+        numentries = buff.ReadVByteInv();
 
-		if (numBits > 64) {
-			throw std::runtime_error("Numbits can't be above 64");
-		}
+        buff.Skip(1); // crc check
 
-		numwords = NumWords(numBits, numentries);
-		size_t add{ LastWordNumBits(numBits, numentries) };
-		if (numwords > 0) {
-			size_t addBytes{ (add - 1) / 8 + 1 };
-			size_t toRead{ (numwords - 1) * 8 };
-			LOG_TRACE("Loaded SequenceLog with {} bits (max 0x{:x}), {} entries ({} words) {}/{}", numBits, (1ull << numBits), numentries, numwords, add, toRead);
-			if (addBytes) {
-				data = buff.ReadPtr<byte>(datasize = toRead);
-				byte* lastBytes{ buff.ReadPtr<byte>(addBytes) };
-				lastWord = 0;
-				std::memcpy(&lastWord, lastBytes, addBytes);
-			}
-			else {
-				data = buff.ReadPtr<byte>(datasize = toRead - 1);
-				lastWord = *buff.ReadPtr<uint64_t>(1);
-			}
-		}
-		else {
-			data = nullptr;
-			lastWord = 0;
-			datasize = 0;
-		}
-		//if (datasize && idx.memory) {
-		//	void* d{ idx.GetAlloc().Alloc(datasize) };
-		//	std::memcpy(d, data, datasize);
-		//	data = (byte*)d;
-		//}
-		buff.Skip(4); // crc check
-	}
+        if (numBits > 64) {
+            throw std::runtime_error("Numbits can't be above 64");
+        }
 
+        numwords = NumWords(numBits, numentries);
+        size_t add{ LastWordNumBits(numBits, numentries) };
+        if (numwords > 0) {
+            size_t addBytes{ (add - 1) / 8 + 1 };
+            size_t toRead{ (numwords - 1) * 8 };
+            LOG_TRACE("Loaded SequenceLog with {} bits (max 0x{:x}), {} entries ({} words) {}/{}", numBits,
+                      (1ull << numBits), numentries, numwords, add, toRead);
+            if (addBytes) {
+                data = buff.ReadPtr<byte>(datasize = toRead);
+                byte* lastBytes{ buff.ReadPtr<byte>(addBytes) };
+                lastWord = 0;
+                std::memcpy(&lastWord, lastBytes, addBytes);
+            } else {
+                data = buff.ReadPtr<byte>(datasize = toRead - 1);
+                lastWord = *buff.ReadPtr<uint64_t>(1);
+            }
+        } else {
+            data = nullptr;
+            lastWord = 0;
+            datasize = 0;
+        }
+        // if (datasize && idx.memory) {
+        //	void* d{ idx.GetAlloc().Alloc(datasize) };
+        //	std::memcpy(d, data, datasize);
+        //	data = (byte*)d;
+        // }
+        buff.Skip(4); // crc check
+    }
 
-	HDTBitmapTriplesIndexIterator::HDTBitmapTriplesIndexIterator(HDTBitmapTriplesIndex& src) : src(src) {
-		y = 1;
-		z = 1;
-		end = src.GetSeqZ().GetNumEntries();
-		if (z != end) {
-			curr.s = 1;
-			curr.p = src.GetSeqY()[0];
-			curr.o = src.GetSeqZ()[0];
-		}
-	}
-	HDTBitmapTriplesIndexIterator& HDTBitmapTriplesIndexIterator::operator++() {
-		if (!*this) {
-			throw std::runtime_error("End of the iterator");
-		}
+    HDTBitmapTriplesIndexIterator::HDTBitmapTriplesIndexIterator(HDTBitmapTriplesIndex& src) : src(src) {
+        y = 1;
+        z = 1;
+        end = src.GetSeqZ().GetNumEntries();
+        if (z != end) {
+            curr.s = 1;
+            curr.p = src.GetSeqY()[0];
+            curr.o = src.GetSeqZ()[0];
+        }
+    }
+    HDTBitmapTriplesIndexIterator& HDTBitmapTriplesIndexIterator::operator++() {
+        if (!*this) {
+            throw std::runtime_error("End of the iterator");
+        }
 
-		if (z + 1 == end) {
-			z++;
-			return *this;
-		}
+        if (z + 1 == end) {
+            z++;
+            return *this;
+        }
 
-		if (src.GetBitZ()[z]) {
-			// new predicate
-			if (src.GetBitY()[y]) {
-				// new subject
-				curr.s++;
-			}
-			curr.p = src.GetSeqY()[++y];
-		}
+        if (src.GetBitZ()[z]) {
+            // new predicate
+            if (src.GetBitY()[y]) {
+                // new subject
+                curr.s++;
+            }
+            curr.p = src.GetSeqY()[++y];
+        }
 
-		curr.o = src.GetSeqZ()[++z];
+        curr.o = src.GetSeqZ()[++z];
 
-		return *this;
-	}
+        return *this;
+    }
 
-	int disksort(int argc, const char* argv[]) {
-		cli::options::CliOptions opts{};
+    int disksort(int argc, const char* argv[]) {
+        cli::options::CliOptions opts{};
 
-		struct {
-			bool showHelp{};
-			bool checkIntegrity{};
-			bool mapBitmap{};
-		} opt;
+        struct {
+            bool showHelp{};
+            bool checkIntegrity{};
+            bool mapBitmap{};
+        } opt;
 
-		opts
-			.addOption(&opt.showHelp, "show help", "--help", "", "-h")
-			.addOption(&opt.checkIntegrity, "check integrity", "--integrity")
-			.addOption(&opt.mapBitmap, "map bitmap", "--mapBitmap")
-			.ComputeOptions(2, argc, argv);
+        opts.addOption(&opt.showHelp, "show help", "--help", "", "-h")
+            .addOption(&opt.checkIntegrity, "check integrity", "--integrity")
+            .addOption(&opt.mapBitmap, "map bitmap", "--mapBitmap")
+            .ComputeOptions(2, argc, argv);
 
-		if (opts.ParamsCount() < 2 || opt.showHelp) {
-			opts.PrintOptions();
-			return tool::BAD_USAGE;
-		}
+        if (opts.ParamsCount() < 2 || opt.showHelp) {
+            opts.PrintOptions();
+            return tool::BAD_USAGE;
+        }
 
-		std::filesystem::path file{ opts[0] };
-		const char* order{ opts[1] };
+        std::filesystem::path file{ opts[0] };
+        const char* order{ opts[1] };
 
+        mio::mmap_source mmap{ file.string() };
 
+        LOG_INFO("Loading {} into {} (size: 0x{:x})", file.string(), order, mmap.size());
 
-		mio::mmap_source mmap{ file.string() };
+        core::bytebuffer::ByteBuffer buff{ (byte*)mmap.begin(), mmap.size() };
 
-		LOG_INFO("Loading {} into {} (size: 0x{:x})", file.string(), order, mmap.size());
+        HDTBitmapTriplesIndex idx{ buff, !opt.mapBitmap };
 
-		core::bytebuffer::ByteBuffer buff{ (byte*)mmap.begin(), mmap.size() };
-		
-		HDTBitmapTriplesIndex idx{ buff, !opt.mapBitmap };
+        if (opt.checkIntegrity) {
+            TripleID tid{};
+            HDTBitmapTriplesIndexIterator it{ idx.CreateIterator() };
 
-		if (opt.checkIntegrity) {
-			TripleID tid{};
-			HDTBitmapTriplesIndexIterator it{ idx.CreateIterator() };
+            size_t id{};
+            size_t diff{ std::max<size_t>(1, idx.GetNumEntries() / 100) };
+            while (it) {
+                const TripleID& next{ *it };
+                if (!(tid < next)) {
+                    LOG_ERROR("Invalid order at idx#{} prev={} >= next={}", id, tid, next);
+                    return tool::BASIC_ERROR;
+                }
 
-			size_t id{};
-			size_t diff{ std::max<size_t>(1, idx.GetNumEntries() / 100) };
-			while (it) {
-				const TripleID& next{ *it };
-				if (!(tid < next)) {
-					LOG_ERROR("Invalid order at idx#{} prev={} >= next={}", id, tid, next);
-					return tool::BASIC_ERROR;
-				}
+                if ((id % diff) == 0) {
+                    LOG_INFO("{}% {}/{}", 100 * id / idx.GetNumEntries(), id, idx.GetNumEntries());
+                }
+                tid = next;
+                id++;
+                ++it;
+            }
 
-				if ((id % diff) == 0) {
-					LOG_INFO("{}% {}/{}", 100 * id / idx.GetNumEntries(), id, idx.GetNumEntries());
-				}
-				tid = next;
-				id++;
-				++it;
-			}
+            LOG_INFO("100% : Index sorted");
+            return tool::OK;
+        }
 
-			LOG_INFO("100% : Index sorted");
-			return tool::OK;
-		}
+        return tool::OK;
+    }
 
-
-		return tool::OK;
-	}
-
-	ADD_TOOL(disksort, "lib", "[file] [order]", "Reorder HDT other IDX", disksort);
-}
+    ADD_TOOL(disksort, "lib", "[file] [order]", "Reorder HDT other IDX", disksort);
+} // namespace

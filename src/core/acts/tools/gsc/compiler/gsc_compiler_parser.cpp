@@ -7,7 +7,8 @@ namespace tool::gsc::compiler {
     std::string ParseString(TerminalNode* term, size_t start) {
         std::string node = term->getText();
 
-        if (node.length() <= start) return {};
+        if (node.length() <= start)
+            return {};
 
         size_t end{ node.length() };
 
@@ -52,7 +53,7 @@ namespace tool::gsc::compiler {
         *(newStrWriter++) = 0; // end char
         return &newStr[0];
     }
-    
+
     constexpr byte INVALID_VECTOR_FLAGS = 0xFF;
 
     bool FindConstVectorCommon(float& x, float& y, float& z, float& common) {
@@ -60,16 +61,14 @@ namespace tool::gsc::compiler {
         if (y != 0) {
             if (!common) {
                 common = y;
-            }
-            else if (y != common && y != -common) {
+            } else if (y != common && y != -common) {
                 return false;
             }
         }
         if (z != 0) {
             if (!common) {
                 common = z;
-            }
-            else if (z != common && z != -common) {
+            } else if (z != common && z != -common) {
                 return false;
             }
         }
@@ -91,17 +90,26 @@ namespace tool::gsc::compiler {
         // 0 = 0, 1 = -1, 2 = 1
         byte flag{};
 
-        if (x == -1) flag |= 1 << 4;
-        else if (x == 1) flag |= 2 << 4;
-        else if (x != 0) return INVALID_VECTOR_FLAGS;
+        if (x == -1)
+            flag |= 1 << 4;
+        else if (x == 1)
+            flag |= 2 << 4;
+        else if (x != 0)
+            return INVALID_VECTOR_FLAGS;
 
-        if (y == -1) flag |= 1 << 2;
-        else if (y == 1) flag |= 2 << 2;
-        else if (y != 0) return INVALID_VECTOR_FLAGS;
+        if (y == -1)
+            flag |= 1 << 2;
+        else if (y == 1)
+            flag |= 2 << 2;
+        else if (y != 0)
+            return INVALID_VECTOR_FLAGS;
 
-        if (z == -1) flag |= 1;
-        else if (z == 1) flag |= 2;
-        else if (z != 0) return INVALID_VECTOR_FLAGS;
+        if (z == -1)
+            flag |= 1;
+        else if (z == 1)
+            flag |= 2;
+        else if (z != 0)
+            return INVALID_VECTOR_FLAGS;
 
         return flag;
     }
@@ -111,7 +119,8 @@ namespace tool::gsc::compiler {
         auto ith = obj.vmInfo->hashesFunc.find(type);
 
         if (ith == obj.vmInfo->hashesFunc.end()) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, tree, std::format("Hash type not available for this vm: {}", type));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, tree,
+                                      std::format("Hash type not available for this vm: {}", type));
             return false;
         }
 
@@ -122,24 +131,34 @@ namespace tool::gsc::compiler {
         if (!hash::TryHashPattern(ss, val)) {
             val = ith->second.hashFunc(ss);
             if (!val) {
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, tree, std::format("Can't hash the string '{}' with the type {}", sub, type));
+                obj.info.PrintLineMessage(core::logs::LVL_ERROR, tree,
+                                          std::format("Can't hash the string '{}' with the type {}", sub, type));
                 return false;
             }
         }
 
         switch (ith->second.size) {
-        case 8: fobj.AddNode(tree, new AscmNodeData<uint64_t>((uint64_t)val, ith->second.opCode)); break;
-        case 4: fobj.AddNode(tree, new AscmNodeData<uint32_t>((uint32_t)val, ith->second.opCode)); break;
-        case 2: fobj.AddNode(tree, new AscmNodeData<uint16_t>((uint16_t)val, ith->second.opCode)); break;
-        case 1: fobj.AddNode(tree, new AscmNodeData<uint8_t>((uint8_t)val, ith->second.opCode)); break;
+        case 8:
+            fobj.AddNode(tree, new AscmNodeData<uint64_t>((uint64_t)val, ith->second.opCode));
+            break;
+        case 4:
+            fobj.AddNode(tree, new AscmNodeData<uint32_t>((uint32_t)val, ith->second.opCode));
+            break;
+        case 2:
+            fobj.AddNode(tree, new AscmNodeData<uint16_t>((uint16_t)val, ith->second.opCode));
+            break;
+        case 1:
+            fobj.AddNode(tree, new AscmNodeData<uint8_t>((uint8_t)val, ith->second.opCode));
+            break;
         default: {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, tree, std::format("Invalid hash size definition: {} / {} bytes", type, ith->second.size));
+            obj.info.PrintLineMessage(
+                core::logs::LVL_ERROR, tree,
+                std::format("Invalid hash size definition: {} / {} bytes", type, ith->second.size));
             return false;
         }
         }
         return true;
     }
-
 
     bool ParseFieldNode(ParseTree* exp, gscParser& parser, CompileObject& obj, FunctionObject& fobj) {
         if (!exp) {
@@ -153,11 +172,10 @@ namespace tool::gsc::compiler {
         if (exp->getTreeType() == TREE_RULE) {
             RuleContext* rule = dynamic_cast<RuleContext*>(exp);
 
-
-
             // search that we don't have a children in error, after that we'll assume the tree is right for a depth of 2
-            if (std::find_if(rule->children.begin(), rule->children.end(), [](const ParseTree* tree) -> bool { return tree->getTreeType() == TREE_ERROR; })
-                != rule->children.end()) {
+            if (std::find_if(rule->children.begin(), rule->children.end(), [](const ParseTree* tree) -> bool {
+                    return tree->getTreeType() == TREE_ERROR;
+                }) != rule->children.end()) {
                 obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, "detected tree children error, bad syntax?");
                 return false;
             }
@@ -183,7 +201,9 @@ namespace tool::gsc::compiler {
                 if (rule->children.size() == 1) {
                     return ParseFieldNode(rule->children[0], parser, obj, fobj);
                 }
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Not a valid lvalue: {} ({})", rule->getText(), rule->getRuleIndex()));
+                obj.info.PrintLineMessage(
+                    core::logs::LVL_ERROR, exp,
+                    std::format("Not a valid lvalue: {} ({})", rule->getText(), rule->getRuleIndex()));
                 return false;
             }
             case gscParser::RuleExpression15:
@@ -201,7 +221,8 @@ namespace tool::gsc::compiler {
                     if (second == "." || second == "?.") {
                         if (second == "?.") {
                             // assume that it'll fail by itself if it is undefined so we don't need to do anything
-                            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp, std::format("Usage of ?. in a left value: {}", rule->getText()));
+                            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp,
+                                                      std::format("Usage of ?. in a left value: {}", rule->getText()));
                         }
                         // object access
                         if (IS_IDF(rule->children[2])) {
@@ -211,16 +232,17 @@ namespace tool::gsc::compiler {
                             std::string fieldText = rule->children[2]->getText();
 
                             if (fieldText == "size") {
-                                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format(".size can't be used as a lvalue: {}", exp->getText()));
+                                obj.info.PrintLineMessage(
+                                    core::logs::LVL_ERROR, exp,
+                                    std::format(".size can't be used as a lvalue: {}", exp->getText()));
                                 return false;
-                            }
-                            else {
+                            } else {
                                 // use identifier
                                 fobj.AddNode(rule->children[2], new AscmNodeOpCode(OPCODE_CastFieldObject));
-                                fobj.AddNode(rule->children[2], fobj.CreateFieldHash(fieldText, OPCODE_EvalFieldVariableRef));
+                                fobj.AddNode(rule->children[2],
+                                             fobj.CreateFieldHash(fieldText, OPCODE_EvalFieldVariableRef));
                             }
-                        }
-                        else {
+                        } else {
                             if (!ParseExpressionNode(rule->children[3], parser, obj, fobj, true)) {
                                 return false;
                             }
@@ -233,8 +255,7 @@ namespace tool::gsc::compiler {
                             fobj.AddNode(first, new AscmNodeOpCode(OPCODE_EvalFieldVariableOnStackRef));
                         }
                         return true;
-                    }
-                    else if (second == "[") {
+                    } else if (second == "[") {
                         // array access
 
                         if (!ParseExpressionNode(rule->children[2], parser, obj, fobj, true)) {
@@ -247,17 +268,18 @@ namespace tool::gsc::compiler {
 
                         fobj.AddNode(first, new AscmNodeOpCode(OPCODE_EvalArrayRef));
                         return true;
-                    }
-                    else {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unknown left value type: {}", second));
+                    } else {
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                                  std::format("Unknown left value type: {}", second));
                         return false;
                     }
-                }
-                else {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unknown lvalue tree type: {}", exp->getText()));
+                } else {
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                              std::format("Unknown lvalue tree type: {}", exp->getText()));
                     return false;
                 }
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unhandled lvalue type: {}", exp->getText()));
+                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                          std::format("Unhandled lvalue type: {}", exp->getText()));
                 return false;
             }
             case gscParser::RuleConst_expr:
@@ -286,21 +308,24 @@ namespace tool::gsc::compiler {
             case gscParser::RuleArray_unpack:
             case gscParser::RuleFunction_call:
             case gscParser::RuleFunction_call_exp:
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Not a valid lvalue: {} ({})", rule->getText(), rule->getRuleIndex()));
+                obj.info.PrintLineMessage(
+                    core::logs::LVL_ERROR, exp,
+                    std::format("Not a valid lvalue: {} ({})", rule->getText(), rule->getRuleIndex()));
                 return false;
             }
 
-
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Unhandled lvalue rule: {} ({})", rule->getText(), rule->getRuleIndex()));
+            obj.info.PrintLineMessage(
+                core::logs::LVL_ERROR, rule,
+                std::format("Unhandled lvalue rule: {} ({})", rule->getText(), rule->getRuleIndex()));
             return false;
         }
 
         if (exp->getTreeType() != TREE_TERMINAL) {
-            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp, std::format("Unknown tree type: {}", exp->getText()));
+            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp,
+                                      std::format("Unknown tree type: {}", exp->getText()));
             return false;
         }
         TerminalNode* term = dynamic_cast<TerminalNode*>(exp);
-
 
         size_t len = term->getText().size();
 
@@ -314,7 +339,8 @@ namespace tool::gsc::compiler {
                 ParseTree* pt = ceit->second;
 
                 if (!ParseFieldNode(pt, parser, obj, fobj)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, term, std::format("error when using constexpr {}", varName));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, term,
+                                              std::format("error when using constexpr {}", varName));
                     return false;
                 }
                 return true;
@@ -330,7 +356,8 @@ namespace tool::gsc::compiler {
             if (gvarIt != fobj.m_vmInfo->globalvars.end()) {
                 GlobalVariableDef& gv = gvarIt->second;
 
-                obj.info.PrintLineMessage(core::logs::LVL_WARNING, term, std::format("The {} global variable can't be used as a lvalue", gv.name));
+                obj.info.PrintLineMessage(core::logs::LVL_WARNING, term,
+                                          std::format("The {} global variable can't be used as a lvalue", gv.name));
                 return false;
             }
             auto [varerr, keyVarL] = fobj.RegisterVar(varName, true, 0);
@@ -352,15 +379,18 @@ namespace tool::gsc::compiler {
         case gscParser::INTEGER2:
         case gscParser::HASHSTRING:
         case gscParser::STRING:
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Not a valid lvalue: {}", term->getText()));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                      std::format("Not a valid lvalue: {}", term->getText()));
             return false;
         }
 
-        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unhandled lvalue terminal: {}", term->getText()));
+        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                  std::format("Unhandled lvalue terminal: {}", term->getText()));
         return false;
     }
-    
-    bool ParseExpressionNode(ParseTree* exp, gscParser& parser, CompileObject& obj, FunctionObject& fobj, bool expressVal) {
+
+    bool ParseExpressionNode(ParseTree* exp, gscParser& parser, CompileObject& obj, FunctionObject& fobj,
+                             bool expressVal) {
         if (!exp) {
             obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, "Empty tree error");
             return false;
@@ -374,8 +404,9 @@ namespace tool::gsc::compiler {
             RuleContext* rule = dynamic_cast<RuleContext*>(exp);
 
             // search that we don't have a children in error, after that we'll assume the tree is right for a depth of 2
-            if (std::find_if(rule->children.begin(), rule->children.end(), [](const ParseTree* tree) -> bool { return tree->getTreeType() == TREE_ERROR; })
-                != rule->children.end()) {
+            if (std::find_if(rule->children.begin(), rule->children.end(), [](const ParseTree* tree) -> bool {
+                    return tree->getTreeType() == TREE_ERROR;
+                }) != rule->children.end()) {
                 obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, "Detected tree children error, bad syntax?");
                 return false;
             }
@@ -395,7 +426,8 @@ namespace tool::gsc::compiler {
                     FunctionJumpLoc& loc = fobj.m_jumpLocs[locName];
 
                     if (loc.defined) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("The location {} was defined twice!", locName));
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                                  std::format("The location {} was defined twice!", locName));
                         return false;
                     }
 
@@ -420,13 +452,11 @@ namespace tool::gsc::compiler {
                     if (v) {
                         // no else
                         return ParseExpressionNode(rule->children[4], parser, obj, fobj, false);
-                    }
-                    else {
+                    } else {
                         if (rule->children.size() <= 5) {
                             // no else
                             return true;
-                        }
-                        else {
+                        } else {
                             // only else
                             return ParseExpressionNode(rule->children[6], parser, obj, fobj, false);
                         }
@@ -444,7 +474,6 @@ namespace tool::gsc::compiler {
                     ok = false;
                 }
 
-
                 if (rule->children.size() > 5) { // else
                     AscmNode* endElse = new AscmNode();
                     fobj.AddNode(rule->children[5], new AscmNodeJump(endElse, OPCODE_Jump));
@@ -455,8 +484,7 @@ namespace tool::gsc::compiler {
                     }
 
                     fobj.AddNode(rule->children[rule->children.size() - 1], endElse);
-                }
-                else {
+                } else {
                     fobj.AddNode(rule->children[rule->children.size() - 1], elseStart);
                 }
 
@@ -525,14 +553,12 @@ namespace tool::gsc::compiler {
                     if (v) {
                         fobj.AddNode(rule->children[4], new AscmNodeJump(loopStart, OPCODE_Jump));
                     }
-                }
-                else {
+                } else {
                     if (!ParseExpressionNode(rule->children[4], parser, obj, fobj, true)) {
                         ok = false;
                     }
                     fobj.AddNode(rule->children[4], new AscmNodeJump(loopStart, OPCODE_JumpOnTrue));
                 }
-
 
                 // TODO: add next node
                 fobj.AddNode(rule->children[4], loopBreak);
@@ -547,7 +573,8 @@ namespace tool::gsc::compiler {
                 size_t i = 2;
 
                 // init expression
-                if (IS_RULE_TYPE(rule->children[i], gscParser::RuleExpression) && !ParseExpressionNode(rule->children[i++], parser, obj, fobj, false)) {
+                if (IS_RULE_TYPE(rule->children[i], gscParser::RuleExpression) &&
+                    !ParseExpressionNode(rule->children[i++], parser, obj, fobj, false)) {
                     err = true;
                 }
 
@@ -558,13 +585,11 @@ namespace tool::gsc::compiler {
 
                 fobj.AddNode(rule, loopStart);
 
-
                 // if expression
                 if (IS_RULE_TYPE(rule->children[i], gscParser::RuleExpression)) {
                     if (!ParseExpressionNode(rule->children[i++], parser, obj, fobj, true)) {
                         err = true;
-                    }
-                    else {
+                    } else {
                         fobj.AddNode(rule->children[i - 1], new AscmNodeJump(loopBreak, OPCODE_JumpOnFalse));
                     }
                 }
@@ -584,7 +609,8 @@ namespace tool::gsc::compiler {
                 // delta expression
                 fobj.AddNode(rule->children[rule->children.size() - 1], loopContinue);
 
-                if (IS_RULE_TYPE(rule->children[i], gscParser::RuleExpression) && !ParseExpressionNode(rule->children[i++], parser, obj, fobj, false)) {
+                if (IS_RULE_TYPE(rule->children[i], gscParser::RuleExpression) &&
+                    !ParseExpressionNode(rule->children[i++], parser, obj, fobj, false)) {
                     err = true;
                 }
 
@@ -594,11 +620,12 @@ namespace tool::gsc::compiler {
                 return !err;
             }
             case gscParser::RuleStatement_switch: {
-                //uint64_t switchType{ obj.gscHandler->buildFlags & tool::gsc::GOHF_SWITCH_TYPE_MASK };
+                // uint64_t switchType{ obj.gscHandler->buildFlags & tool::gsc::GOHF_SWITCH_TYPE_MASK };
                 auto [err, var] = fobj.RegisterVarRnd();
 
                 if (err) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering switch variable: {}", err));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                              std::format("Error when registering switch variable: {}", err));
                     return false;
                 }
 
@@ -630,8 +657,8 @@ namespace tool::gsc::compiler {
                 fobj.AddNode(rule->children[2], new AscmNodeVariable(var->id, OPCODE_EvalLocalVariableRefCached));
                 fobj.AddNode(rule->children[2], new AscmNodeOpCode(OPCODE_SetVariableField));
 
-
-                // statement_switch: 'switch' '(' expression ')' '{' (('case' const_expr | 'default') ':' (statement)*)+'}';
+                // statement_switch: 'switch' '(' expression ')' '{' (('case' const_expr | 'default') ':'
+                // (statement)*)+'}';
 
                 struct JumpData {
                     size_t startStmt;
@@ -657,7 +684,6 @@ namespace tool::gsc::compiler {
                         fobj.AddNode(rule->children[i], new AscmNodeVariable(var->id, OPCODE_EvalLocalVariableCached));
                         fobj.AddNode(rule->children[i], new AscmNodeOpCode(OPCODE_Equal));
 
-
                         fobj.AddNode(rule->children[i], new AscmNodeJump(jmpNode, OPCODE_JumpOnTrue));
 
                         i += 2; // const_expr ':'
@@ -673,10 +699,10 @@ namespace tool::gsc::compiler {
 
                     if (caseType == "default") {
                         if (defaultCase.jmpNode) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[i], "A switch can't have more than one default block");
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[i],
+                                                      "A switch can't have more than one default block");
                             ok = false;
-                        }
-                        else {
+                        } else {
                             defaultCase.jmpNode = new AscmNode();
                         }
                         i += 2; // 'default' ':'
@@ -689,7 +715,8 @@ namespace tool::gsc::compiler {
                         continue;
                     }
 
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[i], std::format("Unknown case type: {}/{}", caseType, i));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[i],
+                                              std::format("Unknown case type: {}/{}", caseType, i));
                     ok = false;
                     i++;
                 }
@@ -700,8 +727,7 @@ namespace tool::gsc::compiler {
 
                 if (defaultCase.jmpNode) {
                     fobj.AddNode(rule, new AscmNodeJump(defaultCase.jmpNode, OPCODE_Jump));
-                }
-                else {
+                } else {
                     fobj.AddNode(rule, new AscmNodeJump(endSwitchNode, OPCODE_Jump));
                 }
 
@@ -725,7 +751,8 @@ namespace tool::gsc::compiler {
                 auto [var1err, arrayVal] = fobj.RegisterVarRnd();
 
                 if (var1err) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach variable: {}", var1err));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                              std::format("Error when registering foreach variable: {}", var1err));
                     return false;
                 }
 
@@ -740,28 +767,35 @@ namespace tool::gsc::compiler {
                     auto [var4err, valueVarL] = fobj.RegisterVar(rule->children[4]->getText(), true);
 
                     if (var3err) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach key variable: {}", var3err));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, rule,
+                            std::format("Error when registering foreach key variable: {}", var3err));
                         return false;
                     }
                     if (var4err) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach value variable: {}", var4err));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, rule,
+                            std::format("Error when registering foreach value variable: {}", var4err));
                         return false;
                     }
 
                     keyVar = keyVarL;
                     valueVar = valueVarL;
-                }
-                else {
-                    // value in 
+                } else {
+                    // value in
                     auto [var3err, keyVarL] = fobj.RegisterVarRnd();
                     auto [var4err, valueVarL] = fobj.RegisterVar(rule->children[2]->getText(), true);
 
                     if (var3err) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach key variable: {}", var3err));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, rule,
+                            std::format("Error when registering foreach key variable: {}", var3err));
                         return false;
                     }
                     if (var4err) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach value variable: {}", var4err));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, rule,
+                            std::format("Error when registering foreach value variable: {}", var4err));
                         return false;
                     }
 
@@ -783,7 +817,9 @@ namespace tool::gsc::compiler {
                 case tool::gsc::GOHF_FOREACH_TYPE_T8: {
                     auto [var2err, iteratorVal] = fobj.RegisterVarRnd();
                     if (var2err) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach iterator variable: {}", var2err));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, rule,
+                            std::format("Error when registering foreach iterator variable: {}", var2err));
                         return false;
                     }
 
@@ -826,9 +862,12 @@ namespace tool::gsc::compiler {
 
                     fobj.AddNode(rule->children[rule->children.size() - 1], loopContinue);
                     // key = iterator;
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(iteratorVal->id, OPCODE_EvalLocalVariableCached));
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(keyVar->id, OPCODE_EvalLocalVariableRefCached));
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeOpCode(OPCODE_SetVariableField));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeVariable(iteratorVal->id, OPCODE_EvalLocalVariableCached));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeVariable(keyVar->id, OPCODE_EvalLocalVariableRefCached));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeOpCode(OPCODE_SetVariableField));
 
                     // loop back
                     fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeJump(loopIt, OPCODE_Jump));
@@ -837,19 +876,22 @@ namespace tool::gsc::compiler {
                     fobj.PopContinueNode();
                     // end
                     fobj.AddNode(rule->children[rule->children.size() - 1], loopBreak);
-                }
-                                                    break;
+                } break;
                 case tool::gsc::GOHF_FOREACH_TYPE_T9: {
                     auto [varnexterr, nextVar] = fobj.RegisterVarRnd();
 
                     if (varnexterr) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach next variable: {}", varnexterr));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, rule,
+                            std::format("Error when registering foreach next variable: {}", varnexterr));
                         ok = false;
                     }
 
                     auto [var2err, iteratorVal] = fobj.RegisterVarRnd();
                     if (var2err) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering foreach iterator variable: {}", var2err));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, rule,
+                            std::format("Error when registering foreach iterator variable: {}", var2err));
                         return false;
                     }
 
@@ -895,9 +937,12 @@ namespace tool::gsc::compiler {
 
                     fobj.AddNode(rule->children[rule->children.size() - 1], loopContinue);
                     // key = iterator;
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(nextVar->id, OPCODE_EvalLocalVariableCached));
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(iteratorVal->id, OPCODE_EvalLocalVariableRefCached));
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeOpCode(OPCODE_SetVariableField));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeVariable(nextVar->id, OPCODE_EvalLocalVariableCached));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeVariable(iteratorVal->id, OPCODE_EvalLocalVariableRefCached));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeOpCode(OPCODE_SetVariableField));
 
                     // loop back
                     fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeJump(loopIt, OPCODE_Jump));
@@ -906,8 +951,7 @@ namespace tool::gsc::compiler {
                     fobj.PopContinueNode();
                     // end
                     fobj.AddNode(rule->children[rule->children.size() - 1], loopBreak);
-                }
-                                                    break;
+                } break;
                 case tool::gsc::GOHF_FOREACH_TYPE_JUP: {
                     // array = ...;
                     fobj.AddNode(arrVal, new AscmNodeVariable(arrayVal->id, OPCODE_SetLocalVariableCached));
@@ -915,7 +959,8 @@ namespace tool::gsc::compiler {
                     fobj.AddNode(arrVal, new AscmNodeOpCode(OPCODE_PreScriptCall));
                     fobj.AddNode(arrVal, new AscmNodeVariable(arrayVal->id, OPCODE_EvalLocalVariableCached));
                     uint64_t fakHash = obj.vmInfo->HashField("getfirstarraykey");
-                    AscmNodeFunctionCall* fakNode = new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 1, fakHash, obj.currentNamespace, obj.vmInfo);
+                    AscmNodeFunctionCall* fakNode = new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 1, fakHash,
+                                                                             obj.currentNamespace, obj.vmInfo);
                     obj.AddImport(fakNode, obj.currentNamespace, fakHash, 1, tool::gsc::FUNCTION | tool::gsc::GET_CALL);
                     fobj.AddNode(arrVal, fakNode);
                     fobj.AddNode(arrVal, new AscmNodeVariable(keyVar->id, OPCODE_SetLocalVariableCached));
@@ -939,7 +984,6 @@ namespace tool::gsc::compiler {
                     fobj.AddNode(arrVal, new AscmNodeOpCode(OPCODE_EvalArray));
                     fobj.AddNode(arrVal, new AscmNodeVariable(valueVar->id, OPCODE_SetLocalVariableCached));
 
-
                     if (!ParseExpressionNode(rule->children[rule->children.size() - 1], parser, obj, fobj, false)) {
                         ok = false;
                     }
@@ -947,14 +991,18 @@ namespace tool::gsc::compiler {
                     fobj.AddNode(rule->children[rule->children.size() - 1], loopContinue);
                     // key = getnextarraykey(array, key);
                     fobj.AddNode(arrVal, new AscmNodeOpCode(OPCODE_PreScriptCall));
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(keyVar->id, OPCODE_EvalLocalVariableCached));
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(arrayVal->id, OPCODE_EvalLocalVariableCached));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeVariable(keyVar->id, OPCODE_EvalLocalVariableCached));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeVariable(arrayVal->id, OPCODE_EvalLocalVariableCached));
 
                     uint64_t gakHash = obj.vmInfo->HashField("getnextarraykey");
-                    AscmNodeFunctionCall* gakNode = new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 2, gakHash, obj.currentNamespace, obj.vmInfo);
+                    AscmNodeFunctionCall* gakNode = new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 2, gakHash,
+                                                                             obj.currentNamespace, obj.vmInfo);
                     obj.AddImport(gakNode, obj.currentNamespace, gakHash, 2, tool::gsc::FUNCTION | tool::gsc::GET_CALL);
                     fobj.AddNode(arrVal, gakNode);
-                    fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(keyVar->id, OPCODE_SetLocalVariableCached));
+                    fobj.AddNode(rule->children[rule->children.size() - 1],
+                                 new AscmNodeVariable(keyVar->id, OPCODE_SetLocalVariableCached));
 
                     // loop back
                     fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeJump(loopIt, OPCODE_Jump));
@@ -964,12 +1012,14 @@ namespace tool::gsc::compiler {
                     // end
                     fobj.AddNode(rule->children[rule->children.size() - 1], loopBreak);
 
-                    //fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(keyVar->id, OPCODE_IW_ClearFieldVariableRef));
-                    //fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(arrayVal->id, OPCODE_IW_ClearFieldVariableRef));
-                }
-                                                     break;
+                    // fobj.AddNode(rule->children[rule->children.size() - 1], new AscmNodeVariable(keyVar->id,
+                    // OPCODE_IW_ClearFieldVariableRef)); fobj.AddNode(rule->children[rule->children.size() - 1], new
+                    // AscmNodeVariable(arrayVal->id, OPCODE_IW_ClearFieldVariableRef));
+                } break;
                 default:
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("foreach not implemented for vm {} (0x{:x})", obj.vmInfo->name, forEachType));
+                    obj.info.PrintLineMessage(
+                        core::logs::LVL_ERROR, rule,
+                        std::format("foreach not implemented for vm {} (0x{:x})", obj.vmInfo->name, forEachType));
                     ok = false;
                     break;
                 }
@@ -1000,7 +1050,8 @@ namespace tool::gsc::compiler {
             case gscParser::RuleArray_unpack: {
                 auto [varerr, arrVar] = fobj.RegisterVarRnd();
                 if (varerr) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Error when registering array unpack variable: {}", varerr));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                              std::format("Error when registering array unpack variable: {}", varerr));
                     return false;
                 }
 
@@ -1018,7 +1069,9 @@ namespace tool::gsc::compiler {
 
                     auto [varerr2, arrVar2] = fobj.RegisterVar(unpackName, true);
                     if (varerr2) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, child, std::format("Error when registering array unpack variable {}: {}", unpackName, varerr2));
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, child,
+                            std::format("Error when registering array unpack variable {}: {}", unpackName, varerr2));
                         return false;
                     }
 
@@ -1046,8 +1099,7 @@ namespace tool::gsc::compiler {
                         obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, "Invalid devop value (Too large)");
                         return false;
                     }
-                }
-                else {
+                } else {
                     if (val > 0xFF) {
                         obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, "Invalid devop value (Too large)");
                         return false;
@@ -1114,7 +1166,8 @@ namespace tool::gsc::compiler {
 
                 if (idf == "break") {
                     if (rule->children.size() > 1) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, "Can't specify jump location with break");
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                                  "Can't specify jump location with break");
                         return false;
                     }
 
@@ -1131,7 +1184,8 @@ namespace tool::gsc::compiler {
 
                 if (idf == "continue") {
                     if (rule->children.size() > 1) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, "Can't specify jump location with continue");
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                                  "Can't specify jump location with continue");
                         return false;
                     }
 
@@ -1148,7 +1202,8 @@ namespace tool::gsc::compiler {
 
                 if (idf == "goto") {
                     if (rule->children.size() <= 1 && !IS_IDF(rule->children[1])) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, "goto should be used with a jump location");
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                                  "goto should be used with a jump location");
                         return false;
                     }
 
@@ -1166,7 +1221,8 @@ namespace tool::gsc::compiler {
 
                 if (idf == "jumpdev") {
                     if (rule->children.size() <= 1 && !IS_IDF(rule->children[1])) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, "jumpdev should be used with a jump location");
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                                  "jumpdev should be used with a jump location");
                         return false;
                     }
 
@@ -1230,7 +1286,8 @@ namespace tool::gsc::compiler {
                 int flags{};
                 byte importFlags{};
                 size_t idx{};
-                if (rule->children[idx]->getTreeType() == TREE_RULE && !IS_RULE_TYPE(rule->children[idx], gscParser::RuleFunction_component)) {
+                if (rule->children[idx]->getTreeType() == TREE_RULE &&
+                    !IS_RULE_TYPE(rule->children[idx], gscParser::RuleFunction_component)) {
                     selfTree = rule->children[idx];
                     flags |= FCF_METHOD;
                     idx++;
@@ -1239,15 +1296,13 @@ namespace tool::gsc::compiler {
                     std::string callModifier = rule->children[idx]->getText();
                     if (callModifier == "thread") {
                         flags |= FCF_THREAD;
-                    }
-                    else if (callModifier == "childthread" || callModifier == "threadendon") { // old compatibility
+                    } else if (callModifier == "childthread" || callModifier == "threadendon") { // old compatibility
                         flags |= FCF_CHILDTHREAD;
-                    }
-                    else if (callModifier == "builtin") {
+                    } else if (callModifier == "builtin") {
                         flags |= FCF_BUILTIN;
-                    }
-                    else {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[idx], std::format("Unknown call modifier {}", callModifier));
+                    } else {
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[idx],
+                                                  std::format("Unknown call modifier {}", callModifier));
                         return false;
                     }
                     idx++;
@@ -1255,13 +1310,15 @@ namespace tool::gsc::compiler {
                 ParseTree* functionComp = rule->children[idx];
 
                 if (!IS_RULE_TYPE(functionComp, gscParser::RuleFunction_component)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Not a function component {}", functionComp->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp,
+                                              std::format("Not a function component {}", functionComp->getText()));
                     return false;
                 }
 
                 ParseTree* paramsList = rule->children[rule->children.size() - 2];
                 if (!IS_RULE_TYPE(paramsList, gscParser::RuleExpression_list)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, std::format("Not a params list {}", paramsList->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList,
+                                              std::format("Not a params list {}", paramsList->getText()));
                     return false;
                 }
 
@@ -1279,15 +1336,21 @@ namespace tool::gsc::compiler {
                         // internal function call
                         FunctionOperator& f = funcIt->second;
                         if (f.HasFlag(tool::gsc::opcode::VPFD_SELF_PARAM) && !(flags & FCF_METHOD)) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' should have a caller, Usage: {}", funcName, f.usage));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, functionComp,
+                                std::format("Operator '{}' should have a caller, Usage: {}", funcName, f.usage));
                             return false;
                         }
                         if (expressVal && !f.HasFlag(tool::gsc::opcode::VPFD_RETURN_VALUE)) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' doesn't return a value, Usage: {}", funcName, f.usage));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, functionComp,
+                                std::format("Operator '{}' doesn't return a value, Usage: {}", funcName, f.usage));
                             return false;
                         }
                         if (flags & (FCF_THREAD | FCF_CHILDTHREAD | FCF_BUILTIN)) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' can't have a call modifier, Usage: {}", funcName, f.usage));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, functionComp,
+                                std::format("Operator '{}' can't have a call modifier, Usage: {}", funcName, f.usage));
                             return false;
                         }
 
@@ -1302,14 +1365,17 @@ namespace tool::gsc::compiler {
 
                         if (f.HasFlag(tool::gsc::opcode::VPFD_UNPACK)) {
                             if (expressVal) {
-                                obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' can't express a value, Usage: {}", funcName, f.usage));
+                                obj.info.PrintLineMessage(
+                                    core::logs::LVL_ERROR, functionComp,
+                                    std::format("Operator '{}' can't express a value, Usage: {}", funcName, f.usage));
                                 paramError = true;
-                            }
-                            else if (!paramsList->children.size()) {
-                                obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' needs at least one param, Usage: {}", funcName, f.usage));
+                            } else if (!paramsList->children.size()) {
+                                obj.info.PrintLineMessage(
+                                    core::logs::LVL_ERROR, functionComp,
+                                    std::format("Operator '{}' needs at least one param, Usage: {}", funcName,
+                                                f.usage));
                                 paramError = true;
-                            }
-                            else {
+                            } else {
                                 if (!ParseExpressionNode(paramsList->children[0], parser, obj, fobj, true)) {
                                     paramError = true;
                                 }
@@ -1322,25 +1388,33 @@ namespace tool::gsc::compiler {
                                         pt = pt->children[0];
                                     }
                                     if (!IS_IDF(pt)) {
-                                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' needs to be unpacked with variables, Usage: {}", funcName, f.usage));
+                                        obj.info.PrintLineMessage(
+                                            core::logs::LVL_ERROR, functionComp,
+                                            std::format("Operator '{}' needs to be unpacked with variables, Usage: {}",
+                                                        funcName, f.usage));
                                         return false;
                                     }
                                     paramCount++;
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             int removedStart{};
                             if (f.HasFlag(VPFD_HASH_PARAM)) {
                                 if (paramsList->children.empty()) {
-                                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' needs to have at least one param, Usage: {}", funcName, f.usage));
+                                    obj.info.PrintLineMessage(
+                                        core::logs::LVL_ERROR, functionComp,
+                                        std::format("Operator '{}' needs to have at least one param, Usage: {}",
+                                                    funcName, f.usage));
                                     return false;
                                 }
 
                                 ParseTree* hashParam{ paramsList->children[removedStart] };
 
                                 if (!obj.TryHashNodeValue(hashParam, hashVal)) {
-                                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' should start with a valid hash param, Usage: {}", funcName, f.usage));
+                                    obj.info.PrintLineMessage(
+                                        core::logs::LVL_ERROR, functionComp,
+                                        std::format("Operator '{}' should start with a valid hash param, Usage: {}",
+                                                    funcName, f.usage));
                                     return false;
                                 }
 
@@ -1348,14 +1422,20 @@ namespace tool::gsc::compiler {
                             }
                             if (f.HasFlag(VPFD_STRING_PARAM)) {
                                 if (paramsList->children.empty()) {
-                                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' needs to have at least one param, Usage: {}", funcName, f.usage));
+                                    obj.info.PrintLineMessage(
+                                        core::logs::LVL_ERROR, functionComp,
+                                        std::format("Operator '{}' needs to have at least one param, Usage: {}",
+                                                    funcName, f.usage));
                                     return false;
                                 }
 
                                 ParseTree* strParam{ paramsList->children[removedStart] };
 
                                 if (!obj.TryStringNodeValue(strParam, strVal)) {
-                                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Operator '{}' should have a valid string param, Usage: {}", funcName, f.usage));
+                                    obj.info.PrintLineMessage(
+                                        core::logs::LVL_ERROR, functionComp,
+                                        std::format("Operator '{}' should have a valid string param, Usage: {}",
+                                                    funcName, f.usage));
                                     return false;
                                 }
 
@@ -1372,23 +1452,29 @@ namespace tool::gsc::compiler {
                         // add self
                         if (flags & FCF_METHOD) {
                             if (!ParseExpressionNode(selfTree, parser, obj, fobj, true)) {
-                                obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, "Error when parsing caller");
+                                obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp,
+                                                          "Error when parsing caller");
                                 return false;
                             }
                         }
 
                         if (paramError) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, "Error when parsing param list");
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList,
+                                                      "Error when parsing param list");
                             return false;
                         }
 
                         if (paramCount < f.minParam) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, std::format("Not enought params for operator '{}', Usage: {}", funcName, f.usage));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, paramsList,
+                                std::format("Not enought params for operator '{}', Usage: {}", funcName, f.usage));
                             return false;
                         }
 
                         if (paramCount > f.maxParam) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, std::format("Too many params for operator '{}', Usage: {}", funcName, f.usage));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, paramsList,
+                                std::format("Too many params for operator '{}', Usage: {}", funcName, f.usage));
                             return false;
                         }
                         fobj.AddNode(rule, new AscmNodeOpCode(f.opCode));
@@ -1401,7 +1487,8 @@ namespace tool::gsc::compiler {
                         }
                         if (f.HasFlag(VPFD_STRING_PARAM)) {
                             AscmNodeRaw* node = new AscmNodeRaw();
-                            node->data.insert(node->data.end(), (byte*)strVal.data(), (byte*)strVal.data() + strVal.size() + 1);
+                            node->data.insert(node->data.end(), (byte*)strVal.data(),
+                                              (byte*)strVal.data() + strVal.size() + 1);
                             fobj.AddNode(rule, node);
                         }
 
@@ -1410,12 +1497,14 @@ namespace tool::gsc::compiler {
                                 ParseTree* pnode = paramsList->children[i * 2];
                                 auto [errVar, var] = fobj.RegisterVar(pnode->getText(), true);
                                 if (errVar) {
-                                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, pnode, std::format("Can't register variable: {}", errVar));
+                                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, pnode,
+                                                              std::format("Can't register variable: {}", errVar));
                                     return false;
                                 }
 
                                 // register var
-                                fobj.AddNode(pnode, new AscmNodeVariable(var->id, OPCODE_IW_SetWaittillVariableFieldCached));
+                                fobj.AddNode(pnode,
+                                             new AscmNodeVariable(var->id, OPCODE_IW_SetWaittillVariableFieldCached));
                             }
 
                             fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_ClearParams));
@@ -1428,7 +1517,9 @@ namespace tool::gsc::compiler {
                         return true;
                     }
                     // test dev call
-                    if (!obj.config.noDevCallInline && !obj.devBlockDepth && fobj.m_vmInfo->devCallsNames.find(funcHash & hash::MASK60) != fobj.m_vmInfo->devCallsNames.end()) {
+                    if (!obj.config.noDevCallInline && !obj.devBlockDepth &&
+                        fobj.m_vmInfo->devCallsNames.find(funcHash & hash::MASK60) !=
+                            fobj.m_vmInfo->devCallsNames.end()) {
                         if (!expressVal) { // can't inline a returned value
                             devCallInlineEnd = new AscmNode();
                             fobj.AddNode(rule, new AscmNodeJump(devCallInlineEnd, OPCODE_DevblockBegin));
@@ -1437,8 +1528,7 @@ namespace tool::gsc::compiler {
                         }
                     }
                     obj.AddHash(funcName);
-                }
-                else if (functionComp->children.size() == 3) {
+                } else if (functionComp->children.size() == 3) {
                     // namespace::func
 
                     std::string funcNspName = functionComp->children[0]->getText();
@@ -1450,8 +1540,8 @@ namespace tool::gsc::compiler {
                     if (IS_TERMINAL_TYPE(functionComp->children[0], gscParser::PATH)) {
                         // does not accept hashed file names
                         if (!obj.vmInfo->HasFlag(VmFlags::VMF_FULL_FILE_NAMESPACE)) {
-                            // technically we can assume that the filename and the namespace are the same, but it wouldn't be
-                            // a good thing to allow.
+                            // technically we can assume that the filename and the namespace are the same, but it
+                            // wouldn't be a good thing to allow.
                             obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, "");
                             return false;
                         }
@@ -1460,31 +1550,29 @@ namespace tool::gsc::compiler {
                         obj.AddHash(funcNspName);
                         importFlags |= tool::gsc::ACTS_USE_FULL_NAMESPACE;
                         funcNspHash = obj.vmInfo->HashField(funcNspName.c_str());
-                    }
-                    else if (utils::EqualIgnoreCase("compiler", funcNspName)) {
+                    } else if (utils::EqualIgnoreCase("compiler", funcNspName)) {
                         compilerCallHash = funcHash;
                         importFlags |= tool::gsc::GET_CALL;
                         funcNspHash = obj.currentNamespace;
 
                         if (!obj.vmInfo->compilerHookFunctionName) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, "no compiler:: function hook name defined for this vm");
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList,
+                                                      "no compiler:: function hook name defined for this vm");
                             return false;
                         }
                         funcHash = obj.vmInfo->compilerHookFunctionName;
-                    }
-                    else {
+                    } else {
                         obj.AddHash(funcNspName);
                         funcNspHash = obj.vmInfo->HashField(funcNspName.c_str());
                     }
-                }
-                else if (functionComp->children.size() == 5) {
+                } else if (functionComp->children.size() == 5) {
                     // [ [ espression ] ]
                     ptrTree = functionComp->children[2];
                     flags |= FCF_POINTER;
-                }
-                else if (functionComp->children.size() == 7) {
+                } else if (functionComp->children.size() == 7) {
                     if (flags & FCF_METHOD) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, "A class call can't have a self caller");
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp,
+                                                  "A class call can't have a self caller");
                         return false;
                     }
                     // [ [ espression ] ] -> func
@@ -1494,9 +1582,9 @@ namespace tool::gsc::compiler {
 
                     ptrTree = functionComp->children[2];
                     flags |= FCF_POINTER_CLASS | FCF_POINTER;
-                }
-                else {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp, std::format("Function call not implemented {}", functionComp->getText()));
+                } else {
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, functionComp,
+                                              std::format("Function call not implemented {}", functionComp->getText()));
                     return false;
                 }
 
@@ -1550,89 +1638,75 @@ namespace tool::gsc::compiler {
 
                         if (flags & FCF_THREAD) {
                             opcode = OPCODE_ClassFunctionThreadCall;
-                        }
-                        else if (flags & FCF_CHILDTHREAD) {
+                        } else if (flags & FCF_CHILDTHREAD) {
                             opcode = OPCODE_ClassFunctionThreadCallEndOn;
-                        }
-                        else if (flags & FCF_BUILTIN) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, "Class pointer can't be used with builtin calls");
+                        } else if (flags & FCF_BUILTIN) {
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList,
+                                                      "Class pointer can't be used with builtin calls");
                             return false;
-                        }
-                        else {
+                        } else {
                             opcode = OPCODE_ClassFunctionCall;
                         }
-                    }
-                    else {
+                    } else {
                         if (flags & FCF_METHOD) {
                             if (flags & FCF_THREAD) {
                                 opcode = OPCODE_ScriptMethodThreadCallPointer;
-                            }
-                            else if (flags & FCF_CHILDTHREAD) {
+                            } else if (flags & FCF_CHILDTHREAD) {
                                 opcode = OPCODE_ScriptMethodThreadCallPointerEndOn;
-                            }
-                            else if (flags & FCF_BUILTIN) {
+                            } else if (flags & FCF_BUILTIN) {
                                 opcode = OPCODE_IW_BuiltinMethodCallPointer;
-                            }
-                            else {
+                            } else {
                                 opcode = OPCODE_ScriptMethodCallPointer;
                             }
-                        }
-                        else {
+                        } else {
                             if (flags & FCF_THREAD) {
                                 opcode = OPCODE_ScriptThreadCallPointer;
-                            }
-                            else if (flags & FCF_CHILDTHREAD) {
+                            } else if (flags & FCF_CHILDTHREAD) {
                                 opcode = OPCODE_ScriptThreadCallPointerEndOn;
-                            }
-                            else if (flags & FCF_BUILTIN) {
+                            } else if (flags & FCF_BUILTIN) {
                                 opcode = OPCODE_IW_BuiltinFunctionCallPointer;
-                            }
-                            else {
+                            } else {
                                 opcode = OPCODE_ScriptFunctionCallPointer;
                             }
                         }
                     }
-                    fobj.AddNode(rule, new AscmNodeFunctionCall(opcode, flags, (byte)paramCount, funcHash, funcNspHash, obj.vmInfo));
-                }
-                else {
+                    fobj.AddNode(rule, new AscmNodeFunctionCall(opcode, flags, (byte)paramCount, funcHash, funcNspHash,
+                                                                obj.vmInfo));
+                } else {
                     if (flags & FCF_METHOD) {
                         if (flags & FCF_THREAD) {
                             opcode = OPCODE_ScriptMethodThreadCall;
                             importFlags |= tool::gsc::T8GSCImportFlags::METHOD_THREAD;
-                        }
-                        else if (flags & FCF_CHILDTHREAD) {
+                        } else if (flags & FCF_CHILDTHREAD) {
                             opcode = OPCODE_ScriptMethodThreadCallEndOn;
                             importFlags |= tool::gsc::T8GSCImportFlags::METHOD_CHILDTHREAD;
-                        }
-                        else if (flags & FCF_BUILTIN) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, "builtin modifier can only be used with pointer calls");
+                        } else if (flags & FCF_BUILTIN) {
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList,
+                                                      "builtin modifier can only be used with pointer calls");
                             return false;
-                        }
-                        else {
+                        } else {
                             opcode = OPCODE_ScriptMethodCall;
                             importFlags |= tool::gsc::T8GSCImportFlags::METHOD;
                         }
-                    }
-                    else {
+                    } else {
                         if (flags & FCF_THREAD) {
                             opcode = OPCODE_ScriptThreadCall;
                             importFlags |= tool::gsc::T8GSCImportFlags::FUNCTION_THREAD;
-                        }
-                        else if (flags & FCF_CHILDTHREAD) {
+                        } else if (flags & FCF_CHILDTHREAD) {
                             opcode = OPCODE_ScriptThreadCallEndOn;
                             importFlags |= tool::gsc::T8GSCImportFlags::FUNCTION_CHILDTHREAD;
-                        }
-                        else if (flags & FCF_BUILTIN) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList, "builtin modifier can only be used with pointer calls");
+                        } else if (flags & FCF_BUILTIN) {
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, paramsList,
+                                                      "builtin modifier can only be used with pointer calls");
                             return false;
-                        }
-                        else {
+                        } else {
                             opcode = OPCODE_ScriptFunctionCall;
                             importFlags |= tool::gsc::T8GSCImportFlags::FUNCTION;
                         }
                     }
 
-                    AscmNodeFunctionCall* funcCall = new AscmNodeFunctionCall(opcode, flags, (byte)paramCount, funcHash, funcNspHash, obj.vmInfo);
+                    AscmNodeFunctionCall* funcCall =
+                        new AscmNodeFunctionCall(opcode, flags, (byte)paramCount, funcHash, funcNspHash, obj.vmInfo);
 
                     if (!(flags & FCF_POINTER_CLASS)) {
                         // class aren't imported
@@ -1641,7 +1715,6 @@ namespace tool::gsc::compiler {
 
                     fobj.AddNode(rule, funcCall);
                 }
-
 
                 if (!expressVal) {
                     fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_DecTop));
@@ -1686,8 +1759,7 @@ namespace tool::gsc::compiler {
                             if (!expressVal) {
                                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_DecTop));
                             }
-                        }
-                        else if (op == "~") {
+                        } else if (op == "~") {
                             if (!ParseExpressionNode(rule->children[1], parser, obj, fobj, true)) {
                                 return false;
                             }
@@ -1696,8 +1768,7 @@ namespace tool::gsc::compiler {
                             if (!expressVal) {
                                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_DecTop));
                             }
-                        }
-                        else if (op == "++") {
+                        } else if (op == "++") {
                             // ++var
                             if (!ParseFieldNode(rule->children[1], parser, obj, fobj)) {
                                 return false; // can't parse field
@@ -1708,8 +1779,7 @@ namespace tool::gsc::compiler {
                                     return false;
                                 }
                             }
-                        }
-                        else if (op == "--") {
+                        } else if (op == "--") {
                             // --var
                             if (!ParseFieldNode(rule->children[1], parser, obj, fobj)) {
                                 return false; // can't parse field
@@ -1720,13 +1790,12 @@ namespace tool::gsc::compiler {
                                     return false;
                                 }
                             }
-                        }
-                        else {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[0], std::format("Unhandled operator: {}", op));
+                        } else {
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[0],
+                                                      std::format("Unhandled operator: {}", op));
                             return false;
                         }
-                    }
-                    else {
+                    } else {
                         // ++/--
 
                         std::string op = rule->children[1]->getText();
@@ -1741,8 +1810,7 @@ namespace tool::gsc::compiler {
                                 return false; // can't parse field
                             }
                             fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Inc));
-                        }
-                        else if (op == "--") {
+                        } else if (op == "--") {
                             // var--
                             if (expressVal) {
                                 if (!ParseExpressionNode(rule->children[0], parser, obj, fobj, true)) {
@@ -1753,9 +1821,9 @@ namespace tool::gsc::compiler {
                                 return false; // can't parse field
                             }
                             fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Dec));
-                        }
-                        else {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1], std::format("Unhandled operator: {}", op));
+                        } else {
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1],
+                                                      std::format("Unhandled operator: {}", op));
                             return false;
                         }
                     }
@@ -1791,7 +1859,9 @@ namespace tool::gsc::compiler {
                     return ok;
                 }
                 if (rule->children.size() != 3) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Unknown expression, excepted 3 children: {}", rule->getText()));
+                    obj.info.PrintLineMessage(
+                        core::logs::LVL_ERROR, rule,
+                        std::format("Unknown expression, excepted 3 children: {}", rule->getText()));
                     return false;
                 }
 
@@ -1806,7 +1876,8 @@ namespace tool::gsc::compiler {
                     }
                     AscmNode* after = new AscmNode();
 
-                    fobj.AddNode(rule, new AscmNodeJump(after, op == "&&" ? OPCODE_JumpOnFalseExpr : OPCODE_JumpOnTrueExpr));
+                    fobj.AddNode(rule,
+                                 new AscmNodeJump(after, op == "&&" ? OPCODE_JumpOnFalseExpr : OPCODE_JumpOnTrueExpr));
 
                     // push op right
                     if (!ParseExpressionNode(rule->children[2], parser, obj, fobj, true)) {
@@ -1820,8 +1891,7 @@ namespace tool::gsc::compiler {
                         fobj.AddNode(rule->children[2], new AscmNodeOpCode(OPCODE_DecTop));
                     }
                     return ok;
-                }
-                else if (op == "??") {
+                } else if (op == "??") {
                     bool ok{ true };
 
                     if (obj.HasOpCode(OPCODE_JumpOnDefinedExpr)) {
@@ -1836,12 +1906,13 @@ namespace tool::gsc::compiler {
                         }
 
                         fobj.AddNode(rule, end);
-                    }
-                    else {
+                    } else {
                         auto [verr, tmp] = fobj.GetSpecialTmpVar();
 
                         if (verr) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1], std::format("Can't create temp variable for ?? operation: {}", verr));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, rule->children[1],
+                                std::format("Can't create temp variable for ?? operation: {}", verr));
                             return false;
                         }
 
@@ -1857,7 +1928,6 @@ namespace tool::gsc::compiler {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_IsDefined));
                         fobj.AddNode(rule, new AscmNodeJump(onDefined, OPCODE_JumpOnTrue));
 
-
                         if (!ParseExpressionNode(rule->children[2], parser, obj, fobj, true)) {
                             ok = false;
                         }
@@ -1869,10 +1939,8 @@ namespace tool::gsc::compiler {
                         fobj.AddNode(rule, end);
                     }
 
-
                     return ok;
-                }
-                else {
+                } else {
                     // push operands
                     bool ok{ true };
                     if (!ParseExpressionNode(rule->children[0], parser, obj, fobj, true)) {
@@ -1884,66 +1952,47 @@ namespace tool::gsc::compiler {
 
                     if (op == "|") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Bit_Or));
-                    }
-                    else if (op == "^") {
+                    } else if (op == "^") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Bit_Xor));
-                    }
-                    else if (op == "&") {
+                    } else if (op == "&") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Bit_And));
-                    }
-                    else if (op == "!=") {
+                    } else if (op == "!=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_NotEqual));
-                    }
-                    else if (op == "!==") {
+                    } else if (op == "!==") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_SuperNotEqual));
-                    }
-                    else if (op == "==") {
+                    } else if (op == "==") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Equal));
-                    }
-                    else if (op == "===") {
+                    } else if (op == "===") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_SuperEqual));
-                    }
-                    else if (op == "<") {
+                    } else if (op == "<") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_LessThan));
-                    }
-                    else if (op == "<=") {
+                    } else if (op == "<=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_LessThanOrEqualTo));
-                    }
-                    else if (op == "<==") {
+                    } else if (op == "<==") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_T10_LowerThanOrSuperEqualTo));
-                    }
-                    else if (op == ">") {
+                    } else if (op == ">") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_GreaterThan));
-                    }
-                    else if (op == ">=") {
+                    } else if (op == ">=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_GreaterThanOrEqualTo));
-                    }
-                    else if (op == ">==") {
+                    } else if (op == ">==") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_T10_GreaterThanOrSuperEqualTo));
-                    }
-                    else if (op == "+") {
+                    } else if (op == "+") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Plus));
-                    }
-                    else if (op == "-") {
+                    } else if (op == "-") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Minus));
-                    }
-                    else if (op == "*") {
+                    } else if (op == "*") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Multiply));
-                    }
-                    else if (op == "/") {
+                    } else if (op == "/") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Divide));
-                    }
-                    else if (op == "%") {
+                    } else if (op == "%") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Modulus));
-                    }
-                    else if (op == "<<") {
+                    } else if (op == "<<") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_ShiftLeft));
-                    }
-                    else if (op == ">>") {
+                    } else if (op == ">>") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_ShiftRight));
-                    }
-                    else {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1], std::format("Unhandled operator: {}", op));
+                    } else {
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1],
+                                                  std::format("Unhandled operator: {}", op));
                         ok = false;
                     }
                     if (!expressVal) {
@@ -1951,8 +2000,7 @@ namespace tool::gsc::compiler {
                     }
                     return ok;
                 }
-            }
-                                   break;
+            } break;
             case gscParser::RuleIs_expression: {
                 if (!ParseExpressionNode(rule->children[0], parser, obj, fobj, expressVal)) {
                     return false;
@@ -1970,8 +2018,7 @@ namespace tool::gsc::compiler {
                 if (typeNameHash == hash::Hash64("undefined")) {
                     if (hasNot) {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_IsDefined));
-                    }
-                    else {
+                    } else {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_IsDefined));
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_BoolNot));
                     }
@@ -2005,7 +2052,9 @@ namespace tool::gsc::compiler {
                         auto [err, tmp] = fobj.GetSpecialTmpVar();
 
                         if (err) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1], std::format("Can't create temp variable for is operation: {}", err));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, rule->children[1],
+                                std::format("Can't create temp variable for is operation: {}", err));
                             return false;
                         }
                         // tmp = ...
@@ -2036,15 +2085,18 @@ namespace tool::gsc::compiler {
                 auto dtit = obj.vmInfo->dataType.find(typeNameHash);
 
                 if (dtit == obj.vmInfo->dataType.end()) {
-                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule, std::format("Can't find datatype '{}' for this VM", typeName));
+                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule,
+                                              std::format("Can't find datatype '{}' for this VM", typeName));
                     return false;
                 }
 
                 const char* name = utils::va("is%s", dtit->second);
                 obj.AddHash(name);
                 uint64_t funcName = obj.vmInfo->HashField(name);
-                AscmNodeFunctionCall* asmc = new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 1, funcName, obj.currentNamespace, obj.vmInfo);
-                obj.AddImport(asmc, obj.currentNamespace, funcName, 1, tool::gsc::T8GSCImportFlags::FUNCTION | tool::gsc::T8GSCImportFlags::GET_CALL);
+                AscmNodeFunctionCall* asmc = new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 1, funcName,
+                                                                      obj.currentNamespace, obj.vmInfo);
+                obj.AddImport(asmc, obj.currentNamespace, funcName, 1,
+                              tool::gsc::T8GSCImportFlags::FUNCTION | tool::gsc::T8GSCImportFlags::GET_CALL);
                 fobj.AddNode(rule, asmc);
 
                 // reverse the op if possible
@@ -2059,10 +2111,12 @@ namespace tool::gsc::compiler {
             case gscParser::RuleExpression13:
             case gscParser::RuleExpression14:
             case gscParser::RuleExpression15:
-                return ParseExpressionNode(rule->children[rule->children.size() == 3 ? 1 : 0], parser, obj, fobj, expressVal);
+                return ParseExpressionNode(rule->children[rule->children.size() == 3 ? 1 : 0], parser, obj, fobj,
+                                           expressVal);
             case gscParser::RuleVector_value: {
                 if (!expressVal) { // no need to create vector
-                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule, std::format("Ignored useless value: {}", rule->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule,
+                                              std::format("Ignored useless value: {}", rule->getText()));
                     return true;
                 }
                 float x = obj.FloatNumberNodeValue(rule->children[1], false);
@@ -2107,11 +2161,9 @@ namespace tool::gsc::compiler {
                     }
                 }
 
-                if (
-                    !ParseExpressionNode(rule->children[5], parser, obj, fobj, true),
+                if (!ParseExpressionNode(rule->children[5], parser, obj, fobj, true),
                     !ParseExpressionNode(rule->children[3], parser, obj, fobj, true),
-                    !ParseExpressionNode(rule->children[1], parser, obj, fobj, true)
-                    ) {
+                    !ParseExpressionNode(rule->children[1], parser, obj, fobj, true)) {
                     return false;
                 }
                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Vector));
@@ -2120,20 +2172,22 @@ namespace tool::gsc::compiler {
             case gscParser::RuleClass_init: {
                 std::string clsName = rule->children[1]->getText();
                 if (rule->children.size() > 4) {
-                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule, "Parameters not supported for class constructor");
+                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule,
+                                              "Parameters not supported for class constructor");
                     return false;
                 }
                 obj.AddHash(clsName);
                 fobj.AddNode(rule, fobj.CreateFieldHash(clsName, OPCODE_GetObjectType));
                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_ClassFunctionCall));
-                fobj.AddNode(rule, new AscmNodeRawData<byte>(0)); // params
+                fobj.AddNode(rule, new AscmNodeRawData<byte>(0));             // params
                 fobj.AddNode(rule, fobj.CreateFieldHashRaw("__constructor")); // cls name
-                fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_DecTop)); // remove constructor result
+                fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_DecTop));        // remove constructor result
                 return true;
             }
             case gscParser::RuleArray_def: {
                 if (!expressVal) { // no need to create array
-                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule, std::format("Ignored useless value: {}", rule->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule,
+                                              std::format("Ignored useless value: {}", rule->getText()));
                     return true;
                 }
                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_CreateArray));
@@ -2156,8 +2210,7 @@ namespace tool::gsc::compiler {
                         if (!ParseExpressionNode(expTree, parser, obj, fobj, true)) {
                             ok = false;
                         }
-                    }
-                    else {
+                    } else {
                         if (!ParseExpressionNode(rule->children[i++], parser, obj, fobj, true)) {
                             ok = false;
                         }
@@ -2174,7 +2227,8 @@ namespace tool::gsc::compiler {
             }
             case gscParser::RuleStruct_def: {
                 if (!expressVal) { // no need to create struct
-                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule, std::format("Ignored useless value: {}", rule->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule,
+                                              std::format("Ignored useless value: {}", rule->getText()));
                     return true;
                 }
                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_CreateStruct));
@@ -2186,7 +2240,6 @@ namespace tool::gsc::compiler {
 
                     i++; // ':'
 
-
                     if (!ParseExpressionNode(rule->children[i++], parser, obj, fobj, true)) {
                         ok = false;
                     }
@@ -2194,32 +2247,33 @@ namespace tool::gsc::compiler {
                     TerminalNode* scrName{ obj.GetUniqueNode(term, false) };
                     if (obj.HasOpCode(OPCODE_IW_AddToStruct)) {
                         if (!IS_TERMINAL_TYPE(scrName, gscParser::SCR_HASH)) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, term, std::format("Structure names in this vm should be hashes: {}", term->getText()));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, term,
+                                std::format("Structure names in this vm should be hashes: {}", term->getText()));
                             ok = false;
-                        }
-                        else {
+                        } else {
                             std::string termStr = term->getText();
 
                             std::string sub = termStr.substr(1, termStr.size() - 1);
                             fobj.AddNode(rule->children[i - 1], fobj.CreateFieldHash(sub, OPCODE_IW_AddToStruct));
                         }
-                    }
-                    else {
+                    } else {
                         if (!IS_TERMINAL_TYPE(scrName, gscParser::SCR_HASH)) {
                             if (!ParseExpressionNode(term, parser, obj, fobj, true)) {
                                 ok = false;
                             }
                             // cast the expression to a canon id
                             fobj.AddNode(term, new AscmNodeOpCode(OPCODE_CastCanon));
-                        }
-                        else {
+                        } else {
                             std::string termStr = term->getText();
 
                             std::string sub = termStr.substr(1, termStr.size() - 1);
 
                             // we can't use CreateField hash because the hash is on 64 bits, but 32 in reality
                             obj.AddHash(sub);
-                            fobj.AddNode(rule->children[i - 1], new AscmNodeData<uint64_t>(obj.vmInfo->HashField(sub.c_str()), OPCODE_GetHash));
+                            fobj.AddNode(
+                                rule->children[i - 1],
+                                new AscmNodeData<uint64_t>(obj.vmInfo->HashField(sub.c_str()), OPCODE_GetHash));
                         }
 
                         fobj.AddNode(rule->children[i - 1], new AscmNodeOpCode(OPCODE_AddToStruct));
@@ -2238,9 +2292,11 @@ namespace tool::gsc::compiler {
                 }
 
                 if (expressVal) {
-                    AscmNodeFunctionCall* asmc = new AscmNodeFunctionCall(OPCODE_GetResolveFunction, FCF_GETTER, 0, 0, 0, obj.vmInfo);
+                    AscmNodeFunctionCall* asmc =
+                        new AscmNodeFunctionCall(OPCODE_GetResolveFunction, FCF_GETTER, 0, 0, 0, obj.vmInfo);
 
-                    obj.AddImport(asmc, sfobj->m_name_space, sfobj->m_name, 0, tool::gsc::T8GSCImportFlags::FUNC_METHOD | tool::gsc::T8GSCImportFlags::GET_CALL);
+                    obj.AddImport(asmc, sfobj->m_name_space, sfobj->m_name, 0,
+                                  tool::gsc::T8GSCImportFlags::FUNC_METHOD | tool::gsc::T8GSCImportFlags::GET_CALL);
                     fobj.AddNode(rule, asmc);
                 }
 
@@ -2264,8 +2320,7 @@ namespace tool::gsc::compiler {
                         }
                     }
                     return ok;
-                }
-                else {
+                } else {
                     if (!ParseExpressionNode(rule->children[0], parser, obj, fobj, true)) {
                         ok = false;
                     }
@@ -2274,39 +2329,29 @@ namespace tool::gsc::compiler {
                     }
                     if (opVal == "+=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Plus));
-                    }
-                    else if (opVal == "-=") {
+                    } else if (opVal == "-=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Minus));
-                    }
-                    else if (opVal == "/=") {
+                    } else if (opVal == "/=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Divide));
-                    }
-                    else if (opVal == "*=") {
+                    } else if (opVal == "*=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Multiply));
-                    }
-                    else if (opVal == "%=") {
+                    } else if (opVal == "%=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Modulus));
-                    }
-                    else if (opVal == "&=") {
+                    } else if (opVal == "&=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Bit_And));
-                    }
-                    else if (opVal == "|=") {
+                    } else if (opVal == "|=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Bit_Or));
-                    }
-                    else if (opVal == "^=") {
+                    } else if (opVal == "^=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_Bit_Xor));
-                    }
-                    else if (opVal == "<<=") {
+                    } else if (opVal == "<<=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_ShiftLeft));
-                    }
-                    else if (opVal == ">>=") {
+                    } else if (opVal == ">>=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_ShiftRight));
-                    }
-                    else if (opVal == "~=") {
+                    } else if (opVal == "~=") {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_BoolComplement));
-                    }
-                    else {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1], std::format("Unhandled set operator: {}", opVal));
+                    } else {
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1],
+                                                  std::format("Unhandled set operator: {}", opVal));
                         ok = false;
                     }
 
@@ -2327,13 +2372,13 @@ namespace tool::gsc::compiler {
             }
             case gscParser::RuleFunction_ref: {
                 if (!expressVal) {
-                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule, std::format("Ignored useless value: {}", rule->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, rule,
+                                              std::format("Ignored useless value: {}", rule->getText()));
                     return true;
                 }
                 if (rule->children.size() == 2) {
-                    if (IS_IDF(rule->children[1]) ||
-                        (IS_RULE_TYPE(rule->children[1], gscParser::RuleLeft_value) && IS_IDF(rule->children[1]->children[0]))
-                        ) {
+                    if (IS_IDF(rule->children[1]) || (IS_RULE_TYPE(rule->children[1], gscParser::RuleLeft_value) &&
+                                                      IS_IDF(rule->children[1]->children[0]))) {
                         if (obj.HasOpCode(OPCODE_T9_GetVarRef)) {
                             // single idf ref
                             // &var ?
@@ -2347,10 +2392,10 @@ namespace tool::gsc::compiler {
                                 return true;
                             }
                         }
-                    }
-                    else if (IS_RULE_TYPE(rule->children[1], gscParser::RuleLeft_value)) {
+                    } else if (IS_RULE_TYPE(rule->children[1], gscParser::RuleLeft_value)) {
                         if (!ParseFieldNode(rule->children[1], parser, obj, fobj)) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1], "Can't express field ref");
+                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule->children[1],
+                                                      "Can't express field ref");
                             return false;
                         }
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_T9_GetVarRef));
@@ -2367,11 +2412,9 @@ namespace tool::gsc::compiler {
                     obj.AddHash(path);
                     obj.AddHash(funcName);
 
-                    AscmNodeLazyLink* lazy = new AscmNodeLazyLink(
-                        obj.vmInfo->HashPath(path.c_str()),
-                        (uint32_t)obj.vmInfo->HashField(nsp.c_str()),
-                        (uint32_t)obj.vmInfo->HashField(funcName.c_str())
-                    );
+                    AscmNodeLazyLink* lazy = new AscmNodeLazyLink(obj.vmInfo->HashPath(path.c_str()),
+                                                                  (uint32_t)obj.vmInfo->HashField(nsp.c_str()),
+                                                                  (uint32_t)obj.vmInfo->HashField(funcName.c_str()));
 
                     obj.AddLazy(lazy);
 
@@ -2388,8 +2431,7 @@ namespace tool::gsc::compiler {
                     std::string nspStr = rule->children[1]->getText();
                     obj.AddHash(nspStr);
                     nsp = obj.vmInfo->HashField(nspStr.c_str());
-                }
-                else {
+                } else {
                     flags |= tool::gsc::T8GSCImportFlags::GET_CALL;
                 }
 
@@ -2400,7 +2442,8 @@ namespace tool::gsc::compiler {
                 uint64_t func = obj.vmInfo->HashField(funcStr.c_str());
 
                 // link by the game, but we write it for test
-                AscmNodeFunctionCall* asmc = new AscmNodeFunctionCall(OPCODE_GetResolveFunction, FCF_GETTER, 0, 0, 0, obj.vmInfo);
+                AscmNodeFunctionCall* asmc =
+                    new AscmNodeFunctionCall(OPCODE_GetResolveFunction, FCF_GETTER, 0, 0, 0, obj.vmInfo);
                 obj.AddImport(asmc, nsp, func, 0, flags);
                 fobj.AddNode(rule, asmc);
 
@@ -2418,10 +2461,11 @@ namespace tool::gsc::compiler {
 
                     // add animtree + anim ref
                     obj.animtrees[tree].anims[anim].anim.push_back(asmc);
-                }
-                else {
+                } else {
                     if (obj.lastAnimTree.empty()) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, "Can't use %anim without having a #using_animtree before the function");
+                        obj.info.PrintLineMessage(
+                            core::logs::LVL_ERROR, exp,
+                            "Can't use %anim without having a #using_animtree before the function");
                         return false;
                     }
 
@@ -2437,13 +2481,13 @@ namespace tool::gsc::compiler {
             }
             case gscParser::RuleLeft_value: {
                 if (!expressVal) {
-                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp, std::format("Ignored useless value: {}", rule->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp,
+                                              std::format("Ignored useless value: {}", rule->getText()));
                     return true;
                 }
                 if (rule->children.size() == 1) {
                     return ParseExpressionNode(rule->children[0], parser, obj, fobj, expressVal);
-                }
-                else if (rule->children[0]->getTreeType() == TREE_RULE) {
+                } else if (rule->children[0]->getTreeType() == TREE_RULE) {
                     RuleContext* first = dynamic_cast<RuleContext*>(rule->children[0]);
 
                     std::string second = rule->children[1]->getText();
@@ -2458,19 +2502,17 @@ namespace tool::gsc::compiler {
 
                             if (fieldText == "size") {
                                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_SizeOf));
-                            }
-                            else {
+                            } else {
                                 // use identifier
                                 if (obj.HasOpCode(OPCODE_CastAndEvalFieldVariable)) {
-                                    fobj.AddNode(rule, fobj.CreateFieldHash(fieldText, OPCODE_CastAndEvalFieldVariable));
-                                }
-                                else {
+                                    fobj.AddNode(rule,
+                                                 fobj.CreateFieldHash(fieldText, OPCODE_CastAndEvalFieldVariable));
+                                } else {
                                     fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_CastFieldObject));
                                     fobj.AddNode(rule, fobj.CreateFieldHash(fieldText, OPCODE_EvalFieldVariable));
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             if (!ParseExpressionNode(rule->children[3], parser, obj, fobj, true)) {
                                 return false;
                             }
@@ -2483,11 +2525,12 @@ namespace tool::gsc::compiler {
                             fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_EvalFieldVariableOnStack));
                         }
                         return true;
-                    }
-                    else if (second == "?.") {
+                    } else if (second == "?.") {
                         auto [verr, var] = fobj.GetSpecialTmpVar();
                         if (verr) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Can't allocate temp variable for ?. operator: {}", verr));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, exp,
+                                std::format("Can't allocate temp variable for ?. operator: {}", verr));
                             return false;
                         }
 
@@ -2512,19 +2555,17 @@ namespace tool::gsc::compiler {
 
                             if (fieldText == "size") {
                                 fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_SizeOf));
-                            }
-                            else {
+                            } else {
                                 // use identifier
                                 if (obj.HasOpCode(OPCODE_CastAndEvalFieldVariable)) {
-                                    fobj.AddNode(rule, fobj.CreateFieldHash(fieldText, OPCODE_CastAndEvalFieldVariable));
-                                }
-                                else {
+                                    fobj.AddNode(rule,
+                                                 fobj.CreateFieldHash(fieldText, OPCODE_CastAndEvalFieldVariable));
+                                } else {
                                     fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_CastFieldObject));
                                     fobj.AddNode(rule, fobj.CreateFieldHash(fieldText, OPCODE_EvalFieldVariable));
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             if (!ParseExpressionNode(rule->children[3], parser, obj, fobj, true)) {
                                 ok = false;
                             }
@@ -2543,8 +2584,7 @@ namespace tool::gsc::compiler {
                         fobj.AddNode(rule, end);
 
                         return ok;
-                    }
-                    else if (second == "[") {
+                    } else if (second == "[") {
                         // array access
 
                         if (!ParseExpressionNode(rule->children[2], parser, obj, fobj, true)) {
@@ -2557,22 +2597,24 @@ namespace tool::gsc::compiler {
 
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_EvalArray));
                         return true;
-                    }
-                    else {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unknown left value type: {}", second));
+                    } else {
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                                  std::format("Unknown left value type: {}", second));
                         return false;
                     }
-                }
-                else {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unknown lvalue tree type: {}", exp->getText()));
+                } else {
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                              std::format("Unknown lvalue tree type: {}", exp->getText()));
                     return false;
                 }
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unhandled lvalue type: {}", exp->getText()));
+                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                          std::format("Unhandled lvalue type: {}", exp->getText()));
                 return false;
             }
             }
 
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Unhandled rule: {} ({})", rule->getText(), rule->getRuleIndex()));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, rule,
+                                      std::format("Unhandled rule: {} ({})", rule->getText(), rule->getRuleIndex()));
             return false;
         }
 
@@ -2594,14 +2636,16 @@ namespace tool::gsc::compiler {
                 ParseTree* pt = ceit->second;
 
                 if (!ParseExpressionNode(pt, parser, obj, fobj, expressVal)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, term, std::format("error when using constexpr {}", varName));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, term,
+                                              std::format("error when using constexpr {}", varName));
                     return false;
                 }
                 return true;
             }
 
             if (!expressVal) {
-                obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp, std::format("Ignored useless value: {}", term->getText()));
+                obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp,
+                                          std::format("Ignored useless value: {}", term->getText()));
                 return true;
             }
 
@@ -2615,7 +2659,8 @@ namespace tool::gsc::compiler {
 
                 if (itl != fobj.m_jumpLocs.end()) {
                     if (!itl->second.node) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("The jump location {} can't be referenced", varName));
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                                  std::format("The jump location {} can't be referenced", varName));
                         return false;
                     }
 
@@ -2635,7 +2680,9 @@ namespace tool::gsc::compiler {
                 }
 
                 if (!obj.gscHandler->HasFlag(tool::gsc::GOHF_GLOBAL)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, term, std::format("{} is defined as a global, but the vm doesn't support globals", varName));
+                    obj.info.PrintLineMessage(
+                        core::logs::LVL_ERROR, term,
+                        std::format("{} is defined as a global, but the vm doesn't support globals", varName));
                     return false;
                 }
 
@@ -2663,7 +2710,8 @@ namespace tool::gsc::compiler {
         }
 
         if (!expressVal) {
-            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp, std::format("Ignored useless value: {}", term->getText()));
+            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp,
+                                      std::format("Ignored useless value: {}", term->getText()));
             return true;
         }
 
@@ -2672,10 +2720,12 @@ namespace tool::gsc::compiler {
             fobj.AddNode(term, new AscmNodeOpCode(OPCODE_GetUndefined));
             return true;
         case gscParser::BOOL_VALUE:
-            fobj.AddNode(term, obj.BuildAscmNodeData(term->getText() == "true" ? (fobj.obj.config.obfuscate ? rand() + 1 : 1) : 0));
+            fobj.AddNode(term, obj.BuildAscmNodeData(
+                                   term->getText() == "true" ? (fobj.obj.config.obfuscate ? rand() + 1 : 1) : 0));
             return true;
         case gscParser::FLOATVAL:
-            fobj.AddNode(term, new AscmNodeData<FLOAT>((FLOAT)std::strtof(term->getText().c_str(), nullptr), OPCODE_GetFloat));
+            fobj.AddNode(
+                term, new AscmNodeData<FLOAT>((FLOAT)std::strtof(term->getText().c_str(), nullptr), OPCODE_GetFloat));
             return true;
         case gscParser::INTEGER10:
             fobj.AddNode(term, obj.BuildAscmNodeData(std::strtoll(term->getText().c_str(), nullptr, 10)));
@@ -2705,13 +2755,11 @@ namespace tool::gsc::compiler {
         case gscParser::ANIMTREE_IDENTIFIER: {
             std::string node{ ParseString(term, 1) };
 
-
             AscmNodeOpCode* asmc;
             if (obj.vmInfo->HasFlag(VmFlags::VMF_ANIMTREE_T7)) {
-                // t7 doesn't have a GetAnimationTree operator, it uses the 
+                // t7 doesn't have a GetAnimationTree operator, it uses the
                 asmc = new AscmNodeData<uint32_t>(0x12345678, OPCODE_GetInteger);
-            }
-            else {
+            } else {
                 asmc = new AscmNodeData<byte>(0x12, OPCODE_IW_GetAnimationTree);
             }
             fobj.AddNode(term, asmc);
@@ -2728,24 +2776,24 @@ namespace tool::gsc::compiler {
                 // use animtree
 
                 if (obj.lastAnimTree.empty()) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, "Can't use #animtree without having a #using_animtree before the function");
+                    obj.info.PrintLineMessage(
+                        core::logs::LVL_ERROR, exp,
+                        "Can't use #animtree without having a #using_animtree before the function");
                     return false;
                 }
 
                 AscmNodeOpCode* asmc;
                 if (obj.vmInfo->HasFlag(VmFlags::VMF_ANIMTREE_T7)) {
-                    // t7 doesn't have a GetAnimationTree operator, it uses the 
+                    // t7 doesn't have a GetAnimationTree operator, it uses the
                     asmc = new AscmNodeData<uint32_t>(0x12345678, OPCODE_GetInteger);
-                }
-                else {
+                } else {
                     asmc = new AscmNodeData<byte>(0x12, OPCODE_IW_GetAnimationTree);
                 }
                 fobj.AddNode(term, asmc);
 
                 // add animtree ref
                 obj.animtrees[obj.lastAnimTree].animtree.push_back(asmc);
-            }
-            else {
+            } else {
                 return AddHashNode(term, 's', node, fobj, obj);
             }
 
@@ -2794,7 +2842,8 @@ namespace tool::gsc::compiler {
             std::string key{ &newStr[0] };
 
             if (key.length() >= 256) {
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("String too long: {}", term->getText()));
+                obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                          std::format("String too long: {}", term->getText()));
                 return false;
             }
 
@@ -2810,14 +2859,14 @@ namespace tool::gsc::compiler {
                 uint64_t h{ obj.vmInfo->HashPath(reshash) };
                 fobj.AddNode(term, new AscmNodeData<uint64_t>(h, OPCODE_IW_GetLocalizedHash));
                 obj.AddHash(reshash);
-            }
-            else {
+            } else {
                 // link by the game
                 AscmNodeData<uint32_t>* asmc = new AscmNodeData<uint32_t>(0x12345678, OPCODE_IW_GetIString);
                 fobj.AddNode(term, asmc);
 
                 if (node.length() >= 256) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("IString too long: {}", term->getText()));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp,
+                                              std::format("IString too long: {}", term->getText()));
                     return false;
                 }
 
@@ -2831,12 +2880,13 @@ namespace tool::gsc::compiler {
         obj.info.PrintLineMessage(core::logs::LVL_ERROR, exp, std::format("Unhandled terminal: {}", term->getText()));
         return false;
     }
-    
+
     bool ParseClassDef(RuleContext* func, gscParser& parser, CompileObject& obj) {
         std::string clsName = func->children[1]->getText();
 
         if (!obj.gscHandler->GetVTableImportFlags()) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("This vm doesn't support classes, can't register '{}'", clsName));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                      std::format("This vm doesn't support classes, can't register '{}'", clsName));
             return false;
         }
 
@@ -2845,7 +2895,7 @@ namespace tool::gsc::compiler {
 
         ClassCompileContext cctx{ clsNameHash };
         obj.clsCtx = &cctx;
-        utils::CloseEnd ce{ [&obj] {obj.clsCtx = nullptr; } };
+        utils::CloseEnd ce{ [&obj] { obj.clsCtx = nullptr; } };
 
         bool ok = true;
 
@@ -2857,12 +2907,14 @@ namespace tool::gsc::compiler {
                 LOG_TRACE("parent: {}", idf->getText());
             } while (func->children[idx]->getText() != "{");
             // todo: parse parent classes
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func->children[idx], std::format("Parent classes not implemented yet: class {}", clsName));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func->children[idx],
+                                      std::format("Parent classes not implemented yet: class {}", clsName));
             ok = false;
         }
 
         if (func->children[idx]->getText() != "{") {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func->children[idx], std::format("Invalid class reading: {}", func->children[idx]->getText()));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func->children[idx],
+                                      std::format("Invalid class reading: {}", func->children[idx]->getText()));
             return false;
         }
 
@@ -2875,32 +2927,30 @@ namespace tool::gsc::compiler {
             uint64_t varNameHash = obj.vmInfo->HashField(varName);
 
             if (cctx.vars.contains(varNameHash)) {
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, func->children[idx], std::format("Class property {} registered twice in {}", varName, clsName));
+                obj.info.PrintLineMessage(core::logs::LVL_ERROR, func->children[idx],
+                                          std::format("Class property {} registered twice in {}", varName, clsName));
                 ok = false;
                 continue;
             }
             if (func->children.size() > 3) {
                 cctx.vars[varNameHash] = func->children[3];
-            }
-            else {
+            } else {
                 cctx.vars[varNameHash] = nullptr;
             }
         }
 
         while (IS_RULE_TYPE(func->children[idx], gscParser::RuleFunction)) {
             ParseTree* f{ func->children[idx++] };
-
         }
 
-
-        auto [res, err] = obj.exports.try_emplace(clsNameHash, obj, clsNameHash, obj.currentNamespace, obj.fileNameSpace, obj.vmInfo);
-
+        auto [res, err] =
+            obj.exports.try_emplace(clsNameHash, obj, clsNameHash, obj.currentNamespace, obj.fileNameSpace, obj.vmInfo);
 
         if (!err) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("The export {} was defined twice", clsName));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                      std::format("The export {} was defined twice", clsName));
             return false;
         }
-
 
         FunctionObject& exp = res->second;
         exp.m_flags = tool::gsc::CLASS_VTABLE;
@@ -2930,16 +2980,17 @@ namespace tool::gsc::compiler {
         */
         exp.AddNode(func, new AscmNodeOpCode(OPCODE_PreScriptCall));
         uint64_t ss = obj.vmInfo->HashField("spawnstruct");
-        AscmNodeFunctionCall* gakNode = new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 0, ss, obj.currentNamespace, obj.vmInfo);
+        AscmNodeFunctionCall* gakNode =
+            new AscmNodeFunctionCall(OPCODE_CallBuiltinFunction, 0, 0, ss, obj.currentNamespace, obj.vmInfo);
         obj.AddImport(gakNode, obj.currentNamespace, ss, 0, tool::gsc::FUNCTION | tool::gsc::GET_CALL);
         exp.AddNode(func, gakNode);
         exp.AddNode(func, new AscmNodeOpCode(OPCODE_GetZero));
 
-
         auto gvarIt = exp.m_vmInfo->globalvars.find(obj.vmInfo->HashField("classes"));
 
         if (gvarIt == exp.m_vmInfo->globalvars.end()) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("Can't find classes global variable, does this vm support classes?"));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                      std::format("Can't find classes global variable, does this vm support classes?"));
             return false;
         }
 
@@ -2957,14 +3008,14 @@ namespace tool::gsc::compiler {
             decl.nodes.emplace_back(gvar);
             exp.AddNode(func, gvar);
             exp.AddNode(func, exp.CreateFieldHashRaw(clsNameHash));
-        }
-        else {
+        } else {
             if (gv.getOpCode) { // T7
                 exp.AddNode(func, new AscmNodeOpCode(gv.getOpCode));
-            }
-            else { // T8
+            } else { // T8
                 if (!obj.gscHandler->HasFlag(tool::gsc::GOHF_GLOBAL)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("classes is defined as a global, but the vm doesn't support globals"));
+                    obj.info.PrintLineMessage(
+                        core::logs::LVL_ERROR, func,
+                        std::format("classes is defined as a global, but the vm doesn't support globals"));
                     return false;
                 }
 
@@ -2983,37 +3034,41 @@ namespace tool::gsc::compiler {
 
         if (obj.HasOpCode(OPCODE_T9_EvalFieldVariableFromGlobalObject)) {
             exp.AddNode(func, new AscmNodeOpCode(OPCODE_T9_SetVariableFieldFromEvalArrayRef));
-        }
-        else {
+        } else {
             exp.AddNode(func, new AscmNodeOpCode(OPCODE_EvalArrayRef));
             exp.AddNode(func, new AscmNodeOpCode(OPCODE_SetVariableField));
         }
 
-
         exp.AddNode(func->children[func->children.size() - 1], new AscmNodeOpCode(OPCODE_End));
 
-        obj.info.PrintLineMessage(core::logs::LVL_WARNING, func->children[idx], std::format("Class not yet fully implemented: {}", func->children[idx]->getText()));
+        obj.info.PrintLineMessage(core::logs::LVL_WARNING, func->children[idx],
+                                  std::format("Class not yet fully implemented: {}", func->children[idx]->getText()));
         return ok;
     }
-    
+
     FunctionObject* ParseFunction(RuleContext* func, gscParser& parser, CompileObject& obj, byte forceFlags) {
-        int deltaArrow = (func->children.size() > 2 && func->children[func->children.size() - 2]->getText() == "=>") ? 1 : 0;
-        bool hasName = func->children.size() > (4 + deltaArrow) && IS_IDF(func->children[(size_t)(func->children.size() - 5 - deltaArrow)]);
+        int deltaArrow =
+            (func->children.size() > 2 && func->children[func->children.size() - 2]->getText() == "=>") ? 1 : 0;
+        bool hasName = func->children.size() > (4 + deltaArrow) &&
+                       IS_IDF(func->children[(size_t)(func->children.size() - 5 - deltaArrow)]);
 
         ParseTree* paramsRule = func->children[(size_t)(func->children.size() - 3 - deltaArrow)];
         ParseTree* blockRule = func->children[(size_t)(func->children.size() - 1)];
 
-        std::string name = hasName ?
-            func->children[(size_t)(func->children.size() - (5 + deltaArrow))]->getText()
-            : utils::va("$nameless_%llx", (obj.config.obfuscate ? (obj.emptyNameInc += 1 + rand()) : obj.emptyNameInc++));
+        std::string name =
+            hasName ? func->children[(size_t)(func->children.size() - (5 + deltaArrow))]->getText()
+                    : utils::va("$nameless_%llx",
+                                (obj.config.obfuscate ? (obj.emptyNameInc += 1 + rand()) : obj.emptyNameInc++));
 
         obj.AddHash(name);
         uint64_t nameHashed = obj.vmInfo->HashField(name.data());
 
-        auto [res, err] = obj.exports.try_emplace(nameHashed, obj, nameHashed, obj.currentNamespace, obj.fileNameSpace, obj.vmInfo);
+        auto [res, err] =
+            obj.exports.try_emplace(nameHashed, obj, nameHashed, obj.currentNamespace, obj.fileNameSpace, obj.vmInfo);
 
         if (!err) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("The export {} was defined twice", name));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                      std::format("The export {} was defined twice", name));
             return nullptr;
         }
 
@@ -3022,11 +3077,13 @@ namespace tool::gsc::compiler {
         exp.m_flags |= forceFlags;
 
         if (!IS_RULE_TYPE(paramsRule, gscParser::RuleParam_list)) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("Bad function {} params declaration {}", name, func->getText()));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                      std::format("Bad function {} params declaration {}", name, func->getText()));
             return nullptr;
         }
         if (!IS_RULE_TYPE(blockRule, gscParser::RuleStatement_block)) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("Bad function {} block declaration {}", name, func->getText()));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                      std::format("Bad function {} block declaration {}", name, func->getText()));
             return nullptr;
         }
 
@@ -3051,8 +3108,7 @@ namespace tool::gsc::compiler {
                     exp.detour.nsp = obj.vmInfo->HashField(dnsp);
                     exp.detour.func = obj.vmInfo->HashField(dfunc);
                     exp.detour.script = obj.vmInfo->HashPath(dscriptp);
-                }
-                else {
+                } else {
                     // builtin detour
                     std::string target = mod->children[1]->getText();
 
@@ -3079,23 +3135,21 @@ namespace tool::gsc::compiler {
             }
             if (txt == "private") {
                 exp.m_flags |= tool::gsc::T8GSCExportFlags::PRIVATE;
-            }
-            else if (txt == "autoexec") {
+            } else if (txt == "autoexec") {
                 exp.m_flags |= tool::gsc::T8GSCExportFlags::AUTOEXEC;
 
                 if (IS_RULE_TYPE(func->children[i + 2], gscParser::RuleNumber)) {
                     // use user order
                     exp.autoexecOrder = obj.NumberNodeValue(func->children[i + 2]);
                     i += 3;
-                }
-                else {
+                } else {
                     // use natural order
                     exp.autoexecOrder = obj.autoexecOrder++;
                 }
-            }
-            else if (txt == "event_handler") {
+            } else if (txt == "event_handler") {
                 if (!obj.gscHandler->HasFlag(tool::gsc::GOHF_SUPPORT_EV_HANDLER)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, "event_handler functions not available for this vm");
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                              "event_handler functions not available for this vm");
                     return nullptr;
                 }
                 exp.m_flags |= tool::gsc::T8GSCExportFlags::EVENT;
@@ -3140,16 +3194,17 @@ namespace tool::gsc::compiler {
                     // '...'
 
                     if (!obj.gscHandler->HasFlag(tool::gsc::GOHF_SUPPORT_VAR_VA)) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param, "Modifier not available for this vm: vararg...");
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param,
+                                                  "Modifier not available for this vm: vararg...");
                         return nullptr;
                     }
                     exp.m_flags |= tool::gsc::T8GSCExportFlags::VE;
 
                     std::string paramIdf = "vararg";
 
-
                     if (exp.m_params == 256) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param, std::format("Can't register param '{}': too many params", paramIdf));
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param,
+                                                  std::format("Can't register param '{}': too many params", paramIdf));
                         return nullptr;
                     }
 
@@ -3164,7 +3219,9 @@ namespace tool::gsc::compiler {
                     if (obj.gscHandler->HasFlag(tool::gsc::GOHF_VAR_VA_COUNT)) {
                         std::string paramIdfCount = "varargcount";
                         if (exp.m_params == 256) {
-                            obj.info.PrintLineMessage(core::logs::LVL_ERROR, param, std::format("Can't register param '{}': too many params", paramIdfCount));
+                            obj.info.PrintLineMessage(
+                                core::logs::LVL_ERROR, param,
+                                std::format("Can't register param '{}': too many params", paramIdfCount));
                             return nullptr;
                         }
                         exp.m_params++;
@@ -3176,7 +3233,6 @@ namespace tool::gsc::compiler {
                         }
                     }
 
-
                     continue;
                 }
 
@@ -3186,31 +3242,32 @@ namespace tool::gsc::compiler {
                 if (modifier == "*") {
                     // ptr (T9)
                     if (!obj.gscHandler->HasFlag(tool::gsc::GOHF_SUPPORT_VAR_PTR)) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param, std::format("Modifier not available for this vm: {}", modifier));
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param,
+                                                  std::format("Modifier not available for this vm: {}", modifier));
                         return nullptr;
                     }
                     idfFlags = tool::gsc::opcode::T9_VAR_REF;
-                }
-                else if (modifier == "&") {
+                } else if (modifier == "&") {
                     // ref (T8)
                     if (!obj.gscHandler->HasFlag(tool::gsc::GOHF_SUPPORT_VAR_REF)) {
-                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param, std::format("Modifier not available for this vm: {}", modifier));
+                        obj.info.PrintLineMessage(core::logs::LVL_ERROR, param,
+                                                  std::format("Modifier not available for this vm: {}", modifier));
                         return nullptr;
                     }
                     idfFlags = tool::gsc::opcode::ARRAY_REF;
-                }
-                else {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, param, std::format("Modifier not implemented: {}", modifier));
+                } else {
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, param,
+                                              std::format("Modifier not implemented: {}", modifier));
                     return nullptr;
                 }
-            }
-            else {
+            } else {
                 idfNode = dynamic_cast<TerminalNode*>(param->children[0]);
             }
             std::string paramIdf = idfNode->getText();
 
             if (exp.m_params == 256) {
-                obj.info.PrintLineMessage(core::logs::LVL_ERROR, idfNode, std::format("Can't register param '{}': too many params", paramIdf));
+                obj.info.PrintLineMessage(core::logs::LVL_ERROR, idfNode,
+                                          std::format("Can't register param '{}': too many params", paramIdf));
                 return nullptr;
             }
 
@@ -3235,22 +3292,21 @@ namespace tool::gsc::compiler {
                  */
                 if (obj.HasOpCode(OPCODE_EvalLocalVariableDefined)) {
                     exp.AddNode(defaultValueExp, new AscmNodeVariable(vardef->id, OPCODE_EvalLocalVariableDefined));
-                }
-                else {
+                } else {
                     exp.AddNode(defaultValueExp, new AscmNodeVariable(vardef->id, OPCODE_EvalLocalVariableCached));
                     exp.AddNode(defaultValueExp, new AscmNodeOpCode(OPCODE_IsDefined));
                 }
                 AscmNode* afterNode = new AscmNode();
                 exp.AddNode(defaultValueExp, new AscmNodeJump(afterNode, OPCODE_JumpOnTrue));
                 if (!ParseExpressionNode(defaultValueExp, parser, obj, exp, true)) {
-                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, defaultValueExp, std::format("Can't create expression node for variable {}", paramIdf));
+                    obj.info.PrintLineMessage(core::logs::LVL_ERROR, defaultValueExp,
+                                              std::format("Can't create expression node for variable {}", paramIdf));
                     return nullptr;
                 }
                 exp.AddNode(defaultValueExp, new AscmNodeVariable(vardef->id, OPCODE_EvalLocalVariableRefCached));
                 exp.AddNode(defaultValueExp, new AscmNodeOpCode(OPCODE_SetVariableField));
                 exp.AddNode(defaultValueExp, afterNode);
             }
-
         }
 
         // handle block
@@ -3280,7 +3336,8 @@ namespace tool::gsc::compiler {
                 continue;
             }
 
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, loc.def ? loc.def : blockRule, std::format("The location {} was used, but isn't declared", name));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, loc.def ? loc.def : blockRule,
+                                      std::format("The location {} was used, but isn't declared", name));
 
             badRef = true;
 
@@ -3293,7 +3350,8 @@ namespace tool::gsc::compiler {
         exp.AddNode(exp.m_nodes.begin(), func, exp.CreateParamNode());
 
         if (badRef) {
-            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func, std::format("Can't compile function '{}'", hasName ? name : "<no name>"));
+            obj.info.PrintLineMessage(core::logs::LVL_ERROR, func,
+                                      std::format("Can't compile function '{}'", hasName ? name : "<no name>"));
             return nullptr;
         }
 
@@ -3302,7 +3360,8 @@ namespace tool::gsc::compiler {
 
     bool ParsePrecache(RuleContext* prec, gscParser& parser, CompileObject& obj) {
         if (!obj.config.precache) {
-            obj.info.PrintLineMessage(core::logs::LVL_WARNING, prec, "No precache handler available, but a #preache was declared");
+            obj.info.PrintLineMessage(core::logs::LVL_WARNING, prec,
+                                      "No precache handler available, but a #preache was declared");
             return true;
         }
 
@@ -3405,7 +3464,8 @@ namespace tool::gsc::compiler {
         ParseTree*& expr = obj.constexprs[hash];
 
         if (expr) {
-            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp, std::format("Redefinition of constexpr {}", constexprName));
+            obj.info.PrintLineMessage(core::logs::LVL_WARNING, exp,
+                                      std::format("Redefinition of constexpr {}", constexprName));
         }
 
         obj.constexprs[hash] = exp->children[3];
@@ -3440,8 +3500,7 @@ namespace tool::gsc::compiler {
                 if (!ParseNamespace(rule, parser, obj)) {
                     return false;
                 }
-            }
-            else if (idx == gscParser::RuleFilenamespace) {
+            } else if (idx == gscParser::RuleFilenamespace) {
                 if (!ParseFileNamespace(rule, parser, obj)) {
                     return false;
                 }
@@ -3459,17 +3518,14 @@ namespace tool::gsc::compiler {
 
                 if (txt == "/#") {
                     obj.devBlockDepth++;
-                }
-                else if (txt == "#/") {
+                } else if (txt == "#/") {
                     if (!obj.devBlockDepth) {
                         obj.info.PrintLineMessage(core::logs::LVL_ERROR, es, "Usage of #/ with no starting /#");
                         return false;
-                    }
-                    else {
+                    } else {
                         obj.devBlockDepth--;
                     }
-                }
-                else {
+                } else {
                     obj.info.PrintLineMessage(core::logs::LVL_ERROR, es, std::format("Bad export terminal {}", txt));
                     return false;
                 }
@@ -3534,4 +3590,4 @@ namespace tool::gsc::compiler {
         return true;
     }
 
-}
+} // namespace tool::gsc::compiler

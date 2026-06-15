@@ -6,7 +6,6 @@
  * Atian Tools Common API commons
  */
 
-
 #if __cplusplus
 #define ACTS_DEFAULT(name, value) name = (value)
 #else // !__cplusplus
@@ -42,17 +41,16 @@
 
 #endif
 
-
 typedef enum {
-	ACTS_STATUS_OK = 0,
-	ACTS_STATUS_ERROR = -1,
-	ACTS_STATUS_ASSERTION_ERROR = -2,
+    ACTS_STATUS_OK = 0,
+    ACTS_STATUS_ERROR = -1,
+    ACTS_STATUS_ASSERTION_ERROR = -2,
 } ActsStatus;
 
 // progress handler, used for long operations to report progress and messages
 typedef struct {
-	void (*handler)(float progress, const char* message, void* ud);
-	void* ud;
+    void (*handler)(float progress, const char* message, void* ud);
+    void* ud;
 } ActsProgressHandler;
 
 // acts handle, should be closed with ActsAPICloseHandle
@@ -85,21 +83,21 @@ ACTS_COMMON_API void ActsAPISetLastMessage(const char* fmt, ...);
  */
 ACTS_COMMON_API void ActsAPICloseHandle(ActsHandle handle);
 
-
 // assert assertion or set message using ActsAPISetLastMessage and return ACTS_STATUS_ASSERTION_ERROR
-#define ACTS_API_ASSERT_MESSAGE(assertion, message) \
-do { \
-	if (!(assertion)) {\
-		ActsAPISetLastMessage("%s", message); \
-		return ACTS_STATUS_ASSERTION_ERROR; \
-	} \
-} while (0)
+#define ACTS_API_ASSERT_MESSAGE(assertion, message)                                                                    \
+    do {                                                                                                               \
+        if (!(assertion)) {                                                                                            \
+            ActsAPISetLastMessage("%s", message);                                                                      \
+            return ACTS_STATUS_ASSERTION_ERROR;                                                                        \
+        }                                                                                                              \
+    } while (0)
 // assert that val isn't null
 #define ACTS_API_ASSERT_NOT_NULL(val) ACTS_API_ASSERT_MESSAGE((val), #val " can't be null")
 // assert val, use #val as assertion message
 #define ACTS_API_ASSERT(val) ACTS_API_ASSERT_MESSAGE((val), #val)
 // assert that handle is a valid handle
-#define ACTS_API_ASSERT_VALID_HANDLE(handle) ACTS_API_ASSERT_MESSAGE(IS_ACTS_HANDLE_VALID(handle), #handle " isn't a valid handle")
+#define ACTS_API_ASSERT_VALID_HANDLE(handle)                                                                           \
+    ACTS_API_ASSERT_MESSAGE(IS_ACTS_HANDLE_VALID(handle), #handle " isn't a valid handle")
 
 #include "structs.h"
 #endif // __ACTS_API_API_H__

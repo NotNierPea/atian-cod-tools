@@ -41,7 +41,7 @@ namespace compatibility::serious::db2 {
         SERID_EvalFieldVariable = 0x20,
         SERID_EvalFieldVariableRef = 0x21,
         SERID_ClearFieldVariable = 0x22,
-        SERID_SafeSetVariableFieldCached = 0x23, //t9
+        SERID_SafeSetVariableFieldCached = 0x23, // t9
         SERID_SetWaittillVariableFieldCached = 0x24,
         SERID_ClearParams = 0x25,
         SERID_CheckClearParams = 0x26,
@@ -191,4 +191,4 @@ namespace compatibility::serious::db2 {
     tool::gsc::opcode::OPCode ConvertFrom(SeriousId id);
     SeriousId ConvertTo(tool::gsc::opcode::OPCode id);
     void LoadVMDatabase(const std::filesystem::path& path);
-}
+} // namespace compatibility::serious::db2

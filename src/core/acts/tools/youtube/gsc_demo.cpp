@@ -67,8 +67,7 @@ namespace {
         uint16_t pad;
     };
 
-
-	int gscdemo(int argc, const char* argv[]) {
+    int gscdemo(int argc, const char* argv[]) {
         std::string buffer{};
 
         if (argc < 3 || !utils::ReadFile(argv[2], buffer)) {
@@ -77,7 +76,6 @@ namespace {
 
         byte* ptr = (byte*)buffer.data();
         T8GSCOBJ* obj = (T8GSCOBJ*)ptr;
-
 
         hashutils::ReadDefaultFile();
         LOG_INFO("{}", hashutils::ExtractTmpScript(obj->name));
@@ -95,12 +93,8 @@ namespace {
         for (size_t i = 0; i < obj->exports_count; i++) {
             T8GSCExport& exp = exports[i];
 
-            LOG_INFO(
-                "function {}::{}({})",
-                hashutils::ExtractTmp("namespace", exp.name_space),
-                hashutils::ExtractTmp("function", exp.name),
-                (int)exp.param_count
-                );
+            LOG_INFO("function {}::{}({})", hashutils::ExtractTmp("namespace", exp.name_space),
+                     hashutils::ExtractTmp("function", exp.name), (int)exp.param_count);
 
             std::ostringstream ss;
 
@@ -111,7 +105,6 @@ namespace {
             }
 
             LOG_INFO("bytecode: {}", ss.str());
-
         }
 
         LOG_INFO("");
@@ -121,11 +114,8 @@ namespace {
         for (size_t i = 0; i < obj->imports_count; i++) {
             T8GSCImport& imp = *imports;
 
-            LOG_INFO(
-                "import {}::{}",
-                hashutils::ExtractTmp("namespace", imp.import_namespace),
-                hashutils::ExtractTmp("function", imp.name)
-            );
+            LOG_INFO("import {}::{}", hashutils::ExtractTmp("namespace", imp.import_namespace),
+                     hashutils::ExtractTmp("function", imp.name));
 
             uint32_t* addr = (uint32_t*)(imports + 1);
 
@@ -136,7 +126,6 @@ namespace {
             }
 
             LOG_INFO("addresses: {}", ss.str());
-
 
             imports = (T8GSCImport*)(addr + imp.num_address);
         }
@@ -161,11 +150,9 @@ namespace {
 
             LOG_INFO("addresses: {}", ss.str());
 
-
             strings = (T8GSCString*)(addr + str.num_address);
         }
         LOG_INFO("");
-
 
         // import 1 (num adresses)
         // adresse 1 adr 2 adr 3
@@ -174,24 +161,21 @@ namespace {
         // 0xA0D43534780
 
         // 0x36 bo4
-        // 0x37 bocw 
-        // 0x38 
+        // 0x37 bocw
+        // 0x38
         // 0x1b bo3
         // 0x1c
         // 8a mwiii
         // 8b mwiii
         // 06 bo6
-        // 07 
+        // 07
 
-
-
-
-		return tool::OK;
-	}
+        return tool::OK;
+    }
 
 #ifndef CI_BUILD
 
     ADD_TOOL(gscdemo, "dev", "", "", gscdemo);
 
 #endif
-}
+} // namespace

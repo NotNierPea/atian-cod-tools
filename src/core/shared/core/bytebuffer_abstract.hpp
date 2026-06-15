@@ -2,233 +2,232 @@
 #include <includes_shared.hpp>
 
 namespace core::bytebuffer {
-	constexpr size_t BYTE_BUFFER_MAX_LOC_STACK = 16;
+    constexpr size_t BYTE_BUFFER_MAX_LOC_STACK = 16;
 
-	class AbstractByteBuffer {
-		size_t locstack[BYTE_BUFFER_MAX_LOC_STACK];
-		std::endian endianstack[BYTE_BUFFER_MAX_LOC_STACK];
-		size_t locstackIdx{};
-		size_t endianstackIdx{};
-		std::endian endian{ std::endian::native };
-	public:
-		virtual bool CanRead(size_t size) const = 0;
-		virtual void ReadImpl(void* to, size_t size) = 0;
-		virtual void Goto(size_t loc) = 0;
-		virtual size_t Length() const = 0;
-		virtual size_t Remaining() const = 0;
-		virtual size_t Loc() const = 0;
+    class AbstractByteBuffer {
+        size_t locstack[BYTE_BUFFER_MAX_LOC_STACK];
+        std::endian endianstack[BYTE_BUFFER_MAX_LOC_STACK];
+        size_t locstackIdx{};
+        size_t endianstackIdx{};
+        std::endian endian{ std::endian::native };
 
-		void SetEndian(std::endian endian) {
-			this->endian = endian;
-		}
-		constexpr std::endian GetEndian() const {
-			return endian;
-		}
+      public:
+        virtual bool CanRead(size_t size) const = 0;
+        virtual void ReadImpl(void* to, size_t size) = 0;
+        virtual void Goto(size_t loc) = 0;
+        virtual size_t Length() const = 0;
+        virtual size_t Remaining() const = 0;
+        virtual size_t Loc() const = 0;
 
-		void PushLocation() {
-			if (locstackIdx == BYTE_BUFFER_MAX_LOC_STACK) throw std::runtime_error(actssec("byte buffer stack overflow"));
-			locstack[locstackIdx++] = Loc();
-		}
+        void SetEndian(std::endian endian) { this->endian = endian; }
+        constexpr std::endian GetEndian() const { return endian; }
 
-		void PopLocation() {
-			if (!locstackIdx) throw std::runtime_error(actssec("byte buffer stack underflow"));
-			Goto(locstack[--locstackIdx]);
-		}
+        void PushLocation() {
+            if (locstackIdx == BYTE_BUFFER_MAX_LOC_STACK)
+                throw std::runtime_error(actssec("byte buffer stack overflow"));
+            locstack[locstackIdx++] = Loc();
+        }
 
-		void PushEndian() {
-			if (endianstackIdx == BYTE_BUFFER_MAX_LOC_STACK) throw std::runtime_error(actssec("byte buffer endian stack overflow"));
-			endianstack[endianstackIdx++] = endian;
-		}
+        void PopLocation() {
+            if (!locstackIdx)
+                throw std::runtime_error(actssec("byte buffer stack underflow"));
+            Goto(locstack[--locstackIdx]);
+        }
 
-		void PopEndian() {
-			if (!endianstackIdx) throw std::runtime_error(actssec("byte buffer endian stack underflow"));
-			endian = endianstack[--endianstackIdx];
-		}
+        void PushEndian() {
+            if (endianstackIdx == BYTE_BUFFER_MAX_LOC_STACK)
+                throw std::runtime_error(actssec("byte buffer endian stack overflow"));
+            endianstack[endianstackIdx++] = endian;
+        }
 
-		bool End() const {
-			return Loc() >= Length();
-		}
+        void PopEndian() {
+            if (!endianstackIdx)
+                throw std::runtime_error(actssec("byte buffer endian stack underflow"));
+            endian = endianstack[--endianstackIdx];
+        }
 
-		size_t Size() const {
-			return Length();
-		}
+        bool End() const { return Loc() >= Length(); }
 
-		void GotoEnd() {
-			Goto(Length());
-		}
+        size_t Size() const { return Length(); }
 
-		inline void Read(void* to, size_t size) {
-			ReadImpl(to, size);
-		}
+        void GotoEnd() { Goto(Length()); }
 
-		template<typename Type>
-		bool CanRead() const {
-			return CanRead(sizeof(Type));
-		}
+        inline void Read(void* to, size_t size) { ReadImpl(to, size); }
 
-		template<typename Type>
-		void Align() {
-			Align(sizeof(Type));
-		}
+        template<typename Type>
+        bool CanRead() const {
+            return CanRead(sizeof(Type));
+        }
 
-		template<typename T = byte>
-		void Skip(size_t len = 1) {
-			byte tmp[0x400];
-			size_t tor{ sizeof(T) * len };
-			while (tor) {
-				size_t r{ std::min<size_t>(sizeof(tmp), tor) };
-				Read(&tmp, r);
-				tor -= r;
-			}
-		}
+        template<typename Type>
+        void Align() {
+            Align(sizeof(Type));
+        }
 
-		void Align(size_t val) {
-			size_t l{ Loc() };
-			size_t al{ utils::Aligned(l, val) };
-			if (l != al) {
-				Skip(al - l);
-			}
-		}
+        template<typename T = byte>
+        void Skip(size_t len = 1) {
+            byte tmp[0x400];
+            size_t tor{ sizeof(T) * len };
+            while (tor) {
+                size_t r{ std::min<size_t>(sizeof(tmp), tor) };
+                Read(&tmp, r);
+                tor -= r;
+            }
+        }
 
-		template<typename T>
-		T Read() {
-			if (!CanRead(sizeof(T))) {
-				throw std::runtime_error(utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End()));
-			}
-			T t;
-			Read(&t, sizeof(T));
-			return t;
-		}
+        void Align(size_t val) {
+            size_t l{ Loc() };
+            size_t al{ utils::Aligned(l, val) };
+            if (l != al) {
+                Skip(al - l);
+            }
+        }
 
-		template<typename T>
-		T ReadNumber() {
-			T v{ Read<T>() };
-			if (endian != std::endian::native) {
-				utils::SwapByte(&v, sizeof(v));
-			}
-			return v;
-		}
+        template<typename T>
+        T Read() {
+            if (!CanRead(sizeof(T))) {
+                throw std::runtime_error(
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End()));
+            }
+            T t;
+            Read(&t, sizeof(T));
+            return t;
+        }
 
-		template<typename T>
-		T Read(size_t len) {
-			if (!CanRead(len)) {
-				throw std::runtime_error(utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), len, End()));
-			}
-			T t;
-			size_t toread{ std::min<size_t>(sizeof(len), len) };
-			Read(&t, toread);
-			if (toread < len) {
-				Skip(toread - len);
-			}
-			return t;
-		}
+        template<typename T>
+        T ReadNumber() {
+            T v{ Read<T>() };
+            if (endian != std::endian::native) {
+                utils::SwapByte(&v, sizeof(v));
+            }
+            return v;
+        }
 
-		template<typename T>
-		std::unique_ptr<T> ReadObject() {
-			if (!CanRead(sizeof(T))) {
-				throw std::runtime_error(utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End()));
-			}
-			std::unique_ptr<T> t{ std::make_unique<T>() };
-			Read(t.get(), sizeof(T));
-			return t;
-		}
+        template<typename T>
+        T Read(size_t len) {
+            if (!CanRead(len)) {
+                throw std::runtime_error(
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), len, End()));
+            }
+            T t;
+            size_t toread{ std::min<size_t>(sizeof(len), len) };
+            Read(&t, toread);
+            if (toread < len) {
+                Skip(toread - len);
+            }
+            return t;
+        }
 
-		template<typename T>
-		std::unique_ptr<T[]> ReadArray(size_t count) {
-			if (!CanRead(sizeof(T) * count)) {
-				throw std::runtime_error(utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T) * count, End()));
-			}
-			std::unique_ptr<T[]> t{std::make_unique<T[]>(count)};
-			Read(t.get(), sizeof(T) * count);
-			return t;
-		}
+        template<typename T>
+        std::unique_ptr<T> ReadObject() {
+            if (!CanRead(sizeof(T))) {
+                throw std::runtime_error(
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End()));
+            }
+            std::unique_ptr<T> t{ std::make_unique<T>() };
+            Read(t.get(), sizeof(T));
+            return t;
+        }
 
-		uint64_t ReadVByte() {
-			uint64_t v{};
-			byte r;
-			do {
-				r = Read<byte>();
+        template<typename T>
+        std::unique_ptr<T[]> ReadArray(size_t count) {
+            if (!CanRead(sizeof(T) * count)) {
+                throw std::runtime_error(utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(),
+                                                   sizeof(T) * count, End()));
+            }
+            std::unique_ptr<T[]> t{ std::make_unique<T[]>(count) };
+            Read(t.get(), sizeof(T) * count);
+            return t;
+        }
 
-				v = (v << 7) | (r & 0x7F);
-			} while (r & 0x80);
+        uint64_t ReadVByte() {
+            uint64_t v{};
+            byte r;
+            do {
+                r = Read<byte>();
 
-			return v;
-		}
+                v = (v << 7) | (r & 0x7F);
+            } while (r & 0x80);
 
-		uint64_t ReadVByteInv() {
-			uint64_t v{};
-			byte r;
-			int shift{};
-			do {
-				r = Read<byte>();
+            return v;
+        }
 
-				v |= (uint64_t)(r & 0x7F) << shift;
-				shift += 7;
-			} while ((r & 0x80) == 0);
+        uint64_t ReadVByteInv() {
+            uint64_t v{};
+            byte r;
+            int shift{};
+            do {
+                r = Read<byte>();
 
-			return v;
-		}
+                v |= (uint64_t)(r & 0x7F) << shift;
+                shift += 7;
+            } while ((r & 0x80) == 0);
 
-		int64_t ReadSignedVByte() {
-			uint64_t v{ ReadVByte() };
+            return v;
+        }
 
-			if (v & 1) {
-				// -
-				return ~(int64_t)(v >> 1);
-			}
-			else {
-				// +
-				return (int64_t)(v >> 1);
-			}
-		}
+        int64_t ReadSignedVByte() {
+            uint64_t v{ ReadVByte() };
 
-		template<typename S>
-		std::string ReadSizedString(S* len = nullptr) {
-			S _len = Read<S>();
-			std::string ret{};
-			ret.resize((size_t)_len);
-			Read(ret.data(), _len);
-			if (len) *len = _len;
-			return ret;
-		}
+            if (v & 1) {
+                // -
+                return ~(int64_t)(v >> 1);
+            } else {
+                // +
+                return (int64_t)(v >> 1);
+            }
+        }
 
-		std::string ReadVByteSizedString(uint64_t* len = nullptr) {
-			uint64_t _len{ ReadVByte() };
-			std::string ret{};
-			ret.resize(_len);
-			Read(ret.data(), _len);
-			if (len) *len = _len;
-			return ret;
-		}
+        template<typename S>
+        std::string ReadSizedString(S* len = nullptr) {
+            S _len = Read<S>();
+            std::string ret{};
+            ret.resize((size_t)_len);
+            Read(ret.data(), _len);
+            if (len)
+                *len = _len;
+            return ret;
+        }
 
-		std::string ReadVByteInvSizedString(uint64_t* len = nullptr) {
-			uint64_t _len{ ReadVByteInv() };
-			std::string ret{};
-			ret.resize(_len);
-			Read(ret.data(), _len);
-			if (len) *len = _len;
-			return ret;
-		}
+        std::string ReadVByteSizedString(uint64_t* len = nullptr) {
+            uint64_t _len{ ReadVByte() };
+            std::string ret{};
+            ret.resize(_len);
+            Read(ret.data(), _len);
+            if (len)
+                *len = _len;
+            return ret;
+        }
 
-		std::string ReadUnkString(uint64_t* len = nullptr) {
-			std::string ret{};
-			ret.resize(16);
-			size_t _len{};
+        std::string ReadVByteInvSizedString(uint64_t* len = nullptr) {
+            uint64_t _len{ ReadVByteInv() };
+            std::string ret{};
+            ret.resize(_len);
+            Read(ret.data(), _len);
+            if (len)
+                *len = _len;
+            return ret;
+        }
 
-			char c;
+        std::string ReadUnkString(uint64_t* len = nullptr) {
+            std::string ret{};
+            ret.resize(16);
+            size_t _len{};
 
-			while (c = Read<char>()) {
-				ret[_len++] = c;
-				if (_len == ret.size()) {
-					ret.resize(ret.size() * 2);
-				}
-			}
-			ret[_len] = 0;
+            char c;
 
-			ret.resize(_len);
-			if (len) *len = _len;
-			return ret;
-		}
+            while (c = Read<char>()) {
+                ret[_len++] = c;
+                if (_len == ret.size()) {
+                    ret.resize(ret.size() * 2);
+                }
+            }
+            ret[_len] = 0;
 
-	};
-}
+            ret.resize(_len);
+            if (len)
+                *len = _len;
+            return ret;
+        }
+    };
+} // namespace core::bytebuffer

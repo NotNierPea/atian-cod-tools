@@ -3,45 +3,46 @@
 
 namespace {
 
-	int bo4luanames(int argc, const char* argv[]) {
-		if (tool::NotEnoughParam(argc, 1)) return tool::BAD_USAGE;
+    int bo4luanames(int argc, const char* argv[]) {
+        if (tool::NotEnoughParam(argc, 1))
+            return tool::BAD_USAGE;
 
-		hook::module_mapper::Module mod{ true };
-		if (!mod.Load(argv[2], false)) {
-			LOG_ERROR("Can't load module");
-			return tool::BASIC_ERROR;
-		}
+        hook::module_mapper::Module mod{ true };
+        if (!mod.Load(argv[2], false)) {
+            LOG_ERROR("Can't load module");
+            return tool::BASIC_ERROR;
+        }
 
-		LOG_INFO("patching...");
-		mod->NullFunc(0x390D3D0);
-		mod->NullFunc(0x3962D30);
-		mod->NullFunc(0x390D650);
-		mod->NullFunc(0x390D490);
-		mod->NullFunc(0x22C8E80);
-		
-		std::unordered_map<uint64_t, void*> ff{};
+        LOG_INFO("patching...");
+        mod->NullFunc(0x390D3D0);
+        mod->NullFunc(0x3962D30);
+        mod->NullFunc(0x390D650);
+        mod->NullFunc(0x390D490);
+        mod->NullFunc(0x22C8E80);
 
-		mod->Redirect(0x3911980, [](std::unordered_map<uint64_t, void*>* funcs, uint64_t* xhash, void* func) {
-			(*funcs)[*xhash] = func;
-		});
+        std::unordered_map<uint64_t, void*> ff{};
 
-		LOG_INFO("load funcs...");
-		mod->Get<void(void*)>(0x3911C30)(&ff);
+        mod->Redirect(0x3911980, [](std::unordered_map<uint64_t, void*>* funcs, uint64_t* xhash, void* func) {
+            (*funcs)[*xhash] = func;
+        });
 
-		std::filesystem::path funcs{ "output_bo4/luafuncs.csv" };
+        LOG_INFO("load funcs...");
+        mod->Get<void(void*)>(0x3911C30)(&ff);
 
-		utils::OutFileCE os{ funcs, true };
+        std::filesystem::path funcs{ "output_bo4/luafuncs.csv" };
 
-		os << "name,func";
+        utils::OutFileCE os{ funcs, true };
 
-		for (auto& [k, v] : ff) {
-			os << "\n#" << hashutils::ExtractTmp("hash", k) << "," << hook::library::CodePointer{ v };
-		}
+        os << "name,func";
 
-		LOG_INFO("Loaded {} funcs into {}", ff.size(), funcs.string());
+        for (auto& [k, v] : ff) {
+            os << "\n#" << hashutils::ExtractTmp("hash", k) << "," << hook::library::CodePointer{ v };
+        }
 
-		return tool::OK;
-	}
+        LOG_INFO("Loaded {} funcs into {}", ff.size(), funcs.string());
 
-	ADD_TOOL(bo4luanames, "bo4", " [exe]", "dump lua funcs", bo4luanames);
-}
+        return tool::OK;
+    }
+
+    ADD_TOOL(bo4luanames, "bo4", " [exe]", "dump lua funcs", bo4luanames);
+} // namespace

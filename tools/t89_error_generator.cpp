@@ -3,7 +3,7 @@
 #include <iostream>
 #include <map>
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     if (argc < 3) {
         std::cerr << argv[0] << " [in] [out]\n";
         return -1;
@@ -32,24 +32,18 @@ int main(int argc, char **argv) {
 
     bool anyError{};
     std::string render, code, msg;
-    while (std::getline(in, render, '\t') &&
-           std::getline(in, code, '\t') &&
-           std::getline(in, msg))
-    {
+    while (std::getline(in, render, '\t') && std::getline(in, code, '\t') && std::getline(in, msg)) {
 
         // escape quotes
         for (size_t i = 0; i < msg.size(); ++i)
             if (msg[i] == '"')
                 msg.insert(i++, "\\");
 
-
         ErrorInfo& r{ vals[code] };
         if (r.loaded) {
-            std::cerr
-                << "found duplicated entry: \n"
-                << "old: " << code << " = " << r.msg << "/" << r.render << "\n"
-                << "new: " << code << " = " << msg << "/" << render << "\n"
-                ;
+            std::cerr << "found duplicated entry: \n"
+                      << "old: " << code << " = " << r.msg << "/" << r.render << "\n"
+                      << "new: " << code << " = " << msg << "/" << render << "\n";
             anyError = true;
             continue;
         }
@@ -59,7 +53,8 @@ int main(int argc, char **argv) {
         r.loaded = true;
     }
 
-    if (anyError) return -1;
+    if (anyError)
+        return -1;
 
     out << "// Auto-generated file, do not write in it\n\n";
     out << "static const struct { uint32_t code; const char* msg; } ERRORS[] {\n";
@@ -80,7 +75,6 @@ int main(int argc, char **argv) {
     out.close();
 
     std::cout << "generated t89-errors into " << argv[2] << "\n";
-
 
     return 0;
 }

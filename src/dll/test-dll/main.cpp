@@ -9,15 +9,16 @@
 
 #define EXPORT extern "C" __declspec(dllexport)
 
-
-
 // test DLL for memapi tests
 namespace {
-    BOOL(WINAPI* ReadProcessMemoryReal)(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesRead);
-    BOOL WINAPI ReadProcessMemoryHook(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesRead) {
+    BOOL(WINAPI* ReadProcessMemoryReal)(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize,
+                                        SIZE_T* lpNumberOfBytesRead);
+    BOOL WINAPI ReadProcessMemoryHook(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize,
+                                      SIZE_T* lpNumberOfBytesRead) {
         std::wofstream of{ "detours.txt", std::ios::app };
 
-        of << "Reading " << std::hex << lpBaseAddress << "," << lpBuffer << "," << nSize << " from " << hProcess << "\n";
+        of << "Reading " << std::hex << lpBaseAddress << "," << lpBuffer << "," << nSize << " from " << hProcess
+           << "\n";
 
         of.close();
 
@@ -30,7 +31,6 @@ namespace {
         of << "Injecting detours...\n";
         auto* hook = &SetWindowsHookExW;
 
-
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
@@ -42,8 +42,7 @@ namespace {
 
         if (det != NO_ERROR) {
             MessageBoxA(0, "Error applying detours", "Error", MB_OK);
-        }
-        else {
+        } else {
             of << "Detours injected.\n";
         }
 
@@ -51,15 +50,11 @@ namespace {
 
         of << "bo4: " << bo4 << ":" << std::hex << bo4[(uint64_t)0] << "\n";
 
-
         of.close();
     }
-}
+} // namespace
 
-
-BOOL APIENTRY DllMain(HMODULE hModule,
-                      DWORD ul_reason_for_call,
-                      void* lpReserved) {
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, void* lpReserved) {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
         DetectInjections();
@@ -72,19 +67,15 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     return TRUE;
 }
 
-EXPORT void ProcessInjectionTest1() {
-    std::cout << "Injection test 1" << "\n";
-}
+EXPORT void ProcessInjectionTest1() { std::cout << "Injection test 1" << "\n"; }
 
 EXPORT void ProcessInjectionTest2(int value1, double value2, float value3, const wchar_t* value4, bool value5) {
     std::wcout << L"Injection test 2:" << "\n"
-        << value1 << ", " << value2 << ", " << value3 << ", " << value4 << ", " << value5 << "\n";
+               << value1 << ", " << value2 << ", " << value3 << ", " << value4 << ", " << value5 << "\n";
 }
 
-static byte TestFunctionScanData[2][10] = {
-    { 0x01, 0x02, 0x03, 0x04, 0xFF, 0xFF, 0xFF, 0xFF, 0x9, 0x10 },
-    { 0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x9, 0x10 }
-};
+static byte TestFunctionScanData[2][10] = { { 0x01, 0x02, 0x03, 0x04, 0xFF, 0xFF, 0xFF, 0xFF, 0x9, 0x10 },
+                                            { 0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x9, 0x10 } };
 
 EXPORT void TestFunctionScan() {
     std::cout << "Data: " << &TestFunctionScanData << "\n";
@@ -97,5 +88,4 @@ EXPORT void TestFunctionScan() {
         std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)TestFunctionScanData[1][i] << " ";
     }
     std::cout << "\n";
-
 }

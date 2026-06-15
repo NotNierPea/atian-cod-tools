@@ -2,18 +2,19 @@
 #include <core/logs.hpp>
 
 namespace acts::unit_test {
-	void AssertImpl(const std::string& msg, const char* file, size_t line, bool value);
+    void AssertImpl(const std::string& msg, const char* file, size_t line, bool value);
 
-	class UnitTest {
-	public:
-		const char* id;
-		void(*func)();
-		UnitTest(uint64_t uid, const char* id, void(*func)());
+    class UnitTest {
+      public:
+        const char* id;
+        void (*func)();
+        UnitTest(uint64_t uid, const char* id, void (*func)());
 
-		bool HandleTest();
-	};
-}
+        bool HandleTest();
+    };
+} // namespace acts::unit_test
 
-#define ASSERT_VAL(msg, val) acts::unit_test::AssertImpl(std::format("{} - {}", #val, msg), LOG_GET_LOG_REF_STR, __LINE__, val)
+#define ASSERT_VAL(msg, val)                                                                                           \
+    acts::unit_test::AssertImpl(std::format("{} - {}", #val, msg), LOG_GET_LOG_REF_STR, __LINE__, val)
 #define ASSERT_EQ(msg, expected, actual) ASSERT_VAL(msg, (expected) == (actual))
 #define ADD_TEST(id, func) static acts::unit_test::UnitTest __unittest_##id(::hash::Hash64(#id), #id, func)

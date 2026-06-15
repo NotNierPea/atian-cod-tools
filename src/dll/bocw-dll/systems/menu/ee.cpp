@@ -16,9 +16,9 @@ namespace {
         for (size_t i = 0; i < spt.itemAllocCount; i++) {
             auto& entry = pool[i];
 
-            if ((entry.name != hash::Hash64("scripts/zm_common/zm_utility.gsc")
-                && entry.name != hash::Hash64("scripts/zm_common/zm_utility.csc"))
-                || !entry.len || !entry.buffer) {
+            if ((entry.name != hash::Hash64("scripts/zm_common/zm_utility.gsc") &&
+                 entry.name != hash::Hash64("scripts/zm_common/zm_utility.csc")) ||
+                !entry.len || !entry.buffer) {
                 continue;
             }
 
@@ -32,7 +32,6 @@ namespace {
                 if (exp.name != hash::HashT89Scr("is_ee_enabled")) {
                     continue;
                 }
-
 
                 static byte data[] = { 0x0d, 0x00, 0x13, 0x00, 0xca, 0x00, 0x01, 0x00, 0x1a, 0x00 };
 
@@ -54,14 +53,14 @@ namespace {
         return "EE injected";
     }
 
-	void PostInit(uint64_t id) {
+    void PostInit(uint64_t id) {
         callbacks::RegisterRenderImGui([](void* ev) {
-			const char** notif = reinterpret_cast<const char**>(ev);
+            const char** notif = reinterpret_cast<const char**>(ev);
 
-			if (ImGui::Button("Enable EE")) {
-				*notif = EnableEE();
-			}
-		});
-	}
-}
+            if (ImGui::Button("Enable EE")) {
+                *notif = EnableEE();
+            }
+        });
+    }
+} // namespace
 REGISTER_SYSTEM(menu_ee, nullptr, PostInit);

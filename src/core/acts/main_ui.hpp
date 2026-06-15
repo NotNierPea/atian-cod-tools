@@ -1,5 +1,5 @@
 #pragma once
 
 namespace tool::ui {
-	int MainActsUI(HINSTANCE hInstance, int nShowCmd);
+    int MainActsUI(HINSTANCE hInstance, int nShowCmd);
 }

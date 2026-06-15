@@ -15,7 +15,8 @@ namespace tool::ps4::codtool {
 
     CodToolHandler* GetHandler(const char* name) {
         for (CodToolHandler* h : GetHandlers()) {
-            if (!std::strcmp(h->name, name)) return h;
+            if (!std::strcmp(h->name, name))
+                return h;
         }
         return nullptr;
     }
@@ -33,8 +34,7 @@ namespace tool::ps4::codtool {
         handler = GetHandler(injHandler.data());
         if (handler) {
             handlername = handler->name;
-        }
-        else {
+        } else {
             handlername = handlernameDefault;
         }
 
@@ -81,24 +81,22 @@ namespace tool::ps4::codtool {
             loadAfter = true;
         }
 
-
         if (ImGui::Button(ps4 ? "Reload Console" : "Load Console")) {
             if (ps4) {
                 try {
                     ps4 = nullptr;
+                } catch (...) {
                 }
-                catch (...) {}
             }
 
             try {
                 ps4 = std::make_unique<utils::ps4::PS4Process>(ps4In, handler->process);
-            }
-            catch (std::runtime_error& err) {
+            } catch (std::runtime_error& err) {
                 notif = std::format("Can't load console: {}", err.what());
                 try {
                     ps4 = nullptr;
+                } catch (...) {
                 }
-                catch (...) {}
             }
         }
 
@@ -120,12 +118,10 @@ namespace tool::ps4::codtool {
 
                     handler->CBuf(&codTool, cmd.c_str());
                     notif = "";
-                }
-                catch (std::exception& e) {
+                } catch (std::exception& e) {
                     notif = std::format("Exception: {}", e.what());
                 }
             }
-
         }
 
         if (handler->InjectGSC) {
@@ -164,7 +160,6 @@ namespace tool::ps4::codtool {
                 }
             }
 
-
             if (ImGui::Button("Inject PS4 Script")) {
                 handler->InjectGSC(&codTool, gscFileIn);
             }
@@ -176,11 +171,12 @@ namespace tool::ps4::codtool {
             tool::nui::NuiUseDefaultWindow dw{};
 
             static std::once_flag of{};
-            std::call_once(of, []{ codTool.Load(); });
+            std::call_once(of, [] { codTool.Load(); });
 
             codTool.Handle();
 
-            if (codTool.loadAfter) tool::nui::SaveNextConfig();
+            if (codTool.loadAfter)
+                tool::nui::SaveNextConfig();
 
             if (!codTool.notif.empty()) {
                 ImGui::Separator();
@@ -190,5 +186,5 @@ namespace tool::ps4::codtool {
         }
 
         ADD_TOOL_NUI_DEV(codps4, "Call of duty PS4", codps4);
-    }
-}
+    } // namespace
+} // namespace tool::ps4::codtool

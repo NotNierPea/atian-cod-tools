@@ -4,7 +4,6 @@ void example_hash();
 void example_config();
 void example_logs();
 
-
 int main(int argc, const char* argv[]) {
 
     example_api();

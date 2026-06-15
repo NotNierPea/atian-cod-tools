@@ -27,22 +27,21 @@ namespace core::preprocessor {
         return blocks[blocks.size() - 1];
     }
 
-    void StringContainer::PrintLineMessage(core::logs::loglevel lvl, size_t line, size_t charPositionInLine, const std::string& msg) const {
+    void StringContainer::PrintLineMessage(core::logs::loglevel lvl, size_t line, size_t charPositionInLine,
+                                           const std::string& msg) const {
         const StringData& f = FindFile(line);
 
         size_t localLine;
 
         if (line > f.startLine) {
             localLine = line - f.startLine;
-        }
-        else {
+        } else {
             localLine = f.sizeLine;
         }
 
         if (charPositionInLine) {
             LOG_LVLF(lvl, "{}#{}:{} {}", f.filename.string(), localLine, charPositionInLine, msg);
-        }
-        else {
+        } else {
             LOG_LVLF(lvl, "{}#{} {}", f.filename.string(), localLine, msg);
         }
     }
@@ -73,7 +72,7 @@ namespace core::preprocessor {
         return true;
     }
 
-	namespace {
+    namespace {
         size_t FindEndLineDelta(const char* d) {
             const char* s = d;
             while (*d && *d != '\n') {
@@ -126,7 +125,7 @@ namespace core::preprocessor {
                 c = ' '; // keep same struct
             }
         }
-    }
+    } // namespace
 
     bool PreProcessorOption::AddDefineConfig(const std::string& config) {
         if (config.empty() || config[0] == '=') {
@@ -136,14 +135,14 @@ namespace core::preprocessor {
         size_t split{ config.find('=') };
         if (split == std::string::npos) {
             defines[config] = "";
-        }
-        else {
+        } else {
             defines[config.substr(0, split)] = &config[split + 1];
         }
         return true;
     }
     void PreProcessorOption::AddDefineListConfig(const char* cfg) {
-        if (!cfg || !*cfg) return; // nothing
+        if (!cfg || !*cfg)
+            return; // nothing
 
         std::string cpy{ cfg };
         size_t idx{ cpy.size() };
@@ -161,9 +160,7 @@ namespace core::preprocessor {
         }
     }
 
-    void PreProcessorOption::AddDefine(const std::string& name, const std::string& value) {
-        defines[name] = value;
-    }
+    void PreProcessorOption::AddDefine(const std::string& name, const std::string& value) { defines[name] = value; }
 
     void PreProcessorOption::RemoveDefine(const char* name) {
         auto it{ defines.find(name) };
@@ -172,9 +169,7 @@ namespace core::preprocessor {
         }
     }
 
-    static bool IsIdentifierChar(char c) {
-        return c == '_' || isalnum(c);
-    }
+    static bool IsIdentifierChar(char c) { return c == '_' || isalnum(c); }
 
     static size_t IdfSize(const char* str) {
         size_t len{};
@@ -227,7 +222,9 @@ namespace core::preprocessor {
         }
     }
 
-    bool PreProcessorOption::ApplyPreProcessorComments(std::string& str, std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler) {
+    bool PreProcessorOption::ApplyPreProcessorComments(
+        std::string& str,
+        std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler) {
         size_t idx{};
         char* data = str.data();
         char* dataEnd = data + str.length();
@@ -244,23 +241,20 @@ namespace core::preprocessor {
                         if (data == dataEnd) {
                             break; // invalid \?
                         }
-                    }
-                    else if (data[0] == '"') {
+                    } else if (data[0] == '"') {
                         data++;
                         break;
                     }
                     data++;
                 }
-            }
-            else if (c == '/' && data[1] == '/') {
+            } else if (c == '/' && data[1] == '/') {
                 // skip line comment
 
                 SetBlankChar(*(data++)); // /
                 do {
                     SetBlankChar(*(data++));
                 } while (data != dataEnd && *data != '\n');
-            }
-            else if (c == '/' && data[1] == '*') {
+            } else if (c == '/' && data[1] == '*') {
                 // skip comment
                 SetBlankChar(*(data++)); // /
 
@@ -274,8 +268,7 @@ namespace core::preprocessor {
                 }
                 SetBlankChar(*(data++));
                 SetBlankChar(*(data++)); // */
-            }
-            else if (devBlockAsComment && c == '/' && data[1] == '#') {
+            } else if (devBlockAsComment && c == '/' && data[1] == '#') {
                 // skip dev blocks for retarded people
                 SetBlankChar(*(data++)); // /
 
@@ -289,15 +282,16 @@ namespace core::preprocessor {
                 }
                 SetBlankChar(*(data++));
                 SetBlankChar(*(data++)); // #/
-            }
-            else {
+            } else {
                 data++;
             }
         }
 
         return true;
     }
-    bool PreProcessorOption::ApplyPreProcessor(std::string& str, std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler) {
+    bool PreProcessorOption::ApplyPreProcessor(
+        std::string& str,
+        std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler) {
         if (!ApplyPreProcessorComments(str, errorHandler)) {
             return false;
         }
@@ -336,12 +330,10 @@ namespace core::preprocessor {
                 if (define.length() < 1 || !isspace(define[0])) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "#ifdef should be used with a parameter");
                     err = true;
-                }
-                else if (!TrimDefineVal(define)) {
+                } else if (!TrimDefineVal(define)) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "#ifdef should be used with one valid parameter");
                     err = true;
-                }
-                else {
+                } else {
                     bool forceDel = eraseCtx.size() && eraseCtx.top();
 
                     if (!forceDel) {
@@ -349,18 +341,15 @@ namespace core::preprocessor {
                     }
                     eraseCtx.push(forceDel);
                 }
-            }
-            else if (line.starts_with("#ifndef")) {
+            } else if (line.starts_with("#ifndef")) {
                 std::string define{ line.substr(7) };
                 if (define.length() < 1 || !isspace(define[0])) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "#ifndef should be used with a parameter");
                     err = true;
-                }
-                else if (!TrimDefineVal(define)) {
+                } else if (!TrimDefineVal(define)) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "#ifndef should be used with one valid parameter");
                     err = true;
-                }
-                else {
+                } else {
                     bool del = eraseCtx.size() && eraseCtx.top();
 
                     if (!del) {
@@ -368,17 +357,14 @@ namespace core::preprocessor {
                     }
                     eraseCtx.push(del);
                 }
-            }
-            else if (line.starts_with("#else")) {
+            } else if (line.starts_with("#else")) {
                 if (!HasOnlySpaceAfter(line, 5)) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "#else can't have parameters");
                     err = true;
-                }
-                else if (eraseCtx.empty()) {
+                } else if (eraseCtx.empty()) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "Usage of #else without start if");
                     err = true;
-                }
-                else {
+                } else {
                     bool curr = eraseCtx.top();
                     eraseCtx.pop();
 
@@ -386,30 +372,24 @@ namespace core::preprocessor {
                         // at least 2, we need to check the parent ctx
                         if (!eraseCtx.top()) {
                             eraseCtx.push(false);
-                        }
-                        else {
+                        } else {
                             eraseCtx.push(!curr);
                         }
-                    }
-                    else {
+                    } else {
                         eraseCtx.push(!curr);
                     }
                 }
-            }
-            else if (line.starts_with("#endif")) {
+            } else if (line.starts_with("#endif")) {
                 if (!HasOnlySpaceAfter(line, 6)) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "#endif can't have parameters");
                     err = true;
-                }
-                else if (eraseCtx.empty()) {
+                } else if (eraseCtx.empty()) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, "Usage of #endif without start if");
                     err = true;
-                }
-                else {
+                } else {
                     eraseCtx.pop();
                 }
-            }
-            else if (eraseCtx.empty() || !eraseCtx.top()) {
+            } else if (eraseCtx.empty() || !eraseCtx.top()) {
                 if (!noDefineExpr && line.starts_with("#define")) {
                     size_t defStartIdx{ 7 };
                     while (defStartIdx < line.size() && isspace(line[defStartIdx])) {
@@ -418,33 +398,28 @@ namespace core::preprocessor {
                     if (defStartIdx == line.size() || defStartIdx == 7) {
                         errorHandler(core::logs::LVL_ERROR, lineIdx, "#define should be used with a parameter");
                         err = true;
-                    }
-                    else {
+                    } else {
                         std::string define{ line.substr(defStartIdx) };
 
                         size_t len{ IdfSize(define.data()) };
 
                         AddDefine(define.substr(0, len), &define[len]);
                     }
-                }
-                else if (line.starts_with("#error")) {
+                } else if (line.starts_with("#error")) {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, std::string{ line.substr(line.length() > 6 ? 7 : 6) });
                     err = true;
-                }
-                else if (line.starts_with("#warning")) {
-                    errorHandler(core::logs::LVL_WARNING, lineIdx, std::string{ line.substr(line.length() > 8 ? 9 : 8) });
-                }
-                else if (line.starts_with("#insert")) {
+                } else if (line.starts_with("#warning")) {
+                    errorHandler(core::logs::LVL_WARNING, lineIdx,
+                                 std::string{ line.substr(line.length() > 8 ? 9 : 8) });
+                } else if (line.starts_with("#insert")) {
                     std::string filename{ line.substr(7) };
                     if (filename.length() < 1 || !isspace(filename[0])) {
                         errorHandler(core::logs::LVL_ERROR, lineIdx, "#insert should be used with a parameter");
                         err = true;
-                    }
-                    else if (!TrimDefineVal(filename, true)) {
+                    } else if (!TrimDefineVal(filename, true)) {
                         errorHandler(core::logs::LVL_ERROR, lineIdx, "#insert should be used with one valid parameter");
                         err = true;
-                    }
-                    else {
+                    } else {
                         std::string insertData{};
 
                         size_t end{ filename.size() };
@@ -458,16 +433,18 @@ namespace core::preprocessor {
                         std::filesystem::path insertPath{ cwd / filename };
 
                         if (!utils::ReadFile(insertPath, insertData)) {
-                            errorHandler(core::logs::LVL_ERROR, lineIdx, std::format("can't read insert '{}'", insertPath.string()));
+                            errorHandler(core::logs::LVL_ERROR, lineIdx,
+                                         std::format("can't read insert '{}'", insertPath.string()));
                             err = true;
-                        }
-                        else if (!ApplyPreProcessor(insertData, [&errorHandler, &filename, lineIdx](core::logs::loglevel lvl, size_t line, const std::string& message) {
-                            errorHandler(lvl, lineIdx, std::format("[{}:{}] {}", filename, line, message));
-                            })) {
-                            errorHandler(core::logs::LVL_ERROR, lineIdx, std::format("can't parse insert '{}'", insertPath.string()));
+                        } else if (!ApplyPreProcessor(insertData, [&errorHandler, &filename,
+                                                                   lineIdx](core::logs::loglevel lvl, size_t line,
+                                                                            const std::string& message) {
+                                       errorHandler(lvl, lineIdx, std::format("[{}:{}] {}", filename, line, message));
+                                   })) {
+                            errorHandler(core::logs::LVL_ERROR, lineIdx,
+                                         std::format("can't parse insert '{}'", insertPath.string()));
                             err = true;
-                        }
-                        else {
+                        } else {
                             for (char* pInsertData = insertData.data(); *pInsertData; pInsertData++) {
                                 // remove new lines, .gsh files shouldn't contain function code
                                 if (*pInsertData == '\r' || *pInsertData == '\n') {
@@ -478,8 +455,7 @@ namespace core::preprocessor {
                             next = lineStart + insertData.size();
                         }
                     }
-                }
-                else if (!line.starts_with("#region") && !line.starts_with("#endregion")) {
+                } else if (!line.starts_with("#region") && !line.starts_with("#endregion")) {
                     // not a known directive
                     ReplaceDefines(str, lineStart, &next);
 
@@ -505,10 +481,14 @@ namespace core::preprocessor {
 
     bool PreProcessorOption::ApplyPreProcessor(std::string& str, const char* filename) {
         if (filename) {
-            return ApplyPreProcessor(str, [filename](core::logs::loglevel lvl, size_t line, const std::string& message) { LOG_LVLF(lvl, "[{}:{}] {}", filename, line, message); });
-        }
-        else {
-            return ApplyPreProcessor(str, [](core::logs::loglevel lvl, size_t line, const std::string& message) { LOG_LVLF(lvl, "[line:{}] {}", line, message); });
+            return ApplyPreProcessor(str,
+                                     [filename](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                                         LOG_LVLF(lvl, "[{}:{}] {}", filename, line, message);
+                                     });
+        } else {
+            return ApplyPreProcessor(str, [](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                LOG_LVLF(lvl, "[line:{}] {}", line, message);
+            });
         }
     }
-}
+} // namespace core::preprocessor

@@ -35,8 +35,7 @@ namespace tool::dump {
         int8_t Pad01;
         int16_t Pad02;
     };
-    struct T8BuiltInFunc
-    {
+    struct T8BuiltInFunc {
         uint32_t name;
         uint32_t minArgs;
         uint32_t maxArgs;
@@ -61,47 +60,27 @@ namespace tool::dump {
     CScr_GetFunction sub_1F13140
     CScr_GetMethod sub_1F13650
     */
-    static FunctionPoolDef functionPool[] {
-        { scriptinstance::SI_SERVER, false, 0x49b60c0, 8 },
-        { scriptinstance::SI_SERVER, false, 0x4f437c0, 370 },
-        { scriptinstance::SI_SERVER, false, 0x49b9ae0, 372 },
-        { scriptinstance::SI_SERVER, false, 0x49600d0, 60 },
-        { scriptinstance::SI_SERVER, false, 0x495f250, 114 },
-        { scriptinstance::SI_SERVER, false, 0x49608a0, 75 },
-        { scriptinstance::SI_SERVER, false, 0x49612d0, 14 },
-        { scriptinstance::SI_SERVER, false, 0x49b5590, 9 },
-        { scriptinstance::SI_SERVER, false, 0x49b56c0, 15 },
-        { scriptinstance::SI_SERVER, false, 0x495cfb0, 16 },
-        { scriptinstance::SI_SERVER, false, 0x495ceb0, 6 },
-        { scriptinstance::SI_SERVER, false, 0x495cf78, 1 },
-        { scriptinstance::SI_SERVER, false, 0x495d1c8, 1 },
-        { scriptinstance::SI_SERVER, true, 0x498dcf0, 491 },
-        { scriptinstance::SI_SERVER, true, 0x49b2980, 40 },
-        { scriptinstance::SI_SERVER, true, 0x49b5b20, 45 },
-        { scriptinstance::SI_SERVER, true, 0x49bcff0, 19 },
-        { scriptinstance::SI_SERVER, true, 0x49bd540, 134 },
-        { scriptinstance::SI_SERVER, true, 0x49b3180, 5 },
-        { scriptinstance::SI_SERVER, true, 0x49f1ff0, 123 },
-        { scriptinstance::SI_SERVER, true, 0x495cd40, 10 },
-        { scriptinstance::SI_SERVER, true, 0x49b3490, 260 },
-        { scriptinstance::SI_SERVER, true, 0x49b58a0, 1 },
-        { scriptinstance::SI_SERVER, true, 0x4f466b0, 372 },
+    static FunctionPoolDef functionPool[]{
+        { scriptinstance::SI_SERVER, false, 0x49b60c0, 8 },   { scriptinstance::SI_SERVER, false, 0x4f437c0, 370 },
+        { scriptinstance::SI_SERVER, false, 0x49b9ae0, 372 }, { scriptinstance::SI_SERVER, false, 0x49600d0, 60 },
+        { scriptinstance::SI_SERVER, false, 0x495f250, 114 }, { scriptinstance::SI_SERVER, false, 0x49608a0, 75 },
+        { scriptinstance::SI_SERVER, false, 0x49612d0, 14 },  { scriptinstance::SI_SERVER, false, 0x49b5590, 9 },
+        { scriptinstance::SI_SERVER, false, 0x49b56c0, 15 },  { scriptinstance::SI_SERVER, false, 0x495cfb0, 16 },
+        { scriptinstance::SI_SERVER, false, 0x495ceb0, 6 },   { scriptinstance::SI_SERVER, false, 0x495cf78, 1 },
+        { scriptinstance::SI_SERVER, false, 0x495d1c8, 1 },   { scriptinstance::SI_SERVER, true, 0x498dcf0, 491 },
+        { scriptinstance::SI_SERVER, true, 0x49b2980, 40 },   { scriptinstance::SI_SERVER, true, 0x49b5b20, 45 },
+        { scriptinstance::SI_SERVER, true, 0x49bcff0, 19 },   { scriptinstance::SI_SERVER, true, 0x49bd540, 134 },
+        { scriptinstance::SI_SERVER, true, 0x49b3180, 5 },    { scriptinstance::SI_SERVER, true, 0x49f1ff0, 123 },
+        { scriptinstance::SI_SERVER, true, 0x495cd40, 10 },   { scriptinstance::SI_SERVER, true, 0x49b3490, 260 },
+        { scriptinstance::SI_SERVER, true, 0x49b58a0, 1 },    { scriptinstance::SI_SERVER, true, 0x4f466b0, 372 },
 
-        { scriptinstance::SI_CLIENT, false, 0x4ed3470, 351 },
-        { scriptinstance::SI_CLIENT, false, 0x49600d0, 60 },
-        { scriptinstance::SI_CLIENT, false, 0x495f250, 114 },
-        { scriptinstance::SI_CLIENT, false, 0x49608a0, 75 },
-        { scriptinstance::SI_CLIENT, false, 0x49612d0, 14 },
-        { scriptinstance::SI_CLIENT, false, 0x4ed01a0, 135 },
-        { scriptinstance::SI_CLIENT, false, 0x4969d70, 34 },
-        { scriptinstance::SI_CLIENT, false, 0x4969bf0, 12 },
-        { scriptinstance::SI_CLIENT, false, 0x496a370, 25 },
-        { scriptinstance::SI_CLIENT, false, 0x496a720, 26 },
-        { scriptinstance::SI_CLIENT, false, 0x4967da0, 31 },
-        { scriptinstance::SI_CLIENT, true, 0x496e7d0, 325 },
-        { scriptinstance::SI_CLIENT, true, 0x4969370, 56 },
-        { scriptinstance::SI_CLIENT, true, 0x496a1b0, 9 },
-        { scriptinstance::SI_CLIENT, true, 0x496aa60, 3 },
-        { scriptinstance::SI_CLIENT, true, 0x4968180, 13 },
+        { scriptinstance::SI_CLIENT, false, 0x4ed3470, 351 }, { scriptinstance::SI_CLIENT, false, 0x49600d0, 60 },
+        { scriptinstance::SI_CLIENT, false, 0x495f250, 114 }, { scriptinstance::SI_CLIENT, false, 0x49608a0, 75 },
+        { scriptinstance::SI_CLIENT, false, 0x49612d0, 14 },  { scriptinstance::SI_CLIENT, false, 0x4ed01a0, 135 },
+        { scriptinstance::SI_CLIENT, false, 0x4969d70, 34 },  { scriptinstance::SI_CLIENT, false, 0x4969bf0, 12 },
+        { scriptinstance::SI_CLIENT, false, 0x496a370, 25 },  { scriptinstance::SI_CLIENT, false, 0x496a720, 26 },
+        { scriptinstance::SI_CLIENT, false, 0x4967da0, 31 },  { scriptinstance::SI_CLIENT, true, 0x496e7d0, 325 },
+        { scriptinstance::SI_CLIENT, true, 0x4969370, 56 },   { scriptinstance::SI_CLIENT, true, 0x496a1b0, 9 },
+        { scriptinstance::SI_CLIENT, true, 0x496aa60, 3 },    { scriptinstance::SI_CLIENT, true, 0x4968180, 13 },
     };
-}
+} // namespace tool::dump

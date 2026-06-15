@@ -3,15 +3,11 @@
 #include <tools/gsc/gsc_injector.hpp>
 
 namespace tool::gsc::injector {
-	class GscInjectorT836PC : public GscInjector {
-	public:
-		GscInjectorT836PC()
-			: GscInjector(tool::gsc::opcode::VMI_T8_36, tool::gsc::opcode::PLATFORM_PC) {}
+    class GscInjectorT836PC : public GscInjector {
+      public:
+        GscInjectorT836PC() : GscInjector(tool::gsc::opcode::VMI_T8_36, tool::gsc::opcode::PLATFORM_PC) {}
 
+        void InjectGsc(std::vector<byte>& gsc, InjectorConfig& cfg) override {}
+    };
 
-		void InjectGsc(std::vector<byte>& gsc, InjectorConfig& cfg) override {
-
-		}
-	};
-
-}
+} // namespace tool::gsc::injector

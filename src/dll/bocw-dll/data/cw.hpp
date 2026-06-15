@@ -333,7 +333,6 @@ namespace cw {
         T9ScrVarType type;
     };
 
-
     struct FunctionStack {
         byte* pos;
         ScrVarValue* top;
@@ -343,8 +342,7 @@ namespace cw {
         uint16_t profileInfoCount;
     };
 
-    struct __declspec(align(8)) ObjFileInfo
-    {
+    struct __declspec(align(8)) ObjFileInfo {
         T9GSCOBJ* activeVersion;
         int32_t slot;
         int32_t refCount;
@@ -352,7 +350,6 @@ namespace cw {
     };
 
     typedef ObjFileInfo ObjFileInfoStruct[800];
-
 
     struct XAssetPool {
         XAssetHeader pool;
@@ -362,4 +359,4 @@ namespace cw {
         int itemAllocCount;
         void* freeHead;
     };
-}
+} // namespace cw

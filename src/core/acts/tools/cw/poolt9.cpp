@@ -7,7 +7,6 @@
 #include <games/bo4/scriptinstance.hpp>
 #include <games/bo4/pool.hpp>
 
-
 namespace {
     using namespace games::bo4;
 
@@ -21,8 +20,7 @@ namespace {
     };
     static_assert(sizeof(XAssetPool) == 0x20);
 
-    union __declspec(align(8)) stringtable_cell_value
-    {
+    union __declspec(align(8)) stringtable_cell_value {
         byte bytes[8];
         const char* string_value;
         int64_t int_value;
@@ -49,12 +47,10 @@ namespace {
     };
 
     struct RawFileEntry {
-        uintptr_t name; // 0x8
-        uintptr_t size; // 0x18
+        uintptr_t name;   // 0x8
+        uintptr_t size;   // 0x18
         uintptr_t buffer; // 0x20
     };
-
-
 
     struct StringTable {
         uint64_t name;
@@ -62,7 +58,7 @@ namespace {
         int rowCount;
         int cellcount;
         int unk14;
-        uintptr_t values; // stringtable_cell* 
+        uintptr_t values; // stringtable_cell*
         uintptr_t unk20;
         uintptr_t unk28;
         uintptr_t unk30;
@@ -75,48 +71,27 @@ namespace {
     };
 
     FuncInfo func_info_cw[] = {
-        { "GSC-Function-d7b8d60", 0xD7B8D60, 0x8 },
-        { "GSC-Function-deb19b0", 0xDEB19B0, 0x1C1 },
-        { "GSC-Function-d7a3660", 0xD7A3660, 0x1AE },
-        { "GSC-Function-d8136b0", 0xD8136B0, 0x4D },
-        { "GSC-Function-d7c1270", 0xD7C1270, 0x99 },
-        { "GSC-Function-d7d4d00", 0xD7D4D00, 0x4E },
-        { "GSC-Function-d7fffc0", 0xD7FFFC0, 0x1A },
-        { "GSC-Function-d7f1950", 0xD7F1950, 0xC },
-        { "GSC-Function-d7d3590", 0xD7D3590, 0xD },
-        { "GSC-Function-d7d85e0", 0xD7D85E0, 0x6 },
-        { "GSC-Function-d7f1ad0", 0xD7F1AD0, 0x1 },
-        { "GSC-Function-d7ed260", 0xD7ED260, 0x1 },
-        { "GSC-Function-d76d7d0", 0xD76D7D0, 0x1 },
-        { "CSC-Function-deae040", 0xDEAE040, 0x1AA },
-        { "CSC-Function-d8136b0", 0xD8136B0, 0x4D },
-        { "CSC-Function-d7c1270", 0xD7C1270, 0x99 },
-        { "CSC-Function-d7d4d00", 0xD7D4D00, 0x4E },
-        { "CSC-Function-d7fffc0", 0xD7FFFC0, 0x1A  },
-        { "CSC-Function-dec5d10", 0xDEC5D10, 0x7A },
-        { "CSC-Function-d7f1200", 0xD7F1200, 0x2C },
-        { "CSC-Function-d7f37f0", 0xD7F37F0, 0xF },
-        { "CSC-Function-d7d82e0", 0xD7D82E0, 0x10 },
-        { "CSC-Function-d7d8800", 0xD7D8800, 0x24 },
-        { "CSC-Function-d7d9410", 0xD7D9410, 0x28 },
-        { "GSC-Method-d7a8ef0", 0xD7A8EF0, 0x23B },
-        { "GSC-Method-d7b8ea0", 0xD7B8EA0, 0x2C },
-        { "GSC-Method-d7b8620", 0xD7B8620, 0x3A },
-        { "GSC-Method-d7ecd70", 0xD7ECD70, 0x15 },
-        { "GSC-Method-d7b3a60", 0xD7B3A60, 0x94 },
-        { "GSC-Method-d7ed580", 0xD7ED580, 0x4 },
-        { "GSC-Method-d7bba50", 0xD7BBA50, 0x98 },
-        { "GSC-Method-d7c26f0", 0xD7C26F0, 0xA },
-        { "GSC-Method-d7afd00", 0xD7AFD00, 0x10E },
-        { "GSC-Method-d7d3730", 0xD7D3730, 0x1 },
-        { "GSC-Method-d7f1b60", 0xD7F1B60, 0x6 },
-        { "GSC-Method-d7efd70", 0xD7EFD70, 0x15 },
-        { "GSC-Method-deb52d0", 0xDEB52D0, 0x1B4 },
-        { "CSC-Method-d79e840", 0xD79E840, 0x186 },
-        { "CSC-Method-d7b9730", 0xD7B9730, 0x17 },
-        { "CSC-Method-d7f1060", 0xD7F1060, 0xD },
-        { "CSC-Method-d7d84e0", 0xD7D84E0, 0x4 },
-        { "CSC-Method-d7d8c80", 0xD7D8C80, 0x3 },
+        { "GSC-Function-d7b8d60", 0xD7B8D60, 0x8 },   { "GSC-Function-deb19b0", 0xDEB19B0, 0x1C1 },
+        { "GSC-Function-d7a3660", 0xD7A3660, 0x1AE }, { "GSC-Function-d8136b0", 0xD8136B0, 0x4D },
+        { "GSC-Function-d7c1270", 0xD7C1270, 0x99 },  { "GSC-Function-d7d4d00", 0xD7D4D00, 0x4E },
+        { "GSC-Function-d7fffc0", 0xD7FFFC0, 0x1A },  { "GSC-Function-d7f1950", 0xD7F1950, 0xC },
+        { "GSC-Function-d7d3590", 0xD7D3590, 0xD },   { "GSC-Function-d7d85e0", 0xD7D85E0, 0x6 },
+        { "GSC-Function-d7f1ad0", 0xD7F1AD0, 0x1 },   { "GSC-Function-d7ed260", 0xD7ED260, 0x1 },
+        { "GSC-Function-d76d7d0", 0xD76D7D0, 0x1 },   { "CSC-Function-deae040", 0xDEAE040, 0x1AA },
+        { "CSC-Function-d8136b0", 0xD8136B0, 0x4D },  { "CSC-Function-d7c1270", 0xD7C1270, 0x99 },
+        { "CSC-Function-d7d4d00", 0xD7D4D00, 0x4E },  { "CSC-Function-d7fffc0", 0xD7FFFC0, 0x1A },
+        { "CSC-Function-dec5d10", 0xDEC5D10, 0x7A },  { "CSC-Function-d7f1200", 0xD7F1200, 0x2C },
+        { "CSC-Function-d7f37f0", 0xD7F37F0, 0xF },   { "CSC-Function-d7d82e0", 0xD7D82E0, 0x10 },
+        { "CSC-Function-d7d8800", 0xD7D8800, 0x24 },  { "CSC-Function-d7d9410", 0xD7D9410, 0x28 },
+        { "GSC-Method-d7a8ef0", 0xD7A8EF0, 0x23B },   { "GSC-Method-d7b8ea0", 0xD7B8EA0, 0x2C },
+        { "GSC-Method-d7b8620", 0xD7B8620, 0x3A },    { "GSC-Method-d7ecd70", 0xD7ECD70, 0x15 },
+        { "GSC-Method-d7b3a60", 0xD7B3A60, 0x94 },    { "GSC-Method-d7ed580", 0xD7ED580, 0x4 },
+        { "GSC-Method-d7bba50", 0xD7BBA50, 0x98 },    { "GSC-Method-d7c26f0", 0xD7C26F0, 0xA },
+        { "GSC-Method-d7afd00", 0xD7AFD00, 0x10E },   { "GSC-Method-d7d3730", 0xD7D3730, 0x1 },
+        { "GSC-Method-d7f1b60", 0xD7F1B60, 0x6 },     { "GSC-Method-d7efd70", 0xD7EFD70, 0x15 },
+        { "GSC-Method-deb52d0", 0xDEB52D0, 0x1B4 },   { "CSC-Method-d79e840", 0xD79E840, 0x186 },
+        { "CSC-Method-d7b9730", 0xD7B9730, 0x17 },    { "CSC-Method-d7f1060", 0xD7F1060, 0xD },
+        { "CSC-Method-d7d84e0", 0xD7D84E0, 0x4 },     { "CSC-Method-d7d8c80", 0xD7D8C80, 0x3 },
         { "CSC-Method-d7d9940", 0xD7D9940, 0x13 },
     };
     struct SB_ObjectsArray {
@@ -137,8 +112,7 @@ namespace {
         const char* outFile;
         if (argc == 2) {
             outFile = "scriptparsetree_cw";
-        }
-        else {
+        } else {
             outFile = argv[2];
         }
 
@@ -185,8 +159,7 @@ namespace {
 
                 if (utils::WriteFile(namebuff, &file[0], headerTmp.file_size)) {
                     std::cout << "- " << hashutils::ExtractTmpScript(headerTmp.name) << " -> " << namebuff << "\n";
-                }
-                else {
+                } else {
                     std::cerr << "Error when writting " << namebuff << "\n";
                 }
             }
@@ -230,16 +203,13 @@ namespace {
 
             if (utils::WriteFile(namebuff, &file[0], headerTmp.file_size)) {
                 std::cout << "- " << hashutils::ExtractTmpScript(headerTmp.name) << " -> " << namebuff << "\n";
-            }
-            else {
+            } else {
                 std::cerr << "Error when writting " << namebuff << "\n";
             }
         }
 
-
         return tool::OK;
     }
-
 
     const char* ReadTmpStr(const Process& proc, uintptr_t location) {
         static char tmp_buff[0x1000];
@@ -272,24 +242,23 @@ namespace {
                 break;
             }
 
-            std::cout << std::dec << id << "," << tmp_buff << "," << std::hex << pool.itemSize << "," << pool.itemCount << "," << pool.itemAllocCount << "\n";
+            std::cout << std::dec << id << "," << tmp_buff << "," << std::hex << pool.itemSize << "," << pool.itemCount
+                      << "," << pool.itemAllocCount << "\n";
 
             id++;
         }
 
-
         return tool::OK;
     }
-
 
 #pragma region ddl_dump
 
     struct DDLDef {
         uint64_t name;
-        uint64_t metatable; // ID64Metatable
+        uint64_t metatable;   // ID64Metatable
         uintptr_t structList; // DDLStruct*
-        uintptr_t enumList; // DDLEnum*
-        uintptr_t next; // DDLDef*
+        uintptr_t enumList;   // DDLEnum*
+        uintptr_t next;       // DDLDef*
         uint32_t unk38;
         uint32_t unk3c;
         uint32_t unk40;
@@ -300,8 +269,7 @@ namespace {
         uint16_t unk52;
         uint32_t unk54;
     };
-    enum DDLType : byte
-    {
+    enum DDLType : byte {
         DDL_INVALID_TYPE = 0xFF,
         DDL_BYTE_TYPE = 0,
         DDL_SHORT_TYPE,
@@ -320,22 +288,29 @@ namespace {
     const char* DdlTypeName(DDLType type, size_t intSize, size_t bitsize) {
         static char typeNameBuff[0x10];
         switch (type) {
-        case DDL_BYTE_TYPE: return "byte";
-        case DDL_SHORT_TYPE: return "short";
+        case DDL_BYTE_TYPE:
+            return "byte";
+        case DDL_SHORT_TYPE:
+            return "short";
         case DDL_UINT_TYPE: {
-            if (intSize == 1) return "bit";
+            if (intSize == 1)
+                return "bit";
             sprintf_s(typeNameBuff, "uint%lld", intSize);
             return typeNameBuff;
         }
         case DDL_INT_TYPE: {
-            if (intSize == 1) return "bit";
+            if (intSize == 1)
+                return "bit";
             sprintf_s(typeNameBuff, "int%lld", intSize);
             return typeNameBuff;
         }
-        case DDL_UINT64_TYPE: return "uint64";
+        case DDL_UINT64_TYPE:
+            return "uint64";
         case DDL_FLOAT_TYPE: {
-            if (intSize == 32) return "float";
-            if (intSize == 64) return "double";
+            if (intSize == 32)
+                return "float";
+            if (intSize == 64)
+                return "double";
 
             sprintf_s(typeNameBuff, "float%lld", intSize);
             return typeNameBuff;
@@ -344,19 +319,24 @@ namespace {
             sprintf_s(typeNameBuff, "fixedpoint%lld", bitsize);
             return typeNameBuff;
         }
-        case DDL_HASH_TYPE: return "hash";
-        case DDL_STRING_TYPE: return "char";
-        case DDL_STRUCT_TYPE: return "struct";
-        case DDL_ENUM_TYPE: return "enum";
-        case DDL_PAD_TYPE: return "padbit";
+        case DDL_HASH_TYPE:
+            return "hash";
+        case DDL_STRING_TYPE:
+            return "char";
+        case DDL_STRUCT_TYPE:
+            return "struct";
+        case DDL_ENUM_TYPE:
+            return "enum";
+        case DDL_PAD_TYPE:
+            return "padbit";
         case DDL_INVALID_TYPE:
-        default: return "<invalid>";
+        default:
+            return "<invalid>";
         }
     }
 
-
     struct DDLHashTable {
-        uintptr_t list; //DDLHash*
+        uintptr_t list; // DDLHash*
         int count;
         int max;
     };
@@ -364,7 +344,7 @@ namespace {
         uint64_t name;
         uint32_t bitSize;
         uint32_t memberCount;
-        uintptr_t members; // DDLMember* 
+        uintptr_t members; // DDLMember*
         DDLHashTable hashTableLower;
         DDLHashTable hashTableUpper;
     };
@@ -393,9 +373,8 @@ namespace {
         DDLHashTable hashTable;
     };
 
-
-
-    void ReadDDLStruct(Process& proc, std::ostream& defout, DDLDef& def, uintptr_t entry, std::unordered_set<uint64_t>& nextindexes) {
+    void ReadDDLStruct(Process& proc, std::ostream& defout, DDLDef& def, uintptr_t entry,
+                       std::unordered_set<uint64_t>& nextindexes) {
         DDLStruct stct{};
         if (!proc.ReadMemory(&stct, entry, sizeof(stct))) {
             defout << "<error reading struct entry>\n";
@@ -407,12 +386,10 @@ namespace {
 
         if (!proc.ReadMemory(&members[0], stct.members, sizeof(members[0]) * stct.memberCount)) {
             defout << "<error reading members entry>\n";
-        }
-        else {
+        } else {
             // sort members because they don't match the internal structure (they match the hashmap)
-            std::sort(&members[0], &members[stct.memberCount], [](const DDLMember& e1, const DDLMember& e2) {
-                return e1.offset < e2.offset;
-                });
+            std::sort(&members[0], &members[stct.memberCount],
+                      [](const DDLMember& e1, const DDLMember& e2) { return e1.offset < e2.offset; });
 
             int64_t currentShift = 0;
             for (size_t i = 0; i < stct.memberCount; i++) {
@@ -425,8 +402,7 @@ namespace {
                     int64_t delta = (currentShift - (int64_t)mbm.offset);
                     if (delta >= 0) {
                         defout << "0x" << std::hex << delta;
-                    }
-                    else {
+                    } else {
                         defout << "-0x" << std::hex << (-delta);
                     }
                     defout << " bits\n";
@@ -434,30 +410,30 @@ namespace {
                 }
                 currentShift = mbm.offset + mbm.bitSize;
 
-                //if (opt.flags & DDL_OFFSET) {
+                // if (opt.flags & DDL_OFFSET) {
                 utils::Padding(defout << "#offset 0x" << std::hex << currentShift << "\n", 1);
                 //}
 
                 bool addSize = false;
                 if (mbm.type == DDL_STRUCT_TYPE) {
                     DDLStruct substct{};
-                    if (!proc.ReadMemory(&substct, def.structList + mbm.externalIndex * sizeof(substct), sizeof(substct))) {
+                    if (!proc.ReadMemory(&substct, def.structList + mbm.externalIndex * sizeof(substct),
+                                         sizeof(substct))) {
                         defout << "<error reading sub struct entry>\n";
                         return;
                     }
                     defout << hashutils::ExtractTmp("hash", substct.name);
                     nextindexes.insert(utils::CatLocated(0, mbm.externalIndex));
-                }
-                else if (mbm.type == DDL_ENUM_TYPE) {
+                } else if (mbm.type == DDL_ENUM_TYPE) {
                     DDLEnum subenum{};
-                    if (!proc.ReadMemory(&subenum, def.enumList + mbm.externalIndex * sizeof(subenum), sizeof(subenum))) {
+                    if (!proc.ReadMemory(&subenum, def.enumList + mbm.externalIndex * sizeof(subenum),
+                                         sizeof(subenum))) {
                         defout << "<error reading sub enum entry>\n";
                         return;
                     }
                     defout << hashutils::ExtractTmp("hash", subenum.name);
                     nextindexes.insert(utils::CatLocated(1, mbm.externalIndex));
-                }
-                else {
+                } else {
                     defout << DdlTypeName(mbm.type, mbm.intSize, mbm.bitSize);
                 }
 
@@ -469,32 +445,29 @@ namespace {
 
                 if (mbm.type == DDL_PAD_TYPE) {
                     defout << "[" << std::dec << mbm.bitSize << "]";
-                }
-                else  if (mbm.type == DDL_STRING_TYPE) {
+                } else if (mbm.type == DDL_STRING_TYPE) {
                     auto bitSize = (mbm.bitSize / (mbm.isArray ? mbm.arraySize : 1));
                     defout << "[";
                     if (bitSize & 7) {
                         defout << std::dec << bitSize << "b"; // using non bytes for strings, wtf??
-                    }
-                    else {
+                    } else {
                         defout << std::dec << (bitSize >> 3);
                     }
                     defout << "]";
                 }
 
                 defout << ";";
-                defout << " // offset: 0x" << std::hex << mbm.offset << " + 0x" << mbm.bitSize << " = 0x" << currentShift;
+                defout << " // offset: 0x" << std::hex << mbm.offset << " + 0x" << mbm.bitSize << " = 0x"
+                       << currentShift;
             }
             defout << "\n";
-            //if (opt.flags & DDL_OFFSET) {
+            // if (opt.flags & DDL_OFFSET) {
             utils::Padding(defout, 1) << "#offset 0x" << std::hex << currentShift << "\n";
             //}
         }
 
-
         defout << "};\n\n";
     }
-
 
     void ReadDDLEnum(Process& proc, std::ostream& defout, uintptr_t entry) {
         DDLEnum enumst{};
@@ -508,11 +481,11 @@ namespace {
 
         if (!proc.ReadMemory(&members[0], enumst.members, sizeof(members[0]) * enumst.memberCount)) {
             defout << "<error reading members entry>\n";
-        }
-        else {
+        } else {
             for (size_t i = 0; i < enumst.memberCount; i++) {
                 auto& mbm = members[i];
-                if (i) defout << ",";
+                if (i)
+                    defout << ",";
                 defout << "\n";
                 utils::Padding(defout, 1) << "\"" << hashutils::ExtractTmp("hash", mbm) << "\" = 0x" << std::hex << i;
             }
@@ -538,12 +511,10 @@ namespace {
         // 3A8B1F6E71786EFF
         // 37A455F7364D8C91
 
-        defout
-            << "begin \"" << hashutils::ExtractTmp("hash", def.name) << "\";\n"
-            << "version " << std::dec << def.version << ";\n"
-            << "metatable \"" << hashutils::ExtractTmp("hash", def.metatable) << "\";\n"
-            << "\n"
-            ;
+        defout << "begin \"" << hashutils::ExtractTmp("hash", def.name) << "\";\n"
+               << "version " << std::dec << def.version << ";\n"
+               << "metatable \"" << hashutils::ExtractTmp("hash", def.metatable) << "\";\n"
+               << "\n";
 
         if (def.structList) {
             std::unordered_set<uint64_t> nextIndexes{ { 0 } };
@@ -562,8 +533,7 @@ namespace {
 
                 if (type == 0) {
                     ReadDDLStruct(proc, defout, def, def.structList + idx * sizeof(DDLStruct), nextIndexes);
-                }
-                else {
+                } else {
                     // READ ENUM
                     ReadDDLEnum(proc, defout, def.enumList + idx * sizeof(DDLEnum));
                 }
@@ -571,8 +541,7 @@ namespace {
                 // add this id as parsed
                 doneIndexes.insert(val);
             } while (doneIndexes.size() != nextIndexes.size());
-        }
-        else {
+        } else {
             defout << "\n";
         }
         defout << "\n";
@@ -584,7 +553,6 @@ namespace {
     }
 
 #pragma endregion
-
 
     int dfuncscw(Process& proc, int argc, const char* argv[]) {
         hashutils::ReadDefaultFile();
@@ -614,14 +582,9 @@ namespace {
             }
 
             for (size_t i = 0; i < func.size; i++) {
-                out
-                    << "\n"
-                    << func.pool << ","
-                    << hashutils::ExtractTmp("function", pool[i].canonId) << ","
-                    << pool[i].min_args << ","
-                    << pool[i].max_args << ","
-                    << pool[i].type << ","
-                    ;
+                out << "\n"
+                    << func.pool << "," << hashutils::ExtractTmp("function", pool[i].canonId) << "," << pool[i].min_args
+                    << "," << pool[i].max_args << "," << pool[i].type << ",";
                 proc.WriteLocation(out, pool[i].actionFunc) << ",";
             }
         }
@@ -676,7 +639,7 @@ namespace {
     }
 
     class PoolOption {
-    public:
+      public:
         bool m_help = false;
         const char* m_output = "poolcw";
         const char* m_dump_hashmap = NULL;
@@ -689,15 +652,13 @@ namespace {
 
                 if (!strcmp("-?", arg) || !_strcmpi("--help", arg) || !strcmp("-h", arg)) {
                     m_help = true;
-                }
-                else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
+                } else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
                     if (i + 1 == endIndex) {
                         std::cerr << "Missing value for param: " << arg << "!\n";
                         return false;
                     }
                     m_output = args[++i];
-                }
-                else if (!strcmp("-m", arg) || !_strcmpi("--hashmap", arg)) {
+                } else if (!strcmp("-m", arg) || !_strcmpi("--hashmap", arg)) {
                     if (i + 1 == endIndex) {
                         std::cerr << "Missing value for param: " << arg << "!\n";
                         return false;
@@ -709,11 +670,9 @@ namespace {
         }
         void PrintHelp(std::ostream& out) {
             out << "-h --help            : Print help\n"
-                << "-o --output [d]      : Output dir\n"
-                ;
+                << "-o --output [d]      : Output dir\n";
         }
     };
-
 
     const char* ReadMTString(const Process& proc, uint32_t val) {
         static char str_read[0x2001];
@@ -752,7 +711,6 @@ namespace {
         } value;
     };
 
-
     void ReadSBName(const Process& proc, const SB_ObjectsArray& arr) {
         // ugly, but good enought to get the name
         if (!arr.sbObjectCount || arr.sbObjectCount > 10000 || arr.sbSubCount > 10000) {
@@ -785,10 +743,10 @@ namespace {
             }
             return;
         }
-
     }
 
-    bool ReadSBObject(Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr, std::unordered_set<std::string>& strings) {
+    bool ReadSBObject(Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr,
+                      std::unordered_set<std::string>& strings) {
 
         if (!arr.sbObjectCount && !arr.sbSubCount) {
             defout << "{}";
@@ -845,19 +803,17 @@ namespace {
                     utils::Padding(defout << "\n", depth + 2);
                     SB_ObjectsArray item{};
 
-                    if (!proc.ReadMemory(&item, sub.struct_val + sizeof(item) * j, sizeof(item))
-                        || !ReadSBObject(proc, defout, depth + 2, item, strings)) {
+                    if (!proc.ReadMemory(&item, sub.struct_val + sizeof(item) * j, sizeof(item)) ||
+                        !ReadSBObject(proc, defout, depth + 2, item, strings)) {
                         std::cerr << "Can't read array item\n";
                         return false;
                     }
                 }
                 if (sub.item) {
                     utils::Padding(defout << "\n", depth + 1) << "]";
-                }
-                else {
+                } else {
                     defout << "]";
                 }
-
             }
         }
 
@@ -915,8 +871,7 @@ namespace {
                             defout << "\"" << strval << "\"";
                             continue;
                         }
-                    }
-                    else if (obj.hash & 0x7FFFFFFFFFFFFFFF) {
+                    } else if (obj.hash & 0x7FFFFFFFFFFFFFFF) {
                         // hash?
                         defout << "\"#" << hashutils::ExtractTmp("hash", obj.hash) << "\"";
                         continue;
@@ -931,7 +886,7 @@ namespace {
 
         return true;
     }
-}
+} // namespace
 
 int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
     using namespace pool;
@@ -969,14 +924,12 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
     sprintf_s(outputName, "%s/pool_%x", opt.m_output, id);
     char dumpbuff[MAX_PATH + 10];
 
-    std::cout << std::hex
-        << "pool ........ " << entry.pool << "\n"
-        << "free head ... " << entry.freeHead << "\n"
-        << "item size ... " << entry.itemSize << "\n"
-        << "count ....... " << entry.itemCount << "\n"
-        << "alloc count . " << entry.itemAllocCount << "\n"
-        << "singleton ... " << (entry.isSingleton ? "true" : "false") << "\n"
-        ;
+    std::cout << std::hex << "pool ........ " << entry.pool << "\n"
+              << "free head ... " << entry.freeHead << "\n"
+              << "item size ... " << entry.itemSize << "\n"
+              << "count ....... " << entry.itemCount << "\n"
+              << "alloc count . " << entry.itemAllocCount << "\n"
+              << "singleton ... " << (entry.isSingleton ? "true" : "false") << "\n";
 
     switch (id) {
     case cw::ASSET_TYPE_STRINGTABLE: {
@@ -1006,15 +959,13 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << e.name << std::dec;
                 sprintf_s(dumpbuff, "%s/hashed/stringtables/file_%llx.csv", opt.m_output, e.name);
-
             }
 
-            std::cout << " (columns: " << e.columnCount << ", rows:" << e.rowCount << "/" << std::hex << (entry.pool + i * sizeof(entry)) << std::dec << ") into " << dumpbuff;
-
+            std::cout << " (columns: " << e.columnCount << ", rows:" << e.rowCount << "/" << std::hex
+                      << (entry.pool + i * sizeof(entry)) << std::dec << ") into " << dumpbuff;
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -1034,21 +985,21 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto cell = std::make_unique<stringtable_cell[]>(e.columnCount);
 
-            //e.cells
+            // e.cells
             if (!(size)) {
                 out.close();
                 continue;
             }
 
             for (size_t i = 0; i < e.rowCount; i++) {
-                if (!proc.ReadMemory(&cell[0], e.values + sizeof(cell[0]) * e.columnCount * i, sizeof(cell[0]) * e.columnCount)) {
+                if (!proc.ReadMemory(&cell[0], e.values + sizeof(cell[0]) * e.columnCount * i,
+                                     sizeof(cell[0]) * e.columnCount)) {
                     std::cerr << "can't read cells for " << dumpbuff << "\n";
                     out.close();
                     continue;
                 }
                 for (size_t j = 0; j < e.columnCount; j++) {
-                    switch (cell[j].type)
-                    {
+                    switch (cell[j].type) {
                     case STC_TYPE_UNDEFINED:
                         out << "undefined";
                         break;
@@ -1066,12 +1017,12 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         break;
                     case STC_TYPE_HASHED7:
                     case STC_TYPE_HASHED8:
-                        //out << cell[j].type;
+                        // out << cell[j].type;
                     case STC_TYPE_HASHED2:
                         out << "#" << hashutils::ExtractTmp("hash", cell[j].value.hash_value);
                         break;
                     default:
-                        //out << "unk type: " << cell[j].type;
+                        // out << "unk type: " << cell[j].type;
                         out << "?" << std::hex
                             << cell[j].value.hash_value
                             //    << ':' << *reinterpret_cast<uint64_t*>(&cell[j].value[8])
@@ -1098,7 +1049,6 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             return tool::BASIC_ERROR;
         }
 
-
         std::filesystem::path progpath = utils::GetProgDir();
         std::filesystem::path dllfile = progpath / std::filesystem::path("acts-bocw-dll.dll");
         auto str = dllfile.string();
@@ -1123,8 +1073,7 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         if (!(thr == INVALID_HANDLE_VALUE || !thr)) {
             WaitForSingleObject(thr, INFINITE);
             CloseHandle(thr);
-        }
-        else {
+        } else {
             std::cerr << "Can't create decryption thread\n";
         }
         std::cout << "decrypted, dumping SB...\n";
@@ -1134,7 +1083,6 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         size_t readFile = 0;
         for (size_t i = 0; i < entry.itemAllocCount; i++) {
             const auto& e = pool[i];
-
 
             if (e.hash < 0x1000000000000) {
                 continue; // probably a ptr
@@ -1148,15 +1096,12 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/scriptbundle/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << e.hash << std::dec;
                 sprintf_s(dumpbuff, "%s/scriptbundle/file_%llx.json", opt.m_output, e.hash);
-
             }
 
             std::cout << " into " << dumpbuff;
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -1196,9 +1141,8 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint64_t name2;
             uintptr_t ddlDef; // DDLDef*
             uint64_t pad[8];
-        }; static_assert(sizeof(DDLEntry) == 0x58 && "bad DDLEntry size");
-
-
+        };
+        static_assert(sizeof(DDLEntry) == 0x58 && "bad DDLEntry size");
 
         auto pool = std::make_unique<DDLEntry[]>(entry.itemAllocCount);
 
@@ -1217,14 +1161,11 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/hashed/ddl/file_%llx.ddl", opt.m_output, p.name);
             }
 
             std::cout << "Writing DDL #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -1269,15 +1210,12 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << e.name << std::dec;
                 sprintf_s(dumpbuff, "%s/hashed/rawfile/file_%llx.raw", opt.m_output, e.name);
-
             }
 
             std::cout << " into " << dumpbuff;
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -1304,16 +1242,13 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
 
-
             // decrypt
-            byte* buffDecrypt{ &buff[0]};
+            byte* buffDecrypt{ &buff[0] };
             size_t size{ e.size };
             if (id != cw::ASSET_TYPE_RAWFILE) {
                 buffDecrypt = cw::DecryptRawBuffer(buffDecrypt);
                 size--;
             }
-
-
 
             if (!utils::WriteFile(file, buffDecrypt, size)) {
                 std::cerr << "Can't write file\n";
@@ -1340,8 +1275,6 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             std::cout << "Element #" << std::dec << i << " -> " << dumpbuff << "\n";
 
-
-
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
 
@@ -1352,13 +1285,13 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
 
-            tool::pool::WriteHex(defout, entry.pool + entry.itemSize * i, &raw[0] + (entry.itemSize * i), entry.itemSize, proc);
+            tool::pool::WriteHex(defout, entry.pool + entry.itemSize * i, &raw[0] + (entry.itemSize * i),
+                                 entry.itemSize, proc);
 
             defout.close();
         }
 
-    }
-    break;
+    } break;
     }
 
     return tool::OK;
@@ -1406,13 +1339,11 @@ namespace {
         auto sharedStructElem = (0x22325 * sharedStructs + 0x1B3 * (((name << 32) >> 32) ^ (name >> 32))) & 0xFFFFF;
 
         auto res = proc.ReadMemory<uint32_t>(scriptVar + 4 * sharedStructElem);
-        
+
         if (!res) {
             std::cerr << "Can't find struct\n";
             return tool::BASIC_ERROR;
         }
-
-
 
         return tool::OK;
     }
@@ -1432,8 +1363,7 @@ namespace {
         if (!notify.empty()) {
             if (ret) {
                 LOG_ERROR("{}", notify);
-            }
-            else {
+            } else {
                 LOG_INFO("{}", notify);
             }
         }
@@ -1456,15 +1386,13 @@ namespace {
         if (!notify.empty()) {
             if (ret) {
                 LOG_ERROR("{}", notify);
-            }
-            else {
+            } else {
                 LOG_INFO("{}", notify);
             }
         }
 
         return ret;
     }
-
 
     struct BGCache {
         uint64_t name;
@@ -1505,7 +1433,6 @@ namespace {
         uintptr_t assetHeader;
     };
 
-
     int dbgp(Process& proc, int argc, const char* argv[]) {
         BGCacheInfo info[40] = {};
 
@@ -1513,7 +1440,6 @@ namespace {
             std::cerr << "Can't read cache\n";
             return tool::BASIC_ERROR;
         }
-
 
         std::filesystem::path out{ "bgpool/cw" };
 
@@ -1526,7 +1452,6 @@ namespace {
             std::cerr << "Can't open caches.csv file\n";
             return tool::BASIC_ERROR;
         }
-
 
         outInfo << "id,name,start,count";
 
@@ -1541,12 +1466,13 @@ namespace {
                 break;
             }
 
-            outInfo << "\n" << std::dec << i << "," << nameInfo << "," << info[i].startIndex << "," << info[i].allocItems;
-
+            outInfo << "\n"
+                    << std::dec << i << "," << nameInfo << "," << info[i].startIndex << "," << info[i].allocItems;
 
             auto entries = std::make_unique<BGPoolEntry[]>(info[i].allocItems);
 
-            if (!proc.ReadMemory(&entries[0], pool + sizeof(entries[0]) * info[i].startIndex, sizeof(entries[0]) * info[i].allocItems)) {
+            if (!proc.ReadMemory(&entries[0], pool + sizeof(entries[0]) * info[i].startIndex,
+                                 sizeof(entries[0]) * info[i].allocItems)) {
                 std::cerr << "Can't read cache entries\n";
                 break;
             }
@@ -1570,7 +1496,9 @@ namespace {
                 if (!entries[j].name) {
                     continue;
                 }
-                entriesFile << "\n" << std::dec << j << "," << nameInfo << "," << hashutils::ExtractTmp("hash", entries[j].name) << "," << std::hex << entries[j].assetHeader;
+                entriesFile << "\n"
+                            << std::dec << j << "," << nameInfo << "," << hashutils::ExtractTmp("hash", entries[j].name)
+                            << "," << std::hex << entries[j].assetHeader;
                 res++;
             }
 
@@ -1585,13 +1513,15 @@ namespace {
     }
 
     using namespace cw::pool;
-    ADD_TOOL(dpcw, "cw", " [input=pool_name] (output=pool_id)", "Black Ops Cold War dump pool", L"BlackOpsColdWar.exe", pooltool);
+    ADD_TOOL(dpcw, "cw", " [input=pool_name] (output=pool_id)", "Black Ops Cold War dump pool", L"BlackOpsColdWar.exe",
+             pooltool);
     ADD_TOOL(wpscw, "cw", "", "write pooled scripts (cw)", L"BlackOpsColdWar.exe", dumppoolcw);
     ADD_TOOL(dpncw, "cw", "", "dump pool names (cw)", L"BlackOpsColdWar.exe", dpnamescw);
     ADD_TOOL(dfuncscw, "cw", "", "dump function names (cw)", L"BlackOpsColdWar.exe", dfuncscw);
     ADD_TOOL(dcfuncscw, "cw", "", "dump cmd names (cw)", L"BlackOpsColdWar.exe", dcfuncscw);
     ADD_TOOL(dbgcw, "cw", " [inst]", "dbg (cw)", L"BlackOpsColdWar.exe", dbgcw);
     ADD_TOOL(injectcw, "cw", " (script) (target) (replace)", "inject script (cw)", L"BlackOpsColdWar.exe", injectcw);
-    ADD_TOOL(injectcwalpha, "cw", " (script) (target) (replace)", "inject script (cw alpha)", L"COD2020.exe", injectcwalpha);
+    ADD_TOOL(injectcwalpha, "cw", " (script) (target) (replace)", "inject script (cw alpha)", L"COD2020.exe",
+             injectcwalpha);
     ADD_TOOL(dbgpcw, "cw", "", "dump bg pool (cw)", L"BlackOpsColdWar.exe", dbgp);
-}
+} // namespace

@@ -22,10 +22,9 @@ namespace tool::pool {
         uint64_t unk38;
         uint64_t unk40;
     };
-    
-    struct WeaponDef
-    {
-        
+
+    struct WeaponDef {
+
         XHash name;
         XHash baseWeapon;
         XHash displayname;
@@ -143,14 +142,14 @@ namespace tool::pool {
         XHash sound720;
         XHash sound730;
         XHash sound740;
-        XHash var_8a03df2b; // 0x750
-        XHash var_2f3ca476; // 0x760
-        XHash var_5c29f743; // 0x770
-        XHash projexplosionsound; // 0x780
+        XHash var_8a03df2b;             // 0x750
+        XHash var_2f3ca476;             // 0x760
+        XHash var_5c29f743;             // 0x770
+        XHash projexplosionsound;       // 0x780
         XHash projexplosionsoundplayer; // 0x790
-        XHash projsmokestartsound; // 0x7a0
-        XHash projsmokeloopsound;  // 0x7b0
-        XHash projsmokeendsound;   // 0x7c0
+        XHash projsmokestartsound;      // 0x7a0
+        XHash projsmokeloopsound;       // 0x7b0
+        XHash projsmokeendsound;        // 0x7c0
         XHash sound7d0;
         XHash sound7e0;
         XHash sound7f0;
@@ -162,7 +161,7 @@ namespace tool::pool {
         XHash sound850;
         XHash sound860;
         XHash hitsound; // 0x870
-        XHash unk880; // weapon name
+        XHash unk880;   // weapon name
         uint64_t unk890;
         uint64_t unk898;
         uint32_t unk8a0;
@@ -221,13 +220,13 @@ namespace tool::pool {
         uintptr_t unka28;
         uintptr_t unka30;
         uint64_t unka38;
-        uintptr_t attachments; // WeaponAttachmentPtr*
+        uintptr_t attachments;       // WeaponAttachmentPtr*
         uintptr_t attachmentUniques; // WeaponAttachmentUniquePtr*
         uint64_t unka50;
         uintptr_t properties; // WeaponDefProperties*
         uint64_t unka60;
         uint64_t unka68;
-        uintptr_t viewmodel; // XModel*
+        uintptr_t viewmodel;     // XModel*
         uintptr_t frontendmodel; // XModel*
         uint64_t unka80;
         uint64_t unka88;
@@ -289,32 +288,32 @@ namespace tool::pool {
         uint64_t unkc48;
         uint64_t unkc50;
         uint64_t unkc58;
-        uintptr_t gadgetIconAvailable; // GfxImageHandle
+        uintptr_t gadgetIconAvailable;   // GfxImageHandle
         uintptr_t gadgetIconUnavailable; // GfxImageHandle
-        uintptr_t unkc70; // GfxImageHandle
-        uintptr_t unkc78; // GfxImageHandle
-        uintptr_t unkc80; // fx*
-        uintptr_t unkc88; // fx*
-        uintptr_t unkc90; // fx*
-        uintptr_t unkc98; // fx*
-        uint64_t unkca0; // empty
-        uint64_t unkca8; // ??
-        uint64_t unkcb0; // wtf?
-        uint64_t unkcb8; // ??
-        uint64_t unkcc0; // ??
-        uintptr_t worldModel; // XModel**
-        uint64_t unkcd0; // XModel**
-        uintptr_t stowedmodel; // XModel*
-        uintptr_t clipmodel; // XModel**
+        uintptr_t unkc70;                // GfxImageHandle
+        uintptr_t unkc78;                // GfxImageHandle
+        uintptr_t unkc80;                // fx*
+        uintptr_t unkc88;                // fx*
+        uintptr_t unkc90;                // fx*
+        uintptr_t unkc98;                // fx*
+        uint64_t unkca0;                 // empty
+        uint64_t unkca8;                 // ??
+        uint64_t unkcb0;                 // wtf?
+        uint64_t unkcb8;                 // ??
+        uint64_t unkcc0;                 // ??
+        uintptr_t worldModel;            // XModel**
+        uint64_t unkcd0;                 // XModel**
+        uintptr_t stowedmodel;           // XModel*
+        uintptr_t clipmodel;             // XModel**
         uint64_t unkce8;
         uint64_t unkcf0;
         uint64_t unkcf8;
         uint64_t unkd00;
         uint64_t unkd08;
         uint64_t unkd10;
-        uintptr_t unkd18; // ??
-        uintptr_t unkd20; // ??
-        uintptr_t unkd28; // XModel*
+        uintptr_t unkd18;       // ??
+        uintptr_t unkd20;       // ??
+        uintptr_t unkd28;       // XModel*
         uintptr_t var_22082a57; // XModel*
         uint64_t unkd38;
         uint64_t unkd40;
@@ -365,7 +364,7 @@ namespace tool::pool {
         uint64_t unkea0;
         uint64_t unkea8;
         uint64_t unkeb0;
-        uintptr_t weaponHeadObjective; //ObjectivePtr 
+        uintptr_t weaponHeadObjective; // ObjectivePtr
         uint64_t unkec0;
         uintptr_t projectilemodel; // XModel*
         uint64_t unked0;
@@ -410,9 +409,9 @@ namespace tool::pool {
         uint64_t unk1008;
         uint64_t unk1010;
         uint64_t unk1018;
-        uintptr_t  customsettings;   // ScriptBundle*
-        uintptr_t  shrapnelsettings; // ScriptBundle*
-        uintptr_t  var_2e4a8800; // ScriptBundle*
+        uintptr_t customsettings;   // ScriptBundle*
+        uintptr_t shrapnelsettings; // ScriptBundle*
+        uintptr_t var_2e4a8800;     // ScriptBundle*
         uint64_t unk1038;
         uint64_t unk1040;
         uint64_t unk1048;
@@ -571,15 +570,14 @@ namespace tool::pool {
         uint64_t unk1428;
         WeaponDefObj21329beb var_21329beb[4];
     };
-    struct WeaponDefProperties
-    {
+    struct WeaponDefProperties {
         uint64_t unk0;
         uint64_t unk8;
         uint64_t unk10;
         uint64_t unk18;
         uintptr_t var_f56ac2bd;    // const char*
         uintptr_t spawninfluencer; // const char*
-        XHash var_77b46a8c;          // 0x30
+        XHash var_77b46a8c;        // 0x30
         uint64_t unk40;
         uint64_t unk48;
         uint64_t unk50;
@@ -814,10 +812,10 @@ namespace tool::pool {
         uint64_t unk560;
         uint32_t unk568;
         uint32_t unk56c;
-        float var_27c94b15; // 0x570
-        float var_16e90b80; // 0x574
-        float var_6cb9946f; // 0x578
-        float var_40ffe7d2; // 0x57c
+        float var_27c94b15;    // 0x570
+        float var_16e90b80;    // 0x574
+        float var_6cb9946f;    // 0x578
+        float var_40ffe7d2;    // 0x57c
         weapClass_t weapClass; // 0x580
         uint32_t unk584;
         uint32_t unk588;
@@ -1154,7 +1152,7 @@ namespace tool::pool {
         uint64_t unke30;
         uint64_t unke38;
         uint32_t iStartAmmo; // 0xe40
-        int32_t fuellife; // 0xe44
+        int32_t fuellife;    // 0xe44
         uint64_t unke48;
         int32_t lockonlossradius; // 0xe50
         uint32_t unke54;
@@ -1298,8 +1296,8 @@ namespace tool::pool {
         byte dodamagefeedback; // 0x10f6
         byte doempdestroyfx;   // 0x10f7
         byte doesfiredamage;   // 0x10f8
-        byte dohackedstats; // 0x10f9
-        byte dostun;        // 0x10fa
+        byte dohackedstats;    // 0x10f9
+        byte dostun;           // 0x10fa
         byte unk10fb;
         byte unk10fc;
         bool isdualwield;
@@ -1327,9 +1325,9 @@ namespace tool::pool {
         byte bIsHybridWeapon;      // 0x1115
         byte isperkbottle;         // 0x1116
         byte isscavengable;        // 0x1117
-        byte issniperweapon;     // 0x1118
-        byte isstun;             // 0x1119
-        byte issupplydropweapon; // 0x111a
+        byte issniperweapon;       // 0x1118
+        byte isstun;               // 0x1119
+        byte issupplydropweapon;   // 0x111a
         byte unk111b;
         byte unk111c;
         byte var_130391b9; // 0x111d
@@ -1453,5 +1451,4 @@ namespace tool::pool {
         byte var_dbbd4cec; // 0x120c
     };
 
-
-}
+} // namespace tool::pool

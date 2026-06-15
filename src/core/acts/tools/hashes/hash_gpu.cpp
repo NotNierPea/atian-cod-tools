@@ -7,9 +7,8 @@
 #include <utils/data_utils.hpp>
 #include <actslib/profiler.hpp>
 
-
 namespace tool::hash::scanner {
-	namespace {
+    namespace {
         std::filesystem::path GetBaseDir() {
             std::string scanpath{ core::config::GetString("data.dir", "") };
             if (scanpath.empty()) {
@@ -34,7 +33,7 @@ namespace tool::hash::scanner {
         using CLMem = utils::TClosable<cl_mem, cl_int, clReleaseMemObject>;
 
         class GPUData {
-        public:
+          public:
             cl_platform_id m_platform{};
             cl_device_id m_device{};
             cl_context m_context{};
@@ -112,7 +111,7 @@ namespace tool::hash::scanner {
             }
 
             CLMem CreateBuffer(cl_mem_flags flags, const void* data, size_t len) {
-                CLMem mem{ CreateBuffer(flags, len)};
+                CLMem mem{ CreateBuffer(flags, len) };
                 cl_int err;
                 err = clEnqueueWriteBuffer(m_queue, *mem, CL_TRUE, 0, len, data, 0, nullptr, nullptr);
                 OpenCLAssert(err == CL_SUCCESS, "failed to write buffer");
@@ -148,18 +147,23 @@ namespace tool::hash::scanner {
                 EnqueueNDRangeKernelEvent(kernel, workDim, globalWorkOffset, globalWork, 0, nullptr, nullptr);
             }
 
-            void EnqueueNDRangeKernelEvent(CLKernel& kernel, size_t workDim, size_t* globalWorkOffset, size_t* globalWork, size_t waitEventsCount, const cl_event* waitEvents, cl_event* event) {
+            void EnqueueNDRangeKernelEvent(CLKernel& kernel, size_t workDim, size_t* globalWorkOffset,
+                                           size_t* globalWork, size_t waitEventsCount, const cl_event* waitEvents,
+                                           cl_event* event) {
                 cl_int err;
-                err = clEnqueueNDRangeKernel(m_queue, *kernel, workDim, globalWorkOffset, globalWork, nullptr, waitEventsCount, waitEvents, event);
+                err = clEnqueueNDRangeKernel(m_queue, *kernel, workDim, globalWorkOffset, globalWork, nullptr,
+                                             waitEventsCount, waitEvents, event);
                 OpenCLAssert(err == CL_SUCCESS, "failed to enqueue nd range kernel");
             }
 
             void EnqueueReadBuffer(CLMem& buffer, bool block, void* data, size_t len) {
                 EnqueueReadBufferEvent(buffer, block, data, len, 0, nullptr, nullptr);
             }
-            void EnqueueReadBufferEvent(CLMem& buffer, bool block, void* data, size_t len, size_t waitEventsCount, const cl_event* waitEvents, cl_event* event) {
+            void EnqueueReadBufferEvent(CLMem& buffer, bool block, void* data, size_t len, size_t waitEventsCount,
+                                        const cl_event* waitEvents, cl_event* event) {
                 cl_int err;
-                err = clEnqueueReadBuffer(m_queue, *buffer, block ? CL_TRUE : CL_FALSE, 0, len, data, waitEventsCount, waitEvents, event);
+                err = clEnqueueReadBuffer(m_queue, *buffer, block ? CL_TRUE : CL_FALSE, 0, len, data, waitEventsCount,
+                                          waitEvents, event);
                 OpenCLAssert(err == CL_SUCCESS, "failed to read buffer");
             }
 
@@ -173,7 +177,8 @@ namespace tool::hash::scanner {
             }
         };
 
-        void PackMap(std::filesystem::path path, std::vector<byte>& map, size_t indexSize, std::unordered_set<uint64_t>& hashes) {
+        void PackMap(std::filesystem::path path, std::vector<byte>& map, size_t indexSize,
+                     std::unordered_set<uint64_t>& hashes) {
             std::vector<std::filesystem::path> files{ GetHashFiles(path) };
             LOG_TRACE("{} file(s) loaded...", files.size());
 
@@ -195,12 +200,13 @@ namespace tool::hash::scanner {
                 std::sort(v.begin(), v.end());
 
                 uint64_t* idx{ (uint64_t*)map.data() + i * 2 };
-                idx[0] = count; // start
+                idx[0] = count;             // start
                 idx[1] = count += v.size(); // end
                 utils::WriteValue(map, v.data(), v.size() * sizeof(v[0]));
             }
         }
-        void PackDict(std::filesystem::path path, std::vector<byte>& packedDictIndex, std::string& packedDictData, std::vector<const char*>& dictVec) {
+        void PackDict(std::filesystem::path path, std::vector<byte>& packedDictIndex, std::string& packedDictData,
+                      std::vector<const char*>& dictVec) {
             dictVec = ReadDict(path, packedDictData);
 
             // offsets
@@ -212,7 +218,7 @@ namespace tool::hash::scanner {
         }
 
         class GPUHashData : public AbstractHashData {
-        public:
+          public:
             std::unordered_set<uint64_t> hashes{};
 
             using AbstractHashData::AbstractHashData;
@@ -228,31 +234,38 @@ namespace tool::hash::scanner {
 
             size_t TestHash(const char* str) {
                 size_t t{};
-                if (UseFunc(HASH_FNVA)) t += TestHash(::hash::Hash64A(str), str);
-                if (UseFunc(HASH_FNVA32)) t += TestHash(::hash::HashX32(str), str);
-                if (UseFunc(HASH_PRIME)) t += TestHash(::hash::HashPrime(str), str);
-                if (UseFunc(HASH_DJB2)) t += TestHash(::hash::HashDJB2(str), str);
-                if (UseFunc(HASH_SCR_T10)) t += TestHash(::hash::HashT10Scr(str), str);
-                if (UseFunc(HASH_SCR_T10_SP)) t += TestHash(::hash::HashT10ScrSP(str), str);
-                if (UseFunc(HASH_OMNVAR)) t += TestHash(::hash::HashT10OmnVar(str), str);
-                if (UseFunc(HASH_SCR_T89)) t += TestHash(::hash::HashT89Scr(str), str);
-                if (UseFunc(HASH_SCR_JUP)) t += TestHash(::hash::HashJupScr(str), str);
-                if (UseFunc(HASH_RES)) t += TestHash(::hash::HashIWAsset(str), str);
-                if (UseFunc(HASH_DVAR)) t += TestHash(::hash::HashIWDVar(str), str);
-                if (UseFunc(HASH_T7)) t += TestHash(::hash::HashT7(str), str);
-                if (UseFunc(HASH_KVP)) t += TestHash(::hash::HashKVP(str), str);
+                if (UseFunc(HASH_FNVA))
+                    t += TestHash(::hash::Hash64A(str), str);
+                if (UseFunc(HASH_FNVA32))
+                    t += TestHash(::hash::HashX32(str), str);
+                if (UseFunc(HASH_PRIME))
+                    t += TestHash(::hash::HashPrime(str), str);
+                if (UseFunc(HASH_DJB2))
+                    t += TestHash(::hash::HashDJB2(str), str);
+                if (UseFunc(HASH_SCR_T10))
+                    t += TestHash(::hash::HashT10Scr(str), str);
+                if (UseFunc(HASH_SCR_T10_SP))
+                    t += TestHash(::hash::HashT10ScrSP(str), str);
+                if (UseFunc(HASH_OMNVAR))
+                    t += TestHash(::hash::HashT10OmnVar(str), str);
+                if (UseFunc(HASH_SCR_T89))
+                    t += TestHash(::hash::HashT89Scr(str), str);
+                if (UseFunc(HASH_SCR_JUP))
+                    t += TestHash(::hash::HashJupScr(str), str);
+                if (UseFunc(HASH_RES))
+                    t += TestHash(::hash::HashIWAsset(str), str);
+                if (UseFunc(HASH_DVAR))
+                    t += TestHash(::hash::HashIWDVar(str), str);
+                if (UseFunc(HASH_T7))
+                    t += TestHash(::hash::HashT7(str), str);
+                if (UseFunc(HASH_KVP))
+                    t += TestHash(::hash::HashKVP(str), str);
                 return t;
             }
         };
 
-        size_t RebuildWord(
-            uint64_t index,
-            const std::vector<const char*>& dictVec,
-            const char* prefix,
-            const char* middle,
-            const char* suffix,
-            char* outBuf,
-            size_t outBufSize) {
+        size_t RebuildWord(uint64_t index, const std::vector<const char*>& dictVec, const char* prefix,
+                           const char* middle, const char* suffix, char* outBuf, size_t outBufSize) {
             size_t pos = 0;
             const size_t wordsCount = dictVec.size();
 
@@ -299,12 +312,10 @@ namespace tool::hash::scanner {
             return pos;
         }
 
-
-		int hashbrutedictgpu(int argc, const char* argv[]) {
-			if (tool::NotEnoughParam(argc, 4)) {
-				return tool::BAD_USAGE;
-			}
-
+        int hashbrutedictgpu(int argc, const char* argv[]) {
+            if (tool::NotEnoughParam(argc, 4)) {
+                return tool::BAD_USAGE;
+            }
 
             const char* map{ argv[2] };
             GPUHashData hashData{ argv[3], argv[4] };
@@ -334,7 +345,7 @@ namespace tool::hash::scanner {
             constexpr size_t hashesPerWork = 0x800000;
             PackMap(map, packedMap, indexSize, hashData.hashes);
             PackDict(dict, packedDictIndex, packedDictData, dictVec);
-            cl_uint wordsCount{(cl_uint) dictVec.size()};
+            cl_uint wordsCount{ (cl_uint)dictVec.size() };
 
             size_t maxLen{ std::string::npos };
             if (count != std::string::npos && count) {
@@ -360,7 +371,6 @@ namespace tool::hash::scanner {
             CLMem gpuMiddle{ mid && *mid ? gpu.CreateBuffer(CL_MEM_READ_ONLY, mid) : nullptr };
             CLMem gpuSuffix{ suffix && *suffix ? gpu.CreateBuffer(CL_MEM_READ_ONLY, suffix) : nullptr };
 
-
             std::string progData{};
             ReadData("hashbrutegpu", progData);
             CLProg prog{ gpu.CreateProgramWithSource(progData) };
@@ -368,17 +378,17 @@ namespace tool::hash::scanner {
 
             cl_ulong algoMask{ (cl_ulong)hashData.funcs };
 
-            // 0 hashes to compute            
+            // 0 hashes to compute
             gpu.SetKernelArg(bruteKernel, 0, sizeof(*gpuMap), &*gpuMap);
-            // 1 dictionary offsets in dictData            
+            // 1 dictionary offsets in dictData
             gpu.SetKernelArg(bruteKernel, 1, sizeof(*gpuDictIndex), &*gpuDictIndex);
-            // 2 dictionary data            
+            // 2 dictionary data
             gpu.SetKernelArg(bruteKernel, 2, sizeof(*gpuDictData), &*gpuDictData);
-            // 3 prefix string            
+            // 3 prefix string
             gpu.SetKernelArg(bruteKernel, 3, sizeof(*gpuPrefix), &*gpuPrefix);
-            // 4 middle string            
+            // 4 middle string
             gpu.SetKernelArg(bruteKernel, 4, sizeof(*gpuMiddle), &*gpuMiddle);
-            // 5 suffix string            
+            // 5 suffix string
             gpu.SetKernelArg(bruteKernel, 5, sizeof(*gpuSuffix), &*gpuSuffix);
             // 8 wordsCount
             gpu.SetKernelArg(bruteKernel, 8, sizeof(wordsCount), &wordsCount);
@@ -417,13 +427,14 @@ namespace tool::hash::scanner {
 
                     // enqueue
                     gpu.EnqueueNDRangeKernelEvent(bruteKernel, 1, nullptr, &global, 0, nullptr, &kernelEvent);
-
                 }
                 if (startIndex) {
                     CLMem& prevBuf = useOutA ? gpuOutBufferB : gpuOutBufferA;
-                    // this was done during the last iteration, so we need to remove global to get the previous start index
+                    // this was done during the last iteration, so we need to remove global to get the previous start
+                    // index
 
-                    gpu.EnqueueReadBufferEvent(prevBuf, false, outBufferHost.get(), outBufferHostSize, 1, &prevReadEvent, &readEvent);
+                    gpu.EnqueueReadBufferEvent(prevBuf, false, outBufferHost.get(), outBufferHostSize, 1,
+                                               &prevReadEvent, &readEvent);
 
                     clWaitForEvents(1, &readEvent);
 
@@ -457,21 +468,15 @@ namespace tool::hash::scanner {
                 useOutA = !useOutA;
             }
             profiler.Stop();
-            LOG_INFO("found {} string(s) with {} hashes in {}ms {:.2}ns/hash", total, startIndex, profiler.GetMainSection().GetMillis(),
-                profiler.GetMainSection().GetMillis() * 1000000.0 / startIndex);
+            LOG_INFO("found {} string(s) with {} hashes in {}ms {:.2}ns/hash", total, startIndex,
+                     profiler.GetMainSection().GetMillis(),
+                     profiler.GetMainSection().GetMillis() * 1000000.0 / startIndex);
 
-			return tool::OK;
-		}
+            return tool::OK;
+        }
 
-
-        size_t RebuildWordLetters(
-            uint64_t index,
-            const char* dictVec,
-            const char* prefix,
-            const char* suffix,
-            size_t lettersCount,
-            char* outBuf,
-            size_t outBufSize) {
+        size_t RebuildWordLetters(uint64_t index, const char* dictVec, const char* prefix, const char* suffix,
+                                  size_t lettersCount, char* outBuf, size_t outBufSize) {
             size_t pos = 0;
 
             // 1. Prefix
@@ -507,12 +512,10 @@ namespace tool::hash::scanner {
             return pos;
         }
 
-
         int hashbrutegpu(int argc, const char* argv[]) {
             if (tool::NotEnoughParam(argc, 3)) {
                 return tool::BAD_USAGE;
             }
-
 
             const char* map{ argv[2] };
             GPUHashData hashData{ argv[3], argv[4] };
@@ -557,7 +560,6 @@ namespace tool::hash::scanner {
 
             CLMem gpuPrefix{ prefix && *prefix ? gpu.CreateBuffer(CL_MEM_READ_ONLY, prefix) : nullptr };
             CLMem gpuSuffix{ suffix && *suffix ? gpu.CreateBuffer(CL_MEM_READ_ONLY, suffix) : nullptr };
-
 
             std::string progData{};
             ReadData("hashbrutegpu", progData);
@@ -613,13 +615,14 @@ namespace tool::hash::scanner {
 
                     // enqueue
                     gpu.EnqueueNDRangeKernelEvent(bruteKernel, 1, nullptr, &global, 0, nullptr, &kernelEvent);
-
                 }
                 if (startIndex) {
                     CLMem& prevBuf = useOutA ? gpuOutBufferB : gpuOutBufferA;
-                    // this was done during the last iteration, so we need to remove global to get the previous start index
+                    // this was done during the last iteration, so we need to remove global to get the previous start
+                    // index
 
-                    gpu.EnqueueReadBufferEvent(prevBuf, false, outBufferHost.get(), outBufferHostSize, 1, &prevReadEvent, &readEvent);
+                    gpu.EnqueueReadBufferEvent(prevBuf, false, outBufferHost.get(), outBufferHostSize, 1,
+                                               &prevReadEvent, &readEvent);
 
                     clWaitForEvents(1, &readEvent);
 
@@ -653,8 +656,9 @@ namespace tool::hash::scanner {
                 useOutA = !useOutA;
             }
             profiler.Stop();
-            LOG_INFO("found {} string(s) with {} hashes in {}ms {:.2}ns/hash", total, startIndex, profiler.GetMainSection().GetMillis(),
-                profiler.GetMainSection().GetMillis() * 1000000.0 / startIndex);
+            LOG_INFO("found {} string(s) with {} hashes in {}ms {:.2}ns/hash", total, startIndex,
+                     profiler.GetMainSection().GetMillis(),
+                     profiler.GetMainSection().GetMillis() * 1000000.0 / startIndex);
 
             return tool::OK;
         }
@@ -683,11 +687,13 @@ namespace tool::hash::scanner {
             return tool::OK;
         }
 
-
         // acts hashbrutegpu .\output_ff\bo7\source\scripts\ .\output_bo7\brute.txt bo6 .\output_bo6\dict.txt "" ""
-		ADD_TOOL(hashbrutedictgpu, "hash", " [dir] [output] [algorithm] [dict] (prefix=) (suffix=) (middle=_) (count=infinity)", "brute search hashes in a directory with dictionary with GPU", hashbrutedictgpu);
-		ADD_TOOL(hashbrutegpu, "hash", " [dir] [output] [algorithm] (prefix=) (suffix=) (count=infinity) (dict=all)", "brute search hashes in a directory with dictionary with GPU", hashbrutegpu);
-		ADD_TOOL(gputest, "dev", "", "test gpu", gputest);
-	}
-}
+        ADD_TOOL(hashbrutedictgpu, "hash",
+                 " [dir] [output] [algorithm] [dict] (prefix=) (suffix=) (middle=_) (count=infinity)",
+                 "brute search hashes in a directory with dictionary with GPU", hashbrutedictgpu);
+        ADD_TOOL(hashbrutegpu, "hash", " [dir] [output] [algorithm] (prefix=) (suffix=) (count=infinity) (dict=all)",
+                 "brute search hashes in a directory with dictionary with GPU", hashbrutegpu);
+        ADD_TOOL(gputest, "dev", "", "test gpu", gputest);
+    } // namespace
+} // namespace tool::hash::scanner
 #endif // __has_include(<CL/cl.h>)

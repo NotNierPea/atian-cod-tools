@@ -17,12 +17,10 @@ static struct InjectGame {
     { "Black Ops ColdWar", "BlackOpsColdWar.exe", "acts-bocw.dll" },
 };
 
-ExeDllInjectorWidget::ExeDllInjectorWidget(QWidget *parent)
-	: QWidget(parent)
-{
-	ui.setupUi(this);
-	setLayout(ui.commonLayout);
-	injectorTimer = new QTimer(this);
+ExeDllInjectorWidget::ExeDllInjectorWidget(QWidget* parent) : QWidget(parent) {
+    ui.setupUi(this);
+    setLayout(ui.commonLayout);
+    injectorTimer = new QTimer(this);
 
     ui.dllEdit->setText(ActsAPIConfig_GetString("ui.autoinjector.dll", ""));
     ui.exeEdit->setText(ActsAPIConfig_GetString("ui.autoinjector.exe", ""));
@@ -36,25 +34,16 @@ ExeDllInjectorWidget::ExeDllInjectorWidget(QWidget *parent)
     }
 
     connect(ui.dllOpen, &QPushButton::clicked, this, [this] {
-        QString path = QFileDialog::getOpenFileName(
-            this,
-            tr("Dynamic Link Library"),
-            QString(),
-            tr("Dynamic Link Library (*.dll)")
-        );
+        QString path = QFileDialog::getOpenFileName(this, tr("Dynamic Link Library"), QString(),
+                                                    tr("Dynamic Link Library (*.dll)"));
 
         if (!path.isEmpty()) {
             ui.dllEdit->setText(path);
         }
     });
     connect(ui.exeOpen, &QPushButton::clicked, this, [this] {
-        QString path = QFileDialog::getOpenFileName(
-            this,
-            tr("Executable File"),
-            QString(),
-            tr("Executable File (*.exe)")
-        );
-
+        QString path =
+            QFileDialog::getOpenFileName(this, tr("Executable File"), QString(), tr("Executable File (*.exe)"));
 
         if (path.isEmpty()) {
             return;
@@ -83,7 +72,7 @@ ExeDllInjectorWidget::ExeDllInjectorWidget(QWidget *parent)
         ActsAPIConfig_SaveConfig();
     });
 
-	connect(injectorTimer, &QTimer::timeout, this, [this]() {
+    connect(injectorTimer, &QTimer::timeout, this, [this]() {
         QString qdll{ ui.dllEdit->text() };
         QString qexe{ ui.exeEdit->text() };
 
@@ -95,7 +84,6 @@ ExeDllInjectorWidget::ExeDllInjectorWidget(QWidget *parent)
         QByteArray bqexe{ qexe.toUtf8() };
         const char* dll{ bqdll.constData() };
         const char* exe{ bqexe.constData() };
-
 
         static std::unordered_set<DWORD> loadedPids{};
 
@@ -125,22 +113,19 @@ ExeDllInjectorWidget::ExeDllInjectorWidget(QWidget *parent)
         if (game.LoadDll(dllPathStr.c_str())) {
             ui.logLabel->setText(QString::asprintf("Injected %s", dll));
             loadedPids.insert(game.GetProcessId());
-        }
-        else {
+        } else {
             ui.logLabel->setText(QString::asprintf("Failed to inject %s", dll));
             LOG_ERROR("Failed to inject {}", dll);
         }
-	});
-	injectorTimer->start(1000);
+    });
+    injectorTimer->start(1000);
 }
 
-ExeDllInjectorWidget::~ExeDllInjectorWidget() {
-	injectorTimer->stop();
-}
+ExeDllInjectorWidget::~ExeDllInjectorWidget() { injectorTimer->stop(); }
 
 void ExeDllInjectorWidget::LoadFile(const QString& path) {
-	ui.exeEdit->setText("");
-	ui.dllEdit->setText(path);
+    ui.exeEdit->setText("");
+    ui.dllEdit->setText(path);
 }
 
 ADD_UI_TOOL(ExeDllInjectorWidget, "DLL Injector", "Utilities", ".dll");

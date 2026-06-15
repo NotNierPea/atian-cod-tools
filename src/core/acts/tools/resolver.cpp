@@ -3,254 +3,242 @@
 class ResolverPattern;
 
 class ResolverConfig {
-public:
-	std::unordered_set<uint64_t> m_hashes{};
-	std::vector<ResolverPattern> m_pattern{};
-	std::string m_dict{};
-	std::string m_output{};
-	std::mutex m_writeMutex{};
+  public:
+    std::unordered_set<uint64_t> m_hashes{};
+    std::vector<ResolverPattern> m_pattern{};
+    std::string m_dict{};
+    std::string m_output{};
+    std::mutex m_writeMutex{};
 };
 
 class ResolverPattern {
-public:
-	const std::string m_startStr;
-	const uint64_t m_start;
-	std::string m_suffix;
-	const char* m_suffixCStr;
+  public:
+    const std::string m_startStr;
+    const uint64_t m_start;
+    std::string m_suffix;
+    const char* m_suffixCStr;
 
-	ResolverPattern(std::string&& startStr, std::string&& suffix)
-		: m_startStr(startStr), m_start(hash::Hash64(startStr.c_str())), m_suffix(suffix) {
-		for (size_t i = 0; i < m_suffix.length(); i++) {
-			auto& c = m_suffix[i];
+    ResolverPattern(std::string&& startStr, std::string&& suffix)
+        : m_startStr(startStr), m_start(hash::Hash64(startStr.c_str())), m_suffix(suffix) {
+        for (size_t i = 0; i < m_suffix.length(); i++) {
+            auto& c = m_suffix[i];
 
-			if (c == '\\') {
-				c = '/';
-			}
-			else if (c >= 'A' && c <= 'Z') {
-				c = c - 'A' + 'z';
-			}
-		}
-		m_suffixCStr = m_suffix.data();
-	}
+            if (c == '\\') {
+                c = '/';
+            } else if (c >= 'A' && c <= 'Z') {
+                c = c - 'A' + 'z';
+            }
+        }
+        m_suffixCStr = m_suffix.data();
+    }
 
-	inline void RunPass(ResolverConfig& cfg, size_t delta, const char* dict, size_t dictlen) const {
-		uint64_t p = m_start;
+    inline void RunPass(ResolverConfig& cfg, size_t delta, const char* dict, size_t dictlen) const {
+        uint64_t p = m_start;
 
-		size_t d = delta;
+        size_t d = delta;
 
-		while (d >= dictlen) {
-			p = (p ^ dict[d % dictlen]) * 0x100000001b3;
-			d = (d / dictlen) - 1;
-		}
-		p = (p ^ dict[d]) * 0x100000001b3;
+        while (d >= dictlen) {
+            p = (p ^ dict[d % dictlen]) * 0x100000001b3;
+            d = (d / dictlen) - 1;
+        }
+        p = (p ^ dict[d]) * 0x100000001b3;
 
-		for (const char* e = m_suffixCStr; *e; e++) {
-			p = (p ^ *e) * 0x100000001b3;
-		}
+        for (const char* e = m_suffixCStr; *e; e++) {
+            p = (p ^ *e) * 0x100000001b3;
+        }
 
-		p = p & 0x7FFFFFFFFFFFFFFF;
+        p = p & 0x7FFFFFFFFFFFFFFF;
 
-		auto f = cfg.m_hashes.find(p);
+        auto f = cfg.m_hashes.find(p);
 
-		if (f == cfg.m_hashes.end()) {
-			return;
-		}
+        if (f == cfg.m_hashes.end()) {
+            return;
+        }
 
-		std::lock_guard<std::mutex> lg(cfg.m_writeMutex);
+        std::lock_guard<std::mutex> lg(cfg.m_writeMutex);
 
-		std::cout << std::hex << p << "," << m_startStr;
+        std::cout << std::hex << p << "," << m_startStr;
 
-		d = delta;
+        d = delta;
 
-		while (d >= dictlen) {
-			std::cout << dict[d % dictlen];
-			d = (d / dictlen) - 1;
-		}
-		std::cout << dict[d];
+        while (d >= dictlen) {
+            std::cout << dict[d % dictlen];
+            d = (d / dictlen) - 1;
+        }
+        std::cout << dict[d];
 
-		std::cout << m_suffix << "\n";
+        std::cout << m_suffix << "\n";
 
-		if (!cfg.m_output.empty()) {
-			std::ofstream b{ cfg.m_output, std::ios::app };
+        if (!cfg.m_output.empty()) {
+            std::ofstream b{ cfg.m_output, std::ios::app };
 
-			if (!b) {
-				LOG_ERROR("Can't open output file {}", cfg.m_output);
-			}
+            if (!b) {
+                LOG_ERROR("Can't open output file {}", cfg.m_output);
+            }
 
-			b << std::hex << p << "," << m_startStr;
+            b << std::hex << p << "," << m_startStr;
 
-			d = delta;
+            d = delta;
 
-			while (d >= dictlen) {
-				b << dict[d % dictlen];
-				d = (d / dictlen) - 1;
-			}
-			b << dict[d];
+            while (d >= dictlen) {
+                b << dict[d % dictlen];
+                d = (d / dictlen) - 1;
+            }
+            b << dict[d];
 
-			b << m_suffix << "\n";
-		}
-	}
+            b << m_suffix << "\n";
+        }
+    }
 };
 
 static int resolver(Process& unused, int argc, const char* argv[]) {
-	if (argc == 2) {
-		std::cerr << "Missing config file\n";
-		return tool::BAD_USAGE;
-	}
+    if (argc == 2) {
+        std::cerr << "Missing config file\n";
+        return tool::BAD_USAGE;
+    }
 
-	std::filesystem::path cfgFile = std::filesystem::absolute(argv[2]);
+    std::filesystem::path cfgFile = std::filesystem::absolute(argv[2]);
 
-	std::ifstream cfgIn{ cfgFile };
+    std::ifstream cfgIn{ cfgFile };
 
-	if (!cfgIn) {
-		std::cerr << "Can't load config file '" << cfgFile.string() << "'\n";
-		return tool::BASIC_ERROR;
-	}
+    if (!cfgIn) {
+        std::cerr << "Can't load config file '" << cfgFile.string() << "'\n";
+        return tool::BASIC_ERROR;
+    }
 
-	ResolverConfig cfg{};
+    ResolverConfig cfg{};
 
-	std::string line{};
+    std::string line{};
 
-	bool error = false;
+    bool error = false;
 
-	while (std::getline(cfgIn, line)) {
-		if (line.empty() || line[0] == '#') {
-			continue;
-		}
+    while (std::getline(cfgIn, line)) {
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
 
-		std::string_view sv = line;
+        std::string_view sv = line;
 
-		auto idx = sv.find_first_of(' ', 0);
+        auto idx = sv.find_first_of(' ', 0);
 
-		if (idx == std::string::npos) {
-			continue;
-		}
-		auto action = sv.substr(0, idx);
-		auto param = sv.substr(idx + 1);
+        if (idx == std::string::npos) {
+            continue;
+        }
+        auto action = sv.substr(0, idx);
+        auto param = sv.substr(idx + 1);
 
-		if (action == "hashes") {
-			std::filesystem::path paramPath{ param };
+        if (action == "hashes") {
+            std::filesystem::path paramPath{ param };
 
-			auto filename = paramPath.is_absolute() ? paramPath : (cfgFile.parent_path() / paramPath);
-			
-			LOG_INFO("loading hashes from {}...", filename.string());
+            auto filename = paramPath.is_absolute() ? paramPath : (cfgFile.parent_path() / paramPath);
 
-			std::ifstream hashStream{ filename };
+            LOG_INFO("loading hashes from {}...", filename.string());
 
-			if (!hashStream) {
-				LOG_ERROR("Can't load file {}", filename.string());
-				error = true;
-				break;
-			}
+            std::ifstream hashStream{ filename };
 
-			uint64_t hash;
-			auto oldSize = cfg.m_hashes.size();
+            if (!hashStream) {
+                LOG_ERROR("Can't load file {}", filename.string());
+                error = true;
+                break;
+            }
 
-			while (hashStream >> std::setbase(16) >> hash) {
-				cfg.m_hashes.insert(hash & 0x7FFFFFFFFFFFFFFF);
-			}
+            uint64_t hash;
+            auto oldSize = cfg.m_hashes.size();
 
-			hashStream.close();
+            while (hashStream >> std::setbase(16) >> hash) {
+                cfg.m_hashes.insert(hash & 0x7FFFFFFFFFFFFFFF);
+            }
 
-			LOG_INFO("{} new hashes loaded", cfg.m_hashes.size() - oldSize);
-		}
-		else if (action == "dump") {
-			if (param == "hash") {
-				LOG_INFO("{} hash(s) loaded", cfg.m_hashes.size());
-				for (const auto& e : cfg.m_hashes) {
-					LOG_INFO("hash_{:x}", e);
-				}
-			} else if (param == "pattern") {
-				LOG_INFO("- {} pattern(s) loaded", cfg.m_pattern.size());
-				for (const auto& e : cfg.m_pattern) {
-					LOG_INFO("- {}???{}", e.m_startStr, e.m_suffix);
-				}
-			}
-			else if (param == "dict") {
-				LOG_INFO("- dict[{}]: {} ", cfg.m_dict.length(), cfg.m_dict);
-			}
-			else {
-				LOG_ERROR("can't find dump operation: '{}'", param);
-				error = true;
-				break;
-			}
-		}
-		else if (action == "add") {
-			cfg.m_hashes.insert(std::strtoll(param.data(), nullptr, 16));
-		}
-		else if (action == "dict") {
-			cfg.m_dict += param;
-		}
-		else if (action == "output") {
-			cfg.m_output = param;
-		}
-		else if (action == "pattern") {
-			auto delta = param.find("???", 0, 3);
+            hashStream.close();
 
-			if (delta == std::string::npos) {
-				LOG_ERROR("can't find '???' location in pattern '{}'", param);
-				error = true;
-				break;
-			}
+            LOG_INFO("{} new hashes loaded", cfg.m_hashes.size() - oldSize);
+        } else if (action == "dump") {
+            if (param == "hash") {
+                LOG_INFO("{} hash(s) loaded", cfg.m_hashes.size());
+                for (const auto& e : cfg.m_hashes) {
+                    LOG_INFO("hash_{:x}", e);
+                }
+            } else if (param == "pattern") {
+                LOG_INFO("- {} pattern(s) loaded", cfg.m_pattern.size());
+                for (const auto& e : cfg.m_pattern) {
+                    LOG_INFO("- {}???{}", e.m_startStr, e.m_suffix);
+                }
+            } else if (param == "dict") {
+                LOG_INFO("- dict[{}]: {} ", cfg.m_dict.length(), cfg.m_dict);
+            } else {
+                LOG_ERROR("can't find dump operation: '{}'", param);
+                error = true;
+                break;
+            }
+        } else if (action == "add") {
+            cfg.m_hashes.insert(std::strtoll(param.data(), nullptr, 16));
+        } else if (action == "dict") {
+            cfg.m_dict += param;
+        } else if (action == "output") {
+            cfg.m_output = param;
+        } else if (action == "pattern") {
+            auto delta = param.find("???", 0, 3);
 
-			cfg.m_pattern.emplace_back(std::string(param.substr(0, delta)), std::string(param.substr(delta + 3)));
-		}
-		else {
-			LOG_ERROR("can't find operation: '{}'", action);
-			error = true;
-			break;
-		}
-	}
+            if (delta == std::string::npos) {
+                LOG_ERROR("can't find '???' location in pattern '{}'", param);
+                error = true;
+                break;
+            }
 
-	cfgIn.close();
+            cfg.m_pattern.emplace_back(std::string(param.substr(0, delta)), std::string(param.substr(delta + 3)));
+        } else {
+            LOG_ERROR("can't find operation: '{}'", action);
+            error = true;
+            break;
+        }
+    }
 
-	if (error) {
-		return tool::BASIC_ERROR;
-	}
+    cfgIn.close();
 
-	if (cfg.m_pattern.size() == 0) {
-		cfg.m_pattern.emplace_back(std::string{}, std::string{});
-		LOG_INFO("using default pattern");
-	}
+    if (error) {
+        return tool::BASIC_ERROR;
+    }
 
-	LOG_INFO("start with {} hash(es) and {} pattern(s)", cfg.m_hashes.size(), cfg.m_pattern.size());
+    if (cfg.m_pattern.size() == 0) {
+        cfg.m_pattern.emplace_back(std::string{}, std::string{});
+        LOG_INFO("using default pattern");
+    }
 
-	char namebuff[200] = {0};
+    LOG_INFO("start with {} hash(es) and {} pattern(s)", cfg.m_hashes.size(), cfg.m_pattern.size());
 
-	const char* dict = cfg.m_dict.data();
-	size_t dictlen = cfg.m_dict.length();
+    char namebuff[200] = { 0 };
 
-	std::vector<std::thread> threads{};
+    const char* dict = cfg.m_dict.data();
+    size_t dictlen = cfg.m_dict.length();
 
-	for (size_t i = 0; i < cfg.m_pattern.size() - 1; i++) {
-		const auto& pattern = cfg.m_pattern[i + 1];
-		threads.push_back(
-			std::thread([&cfg, pattern, dict, dictlen]() {
-				for (size_t delta = 0; ; delta++) {
-					pattern.RunPass(cfg, delta, dict, dictlen);
-				}
-			})
-		);
-	}
-	for (size_t delta = 0; ; delta++) {
-		if (delta % 500000000 == 0) {
-			auto d = delta;
-			int shift = 0;
+    std::vector<std::thread> threads{};
 
-			while (d >= dictlen) {
-				namebuff[shift++] = dict[d % dictlen];
-				d = (d / dictlen) - 1;
-			}
-			namebuff[shift++] = dict[d];
-			namebuff[shift] = 0;
+    for (size_t i = 0; i < cfg.m_pattern.size() - 1; i++) {
+        const auto& pattern = cfg.m_pattern[i + 1];
+        threads.push_back(std::thread([&cfg, pattern, dict, dictlen]() {
+            for (size_t delta = 0;; delta++) {
+                pattern.RunPass(cfg, delta, dict, dictlen);
+            }
+        }));
+    }
+    for (size_t delta = 0;; delta++) {
+        if (delta % 500000000 == 0) {
+            auto d = delta;
+            int shift = 0;
 
-			LOG_INFO("curr: {} {} -> {:x}", delta, namebuff, hash::Hash64(namebuff));
-		}
-		cfg.m_pattern[0].RunPass(cfg, delta, dict, dictlen);
-	}
+            while (d >= dictlen) {
+                namebuff[shift++] = dict[d % dictlen];
+                d = (d / dictlen) - 1;
+            }
+            namebuff[shift++] = dict[d];
+            namebuff[shift] = 0;
 
-	return tool::OK;
+            LOG_INFO("curr: {} {} -> {:x}", delta, namebuff, hash::Hash64(namebuff));
+        }
+        cfg.m_pattern[0].RunPass(cfg, delta, dict, dictlen);
+    }
+
+    return tool::OK;
 }
-
 
 ADD_TOOL(resolver, "hash", " [cfg_file]", "hash resolver", nullptr, resolver);

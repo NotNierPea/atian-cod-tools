@@ -7,12 +7,12 @@
 
 namespace error_coder {
 
-	struct ErrorData {
-		uint32_t sizes[4];
-		const char* words[4][1024];
-	};
+    struct ErrorData {
+        uint32_t sizes[4];
+        const char* words[4][1024];
+    };
 
-	ErrorData errdata[]{
+    ErrorData errdata[]{
 		{
 			/*
 			.data:0000000004F12350                     dq 46D538729ABE6952h; tables.hash
@@ -214,570 +214,484 @@ namespace error_coder {
 		}
 	};
 
-	void Encode(ErrorCode& code, uint32_t val, bool alternative) {
-		for (size_t i = 0; i < ACTS_ARRAYSIZE(errdata[alternative].sizes); i++) {
-			int log2Size = errdata[alternative].sizes[i];
-			int row = (int)(val & ((1 << log2Size) - 1));
-			val >>= log2Size;
+    void Encode(ErrorCode& code, uint32_t val, bool alternative) {
+        for (size_t i = 0; i < ACTS_ARRAYSIZE(errdata[alternative].sizes); i++) {
+            int log2Size = errdata[alternative].sizes[i];
+            int row = (int)(val & ((1 << log2Size) - 1));
+            val >>= log2Size;
 
-			auto v = errdata[alternative].words[i][row];
+            auto v = errdata[alternative].words[i][row];
 
-			code[i] = v;
-		}
-	}
+            code[i] = v;
+        }
+    }
 
-	uint32_t Decode(const ErrorCode& code) {
-		if (!code[0] || !code[1] || !code[2] || !code[3]) {
-			return 0;
-		}
+    uint32_t Decode(const ErrorCode& code) {
+        if (!code[0] || !code[1] || !code[2] || !code[3]) {
+            return 0;
+        }
 
-		uint32_t output{};
+        uint32_t output{};
 
-		// check first word to know the type
-		size_t alternative{};
+        // check first word to know the type
+        size_t alternative{};
 
-		for (; alternative < ACTS_ARRAYSIZE(errdata); alternative++) {
-			const char** begin{ errdata[alternative].words[0]};
-			const char** end{ begin + (1ull << errdata[alternative].sizes[0]) };
+        for (; alternative < ACTS_ARRAYSIZE(errdata); alternative++) {
+            const char** begin{ errdata[alternative].words[0] };
+            const char** end{ begin + (1ull << errdata[alternative].sizes[0]) };
 
-			const char* c{ code[0] };
+            const char* c{ code[0] };
 
-			if (std::find_if(begin, end, [c](const char* w) { return !_strcmpi(c, w); }) != end) {
-				break;
-			}
-		}
+            if (std::find_if(begin, end, [c](const char* w) { return !_strcmpi(c, w); }) != end) {
+                break;
+            }
+        }
 
-		if (alternative == ACTS_ARRAYSIZE(errdata)) {
-			throw std::exception(utils::va("Can't find error type for '%s'", code[0]));
-		}
+        if (alternative == ACTS_ARRAYSIZE(errdata)) {
+            throw std::exception(utils::va("Can't find error type for '%s'", code[0]));
+        }
 
-		for (int i = 3; i >= 0; i--) {
-			const char** begin{ std::begin(errdata[alternative].words[i]) };
-			const char** end{ begin + (1ull << errdata[alternative].sizes[i]) };
+        for (int i = 3; i >= 0; i--) {
+            const char** begin{ std::begin(errdata[alternative].words[i]) };
+            const char** end{ begin + (1ull << errdata[alternative].sizes[i]) };
 
-			const char* c{ code[i] };
-			
-			const char** it{ std::find_if(begin, end, [c](const char* w) { return !_strcmpi(c, w); }) };
+            const char* c{ code[i] };
 
-			if (it == end) {
-				throw std::exception(utils::va("Unknown word '%s'", code[i]));
-			}
+            const char** it{ std::find_if(begin, end, [c](const char* w) { return !_strcmpi(c, w); }) };
 
-			auto idx = it - begin;
+            if (it == end) {
+                throw std::exception(utils::va("Unknown word '%s'", code[i]));
+            }
 
-			output |= idx;
+            auto idx = it - begin;
 
-			if (i > 0) {
-				output <<= errdata[alternative].sizes[i - 1];
-			}
-		}
+            output |= idx;
 
-		return output;
-	}
+            if (i > 0) {
+                output <<= errdata[alternative].sizes[i - 1];
+            }
+        }
 
-	const char* ToStr(const ErrorCode& code) {
-		return utils::va("%s %s %s %s", code[0], code[1], code[2], code[3]);
-	}
-}
+        return output;
+    }
+
+    const char* ToStr(const ErrorCode& code) { return utils::va("%s %s %s %s", code[0], code[1], code[2], code[3]); }
+} // namespace error_coder
 
 namespace {
-	int errenc(Process& proc, int argc, const char* argv[]) {
-		if (argc < 3) {
-			return tool::BAD_USAGE;
-		}
-		error_coder::ErrorCode code{};
-
-		size_t i = 2;
-
-		bool alternative{};
-		if (utils::EqualIgnoreCase(argv[i], "true")) {
-			alternative = true;
-			i++;
-		}
-		else if (utils::EqualIgnoreCase(argv[i], "false")) {
-			i++;
-		}
-
-		for (; i < argc; i++) {
-			uint32_t codedec = (uint32_t)std::strtoull(argv[i], nullptr, 10);
-
-			error_coder::Encode(code, codedec, false);
-
-			LOG_INFO("{}={}", codedec, error_coder::ToStr(code));
-		}
-
-		return tool::OK;
-	}
-
-	int errdec(Process& proc, int argc, const char* argv[]) {
-		if (argc < 6) {
-			return tool::BAD_USAGE;
-		}
-		error_coder::ErrorCode code{};
-
-		code[0] = argv[2];
-		code[1] = argv[3];
-		code[2] = argv[4];
-		code[3] = argv[5];
-
-		uint32_t codedec;
-
-		try {
-			codedec = error_coder::Decode(code);
-		}
-		catch (std::exception& exp) {
-
-			LOG_ERROR("Can't decode code: {}", exp.what());
-			return tool::BASIC_ERROR;
-		}
-
-		LOG_INFO("{}={}", codedec, error_coder::ToStr(code));
-
-		return tool::OK;
-	}
-
-
-	struct {
-		std::string encodeStr{};
-		std::string decodeStr{};
-		HWND titleLabel{};
-
-		HWND encodeEdit{};
-		HWND encodeResEdit{};
-		HWND encodeEditLabel{};
-
-		HWND decodeEdit{};
-		HWND decodeResEdit{};
-		HWND decodeEditLabel{};
-	} info{};
-
-	void ComputeDecode() {
-		info.decodeStr = utils::WStrToStr(tool::ui::GetWindowTextVal(info.decodeEdit));
-
-		if (info.decodeStr.empty()) {
-			Edit_SetText(info.decodeResEdit, "");
-			return;
-		}
-
-		std::string words[4]{};
-
-		try {
-			size_t idx{};
-			for (int i = 0; i < 4; i++) {
-				size_t f = info.decodeStr.find(' ', idx);
-				if (f == std::string::npos) {
-					if (i != 3) {
-						Edit_SetText(info.decodeResEdit, "Not enough components");
-						return;
-					}
-					f = info.decodeStr.length();
-				}
-				if (f - idx == 0) {
-					// empty word
-					i--;
-					idx = f + 1;
-					continue;
-				}
-
-				words[i] = info.decodeStr.substr(idx, f - idx);
-				idx = f + 1;
-			}
-			while (idx < info.decodeStr.length() && info.decodeStr[idx] == ' ') {
-				idx++; // ignore end spaces
-			}
-			if (idx < info.decodeStr.length()) {
-				Edit_SetText(info.decodeResEdit, "Too many components");
-				return;
-			}
-
-			error_coder::ErrorCode code{ words[0].c_str(), words[1].c_str(), words[2].c_str(), words[3].c_str() };
-
-			uint32_t err = error_coder::Decode(code);
-
-			std::string res = std::format("{}", err);
-			Edit_SetText(info.decodeResEdit, res.c_str());
-		}
-		catch (std::exception& e) {
-			std::string res = std::format("{}", e.what());
-			Edit_SetText(info.decodeResEdit, res.c_str());
-		}
-	}
-	void ComputeEncode() {
-		info.encodeStr = utils::WStrToStr(tool::ui::GetWindowTextVal(info.encodeEdit));
-
-		if (info.encodeStr.empty()) {
-			Edit_SetText(info.encodeResEdit, "");
-			return;
-		}
-
-		try {
-			const char* cstr = info.encodeStr.c_str();
-			char* end;
-			uint32_t err = std::strtoul(cstr, &end, 10);
-			if (end != cstr + info.encodeStr.length()) {
-				throw std::runtime_error("Invalid code");
-			}
-
-			error_coder::ErrorCode code{};
-			error_coder::Encode(code, err, false);
-
-			std::string res = error_coder::ToStr(code);
-			Edit_SetText(info.encodeResEdit, res.c_str());
-		}
-		catch (std::exception& e) {
-			std::string res = std::format("{}", e.what());
-			Edit_SetText(info.encodeResEdit, res.c_str());
-		}
-	}
-
-	int Render(HWND window, HINSTANCE hInstance) {
-		std::wstring encw = utils::StrToWStr(info.encodeStr);
-		std::wstring decw = utils::StrToWStr(info.decodeStr);
-
-		info.titleLabel = CreateWindowExW(
-			0,
-			L"STATIC",
-			L"Error coder",
-			SS_CENTER | WS_CHILD | WS_VISIBLE,
-			0, 0, 0, 0,
-			window,
-			NULL,
-			hInstance,
-			NULL
-		);
-
-		info.encodeEdit = CreateWindowExW(
-			0,
-			L"EDIT",
-			encw.c_str(),
-			WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-			0, 0, 0, 0,
-			window,
-			NULL,
-			hInstance,
-			NULL
-		);
-
-		info.encodeResEdit = CreateWindowExW(
-			0,
-			L"EDIT",
-			L"",
-			WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-			0, 0, 0, 0,
-			window,
-			NULL,
-			hInstance,
-			NULL
-		);
-
-		info.encodeEditLabel = CreateWindowExW(
-			0,
-			L"STATIC",
-			L"Encode : ",
-			SS_RIGHT | WS_CHILD | WS_VISIBLE,
-			0, 0, 0, 0,
-			window,
-			NULL,
-			hInstance,
-			NULL
-		);
-
-		info.decodeEdit = CreateWindowExW(
-			0,
-			L"EDIT",
-			decw.c_str(),
-			WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-			0, 0, 0, 0,
-			window,
-			NULL,
-			hInstance,
-			NULL
-		);
-
-		info.decodeResEdit = CreateWindowExW(
-			0,
-			L"EDIT",
-			L"",
-			WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-			0, 0, 0, 0,
-			window,
-			NULL,
-			hInstance,
-			NULL
-		);
-
-		info.decodeEditLabel = CreateWindowExW(
-			0,
-			L"STATIC",
-			L"Decode : ",
-			SS_RIGHT | WS_CHILD | WS_VISIBLE,
-			0, 0, 0, 0,
-			window,
-			NULL,
-			hInstance,
-			NULL
-		);
-
-		if (
-			info.encodeEdit == NULL
-			|| info.encodeResEdit == NULL
-			|| info.decodeEdit == NULL
-			|| info.decodeResEdit == NULL
-			|| info.encodeEditLabel == NULL
-			|| info.decodeEditLabel == NULL
-			|| info.titleLabel == NULL
-			) {
-			return -1;
-		}
-
-		SendMessage(info.encodeEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
-		SendMessage(info.decodeEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
-		SendMessage(info.encodeResEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
-		SendMessage(info.decodeResEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
-
-		Edit_SetReadOnly(info.encodeResEdit, true);
-		Edit_SetReadOnly(info.decodeResEdit, true);
-
-		ComputeEncode();
-		ComputeDecode();
-
-		return 0;
-	}
-
-	LRESULT Update(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-		if (uMsg == WM_COMMAND) {
-			if (B_HIWORD(wParam) == EN_CHANGE) {
-				if (info.encodeEdit == (HWND)lParam) {
-					ComputeEncode();
-				}
-				else if (info.decodeEdit == (HWND)lParam) {
-					ComputeDecode();
-				}
-			}
-		}
-		else if (uMsg == WM_CTLCOLORSTATIC) {
-			if (lParam == (LPARAM)info.encodeEdit
-				|| lParam == (LPARAM)info.encodeResEdit
-				|| lParam == (LPARAM)info.decodeEdit
-				|| lParam == (LPARAM)info.decodeResEdit
-				|| lParam == (LPARAM)info.encodeEditLabel
-				|| lParam == (LPARAM)info.decodeEditLabel
-				|| lParam == (LPARAM)info.titleLabel
-				) {
-				return 0;
-			}
-		}
-		return 1;
-	}
-	void Resize(int width, int height) {
-
-		int y{ height / 2 - 28 * 3 };
-		SetWindowPos(info.titleLabel, NULL, 0, y - 68, width, 60, SWP_SHOWWINDOW);
-
-		SetWindowPos(info.encodeEdit, NULL, width / 2 - 250, y, 250, 24, SWP_SHOWWINDOW);
-		SetWindowPos(info.encodeResEdit, NULL, width / 2 + 4, y, 250, 24, SWP_SHOWWINDOW);
-		SetWindowPos(info.encodeEditLabel, NULL, 0, y, width / 2 - 250, 24, SWP_SHOWWINDOW);
-		y += 28;
-		SetWindowPos(info.decodeEdit, NULL, width / 2 - 250, y, 250, 24, SWP_SHOWWINDOW);
-		SetWindowPos(info.decodeResEdit, NULL, width / 2 + 4, y, 250, 24, SWP_SHOWWINDOW);
-		SetWindowPos(info.decodeEditLabel, NULL, 0, y, width / 2 - 250, 24, SWP_SHOWWINDOW);
-		y += 28;
-
-		tool::ui::window().SetTitleFont(info.titleLabel);
-	}
-
-	void errenc_nui() {
-		tool::nui::NuiUseDefaultWindow dw{};
-		static char encodeInput[0x100]{ 0 };
-		static char encodeOutput[0x100]{ 0 };
-		static char decodeInput[0x100]{ 0 };
-		static char decodeOutput[0x100]{ 0 };
-		static uint32_t decodeOutputVal{};
-		static char exePath[MAX_PATH + 1]{ 0 };
-		static std::string searchOutput{};
-		static std::string notif{};
-		static bool alterative{};
-
-		static std::once_flag cfgof{};
-
-		std::call_once(cfgof, [] {
-			alterative = core::config::GetBool("ui.error_coder.alternative", false);
-			std::string exeCfg{ core::config::GetString("ui.error_coder.exe") };
-
-			sprintf_s(exePath, exeCfg.c_str());
-		});
-
-		ImGui::SeparatorText("Error encoder");
-
-		bool compEncode{ ImGui::InputText("Error code", encodeInput, sizeof(encodeInput)) };
-
-		if (ImGui::Checkbox("Alternative", &alterative)) {
-			compEncode = true;
-		}
-
-		if (compEncode) {
-
-			std::string encodeStr = encodeInput;
-
-			if (encodeStr.empty()) {
-				encodeOutput[0] = 0;
-			}
-			else {
-				try {
-					const char* cstr = encodeStr.c_str();
-					char* end;
-					uint32_t err = std::strtoul(cstr, &end, 10);
-					if (end != cstr + encodeStr.length()) {
-						throw std::runtime_error("Invalid code");
-					}
-
-					error_coder::ErrorCode code{};
-					error_coder::Encode(code, err, alterative);
-
-					sprintf_s(encodeOutput, "%s", error_coder::ToStr(code));
-				}
-				catch (std::exception& e) {
-					sprintf_s(encodeOutput, "%s", e.what());
-				}
-			}
-		}
-		ImGui::InputText("Encoded", encodeOutput, sizeof(encodeOutput), ImGuiInputTextFlags_ReadOnly);
-
-		ImGui::SeparatorText("Error decoder");
-
-		if (ImGui::InputText("Error message", decodeInput, sizeof(decodeInput))) {
-			std::string decodeStr = decodeInput;
-
-			if (decodeStr.empty()) {
-				decodeOutput[0] = 0;
-				decodeOutputVal = 0;
-				searchOutput = "";
-			}
-			else {
-
-				std::string words[4]{};
-
-				try {
-					size_t idx{};
-					for (int i = 0; i < 4; i++) {
-						size_t f = decodeStr.find(' ', idx);
-						if (f == std::string::npos) {
-							if (i != 3) {
-								throw std::runtime_error("Not enough components");
-							}
-							f = decodeStr.length();
-						}
-						if (f - idx == 0) {
-							// empty word
-							i--;
-							idx = f + 1;
-							continue;
-						}
-
-						words[i] = decodeStr.substr(idx, f - idx);
-						idx = f + 1;
-					}
-					while (idx < decodeStr.length() && decodeStr[idx] == ' ') {
-						idx++; // ignore end spaces
-					}
-					if (idx < decodeStr.length()) {
-						throw std::runtime_error("Too many components");
-					}
-
-					error_coder::ErrorCode code{ words[0].c_str(), words[1].c_str(), words[2].c_str(), words[3].c_str() };
-
-					uint32_t err = error_coder::Decode(code);
-					sprintf_s(decodeOutput, "%lu", err);
-					decodeOutputVal = err;
-				}
-				catch (std::exception& e) {
-					sprintf_s(decodeOutput, "%s", e.what());
-					decodeOutputVal = 0;
-				}
-			}
-		}
-		ImGui::InputText("Decoded", decodeOutput, sizeof(decodeOutput), ImGuiInputTextFlags_ReadOnly);
-
-		ImGui::SeparatorText("Exe search");
-		if (ImGui::InputText("Dump exe", exePath, sizeof(exePath))) {
-			core::config::SetString("ui.error_coder.exe", exePath);
-			tool::nui::SaveNextConfig();
-		}
-		if (ImGui::Button("Open file...")) {
-			// Open file
-
-			OPENFILENAMEW ofn;
-			WCHAR szFile[MAX_PATH + 1] = { 0 };
-
-			// Initialize OPENFILENAME
-			ZeroMemory(&ofn, sizeof(ofn));
-			ofn.lStructSize = sizeof(ofn);
-			ofn.hwndOwner = NULL;
-			ofn.lpstrFile = szFile;
-			ofn.nMaxFile = sizeof(szFile);
-			ofn.lpstrFilter = L"Dump file (.exe,.dll)\0*.exe;*.dll\0All\0*.*\0";
-			ofn.lpstrTitle = L"Open Dump file";
-			ofn.nFilterIndex = 1;
-			ofn.lpstrFileTitle = NULL;
-			ofn.nMaxFileTitle = 0;
-			ofn.lpstrInitialDir = NULL;
-			ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-
-			if (GetOpenFileNameW(&ofn) == TRUE) {
-				std::string path = utils::WStrToStr(ofn.lpstrFile);
-				core::config::SetString("ui.error_coder.exe", path);
-				snprintf(exePath, sizeof(exePath), "%s", path.data());
-				tool::nui::SaveNextConfig();
-			}
-			searchOutput = "";
-		}
-		static hook::module_mapper::Module exe{ true };
-		if (ImGui::Button("Load dump")) {
-			exe.Free();
-			if (!exe.Load(exePath)) {
-				notif = std::format("Can't load {}", exePath);
-			}
-			else {
-				notif = std::format("Loaded {}", exePath);
-			}
-			searchOutput = "";
-		}
-
-
-		if (exe && decodeOutputVal) {
-			if (ImGui::Button("Search error")) {
-				std::stringstream ss{};
-
-				auto res{ exe->ScanNumber(decodeOutputVal) };
-				if (res.size()) {
-					for (auto& v : res) {
-						ss << "0x" << std::hex << exe->Rloc(v.location) << " ";
-						LOG_TRACE("Match one 0x{} -> {}", (void*)v.location, v.Get<uint32_t>());
-					}
-					notif = std::format("Find {} occurence(s)", res.size());
-				}
-				else {
-					searchOutput = "";
-					notif = "can't find error";
-				}
-
-				searchOutput = ss.str();
-			}
-			if (!searchOutput.empty()) {
-				ImGui::InputText("Search", searchOutput.data(), searchOutput.length() + 1, ImGuiInputTextFlags_ReadOnly);
-			}
-		}
-
-		if (!notif.empty()) {
-			ImGui::Separator();
-
-			ImGui::Text("%s", notif.data());
-		}
-
-
-
-	}
-}
+    int errenc(Process& proc, int argc, const char* argv[]) {
+        if (argc < 3) {
+            return tool::BAD_USAGE;
+        }
+        error_coder::ErrorCode code{};
+
+        size_t i = 2;
+
+        bool alternative{};
+        if (utils::EqualIgnoreCase(argv[i], "true")) {
+            alternative = true;
+            i++;
+        } else if (utils::EqualIgnoreCase(argv[i], "false")) {
+            i++;
+        }
+
+        for (; i < argc; i++) {
+            uint32_t codedec = (uint32_t)std::strtoull(argv[i], nullptr, 10);
+
+            error_coder::Encode(code, codedec, false);
+
+            LOG_INFO("{}={}", codedec, error_coder::ToStr(code));
+        }
+
+        return tool::OK;
+    }
+
+    int errdec(Process& proc, int argc, const char* argv[]) {
+        if (argc < 6) {
+            return tool::BAD_USAGE;
+        }
+        error_coder::ErrorCode code{};
+
+        code[0] = argv[2];
+        code[1] = argv[3];
+        code[2] = argv[4];
+        code[3] = argv[5];
+
+        uint32_t codedec;
+
+        try {
+            codedec = error_coder::Decode(code);
+        } catch (std::exception& exp) {
+
+            LOG_ERROR("Can't decode code: {}", exp.what());
+            return tool::BASIC_ERROR;
+        }
+
+        LOG_INFO("{}={}", codedec, error_coder::ToStr(code));
+
+        return tool::OK;
+    }
+
+    struct {
+        std::string encodeStr{};
+        std::string decodeStr{};
+        HWND titleLabel{};
+
+        HWND encodeEdit{};
+        HWND encodeResEdit{};
+        HWND encodeEditLabel{};
+
+        HWND decodeEdit{};
+        HWND decodeResEdit{};
+        HWND decodeEditLabel{};
+    } info{};
+
+    void ComputeDecode() {
+        info.decodeStr = utils::WStrToStr(tool::ui::GetWindowTextVal(info.decodeEdit));
+
+        if (info.decodeStr.empty()) {
+            Edit_SetText(info.decodeResEdit, "");
+            return;
+        }
+
+        std::string words[4]{};
+
+        try {
+            size_t idx{};
+            for (int i = 0; i < 4; i++) {
+                size_t f = info.decodeStr.find(' ', idx);
+                if (f == std::string::npos) {
+                    if (i != 3) {
+                        Edit_SetText(info.decodeResEdit, "Not enough components");
+                        return;
+                    }
+                    f = info.decodeStr.length();
+                }
+                if (f - idx == 0) {
+                    // empty word
+                    i--;
+                    idx = f + 1;
+                    continue;
+                }
+
+                words[i] = info.decodeStr.substr(idx, f - idx);
+                idx = f + 1;
+            }
+            while (idx < info.decodeStr.length() && info.decodeStr[idx] == ' ') {
+                idx++; // ignore end spaces
+            }
+            if (idx < info.decodeStr.length()) {
+                Edit_SetText(info.decodeResEdit, "Too many components");
+                return;
+            }
+
+            error_coder::ErrorCode code{ words[0].c_str(), words[1].c_str(), words[2].c_str(), words[3].c_str() };
+
+            uint32_t err = error_coder::Decode(code);
+
+            std::string res = std::format("{}", err);
+            Edit_SetText(info.decodeResEdit, res.c_str());
+        } catch (std::exception& e) {
+            std::string res = std::format("{}", e.what());
+            Edit_SetText(info.decodeResEdit, res.c_str());
+        }
+    }
+    void ComputeEncode() {
+        info.encodeStr = utils::WStrToStr(tool::ui::GetWindowTextVal(info.encodeEdit));
+
+        if (info.encodeStr.empty()) {
+            Edit_SetText(info.encodeResEdit, "");
+            return;
+        }
+
+        try {
+            const char* cstr = info.encodeStr.c_str();
+            char* end;
+            uint32_t err = std::strtoul(cstr, &end, 10);
+            if (end != cstr + info.encodeStr.length()) {
+                throw std::runtime_error("Invalid code");
+            }
+
+            error_coder::ErrorCode code{};
+            error_coder::Encode(code, err, false);
+
+            std::string res = error_coder::ToStr(code);
+            Edit_SetText(info.encodeResEdit, res.c_str());
+        } catch (std::exception& e) {
+            std::string res = std::format("{}", e.what());
+            Edit_SetText(info.encodeResEdit, res.c_str());
+        }
+    }
+
+    int Render(HWND window, HINSTANCE hInstance) {
+        std::wstring encw = utils::StrToWStr(info.encodeStr);
+        std::wstring decw = utils::StrToWStr(info.decodeStr);
+
+        info.titleLabel = CreateWindowExW(0, L"STATIC", L"Error coder", SS_CENTER | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
+                                          window, NULL, hInstance, NULL);
+
+        info.encodeEdit =
+            CreateWindowExW(0, L"EDIT", encw.c_str(), WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0,
+                            0, 0, 0, window, NULL, hInstance, NULL);
+
+        info.encodeResEdit =
+            CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0,
+                            window, NULL, hInstance, NULL);
+
+        info.encodeEditLabel = CreateWindowExW(0, L"STATIC", L"Encode : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
+                                               window, NULL, hInstance, NULL);
+
+        info.decodeEdit =
+            CreateWindowExW(0, L"EDIT", decw.c_str(), WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0,
+                            0, 0, 0, window, NULL, hInstance, NULL);
+
+        info.decodeResEdit =
+            CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0,
+                            window, NULL, hInstance, NULL);
+
+        info.decodeEditLabel = CreateWindowExW(0, L"STATIC", L"Decode : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
+                                               window, NULL, hInstance, NULL);
+
+        if (info.encodeEdit == NULL || info.encodeResEdit == NULL || info.decodeEdit == NULL ||
+            info.decodeResEdit == NULL || info.encodeEditLabel == NULL || info.decodeEditLabel == NULL ||
+            info.titleLabel == NULL) {
+            return -1;
+        }
+
+        SendMessage(info.encodeEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
+        SendMessage(info.decodeEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
+        SendMessage(info.encodeResEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
+        SendMessage(info.decodeResEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
+
+        Edit_SetReadOnly(info.encodeResEdit, true);
+        Edit_SetReadOnly(info.decodeResEdit, true);
+
+        ComputeEncode();
+        ComputeDecode();
+
+        return 0;
+    }
+
+    LRESULT Update(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        if (uMsg == WM_COMMAND) {
+            if (B_HIWORD(wParam) == EN_CHANGE) {
+                if (info.encodeEdit == (HWND)lParam) {
+                    ComputeEncode();
+                } else if (info.decodeEdit == (HWND)lParam) {
+                    ComputeDecode();
+                }
+            }
+        } else if (uMsg == WM_CTLCOLORSTATIC) {
+            if (lParam == (LPARAM)info.encodeEdit || lParam == (LPARAM)info.encodeResEdit ||
+                lParam == (LPARAM)info.decodeEdit || lParam == (LPARAM)info.decodeResEdit ||
+                lParam == (LPARAM)info.encodeEditLabel || lParam == (LPARAM)info.decodeEditLabel ||
+                lParam == (LPARAM)info.titleLabel) {
+                return 0;
+            }
+        }
+        return 1;
+    }
+    void Resize(int width, int height) {
+
+        int y{ height / 2 - 28 * 3 };
+        SetWindowPos(info.titleLabel, NULL, 0, y - 68, width, 60, SWP_SHOWWINDOW);
+
+        SetWindowPos(info.encodeEdit, NULL, width / 2 - 250, y, 250, 24, SWP_SHOWWINDOW);
+        SetWindowPos(info.encodeResEdit, NULL, width / 2 + 4, y, 250, 24, SWP_SHOWWINDOW);
+        SetWindowPos(info.encodeEditLabel, NULL, 0, y, width / 2 - 250, 24, SWP_SHOWWINDOW);
+        y += 28;
+        SetWindowPos(info.decodeEdit, NULL, width / 2 - 250, y, 250, 24, SWP_SHOWWINDOW);
+        SetWindowPos(info.decodeResEdit, NULL, width / 2 + 4, y, 250, 24, SWP_SHOWWINDOW);
+        SetWindowPos(info.decodeEditLabel, NULL, 0, y, width / 2 - 250, 24, SWP_SHOWWINDOW);
+        y += 28;
+
+        tool::ui::window().SetTitleFont(info.titleLabel);
+    }
+
+    void errenc_nui() {
+        tool::nui::NuiUseDefaultWindow dw{};
+        static char encodeInput[0x100]{ 0 };
+        static char encodeOutput[0x100]{ 0 };
+        static char decodeInput[0x100]{ 0 };
+        static char decodeOutput[0x100]{ 0 };
+        static uint32_t decodeOutputVal{};
+        static char exePath[MAX_PATH + 1]{ 0 };
+        static std::string searchOutput{};
+        static std::string notif{};
+        static bool alterative{};
+
+        static std::once_flag cfgof{};
+
+        std::call_once(cfgof, [] {
+            alterative = core::config::GetBool("ui.error_coder.alternative", false);
+            std::string exeCfg{ core::config::GetString("ui.error_coder.exe") };
+
+            sprintf_s(exePath, exeCfg.c_str());
+        });
+
+        ImGui::SeparatorText("Error encoder");
+
+        bool compEncode{ ImGui::InputText("Error code", encodeInput, sizeof(encodeInput)) };
+
+        if (ImGui::Checkbox("Alternative", &alterative)) {
+            compEncode = true;
+        }
+
+        if (compEncode) {
+
+            std::string encodeStr = encodeInput;
+
+            if (encodeStr.empty()) {
+                encodeOutput[0] = 0;
+            } else {
+                try {
+                    const char* cstr = encodeStr.c_str();
+                    char* end;
+                    uint32_t err = std::strtoul(cstr, &end, 10);
+                    if (end != cstr + encodeStr.length()) {
+                        throw std::runtime_error("Invalid code");
+                    }
+
+                    error_coder::ErrorCode code{};
+                    error_coder::Encode(code, err, alterative);
+
+                    sprintf_s(encodeOutput, "%s", error_coder::ToStr(code));
+                } catch (std::exception& e) {
+                    sprintf_s(encodeOutput, "%s", e.what());
+                }
+            }
+        }
+        ImGui::InputText("Encoded", encodeOutput, sizeof(encodeOutput), ImGuiInputTextFlags_ReadOnly);
+
+        ImGui::SeparatorText("Error decoder");
+
+        if (ImGui::InputText("Error message", decodeInput, sizeof(decodeInput))) {
+            std::string decodeStr = decodeInput;
+
+            if (decodeStr.empty()) {
+                decodeOutput[0] = 0;
+                decodeOutputVal = 0;
+                searchOutput = "";
+            } else {
+
+                std::string words[4]{};
+
+                try {
+                    size_t idx{};
+                    for (int i = 0; i < 4; i++) {
+                        size_t f = decodeStr.find(' ', idx);
+                        if (f == std::string::npos) {
+                            if (i != 3) {
+                                throw std::runtime_error("Not enough components");
+                            }
+                            f = decodeStr.length();
+                        }
+                        if (f - idx == 0) {
+                            // empty word
+                            i--;
+                            idx = f + 1;
+                            continue;
+                        }
+
+                        words[i] = decodeStr.substr(idx, f - idx);
+                        idx = f + 1;
+                    }
+                    while (idx < decodeStr.length() && decodeStr[idx] == ' ') {
+                        idx++; // ignore end spaces
+                    }
+                    if (idx < decodeStr.length()) {
+                        throw std::runtime_error("Too many components");
+                    }
+
+                    error_coder::ErrorCode code{ words[0].c_str(), words[1].c_str(), words[2].c_str(),
+                                                 words[3].c_str() };
+
+                    uint32_t err = error_coder::Decode(code);
+                    sprintf_s(decodeOutput, "%lu", err);
+                    decodeOutputVal = err;
+                } catch (std::exception& e) {
+                    sprintf_s(decodeOutput, "%s", e.what());
+                    decodeOutputVal = 0;
+                }
+            }
+        }
+        ImGui::InputText("Decoded", decodeOutput, sizeof(decodeOutput), ImGuiInputTextFlags_ReadOnly);
+
+        ImGui::SeparatorText("Exe search");
+        if (ImGui::InputText("Dump exe", exePath, sizeof(exePath))) {
+            core::config::SetString("ui.error_coder.exe", exePath);
+            tool::nui::SaveNextConfig();
+        }
+        if (ImGui::Button("Open file...")) {
+            // Open file
+
+            OPENFILENAMEW ofn;
+            WCHAR szFile[MAX_PATH + 1] = { 0 };
+
+            // Initialize OPENFILENAME
+            ZeroMemory(&ofn, sizeof(ofn));
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = NULL;
+            ofn.lpstrFile = szFile;
+            ofn.nMaxFile = sizeof(szFile);
+            ofn.lpstrFilter = L"Dump file (.exe,.dll)\0*.exe;*.dll\0All\0*.*\0";
+            ofn.lpstrTitle = L"Open Dump file";
+            ofn.nFilterIndex = 1;
+            ofn.lpstrFileTitle = NULL;
+            ofn.nMaxFileTitle = 0;
+            ofn.lpstrInitialDir = NULL;
+            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+            if (GetOpenFileNameW(&ofn) == TRUE) {
+                std::string path = utils::WStrToStr(ofn.lpstrFile);
+                core::config::SetString("ui.error_coder.exe", path);
+                snprintf(exePath, sizeof(exePath), "%s", path.data());
+                tool::nui::SaveNextConfig();
+            }
+            searchOutput = "";
+        }
+        static hook::module_mapper::Module exe{ true };
+        if (ImGui::Button("Load dump")) {
+            exe.Free();
+            if (!exe.Load(exePath)) {
+                notif = std::format("Can't load {}", exePath);
+            } else {
+                notif = std::format("Loaded {}", exePath);
+            }
+            searchOutput = "";
+        }
+
+        if (exe && decodeOutputVal) {
+            if (ImGui::Button("Search error")) {
+                std::stringstream ss{};
+
+                auto res{ exe->ScanNumber(decodeOutputVal) };
+                if (res.size()) {
+                    for (auto& v : res) {
+                        ss << "0x" << std::hex << exe->Rloc(v.location) << " ";
+                        LOG_TRACE("Match one 0x{} -> {}", (void*)v.location, v.Get<uint32_t>());
+                    }
+                    notif = std::format("Find {} occurence(s)", res.size());
+                } else {
+                    searchOutput = "";
+                    notif = "can't find error";
+                }
+
+                searchOutput = ss.str();
+            }
+            if (!searchOutput.empty()) {
+                ImGui::InputText("Search", searchOutput.data(), searchOutput.length() + 1,
+                                 ImGuiInputTextFlags_ReadOnly);
+            }
+        }
+
+        if (!notif.empty()) {
+            ImGui::Separator();
+
+            ImGui::Text("%s", notif.data());
+        }
+    }
+} // namespace
 ADD_TOOL_UI(errenc, L"T8/9 Error encoder", Render, Update, Resize);
 ADD_TOOL_NUI(errenc, "T8/9 Error", errenc_nui);
 

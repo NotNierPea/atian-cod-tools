@@ -7,9 +7,9 @@
 
 // acts opcode value
 typedef enum {
-	OPCODE_Undefined = 0,
+    OPCODE_Undefined = 0,
 } ActsAPIGsc_OpCode;
-	
+
 // ingame opcode value
 typedef uint16_t ActsAPIGsc_OpCodeValue;
 // gsc file magic
@@ -18,16 +18,16 @@ typedef uint64_t ActsAPIGsc_VmMagic;
 
 // vm platform
 typedef enum {
-	PLATFORM_UNKNOWN = 0,
-	PLATFORM_PC = 1,
-	PLATFORM_PLAYSTATION = 2,
-	PLATFORM_XBOX = 3,
-	PLATFORM_PC_ALPHA = 4,
-	PLATFORM_ACTS_TEST = 5,
-	PLATFORM_BO6_V1 = 6,
-	PLATFORM_BO6 = 7,
-	PLATFORM_BO7 = 8,
-	PLATFORM_COUNT,
+    PLATFORM_UNKNOWN = 0,
+    PLATFORM_PC = 1,
+    PLATFORM_PLAYSTATION = 2,
+    PLATFORM_XBOX = 3,
+    PLATFORM_PC_ALPHA = 4,
+    PLATFORM_ACTS_TEST = 5,
+    PLATFORM_BO6_V1 = 6,
+    PLATFORM_BO6 = 7,
+    PLATFORM_BO7 = 8,
+    PLATFORM_COUNT,
 } ActsAPIGsc_Platform;
 /*
  * Find a gsc magic by a vm name
@@ -84,7 +84,8 @@ ACTS_COMMON_API uint64_t ActsAPIGsc_HashPath(ActsHandle gscvm, const char* strin
  * @param opcode game opcode
  * @return opcode or OPCODE_Undefined
  */
-ACTS_COMMON_API ActsAPIGsc_OpCode LookupOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCodeValue opcode);
+ACTS_COMMON_API ActsAPIGsc_OpCode LookupOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform,
+                                               ActsAPIGsc_OpCodeValue opcode);
 /*
  * Get an opcode value for a gsc vm and platform
  * @param gscvm gsc vm handle
@@ -93,7 +94,8 @@ ACTS_COMMON_API ActsAPIGsc_OpCode LookupOpCode(ActsHandle gscvm, ActsAPIGsc_Plat
  * @param outValue valid pointer to the out value
  * @return OK if the value was found, otherwise ERROR with ActsAPISetLastMessage set to error message
  */
-ACTS_COMMON_API ActsStatus GetOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCode opcode, bool modTool, ActsAPIGsc_OpCodeValue* outValue);
+ACTS_COMMON_API ActsStatus GetOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCode opcode,
+                                     bool modTool, ActsAPIGsc_OpCodeValue* outValue);
 /*
  * Test if an opcode value exists for a gsc vm and platform
  * @param gscvm gsc vm handle
@@ -132,6 +134,5 @@ ACTS_COMMON_API const char* ActsAPIGsc_GetCodeName(ActsHandle gscvm);
  * @return value
  */
 ACTS_COMMON_API const char* ActsAPIGsc_GetInternalName(ActsHandle gscvm);
-
 
 #endif // __ACTS_API_GSC_H__

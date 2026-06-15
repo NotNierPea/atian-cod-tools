@@ -10,15 +10,13 @@
 
 namespace {
     // Helper struct: one pattern byte, with wildcard flag
-    struct PatternByte
-    {
+    struct PatternByte {
         std::uint8_t value;
         bool isWildcard;
     };
 
     // Parse a signature string like:
-    std::vector<PatternByte> parse_signature(const char* signature)
-    {
+    std::vector<PatternByte> parse_signature(const char* signature) {
         if (!signature) {
             throw std::invalid_argument("signature is null");
         }
@@ -35,8 +33,7 @@ namespace {
             }
 
             // Basic validation: must be two hex chars
-            if (token.size() != 2 ||
-                !std::isxdigit(static_cast<unsigned char>(token[0])) ||
+            if (token.size() != 2 || !std::isxdigit(static_cast<unsigned char>(token[0])) ||
                 !std::isxdigit(static_cast<unsigned char>(token[1]))) {
                 throw std::invalid_argument("Invalid token in signature: " + token);
             }
@@ -54,11 +51,8 @@ namespace {
     }
 
     // Scan a memory range [base, base + size) for the pattern (with wildcards)
-    void scan_range_for_pattern(std::uint8_t* base,
-        std::size_t size,
-        const std::vector<PatternByte>& pattern,
-        std::vector<std::uint8_t*>& outMatches)
-    {
+    void scan_range_for_pattern(std::uint8_t* base, std::size_t size, const std::vector<PatternByte>& pattern,
+                                std::vector<std::uint8_t*>& outMatches) {
         const std::size_t patSize = pattern.size();
         if (size < patSize) {
             return;
@@ -83,8 +77,7 @@ namespace {
 
     // Main function: scan all executable memory in the *current* process
     // for the given signature string, returning all match addresses.
-    std::vector<std::uint8_t*> scan_executable_memory_for_signature(const char* signature)
-    {
+    std::vector<std::uint8_t*> scan_executable_memory_for_signature(const char* signature) {
         std::vector<PatternByte> pattern = parse_signature(signature);
         std::vector<std::uint8_t*> matches;
 
@@ -112,11 +105,8 @@ namespace {
             bool isGuard = (mbi.Protect & PAGE_GUARD) != 0;
             bool isNoAccess = (mbi.Protect & PAGE_NOACCESS) != 0;
 
-            bool isExecutable =
-                (mbi.Protect & PAGE_EXECUTE) ||
-                (mbi.Protect & PAGE_EXECUTE_READ) ||
-                (mbi.Protect & PAGE_EXECUTE_READWRITE) ||
-                (mbi.Protect & PAGE_EXECUTE_WRITECOPY);
+            bool isExecutable = (mbi.Protect & PAGE_EXECUTE) || (mbi.Protect & PAGE_EXECUTE_READ) ||
+                                (mbi.Protect & PAGE_EXECUTE_READWRITE) || (mbi.Protect & PAGE_EXECUTE_WRITECOPY);
 
             if (isCommitted && !isGuard && !isNoAccess && isExecutable) {
                 auto* regionStart = static_cast<std::uint8_t*>(mbi.BaseAddress);
@@ -143,9 +133,7 @@ namespace {
     // - `replacementSignature` may be shorter than the search pattern, but
     //   NOT longer, and must NOT contain wildcards.
     // - Example: scan_and_replace_pattern("CC ?? CC", "90 90");  // only first 2 bytes changed
-    std::vector<std::uint8_t*> scan_and_replace_pattern(const char* searchSignature,
-        const char* replacementSignature)
-    {
+    std::vector<std::uint8_t*> scan_and_replace_pattern(const char* searchSignature, const char* replacementSignature) {
         if (!searchSignature || !replacementSignature) {
             throw std::invalid_argument("scan_and_replace_pattern: null signature argument");
         }
@@ -166,8 +154,7 @@ namespace {
         // Require that the replacement has no wildcards.
         for (const auto& pb : replacementPattern) {
             if (pb.isWildcard) {
-                throw std::invalid_argument(
-                    "scan_and_replace_pattern: replacement pattern must not contain wildcards");
+                throw std::invalid_argument("scan_and_replace_pattern: replacement pattern must not contain wildcards");
             }
         }
 
@@ -185,11 +172,8 @@ namespace {
 
             DWORD oldProtect = 0;
             // Make just the bytes we are going to overwrite RWX.
-            if (!VirtualProtect(static_cast<LPVOID>(p),
-                static_cast<SIZE_T>(bytesToPatch),
-                PAGE_EXECUTE_READWRITE,
-                &oldProtect))
-            {
+            if (!VirtualProtect(static_cast<LPVOID>(p), static_cast<SIZE_T>(bytesToPatch), PAGE_EXECUTE_READWRITE,
+                                &oldProtect)) {
                 // Couldn't change protection; skip this match.
                 continue;
             }
@@ -204,10 +188,7 @@ namespace {
 
             // Restore original protection.
             DWORD dummy = 0;
-            VirtualProtect(static_cast<LPVOID>(p),
-                static_cast<SIZE_T>(bytesToPatch),
-                oldProtect,
-                &dummy);
+            VirtualProtect(static_cast<LPVOID>(p), static_cast<SIZE_T>(bytesToPatch), oldProtect, &dummy);
 
             patched.push_back(p);
         }
@@ -216,19 +197,8 @@ namespace {
     }
 
     static const wchar_t* badWords[] = {
-        L"IDA",
-        L"Pro 7.7.220118",
-        L"ida",
-        L"HxD",
-        L"cheatengine",
-        L"Cheat Engine",
-        L"x96dbg",
-        L"x32dbg",
-        L"x64dbg",
-        L"Wireshark",
-        L"Debug",
-        L"DEBUG",
-        L"msvsmon",
+        L"IDA",    L"Pro 7.7.220118", L"ida",       L"HxD",   L"cheatengine", L"Cheat Engine", L"x96dbg",
+        L"x32dbg", L"x64dbg",         L"Wireshark", L"Debug", L"DEBUG",       L"msvsmon",
     };
 
     void EraseBadWords(wchar_t* str) {
@@ -255,13 +225,13 @@ namespace {
     int WINAPI GetWindowTextW_Stub(HWND hWnd, LPWSTR lpString, int nMaxCount) {
         int r{ GetWindowTextW_Detour.Call<int>(hWnd, lpString, nMaxCount) };
         if (r) {
-			EraseBadWords(lpString);
+            EraseBadWords(lpString);
         }
         return r;
     }
 
     int WINAPI GetWindowTextA_Stub(HWND hWnd, LPSTR lpString, int nMaxCount) {
-        //GetWindowTextW()
+        // GetWindowTextW()
         std::wstring wbuff{};
         wbuff.resize(nMaxCount);
 
@@ -270,19 +240,17 @@ namespace {
         if (r) {
             std::string buff{ utils::WStrToStr(wbuff) };
             std::memset(lpString, 0, nMaxCount);
-			std::memcpy(lpString, buff.data(), buff.size());
+            std::memcpy(lpString, buff.data(), buff.size());
         }
 
         return r;
     }
 
-    NTSTATUS NTAPI NtQuerySystemInformation_Stub(
-        SYSTEM_INFORMATION_CLASS SystemInformationClass,
-        PVOID SystemInformation,
-        ULONG SystemInformationLength,
-        PULONG ReturnLength
-    ) {
-        NTSTATUS status{ NtQuerySystemInformation_Detour.Call<NTSTATUS>(SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength) };
+    NTSTATUS NTAPI NtQuerySystemInformation_Stub(SYSTEM_INFORMATION_CLASS SystemInformationClass,
+                                                 PVOID SystemInformation, ULONG SystemInformationLength,
+                                                 PULONG ReturnLength) {
+        NTSTATUS status{ NtQuerySystemInformation_Detour.Call<NTSTATUS>(SystemInformationClass, SystemInformation,
+                                                                        SystemInformationLength, ReturnLength) };
 
         if (NT_SUCCESS(status) && SystemInformationClass == SystemProcessInformation) {
             PSYSTEM_PROCESS_INFORMATION spi{ (PSYSTEM_PROCESS_INFORMATION)SystemInformation };
@@ -292,28 +260,26 @@ namespace {
                     EraseBadWords(spi->ImageName.Buffer);
                 }
 
-                spi = spi->NextEntryOffset ? (PSYSTEM_PROCESS_INFORMATION)((byte*)spi +spi->NextEntryOffset) : nullptr;
+                spi = spi->NextEntryOffset ? (PSYSTEM_PROCESS_INFORMATION)((byte*)spi + spi->NextEntryOffset) : nullptr;
             }
         }
 
         return status;
     }
 
-    NTSTATUS NTAPI NtQueryInformationProcess_Stub(
-            HANDLE ProcessHandle,
-            PROCESSINFOCLASS ProcessInformationClass,
-            PVOID ProcessInformation,
-            ULONG ProcessInformationLength,
-            PULONG ReturnLength
-        ) {
-		NTSTATUS status{ NtQueryInformationProcess_Detour.Call<NTSTATUS>(ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength) };
+    NTSTATUS NTAPI NtQueryInformationProcess_Stub(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass,
+                                                  PVOID ProcessInformation, ULONG ProcessInformationLength,
+                                                  PULONG ReturnLength) {
+        NTSTATUS status{ NtQueryInformationProcess_Detour.Call<NTSTATUS>(
+            ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength) };
 
         constexpr DWORD ProcessDebugPort = 7;
         constexpr DWORD ProcessDebugObjectHandle = 30;
         constexpr DWORD ProcessDebugFlags = 31;
         constexpr DWORD ProcessImageFileNameWin32 = 43;
 
-        if (NT_SUCCESS(status) && (ProcessInformationClass == ProcessImageFileName || ProcessInformationClass == ProcessImageFileNameWin32)) {
+        if (NT_SUCCESS(status) &&
+            (ProcessInformationClass == ProcessImageFileName || ProcessInformationClass == ProcessImageFileNameWin32)) {
             UNICODE_STRING& str{ *(UNICODE_STRING*)ProcessInformation };
 
             if (str.Length) {
@@ -341,9 +307,7 @@ namespace {
         NtQuerySystemInformation_Detour.Create(ntdll["NtQuerySystemInformation"], NtQuerySystemInformation_Stub);
         NtQueryInformationProcess_Detour.Create(ntdll["NtQueryInformationProcess"], NtQueryInformationProcess_Stub);
         LOG_TRACE("patched pre-arxan");
-
     }
-}
-
+} // namespace
 
 REGISTER_SYSTEM(arxan, PatchArxanPre, PatchArxan);

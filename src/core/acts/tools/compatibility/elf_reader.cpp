@@ -3,79 +3,76 @@
 #define KSDK_H
 #include <elf.h>
 
-
 namespace {
-	constexpr char ELF_MAGIC[4] = { 0x7F, 'E', 'L', 'F' };
+    constexpr char ELF_MAGIC[4] = { 0x7F, 'E', 'L', 'F' };
 
-	class ElfReader {
-		void* elf{};
-		size_t elfLen{};
-		Elf64_Ehdr* header{};
-	public:
+    class ElfReader {
+        void* elf{};
+        size_t elfLen{};
+        Elf64_Ehdr* header{};
 
-		ElfReader() {}
-		~ElfReader() {
-			FreeElf();
-		}
-		
-		void FreeElf() {
-			if (!elf) {
-				return;
-			}
+      public:
+        ElfReader() {}
+        ~ElfReader() { FreeElf(); }
 
-			VirtualFree(elf, elfLen, MEM_FREE);
+        void FreeElf() {
+            if (!elf) {
+                return;
+            }
 
-			elf = nullptr;
-			elfLen = 0;
-		}
+            VirtualFree(elf, elfLen, MEM_FREE);
 
-		void LoadElf(const std::filesystem::path& path) {
-			elf = utils::ReadFilePtr(path, &elfLen, [](size_t len) { return VirtualAlloc(NULL, len, MEM_COMMIT, PAGE_READWRITE); });
+            elf = nullptr;
+            elfLen = 0;
+        }
 
-			if (!elf) {
-				throw std::runtime_error(std::format("Can't read {}", path.string()));
-			}
+        void LoadElf(const std::filesystem::path& path) {
+            elf = utils::ReadFilePtr(path, &elfLen,
+                                     [](size_t len) { return VirtualAlloc(NULL, len, MEM_COMMIT, PAGE_READWRITE); });
 
-			if (elfLen < EI_NIDENT || memcmp(ELF_MAGIC, elf, sizeof(ELF_MAGIC))) {
-				throw std::runtime_error(std::format("Can't read {}: bad magic", path.string()));
-			}
+            if (!elf) {
+                throw std::runtime_error(std::format("Can't read {}", path.string()));
+            }
 
-			byte* data{ (byte*)elf };
-			
-			if (data[EI_CLASS] != ELFCLASS64) throw std::runtime_error(std::format("Can't read {}: not a 64 bits elf", path.string()));
-			if (data[EI_VERSION] != EV_CURRENT) throw std::runtime_error(std::format("Can't read {}: bad version", path.string()));
-			int endian{ std::endian::native == std::endian::big ? ELFDATA2MSB : ELFDATA2LSB };
-			if (data[EI_DATA] != endian) throw std::runtime_error(std::format("Can't read {}: invalid endian", path.string()));
+            if (elfLen < EI_NIDENT || memcmp(ELF_MAGIC, elf, sizeof(ELF_MAGIC))) {
+                throw std::runtime_error(std::format("Can't read {}: bad magic", path.string()));
+            }
 
-			header = (Elf64_Ehdr*)data;
+            byte* data{ (byte*)elf };
 
-			if (elfLen < sizeof(*header)) {
-				throw std::runtime_error(std::format("Can't read {}: invalid header file", path.string()));
-			}
+            if (data[EI_CLASS] != ELFCLASS64)
+                throw std::runtime_error(std::format("Can't read {}: not a 64 bits elf", path.string()));
+            if (data[EI_VERSION] != EV_CURRENT)
+                throw std::runtime_error(std::format("Can't read {}: bad version", path.string()));
+            int endian{ std::endian::native == std::endian::big ? ELFDATA2MSB : ELFDATA2LSB };
+            if (data[EI_DATA] != endian)
+                throw std::runtime_error(std::format("Can't read {}: invalid endian", path.string()));
 
-			//Elf64_Xword//
-		}
+            header = (Elf64_Ehdr*)data;
 
-		byte* Base() {
-			return (byte*)elf;
-		}
+            if (elfLen < sizeof(*header)) {
+                throw std::runtime_error(std::format("Can't read {}: invalid header file", path.string()));
+            }
 
-		Elf64_Ehdr* Header() {
-			return header;
-		}
-	};
+            // Elf64_Xword//
+        }
 
-	int elf_reader(int argc, const char* argv[]) {
-		if (tool::NotEnoughParam(argc, 1)) return tool::BAD_USAGE;
-		ElfReader reader{};
+        byte* Base() { return (byte*)elf; }
 
-		reader.LoadElf(argv[2]);
+        Elf64_Ehdr* Header() { return header; }
+    };
 
-		LOG_INFO("loaded {}", reader.Header()->e_ehsize);
+    int elf_reader(int argc, const char* argv[]) {
+        if (tool::NotEnoughParam(argc, 1))
+            return tool::BAD_USAGE;
+        ElfReader reader{};
 
-		return tool::OK;
-	}
+        reader.LoadElf(argv[2]);
 
-	
-	ADD_TOOL(elf_reader, "dev", " [elf]", "read elf data", elf_reader);
-}
+        LOG_INFO("loaded {}", reader.Header()->e_ehsize);
+
+        return tool::OK;
+    }
+
+    ADD_TOOL(elf_reader, "dev", " [elf]", "read elf data", elf_reader);
+} // namespace

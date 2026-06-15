@@ -8,9 +8,8 @@
 namespace tool::gsc::compiler {
     using namespace tool::gsc::opcode;
 
-    
     class GscCompilerOption {
-    public:
+      public:
         bool m_help{};
         const char* m_preproc{};
         const char* m_outFileName{ "compiled" };
@@ -32,8 +31,7 @@ namespace tool::gsc::compiler {
 
                 if (!strcmp("-?", arg) || !_strcmpi("--help", arg) || !strcmp("-h", arg)) {
                     m_help = true;
-                }
-                else if (!strcmp("-p", arg) || !_strcmpi("--platform", arg)) {
+                } else if (!strcmp("-p", arg) || !_strcmpi("--platform", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
@@ -44,8 +42,7 @@ namespace tool::gsc::compiler {
                         LOG_ERROR("Unknown platform: {}!", args[i]);
                         return false;
                     }
-                }
-                else if (!strcmp("-g", arg) || !_strcmpi("--game", arg)) {
+                } else if (!strcmp("-g", arg) || !_strcmpi("--game", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
@@ -58,104 +55,84 @@ namespace tool::gsc::compiler {
                     }
 
                     config.vm = (VMId)out->vmMagic;
-                }
-                else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
+                } else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     m_outFileName = args[++i];
-                }
-                else if (!strcmp("-d", arg) || !_strcmpi("--dbg", arg)) {
+                } else if (!strcmp("-d", arg) || !_strcmpi("--dbg", arg)) {
                     config.computeDevOption = true;
-                }
-                else if (!strcmp("-f", arg) || !_strcmpi("--file", arg)) {
+                } else if (!strcmp("-f", arg) || !_strcmpi("--file", arg)) {
                     oneFilePerComp = true;
-                }
-                else if (!strcmp("-O", arg) || !_strcmpi("--obfuscate", arg)) {
+                } else if (!strcmp("-O", arg) || !_strcmpi("--obfuscate", arg)) {
                     config.obfuscate = true;
-                }
-                else if (!_strcmpi("--dev-block-as-comment", arg)) {
+                } else if (!_strcmpi("--dev-block-as-comment", arg)) {
                     config.processorOpt.devBlockAsComment = true;
                     LOG_WARNING("{} used, this message is just here to remind you that you're stupid.", arg);
-                }
-                else if (!_strcmpi("--preproc", arg)) {
+                } else if (!_strcmpi("--preproc", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     m_preproc = args[++i];
-                }
-                else if (!strcmp("-c", arg) || !_strcmpi("--csc", arg)) {
+                } else if (!strcmp("-c", arg) || !_strcmpi("--csc", arg)) {
                     LOG_WARNING("{} option not required anymore", arg);
-                }
-                else if (!_strcmpi("--crc", arg)) {
+                } else if (!_strcmpi("--crc", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     try {
                         crcServer = std::strtol(args[++i], nullptr, 16);
-                    }
-                    catch (std::exception& e) {
+                    } catch (std::exception& e) {
                         LOG_ERROR("Invalid crc for {}: {} / {}!", arg, args[i], e.what());
                         return false;
                     }
-                }
-                else if (!_strcmpi("--gen-crc", arg)) {
+                } else if (!_strcmpi("--gen-crc", arg)) {
                     config.noDefaultChecksum = true;
-                }
-                else if (!_strcmpi("--crc-client", arg)) {
+                } else if (!_strcmpi("--crc-client", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     try {
                         crcClient = std::strtol(args[++i], nullptr, 16);
-                    }
-                    catch (std::exception& e) {
+                    } catch (std::exception& e) {
                         LOG_ERROR("Invalid crc for {}: {} / {}!", arg, args[i], e.what());
                         return false;
                     }
-                }
-                else if (!_strcmpi("--name", arg)) {
+                } else if (!_strcmpi("--name", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     nameServer = args[++i];
-                }
-                else if (!_strcmpi("--name-client", arg)) {
+                } else if (!_strcmpi("--name-client", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     nameClient = args[++i];
-                }
-                else if (!_strcmpi("--namespace", arg)) {
+                } else if (!_strcmpi("--namespace", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     fileNameSpaceServer = args[++i];
-                }
-                else if (!_strcmpi("--namespace-client", arg)) {
+                } else if (!_strcmpi("--namespace-client", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
                     }
                     fileNameSpaceClient = args[++i];
-                }
-                else if (!_strcmpi("--define-as-constxpr", arg)) {
+                } else if (!_strcmpi("--define-as-constxpr", arg)) {
                     config.processorOpt.noDefineExpr = true;
-                }
-                else if (!_strcmpi("--no-devcall-inline", arg)) {
+                } else if (!_strcmpi("--no-devcall-inline", arg)) {
                     config.noDevCallInline = true;
-                }
-                else if (!_strcmpi("--mod-tool", arg)) {
+                } else if (!_strcmpi("--mod-tool", arg)) {
                     config.useModToolOpCodes = true;
-                }
-                else if (!_strcmpi("--detour", arg)) {
+                } else if (!_strcmpi("--detour", arg)) {
                     if (i + 1 == endIndex) {
                         LOG_ERROR("Missing value for param: {}!", arg);
                         return false;
@@ -163,24 +140,20 @@ namespace tool::gsc::compiler {
                     const char* dt = args[++i];
                     if (!_strcmpi(dt, "acts")) {
                         config.detourType = DETOUR_ACTS;
-                    }
-                    else if (!_strcmpi(dt, "gsic")) {
+                    } else if (!_strcmpi(dt, "gsic")) {
                         config.detourType = DETOUR_GSIC;
-                    }
-                    else if (_strcmpi(dt, "none")) {
+                    } else if (_strcmpi(dt, "none")) {
                         LOG_ERROR("Invalid value value for param '{}': {}!", arg, dt);
                         return false;
                     }
-                }
-                else if (*arg == '-') {
+                } else if (*arg == '-') {
                     if (arg[1] == 'D' && arg[2] && config.processorOpt.AddDefineConfig(arg + 2)) {
                         continue;
                     }
 
                     LOG_ERROR("Unknown option: {}!", arg);
                     return false;
-                }
-                else {
+                } else {
                     m_inputFiles.push_back(arg);
                 }
             }
@@ -201,7 +174,8 @@ namespace tool::gsc::compiler {
 
                 size_t idx{};
                 for (const auto& [vm, vmInfo] : tool::gsc::opcode::GetVMMaps()) {
-                    if (idx++) games << ",";
+                    if (idx++)
+                        games << ",";
                     games << " '" << vmInfo.internalName << "'";
                 }
 
@@ -214,7 +188,8 @@ namespace tool::gsc::compiler {
 
                 for (size_t i = 1; i < tool::gsc::opcode::PLATFORM_COUNT; i++) {
                     const char* plt = tool::gsc::opcode::PlatformIdName((tool::gsc::opcode::Platform)i);
-                    if (i) platforms << ",";
+                    if (i)
+                        platforms << ",";
                     platforms << " '" << plt << "'";
                 }
 
@@ -225,7 +200,8 @@ namespace tool::gsc::compiler {
             LOG_INFO("-D[name]               : Define variable");
             LOG_INFO("-c --csc               : Build client script with csc files");
             LOG_INFO("-f --file              : Compile each file inside an independant one");
-            LOG_INFO("--detour [t]           : Set the detour compilation type ('none' / 'acts' / 'gsic') default: 'none'");
+            LOG_INFO(
+                "--detour [t]           : Set the detour compilation type ('none' / 'acts' / 'gsic') default: 'none'");
             LOG_INFO("--crc [c]              : Set the crc for the server script");
             LOG_INFO("--crc-client [c]       : Set the crc for the client script");
             LOG_INFO("--name [n]             : Set the name for the server script");
@@ -240,7 +216,6 @@ namespace tool::gsc::compiler {
             LOG_DEBUG("--preproc [f]         : Export preproc result into f");
         }
     };
-
 
     int gscc(int argc, const char* argv[]) {
         GscCompilerOption opt;
@@ -257,7 +232,7 @@ namespace tool::gsc::compiler {
             return tool::BASIC_ERROR;
         }
 
-        std::shared_ptr<tool::gsc::GSCOBJHandler> handler { readerBuilder->NewHandler(nullptr, 0) };
+        std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler(nullptr, 0) };
 
         auto produceFile = [&opt, &handler](bool client, std::vector<std::filesystem::path>& inputs) -> int {
             opt.config.clientScript = client;
@@ -278,12 +253,12 @@ namespace tool::gsc::compiler {
             }
 
             if (client) {
-                if (opt.fileNameSpaceClient && *opt.fileNameSpaceClient) opt.config.fileName = opt.fileNameSpaceClient;
+                if (opt.fileNameSpaceClient && *opt.fileNameSpaceClient)
+                    opt.config.fileName = opt.fileNameSpaceClient;
+            } else {
+                if (opt.fileNameSpaceServer && *opt.fileNameSpaceServer)
+                    opt.config.fileName = opt.fileNameSpaceServer;
             }
-            else {
-                if (opt.fileNameSpaceServer && *opt.fileNameSpaceServer) opt.config.fileName = opt.fileNameSpaceServer;
-            }
-
 
             std::vector<std::filesystem::path> files{};
             for (const std::filesystem::path& file : inputs) {
@@ -292,8 +267,7 @@ namespace tool::gsc::compiler {
                     if (ext != ".csc" && ext != ".gcsc") {
                         continue;
                     }
-                }
-                else {
+                } else {
                     if (ext != ".gsc" && ext != ".gcsc") {
                         continue;
                     }
@@ -301,7 +275,8 @@ namespace tool::gsc::compiler {
                 files.emplace_back(file);
             }
 
-            if (files.empty()) return tool::OK; // nothing to compile
+            if (files.empty())
+                return tool::OK; // nothing to compile
             std::vector<byte> data{};
 
             LOG_TRACE("Compile tree");
@@ -325,9 +300,9 @@ namespace tool::gsc::compiler {
             if (opt.m_preproc) {
                 utils::WriteFile(opt.m_preproc, *opt.config.preprocOutput);
             }
-            
-            const char* outFile{ utils::va("%s.%s", opt.m_outFileName, client ? "cscc" : "gscc")};
-            const char* dbgOutFile{ utils::va("%s.%s", opt.m_outFileName, client ? "csc.gdb" : "gsc.gdb")};
+
+            const char* outFile{ utils::va("%s.%s", opt.m_outFileName, client ? "cscc" : "gscc") };
+            const char* dbgOutFile{ utils::va("%s.%s", opt.m_outFileName, client ? "csc.gdb" : "gsc.gdb") };
             std::filesystem::path outPath{ outFile };
 
             if (outPath.has_parent_path()) {
@@ -355,8 +330,7 @@ namespace tool::gsc::compiler {
                 if (!hos) {
                     LOG_ERROR("Can't open hash file {}", outFileHash);
                     return tool::BASIC_ERROR;
-                }
-                else {
+                } else {
                     for (const std::string& str : hashes) {
                         hos << str << "\n";
                     }
@@ -382,12 +356,12 @@ namespace tool::gsc::compiler {
 
                 for (const std::filesystem::path& path : inputs) {
                     std::filesystem::path ext{ path.extension() };
-                    if (ext != ".gsc" && ext != ".csc" && ext != ".gcsc" && ext != ".gcsc") continue;
+                    if (ext != ".gsc" && ext != ".csc" && ext != ".gcsc" && ext != ".gcsc")
+                        continue;
                     doneFiles++;
 
                     std::filesystem::path trueFileName{ std::filesystem::relative(path, base) };
                     std::filesystem::path outFile{ outDir / trueFileName };
-
 
                     std::string outFileName{ outFile.string() };
                     LOG_INFO("Compiling {} into {}", trueFileName.string(), outFileName);
@@ -398,8 +372,7 @@ namespace tool::gsc::compiler {
                     std::string fileNamespace;
                     if (vmInfo->HasFlag(VmFlags::VMF_FULL_FILE_NAMESPACE)) {
                         fileNamespace = outFileName;
-                    }
-                    else {
+                    } else {
                         fileNamespace = outFile.filename().string();
                     }
                     opt.config.fileName = fileNamespace.data();
@@ -410,31 +383,30 @@ namespace tool::gsc::compiler {
 
                     try {
                         int sret;
-                        
+
                         if (ext == ".gsc" || ext == ".gcsc") {
                             sret = produceFile(false, singleInputs);
-                            if (sret != tool::OK) ret = sret;
+                            if (sret != tool::OK)
+                                ret = sret;
                         }
 
                         if (ext == ".csc" || ext == ".gcsc") {
                             sret = produceFile(true, singleInputs);
-                            if (sret != tool::OK) ret = sret;
+                            if (sret != tool::OK)
+                                ret = sret;
                         }
-                    }
-                    catch (std::runtime_error& err) {
+                    } catch (std::runtime_error& err) {
                         LOG_ERROR("Error when compiling: {}", err.what());
                         ret = tool::BASIC_ERROR;
                     }
                 }
-
             }
             if (!ret && doneFiles) {
                 LOG_ERROR("No file produced");
                 return tool::BASIC_ERROR;
             }
             return ret;
-        }
-        else {
+        } else {
             std::vector<std::filesystem::path> inputs{};
 
             for (const char* file : opt.m_inputFiles) {
@@ -454,16 +426,15 @@ namespace tool::gsc::compiler {
     }
     class ACTSErrorListener : public ConsoleErrorListener {
         InputInfo& m_info;
-    public:
-        ACTSErrorListener(InputInfo& info) : m_info(info) {
-        }
+
+      public:
+        ACTSErrorListener(InputInfo& info) : m_info(info) {}
 
         void syntaxError(Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
-            const std::string& msg, std::exception_ptr e) override {
+                         const std::string& msg, std::exception_ptr e) override {
             m_info.container.PrintLineMessage(core::logs::LVL_ERROR, line, charPositionInLine, msg);
         }
     };
-
 
     void CompileGsc(const std::vector<std::filesystem::path>& files, std::vector<byte>& data, CompilerConfig& config) {
         VmInfo* vmInfo{ config.GetVm() };
@@ -480,7 +451,8 @@ namespace tool::gsc::compiler {
             popt.AddDefine("_SUPPORTS_DETOURS");
         }
         popt.AddDefine(utils::UpperCase(utils::va("_%s", vmInfo->codeName)));
-        popt.AddDefine(utils::MapString(utils::va("_%s", PlatformName(config.platform)), [](char c) -> char { return isspace(c) ? '_' : std::toupper(c); }));
+        popt.AddDefine(utils::MapString(utils::va("_%s", PlatformName(config.platform)),
+                                        [](char c) -> char { return isspace(c) ? '_' : std::toupper(c); }));
 
         if (tool::gsc::opcode::HasOpCode(config.vm, config.platform, OPCODE_T8C_GetLazyFunction)) {
             popt.AddDefine("_SUPPORTS_LAZYLINK");
@@ -488,13 +460,14 @@ namespace tool::gsc::compiler {
 
         if (config.clientScript) {
             popt.AddDefine("_CSC");
-        }
-        else {
+        } else {
             popt.AddDefine("_GSC");
         }
 
         if (!popt.ApplyPreProcessor(info.container.data,
-            [&info](core::logs::loglevel lvl, size_t line, const std::string& message) { info.container.PrintLineMessage(lvl, line, 0, message); })) {
+                                    [&info](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                                        info.container.PrintLineMessage(lvl, line, 0, message);
+                                    })) {
             throw std::runtime_error("Error when applying preprocessor on data");
         }
 
@@ -540,7 +513,6 @@ namespace tool::gsc::compiler {
             throw std::runtime_error("Error when parsing the object");
         }
 
-
         RegisterOpCodesMap();
 
         if (!obj.Compile(data, config.dbgoutput)) {
@@ -549,19 +521,18 @@ namespace tool::gsc::compiler {
     }
 
     ADD_TOOL(gscc, "gsc", "", "GSC compiler", gscc);
-}
+} // namespace tool::gsc::compiler
 
 namespace {
     struct CompilerContext {
         std::vector<std::filesystem::path> input;
         tool::gsc::compiler::CompilerConfig config;
     };
-}
+} // namespace
 
-ActsHandle ActsAPIGscCompiler_CreateCompilerContext(
-    ActsAPIGsc_VmMagic vm, ActsAPIGsc_Platform platform,
-    const char* name, bool clientScript, ActsAPIGscCompiler_OptionalConfig* optCfg
-) {
+ActsHandle ActsAPIGscCompiler_CreateCompilerContext(ActsAPIGsc_VmMagic vm, ActsAPIGsc_Platform platform,
+                                                    const char* name, bool clientScript,
+                                                    ActsAPIGscCompiler_OptionalConfig* optCfg) {
     CompilerContext* ctx{ ActsAPIImpl_New<CompilerContext>() };
     ctx->config.platform = (tool::gsc::opcode::Platform)platform;
     ctx->config.vm = (tool::gsc::opcode::VMId)vm;
@@ -584,22 +555,20 @@ void ActsAPIGscCompiler_AddInput(ActsHandle context, const char* file, bool recu
     if (recurse) {
         if (ctx.config.clientScript) {
             utils::GetFileRecurseExt(file, ctx.input, ".csc\0gcsc\0");
-        }
-        else {
+        } else {
             utils::GetFileRecurseExt(file, ctx.input, ".gsc\0gcsc\0");
         }
-    }
-    else {
+    } else {
         ctx.input.emplace_back(file);
     }
 }
-ActsStatus ActsAPIGscCompiler_Compile(ActsHandle context, void (*writerCallback)(void* ud, const uint8_t* data, size_t len), void* ud) {
+ActsStatus ActsAPIGscCompiler_Compile(ActsHandle context,
+                                      void (*writerCallback)(void* ud, const uint8_t* data, size_t len), void* ud) {
     CompilerContext& ctx{ *(CompilerContext*)context };
     std::vector<byte> data{};
     try {
         tool::gsc::compiler::CompileGsc(ctx.input, data, ctx.config);
-    }
-    catch (std::runtime_error& err) {
+    } catch (std::runtime_error& err) {
         ActsAPISetLastMessage("%s", err.what());
         return ACTS_STATUS_ERROR;
     }

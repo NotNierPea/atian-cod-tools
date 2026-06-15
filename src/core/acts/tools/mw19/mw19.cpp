@@ -5,7 +5,6 @@
 #include <compatibility/xensik_gscbin.hpp>
 #include "mw19.hpp"
 
-
 namespace tool::mw19 {
     namespace {
         const char* IW19PoolNames[]{
@@ -131,52 +130,51 @@ namespace tool::mw19 {
             "dwidata",
         };
 
+        int mw19_exe(int argc, const char* argv[]) {
+            std::filesystem::path exe{ argv[2] };
 
-	    int mw19_exe(int argc, const char* argv[]) {
-		    std::filesystem::path exe{ argv[2] };
+            hook::module_mapper::Module mod{ true };
 
-hook::module_mapper::Module mod{ true };
+            LOG_INFO("Loading module {}", exe.string());
+            if (!mod.Load(exe) || !mod) {
+                LOG_ERROR("Can't load module");
+                return tool::BASIC_ERROR;
+            }
 
-LOG_INFO("Loading module {}", exe.string());
-if (!mod.Load(exe) || !mod) {
-    LOG_ERROR("Can't load module");
-    return tool::BASIC_ERROR;
-}
+            LOG_INFO("Loaded");
 
-LOG_INFO("Loaded");
+            auto* pools{ mod->Get<uintptr_t>(0x7221160) };
+            {
+                std::filesystem::path pf{ exe.parent_path() / "pools19.cpp" };
+                std::ofstream osf{ pf };
+                if (!osf) {
+                    LOG_ERROR("Can't open {}", pf.string());
+                } else {
+                    utils::CloseEnd osfce{ osf };
+                    osf << "enum IW19PoolType : int {\n";
+                    for (size_t idx = 0; idx < mw19::IW19_ASSETTYPE_COUNT; idx++) {
+                        if (!pools[idx])
+                            break;
+                        const char* cc = mod->Rebase<const char>(pools[idx]);
+                        char* ccu = utils::UpperCase(utils::CloneString(cc));
+                        osf << "    IW19_ASSETTYPE_" << ccu << " = " << std::dec << idx << ", // 0x" << std::hex << idx
+                            << "\n";
+                    }
+                    osf << "};\n";
 
+                    osf << "const char* IW19PoolNames[] {\n";
+                    for (size_t idx = 0; idx < mw19::IW19_ASSETTYPE_COUNT; idx++) {
+                        if (!pools[idx])
+                            break;
+                        const char* cc = mod->Rebase<const char>(pools[idx]);
+                        osf << "    \"" << cc << "\",\n";
+                    }
+                    osf << "};\n";
+                }
+                LOG_INFO("Created {}", pf.string());
+            }
 
-
-auto* pools{ mod->Get<uintptr_t>(0x7221160) };
-{
-    std::filesystem::path pf{ exe.parent_path() / "pools19.cpp" };
-    std::ofstream osf{ pf };
-    if (!osf) {
-        LOG_ERROR("Can't open {}", pf.string());
-    }
-    else {
-        utils::CloseEnd osfce{ osf };
-        osf << "enum IW19PoolType : int {\n";
-        for (size_t idx = 0; idx < mw19::IW19_ASSETTYPE_COUNT; idx++) {
-            if (!pools[idx]) break;
-            const char* cc = mod->Rebase<const char>(pools[idx]);
-            char* ccu = utils::UpperCase(utils::CloneString(cc));
-            osf << "    IW19_ASSETTYPE_" << ccu << " = " << std::dec << idx << ", // 0x" << std::hex << idx << "\n";
-        }
-        osf << "};\n";
-
-        osf << "const char* IW19PoolNames[] {\n";
-        for (size_t idx = 0; idx < mw19::IW19_ASSETTYPE_COUNT; idx++) {
-            if (!pools[idx]) break;
-            const char* cc = mod->Rebase<const char>(pools[idx]);
-            osf << "    \"" << cc << "\",\n";
-        }
-        osf << "};\n";
-    }
-    LOG_INFO("Created {}", pf.string());
-}
-
-return tool::OK;
+            return tool::OK;
         }
 
         const char* DecrytString(const char* str) {
@@ -191,15 +189,19 @@ return tool::OK;
             LOG_WARNING("TOOL MOVED TO 'gscd'");
             using namespace tool::gsc;
             using namespace tool::gsc::opcode;
-            if (tool::NotEnoughParam(argc, 2)) return tool::BAD_USAGE;
+            if (tool::NotEnoughParam(argc, 2))
+                return tool::BAD_USAGE;
 
             std::filesystem::path outDir{ argv[3] };
             std::vector<std::filesystem::path> scriptFiles{};
             std::filesystem::path scriptDir{ argv[2] };
-            utils::GetFileRecurse(scriptDir, scriptFiles, [](const std::filesystem::path& f) {
-                const auto str = f.string();
-                return str.ends_with(".gscbin") || str.ends_with(".gscc");
-            }, true);
+            utils::GetFileRecurse(
+                scriptDir, scriptFiles,
+                [](const std::filesystem::path& f) {
+                    const auto str = f.string();
+                    return str.ends_with(".gscbin") || str.ends_with(".gscc");
+                },
+                true);
 
             std::filesystem::create_directories(outDir);
 
@@ -220,9 +222,12 @@ return tool::OK;
                 }
                 LOG_DEBUG("Loading {}", scriptFile.string());
 
-                compatibility::xensik::gscbin::GscBinHeader& header{ *reinterpret_cast<compatibility::xensik::gscbin::GscBinHeader*>(scriptBuffer.data()) };
+                compatibility::xensik::gscbin::GscBinHeader& header{
+                    *reinterpret_cast<compatibility::xensik::gscbin::GscBinHeader*>(scriptBuffer.data())
+                };
 
-                std::filesystem::path outScript{ outDir / scriptFile.parent_path() / std::format("{}.gsc", scriptFile.filename().string()) };
+                std::filesystem::path outScript{ outDir / scriptFile.parent_path() /
+                                                 std::format("{}.gsc", scriptFile.filename().string()) };
                 std::filesystem::create_directories(outScript.parent_path());
                 std::ofstream asmout{ outScript };
                 if (!asmout) {
@@ -246,14 +251,15 @@ return tool::OK;
                 uLongf sizef = (uLongf)header.len;
                 uLongf sizef2{ header.compressedLen };
                 int ret;
-                if (header.len && (ret = uncompress2(decompressedData.get(), &sizef, reinterpret_cast<const Bytef*>(header.GetBuffer()), &sizef2) < 0)) {
+                if (header.len &&
+                    (ret = uncompress2(decompressedData.get(), &sizef,
+                                       reinterpret_cast<const Bytef*>(header.GetBuffer()), &sizef2) < 0)) {
                     LOG_ERROR("Can't decompress file: {}", zError(ret));
                     return tool::BASIC_ERROR;
                 }
 
                 core::bytebuffer::ByteBuffer sourceReader{ decompressedData.get(), sizef };
                 core::bytebuffer::ByteBuffer bytecodeReader{ header.GetByteCode(), header.bytecodeLen };
-
 
                 auto ReadSourceToken = [&sourceReader]() -> const char* {
                     uint32_t id = sourceReader.Read<uint32_t>();
@@ -278,12 +284,10 @@ return tool::OK;
                     byte* funcEnd{ funcStart + size };
                     const char* name{ ReadSourceToken() };
 
-                    asmout
-                        << "\n"
-                        << "// name: " << name << "\n"
-                        << "// offset: 0x" << std::hex << offset << "\n"
-                        << "// size: 0x" << std::hex << size << "\n"
-                        ;
+                    asmout << "\n"
+                           << "// name: " << name << "\n"
+                           << "// offset: 0x" << std::hex << offset << "\n"
+                           << "// size: 0x" << std::hex << size << "\n";
 
                     while (bytecodeReader.Ptr() < funcEnd && !end) {
                         asmout << "." << std::hex << std::setfill('0') << std::setw(4) << bytecodeReader.Loc() << " ";
@@ -291,9 +295,9 @@ return tool::OK;
 
                         const OPCodeInfo* nfo{ LookupOpCode(VMI_IW_BIN_MW19, PLATFORM_PC, opcode) };
 
-                        asmout 
-                            << "0x" << std::hex << std::setfill('0') << std::setw(2) << (int)opcode 
-                            << " " << std::setw(0x20) << std::setfill('.') << nfo->m_name << "(" << std::dec << std::setfill(' ') << std::setw(3) << (int)opcode << ")" << " | ";
+                        asmout << "0x" << std::hex << std::setfill('0') << std::setw(2) << (int)opcode << " "
+                               << std::setw(0x20) << std::setfill('.') << nfo->m_name << "(" << std::dec
+                               << std::setfill(' ') << std::setw(3) << (int)opcode << ")" << " | ";
                         switch (opcode) {
                         case 0x01:
                         case 0x03:
@@ -347,10 +351,7 @@ return tool::OK;
                         case 0x82:
                         case 0x83:
                             // += 2
-                            asmout
-                                << std::hex << "0x" << bytecodeReader.Read<uint16_t>()
-                                << "\n"
-                                ;
+                            asmout << std::hex << "0x" << bytecodeReader.Read<uint16_t>() << "\n";
                             break;
                         case 0x23:
                         case 0x33:
@@ -363,11 +364,8 @@ return tool::OK;
                         case 0xab:
                         case 0xac:
                             // += 3
-                            asmout
-                                << std::hex << "0x" << bytecodeReader.Read<uint16_t>()
-                                << std::hex << ", 0x" << (int)bytecodeReader.Read<byte>()
-                                << "\n"
-                                ;
+                            asmout << std::hex << "0x" << bytecodeReader.Read<uint16_t>() << std::hex << ", 0x"
+                                   << (int)bytecodeReader.Read<byte>() << "\n";
                             break;
                         case 0x29:
                         case 0x35:
@@ -382,27 +380,18 @@ return tool::OK;
                         case 0xaf:
                         case 0xb0:
                             // += 4
-                            asmout
-                                << std::hex << "0x" << bytecodeReader.Read<uint32_t>()
-                                << "\n"
-                                ;
+                            asmout << std::hex << "0x" << bytecodeReader.Read<uint32_t>() << "\n";
                             break;
                         case 0xa0:
                             // += 5
-                            asmout
-                                << std::hex << bytecodeReader.Read<uint32_t>()
-                                << std::hex << ", 0x" << (int)bytecodeReader.Read<byte>()
-                                << "\n"
-                                ;
+                            asmout << std::hex << bytecodeReader.Read<uint32_t>() << std::hex << ", 0x"
+                                   << (int)bytecodeReader.Read<byte>() << "\n";
                             break;
                         case 0x13:
                             // += 12
-                            asmout
-                                << std::dec << bytecodeReader.Read<float>()
-                                << std::dec << ", " << bytecodeReader.Read<float>()
-                                << std::dec << ", " << bytecodeReader.Read<float>()
-                                << "\n"
-                                ;
+                            asmout << std::dec << bytecodeReader.Read<float>() << std::dec << ", "
+                                   << bytecodeReader.Read<float>() << std::dec << ", " << bytecodeReader.Read<float>()
+                                   << "\n";
                             break;
                         case 0xa6:
                         case 0xbd: {
@@ -413,59 +402,44 @@ return tool::OK;
                             while (count--) {
                                 asmout << std::hex << ", 0x" << (int)bytecodeReader.Read<byte>();
                             }
-                            asmout << "\n"
-                                ;
-                        }
-                            break;
+                            asmout << "\n";
+                        } break;
                         case 0xb1:
                         case 0xb2:
                         case 0xb3:
                         case 0xb4:
                             // += 3 and read dw data
-                            asmout 
-                                << "data3: 0x" << std::hex << sourceReader.Read<uint32_t>()
-                                << std::hex << ", 0x" << bytecodeReader.Read<uint16_t>()
-                                << std::hex << ", 0x" << (int)bytecodeReader.Read<byte>()
-                                << "\n"
-                                ;
+                            asmout << "data3: 0x" << std::hex << sourceReader.Read<uint32_t>() << std::hex << ", 0x"
+                                   << bytecodeReader.Read<uint16_t>() << std::hex << ", 0x"
+                                   << (int)bytecodeReader.Read<byte>() << "\n";
                             break;
                         case 0xb5:
                         case 0xb6:
                         case 0xb7:
                         case 0xb8:
                             // += 4 and read dw data
-                            asmout 
-                                << "data4: 0x" << std::hex << sourceReader.Read<uint32_t>()
-                                << std::hex << ", 0x" << bytecodeReader.Read<uint32_t>()
-                                << "\n"
-                                ;
+                            asmout << "data4: 0x" << std::hex << sourceReader.Read<uint32_t>() << std::hex << ", 0x"
+                                   << bytecodeReader.Read<uint32_t>() << "\n";
                             break;
                         case 0x91: {
-                                // #using_animtree  related
+                            // #using_animtree  related
                             const char* unkstr1{ sourceReader.ReadString() };
                             const char* unkstr2{ sourceReader.ReadString() };
-                            asmout 
-                                << "\"" << DecrytString(unkstr1) << "\""
-                                << ", \"" << DecrytString(unkstr2) << "\""
-                                << std::hex << "0x" << bytecodeReader.Read<uint64_t>() << "\n"
-                                ;
-                        }
-                            break;
+                            asmout << "\"" << DecrytString(unkstr1) << "\""
+                                   << ", \"" << DecrytString(unkstr2) << "\"" << std::hex << "0x"
+                                   << bytecodeReader.Read<uint64_t>() << "\n";
+                        } break;
                         case 0x60:
                         case 0x75:
                         case 0x92:
                         case 0x96: {
-                            asmout 
-                                << "token: " << ReadSourceToken()
-                                << ", token2: " << ReadSourceToken();
+                            asmout << "token: " << ReadSourceToken() << ", token2: " << ReadSourceToken();
                             // read 3 bytes
-                            asmout
-                                << std::hex << " / data: 0x" << bytecodeReader.Read<uint16_t>()
-                                << std::hex << ", 0x" << (int)bytecodeReader.Read<byte>()
-                                << "\n";
+                            asmout << std::hex << " / data: 0x" << bytecodeReader.Read<uint16_t>() << std::hex << ", 0x"
+                                   << (int)bytecodeReader.Read<byte>() << "\n";
                         }
 
-                            break;
+                        break;
                         case 0x4:
                         case 0x7:
                         case 0x8:
@@ -482,34 +456,29 @@ return tool::OK;
 
                             if (id <= opaqueStringCount) {
                                 asmout << "str(opaque): 0x" << std::hex << id << "\n";
-                            }
-                            else {
+                            } else {
                                 asmout << "str: " << ReadSourceToken() << "\n";
                             }
 
-                        }
-                            break;
+                        } break;
                         case 0x5:
                         case 0x17:
                         case 0x65:
                         case 0x8a: {
-                            asmout 
-                                << "token2: " << ReadSourceToken()
-                                << " / " << ReadSourceToken() 
-                                << ", val 0x" << std::hex << bytecodeReader.Read<uint32_t>()
-                                << "\n";
-                        }
-                            break;
+                            asmout << "token2: " << ReadSourceToken() << " / " << ReadSourceToken() << ", val 0x"
+                                   << std::hex << bytecodeReader.Read<uint32_t>() << "\n";
+                        } break;
                         case 0x56: {
                             uint16_t count{ bytecodeReader.Read<uint16_t>() };
 
                             asmout << "count: " << std::dec << count << "\n";
 
                             for (size_t i = 0; i < count; i++) {
-                                asmout << "." << std::hex << std::setfill('0') << std::setw(4) << bytecodeReader.Loc() << " ";
+                                asmout << "." << std::hex << std::setfill('0') << std::setw(4) << bytecodeReader.Loc()
+                                       << " ";
                                 int32_t val{ bytecodeReader.Read<int32_t>() };
                                 asmout << "0x" << std::hex << val;
-                                bytecodeReader.Skip(3); //rloc/type?
+                                bytecodeReader.Skip(3); // rloc/type?
 
                                 if (val < 0x100000) {
                                     const char* valStr{ sourceReader.ReadString() };
@@ -518,25 +487,23 @@ return tool::OK;
                                 asmout << "\n";
                             }
 
-                        }
-                            break;
+                        } break;
                         case 0x5f:
                         case 0x7a: {
                             const char* valStr{ sourceReader.ReadString() };
-                            asmout << "data95: " << DecrytString(valStr) << ", " << bytecodeReader.Read<uint32_t>() << "\n";
-                        }
-                            break;
+                            asmout << "data95: " << DecrytString(valStr) << ", " << bytecodeReader.Read<uint32_t>()
+                                   << "\n";
+                        } break;
                         case 0x62: { // get anim tree
                             const char* valStr{ sourceReader.ReadString() };
-                            asmout << "data98: " << DecrytString(valStr) << ", " << (int)bytecodeReader.Read<byte>() << "\n";
-                        }
-                            break;
+                            asmout << "data98: " << DecrytString(valStr) << ", " << (int)bytecodeReader.Read<byte>()
+                                   << "\n";
+                        } break;
                         default:
                             asmout << "-\n";
                             break;
                         }
                     }
-
                 }
                 LOG_INFO("Done into {}", outScript.string());
             }
@@ -544,8 +511,7 @@ return tool::OK;
             return tool::OK;
         }
 
-
-    }
+    } // namespace
 
     const char* PoolNameOld(IW19PoolType type) {
         return type >= 0 && type < ACTS_ARRAYSIZE(IW19PoolNames) ? IW19PoolNames[type] : "<invalid>";
@@ -562,126 +528,126 @@ return tool::OK;
 
     namespace {
         const char* poolNames[]{
-            "physicslibrary", // 0
-            "physicssfxeventasset", // 1
-            "physicsvfxeventasset", // 2
-            "physicsasset", // 3
-            "physicsfxpipeline", // 4
-            "physicsfxshape", // 5
-            "physicsdebugdata", // 6
-            "xanim", // 7
-            "xmodelsurfs", // 8
-            "xmodel", // 9
-            "mayhem", // a
-            "material", // b
-            "computeshader", // c
-            "libshader", // d
-            "vertexshader", // e
-            "hullshader", // f
-            "domainshader", // 10
-            "pixelshader", // 11
-            "techset", // 12
-            "image", // 13
-            "soundglobals", // 14
-            "soundbank", // 15
-            "soundbanktransient", // 16
-            "col_map", // 17
-            "com_map", // 18
-            "glass_map", // 19
-            "aipaths", // 1a
-            "navmesh", // 1b
-            "tacgraph", // 1c
-            "map_ents", // 1d
-            "fx_map", // 1e
-            "gfx_map", // 1f
-            "gfx_map_trzone", // 20
-            "iesprofile", // 21
-            "lightdef", // 22
-            "gradingclut", // 23
-            "ui_map", // 24
-            "fogspline", // 25
-            "animclass", // 26
-            "playeranim", // 27
-            "gesture", // 28
-            "localize", // 29
-            "attachment", // 2a
-            "weapon", // 2b
-            "vfx", // 2c
-            "impactfx", // 2d
-            "surfacefx", // 2e
-            "aitype", // 2f
-            "mptype", // 30
-            "character", // 31
-            "xmodelalias", // 32
-            "rawfile", // 33
-            "scriptfile", // 34
-            "scriptdebugdata", // 35
-            "stringtable", // 36
-            "leaderboarddef", // 37
+            "physicslibrary",        // 0
+            "physicssfxeventasset",  // 1
+            "physicsvfxeventasset",  // 2
+            "physicsasset",          // 3
+            "physicsfxpipeline",     // 4
+            "physicsfxshape",        // 5
+            "physicsdebugdata",      // 6
+            "xanim",                 // 7
+            "xmodelsurfs",           // 8
+            "xmodel",                // 9
+            "mayhem",                // a
+            "material",              // b
+            "computeshader",         // c
+            "libshader",             // d
+            "vertexshader",          // e
+            "hullshader",            // f
+            "domainshader",          // 10
+            "pixelshader",           // 11
+            "techset",               // 12
+            "image",                 // 13
+            "soundglobals",          // 14
+            "soundbank",             // 15
+            "soundbanktransient",    // 16
+            "col_map",               // 17
+            "com_map",               // 18
+            "glass_map",             // 19
+            "aipaths",               // 1a
+            "navmesh",               // 1b
+            "tacgraph",              // 1c
+            "map_ents",              // 1d
+            "fx_map",                // 1e
+            "gfx_map",               // 1f
+            "gfx_map_trzone",        // 20
+            "iesprofile",            // 21
+            "lightdef",              // 22
+            "gradingclut",           // 23
+            "ui_map",                // 24
+            "fogspline",             // 25
+            "animclass",             // 26
+            "playeranim",            // 27
+            "gesture",               // 28
+            "localize",              // 29
+            "attachment",            // 2a
+            "weapon",                // 2b
+            "vfx",                   // 2c
+            "impactfx",              // 2d
+            "surfacefx",             // 2e
+            "aitype",                // 2f
+            "mptype",                // 30
+            "character",             // 31
+            "xmodelalias",           // 32
+            "rawfile",               // 33
+            "scriptfile",            // 34
+            "scriptdebugdata",       // 35
+            "stringtable",           // 36
+            "leaderboarddef",        // 37
             "virtualleaderboarddef", // 38
-            "ddl", // 39
-            "tracer", // 3a
-            "vehicle", // 3b
-            "addon_map_ents", // 3c
-            "netconststrings", // 3d
-            "luafile", // 3e
-            "scriptable", // 3f
-            "equipsndtable", // 40
-            "vectorfield", // 41
-            "particlesimanimation", // 42
-            "streaminginfo", // 43
-            "laser", // 44
-            "ttf", // 45
-            "suit", // 46
-            "suitanimpackage", // 47
-            "camera", // 48
-            "hudoutline", // 49
-            "spaceshiptarget", // 4a
-            "rumble", // 4b
-            "rumblegraph", // 4c
-            "animpkg", // 4d
-            "sfxpkg", // 4e
-            "vfxpkg", // 4f
-            "footstepvfx", // 50
-            "behaviortree", // 51
-            "aianimset", // 52
-            "aiasm", // 53
-            "proceduralbones", // 54
-            "dynamicbones", // 55
-            "reticle", // 56
-            "xanimcurve", // 57
-            "coverselector", // 58
-            "enemyselector", // 59
-            "clientcharacter", // 5a
-            "clothasset", // 5b
-            "cinematicmotion", // 5c
-            "accessory", // 5d
-            "locdmgtable", // 5e
-            "bulletpenetration", // 5f
-            "scriptbundle", // 60
-            "blendspace2d", // 61
-            "xcam", // 62
-            "camo", // 63
-            "xcompositemodel", // 64
+            "ddl",                   // 39
+            "tracer",                // 3a
+            "vehicle",               // 3b
+            "addon_map_ents",        // 3c
+            "netconststrings",       // 3d
+            "luafile",               // 3e
+            "scriptable",            // 3f
+            "equipsndtable",         // 40
+            "vectorfield",           // 41
+            "particlesimanimation",  // 42
+            "streaminginfo",         // 43
+            "laser",                 // 44
+            "ttf",                   // 45
+            "suit",                  // 46
+            "suitanimpackage",       // 47
+            "camera",                // 48
+            "hudoutline",            // 49
+            "spaceshiptarget",       // 4a
+            "rumble",                // 4b
+            "rumblegraph",           // 4c
+            "animpkg",               // 4d
+            "sfxpkg",                // 4e
+            "vfxpkg",                // 4f
+            "footstepvfx",           // 50
+            "behaviortree",          // 51
+            "aianimset",             // 52
+            "aiasm",                 // 53
+            "proceduralbones",       // 54
+            "dynamicbones",          // 55
+            "reticle",               // 56
+            "xanimcurve",            // 57
+            "coverselector",         // 58
+            "enemyselector",         // 59
+            "clientcharacter",       // 5a
+            "clothasset",            // 5b
+            "cinematicmotion",       // 5c
+            "accessory",             // 5d
+            "locdmgtable",           // 5e
+            "bulletpenetration",     // 5f
+            "scriptbundle",          // 60
+            "blendspace2d",          // 61
+            "xcam",                  // 62
+            "camo",                  // 63
+            "xcompositemodel",       // 64
             "xmodeldetailcollision", // 65
-            "streamkey", // 66
-            "streamtreeoverride", // 67
-            "keyvaluepairs", // 68
-            "stterrain", // 69
-            "nativescriptpatch", // 6a
-            "collisiontile", // 6b
-            "execution", // 6c
-            "carryobject", // 6d
-            "soundbanklist", // 6e
-            "decalvolumematerial", // 6f
-            "decalvolumemask", // 70
-            "dynentitylist", // 71
-            "fx_map_trzone", // 72
-            "dlogschema", // 73
-            "edgelist", // 74
-            "triggereffect", // 75
-            "weapontrigger", // 76
-            "dwidata", // 77
+            "streamkey",             // 66
+            "streamtreeoverride",    // 67
+            "keyvaluepairs",         // 68
+            "stterrain",             // 69
+            "nativescriptpatch",     // 6a
+            "collisiontile",         // 6b
+            "execution",             // 6c
+            "carryobject",           // 6d
+            "soundbanklist",         // 6e
+            "decalvolumematerial",   // 6f
+            "decalvolumemask",       // 70
+            "dynentitylist",         // 71
+            "fx_map_trzone",         // 72
+            "dlogschema",            // 73
+            "edgelist",              // 74
+            "triggereffect",         // 75
+            "weapontrigger",         // 76
+            "dwidata",               // 77
         };
     }
 
@@ -699,12 +665,11 @@ return tool::OK;
         return it->second;
     }
 
-    IW8HashAssetType PoolId(const char* name) {
-        return (IW8HashAssetType)hash::HashX32(name);
-    }
+    IW8HashAssetType PoolId(const char* name) { return (IW8HashAssetType)hash::HashX32(name); }
 
     int gscopaquemw19(int argc, const char* argv[]) {
-        if (tool::NotEnoughParam(argc, 2)) return tool::BAD_USAGE;
+        if (tool::NotEnoughParam(argc, 2))
+            return tool::BAD_USAGE;
 
         hook::module_mapper::Module mod{ true };
         if (!mod.Load(argv[2], false)) {
@@ -720,7 +685,6 @@ return tool::OK;
         std::filesystem::create_directories(tokensOut.parent_path());
         std::filesystem::create_directories(funcsOut.parent_path());
         std::filesystem::create_directories(methodsOut.parent_path());
-
 
         constexpr size_t off_opaques = 0x47559D0;
         constexpr size_t count_opaques = 72013;
@@ -739,7 +703,8 @@ return tool::OK;
             os << "0x" << std::hex << std::setfill('0') << std::setw(4) << 0 << "\t" << "\n";
 
             for (size_t i = 0; i < count_opaques; i++) {
-                os << "0x" << std::hex << std::setfill('0') << std::setw(4) << (i + 1) << "\t" << mod->Rebase(opaques[i]) << "\n";
+                os << "0x" << std::hex << std::setfill('0') << std::setw(4) << (i + 1) << "\t"
+                   << mod->Rebase(opaques[i]) << "\n";
             }
         }
         LOG_INFO("Dump into {}", tokensOut.string());
@@ -748,7 +713,8 @@ return tool::OK;
 
             // empty str
             for (size_t i = 0; i < count_methods; i++) {
-                os << "0x" << std::hex << std::setfill('0') << std::setw(4) << (i + 0x8000) << "\t" << mod->Rebase(methods[i]) << "\n";
+                os << "0x" << std::hex << std::setfill('0') << std::setw(4) << (i + 0x8000) << "\t"
+                   << mod->Rebase(methods[i]) << "\n";
             }
         }
         LOG_INFO("Dump into {}", methodsOut.string());
@@ -757,17 +723,16 @@ return tool::OK;
 
             // empty str
             for (size_t i = 0; i < count_funcs; i++) {
-                os << "0x" << std::hex << std::setfill('0') << std::setw(4) << (i + 1) << "\t" << mod->Rebase(funcs[i]) << "\n";
+                os << "0x" << std::hex << std::setfill('0') << std::setw(4) << (i + 1) << "\t" << mod->Rebase(funcs[i])
+                   << "\n";
             }
         }
         LOG_INFO("Dump into {}", funcsOut.string());
-
-
 
         return tool::OK;
     }
 
     // moved to gscd
-    //ADD_TOOL(gscdmw19, "dev_gsc", " [script]", "Test gsc decompiler", gscdmw19);
+    // ADD_TOOL(gscdmw19, "dev_gsc", " [script]", "Test gsc decompiler", gscdmw19);
     ADD_TOOL(gscopaquemw19, "dev_gsc", " [dump] [out]", "Test opaque dump", gscopaquemw19);
-}
+} // namespace tool::mw19

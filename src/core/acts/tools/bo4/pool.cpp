@@ -3,7 +3,7 @@
 #include <tools/gsc/gsc.hpp>
 #include <tools/bo4/pool.hpp>
 #include <tools/fastfile/fastfile.hpp>
-#include <tools/bo4/pool_weapon.hpp> 
+#include <tools/bo4/pool_weapon.hpp>
 #include <utils/decrypt.hpp>
 #include <games/bo4/pool.hpp>
 #include <games/bo4/offsets.hpp>
@@ -15,8 +15,6 @@ using namespace games::bo4;
 constexpr auto MIN_HASH_VAL = 0x1000000000000;
 
 #pragma region data
-
-
 
 static const char* itemGroupNames[] = {
     "weapon_smg",
@@ -50,93 +48,27 @@ static const char* itemGroupNames[] = {
 };
 
 static const char* attachmentsNames[] = {
-    "none",
-    "acog",
-    "adsreload",
-    "barrelchoke",
-    "clantag",
-    "custom1",
-    "custom2",
-    "custom3",
-    "custom4",
-    "custom5",
-    "damage",
-    "damage2",
-    "dualoptic",
-    "dw",
-    "dynzoom",
-    "elo",
-    "extbarrel",
-    "extbarrel2",
-    "extclip",
-    "extclip2",
-    "extrapellets",
-    "fastlockon",
-    "fastreload",
-    "fastreload2",
-    "fmj",
-    "fmj2",
-    "gl",
-    "grip",
-    "grip2",
-    "hipgrip",
-    "holdbreath",
-    "holo",
-    "ir",
-    "is",
-    "killcounter",
-    "mixclip",
-    "mk",
-    "mms",
-    "null",
-    "pistolscope",
-    "quickdraw",
-    "quickdraw2",
-    "rangefinder",
-    "reddot",
-    "reflex",
-    "rf",
-    "sf",
-    "speedreloader",
-    "stackfire",
-    "stalker",
-    "stalker2",
-    "steadyaim",
-    "steadyaim2",
-    "supply",
-    "suppressed",
-    "swayreduc",
-    "tacknife",
-    "uber",
-    "vzoom"
+    "none",        "acog",      "adsreload",    "barrelchoke", "clantag",     "custom1",
+    "custom2",     "custom3",   "custom4",      "custom5",     "damage",      "damage2",
+    "dualoptic",   "dw",        "dynzoom",      "elo",         "extbarrel",   "extbarrel2",
+    "extclip",     "extclip2",  "extrapellets", "fastlockon",  "fastreload",  "fastreload2",
+    "fmj",         "fmj2",      "gl",           "grip",        "grip2",       "hipgrip",
+    "holdbreath",  "holo",      "ir",           "is",          "killcounter", "mixclip",
+    "mk",          "mms",       "null",         "pistolscope", "quickdraw",   "quickdraw2",
+    "rangefinder", "reddot",    "reflex",       "rf",          "sf",          "speedreloader",
+    "stackfire",   "stalker",   "stalker2",     "steadyaim",   "steadyaim2",  "supply",
+    "suppressed",  "swayreduc", "tacknife",     "uber",        "vzoom"
 };
-
 
 const char* tool::pool::WeapInventoryTypeName(weapInventoryType_t t) {
     static const char* names[] = {
-        "PRIMARY",
-        "OFFHAND",
-        "ITEM",
-        "ALTMODE",
-        "MELEE",
-        "DWLEFTHAND",
-        "ABILITY",
-        "HEAVY",
+        "PRIMARY", "OFFHAND", "ITEM", "ALTMODE", "MELEE", "DWLEFTHAND", "ABILITY", "HEAVY",
     };
     return t >= ACTS_ARRAYSIZE(names) ? "invalid" : names[t];
 }
 const char* tool::pool::WeapTypeName(weapType_t t) {
     static const char* names[] = {
-        "BULLET",
-        "GRENADE",
-        "PROJECTILE",
-        "BINOCULARS",
-        "GAS",
-        "BOMB",
-        "MINE",
-        "MELEE",
-        "RIOTSHIELD",
-        "SCRIPT",
+        "BULLET", "GRENADE", "PROJECTILE", "BINOCULARS", "GAS", "BOMB", "MINE", "MELEE", "RIOTSHIELD", "SCRIPT",
     };
     return t >= ACTS_ARRAYSIZE(names) ? "invalid" : names[t];
 }
@@ -205,44 +137,21 @@ const char* tool::pool::GadgetTypeName(gadgetType_e t) {
 }
 const char* tool::pool::GuidedMissileTypeName(guidedMissileType_t t) {
     static const char* names[] = {
-        "NONE",
-        "SIDEWINDER",
-        "HELLFIRE",
-        "JAVELIN",
-        "BALLISTIC",
-        "WIREGUIDED",
-        "TVGUIDED",
-        "DRONE",
-        "HEATSEEKING",
-        "ROBOTECH",
-        "DYNAMICIMPACTPOINT",
+        "NONE",     "SIDEWINDER", "HELLFIRE",    "JAVELIN",  "BALLISTIC",          "WIREGUIDED",
+        "TVGUIDED", "DRONE",      "HEATSEEKING", "ROBOTECH", "DYNAMICIMPACTPOINT",
     };
     return t >= ACTS_ARRAYSIZE(names) ? "invalid" : names[t];
 }
 const char* tool::pool::OffhandClassName(OffhandClass t) {
     static const char* names[] = {
-        "NONE",
-        "FRAG_GRENADE",
-        "SMOKE_GRENADE",
-        "FLASH_GRENADE",
-        "GEAR",
-        "SUPPLYDROP_MARKER",
-        "GADGET",
+        "NONE", "FRAG_GRENADE", "SMOKE_GRENADE", "FLASH_GRENADE", "GEAR", "SUPPLYDROP_MARKER", "GADGET",
     };
     return t >= ACTS_ARRAYSIZE(names) ? "invalid" : names[t];
 }
 const char* tool::pool::OffhandSlotName(OffhandSlot t) {
     static const char* names[] = {
-        "NONE",
-        "LETHAL_GRENADE",
-        "TACTICAL_GRENADE",
-        "EQUIPMENT",
-        "SPECIFIC_USE",
-        "GADGET",
-        "SPECIAL",
-        "HERO_WEAPON",
-        "TAUNT",
-        "SCRIPTED",
+        "NONE",   "LETHAL_GRENADE", "TACTICAL_GRENADE", "EQUIPMENT", "SPECIFIC_USE",
+        "GADGET", "SPECIAL",        "HERO_WEAPON",      "TAUNT",     "SCRIPTED",
     };
     return t >= ACTS_ARRAYSIZE(names) ? "invalid" : names[t];
 }
@@ -277,17 +186,8 @@ const char* tool::pool::WeapClassName(weapClass_t t) {
 }
 const char* tool::pool::ProjExplosionTypeName(projExplosionType_t t) {
     static const char* names[] = {
-        "NONE",
-        "GRENADE",
-        "ROCKET",
-        "FLASHBANG",
-        "DUD",
-        "SMOKE",
-        "HEAVY_EXPLOSIVE",
-        "FIRE",
-        "NAPALM_BLOB",
-        "BOLD",
-        "SHRAPNEL_SPAN",
+        "NONE", "GRENADE",     "ROCKET", "FLASHBANG",     "DUD", "SMOKE", "HEAVY_EXPLOSIVE",
+        "FIRE", "NAPALM_BLOB", "BOLD",   "SHRAPNEL_SPAN",
     };
     return t >= ACTS_ARRAYSIZE(names) ? "invalid" : names[t];
 }
@@ -321,7 +221,7 @@ enum PoolDumpOptionFlags {
 };
 
 class PoolOption {
-public:
+  public:
     bool m_help = false;
     bool m_any_type = false;
     bool m_dump_info = false;
@@ -343,21 +243,17 @@ public:
 
             if (!strcmp("-?", arg) || !_strcmpi("--help", arg) || !strcmp("-h", arg)) {
                 m_help = true;
-            }
-            else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
+            } else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_output = args[++i];
-            }
-            else if (!_strcmpi("--info", arg) || !strcmp("-i", arg)) {
+            } else if (!_strcmpi("--info", arg) || !strcmp("-i", arg)) {
                 m_dump_info = true;
-            }
-            else if (!_strcmpi("--all", arg) || !strcmp("-a", arg)) {
+            } else if (!_strcmpi("--all", arg) || !strcmp("-a", arg)) {
                 m_dump_all_available = true;
-            }
-            else if (!strcmp("-f", arg) || !_strcmpi("--flag", arg)) {
+            } else if (!strcmp("-f", arg) || !_strcmpi("--flag", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
@@ -366,35 +262,29 @@ public:
 
                 if (!_strcmpi("ddloffset", arg)) {
                     flags |= DDL_OFFSET;
-                }
-                else if (!_strcmpi("assets", arg)) {
+                } else if (!_strcmpi("assets", arg)) {
                     flags |= DUMP_ASSETS;
-                }
-                else {
+                } else {
                     LOG_ERROR("Invalid flag for {}: {}", arg, flagName);
                     return false;
                 }
-            }
-            else if (!strcmp("-m", arg) || !_strcmpi("--hashmap", arg)) {
+            } else if (!strcmp("-m", arg) || !_strcmpi("--hashmap", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_dump_hashmap = args[++i];
-            }
-            else if (*arg == '-') {
+            } else if (*arg == '-') {
                 LOG_ERROR("Invalid argument {}!", arg);
                 return false;
-            }
-            else {
+            } else {
                 pool::XAssetType assetType = pool::XAssetIdFromName(arg);
 
                 if (assetType == pool::ASSET_TYPE_COUNT) {
                     if (*arg >= '0' && *arg <= '9') {
                         try {
                             assetType = (pool::XAssetType)std::strtol(arg, nullptr, 10);
-                        }
-                        catch (const std::invalid_argument& e) {
+                        } catch (const std::invalid_argument& e) {
                             LOG_ERROR("Can't parse pool id '{}'", e.what());
                             assetType = pool::ASSET_TYPE_COUNT;
                         }
@@ -420,10 +310,7 @@ public:
     }
 };
 
-
 #pragma region structs
-
-
 
 struct XAssetTypeInfo {
     uintptr_t name; // const char*
@@ -447,14 +334,14 @@ struct TranslationEntry {
     uint64_t pad0;
 };
 struct RawFileEntry {
-    uintptr_t name; // 0x8
-    uintptr_t pad0; // 0x10
-    uintptr_t size; // 0x18
+    uintptr_t name;   // 0x8
+    uintptr_t pad0;   // 0x10
+    uintptr_t size;   // 0x18
     uintptr_t buffer; // 0x20
 };
 struct RawString {
-    uint64_t name; // 0x8
-    uintptr_t padding; // 0x10 0
+    uint64_t name;         // 0x8
+    uintptr_t padding;     // 0x10 0
     uintptr_t stringvalue; // 0x18 const char*
 };
 struct LuaFile {
@@ -507,12 +394,17 @@ struct BGCacheInfo {
 
 const char* EModeName(eModes mode, bool allocInvalid = false, const char* countVal = nullptr) {
     switch (mode) {
-    case MODE_ZOMBIES: return "zombies";
-    case MODE_MULTIPLAYER: return "multiplayer";
-    case MODE_CAMPAIGN: return "campaign";
-    case MODE_WARZONE: return "warzone";
+    case MODE_ZOMBIES:
+        return "zombies";
+    case MODE_MULTIPLAYER:
+        return "multiplayer";
+    case MODE_CAMPAIGN:
+        return "campaign";
+    case MODE_WARZONE:
+        return "warzone";
     case MODE_COUNT:
-        if (countVal) return countVal;
+        if (countVal)
+            return countVal;
     default: {
         if (!allocInvalid) {
             return "<invalid>";
@@ -526,10 +418,14 @@ const char* EModeName(eModes mode, bool allocInvalid = false, const char* countV
 }
 const char* LobbyModeName(int mode, bool allocInvalid = false) {
     switch (mode) {
-    case -1: return "campaign";
-    case 0: return "multiplayer";
-    case 1: return "zombies";
-    case 2: return "warzone";
+    case -1:
+        return "campaign";
+    case 0:
+        return "multiplayer";
+    case 1:
+        return "zombies";
+    case 2:
+        return "warzone";
     default: {
         if (!allocInvalid) {
             return "<invalid>";
@@ -579,7 +475,7 @@ struct GameTypeTable {
     uintptr_t gameTypes; // GameTypeTableEntry*
     eModes sessionMode;
 };
-struct MapTable {//30
+struct MapTable { // 30
     uint64_t name;
     uint64_t namepad;
     uint32_t mapCount;
@@ -588,16 +484,14 @@ struct MapTable {//30
     uint32_t campaignMode;
     uint32_t dlcIndex;
 };
-struct MapTableListElem
-{
+struct MapTableListElem {
     uint64_t count;
     uintptr_t names; // Hash*
     uint64_t unk10;
     uint64_t unk18;
 };
 
-struct MapTableList
-{
+struct MapTableList {
     Hash name;
     MapTableListElem list_campaign;
     MapTableListElem list_multiplayer;
@@ -605,15 +499,12 @@ struct MapTableList
     MapTableListElem list_warzone;
 };
 
-
-
-
 struct GametypeEntry {
-    uintptr_t v1; // 0x8
+    uintptr_t v1;   // 0x8
     uintptr_t pad0; // 0x10
-    uintptr_t v3; // 0x18
-    uintptr_t v4; // 0x20
-    uintptr_t v5; // 0x28
+    uintptr_t v3;   // 0x18
+    uintptr_t v4;   // 0x20
+    uintptr_t v5;   // 0x28
 };
 
 enum StringTableCellType : INT {
@@ -627,24 +518,23 @@ enum StringTableCellType : INT {
     STC_TYPE_HASHED8 = 8,
 };
 
-
 struct StringTableCell {
     byte value[20];
     StringTableCellType type;
 };
 // item size ... 40
 struct StringTableEntry {
-    uint64_t name; // 8
-    int pad8; // 12
-    int pad12; // 16
-    int columnCount; // 20
-    int rowCount; // 24
-    int cellscount; // 28 empty?
-    int unk24; // 32
-    uintptr_t cells; // 40
+    uint64_t name;    // 8
+    int pad8;         // 12
+    int pad12;        // 16
+    int columnCount;  // 20
+    int rowCount;     // 24
+    int cellscount;   // 28 empty?
+    int unk24;        // 32
+    uintptr_t cells;  // 40
     uintptr_t values; // 48 StringTableCell
-    uintptr_t unk48; // 56
-    uintptr_t unk56; // 64
+    uintptr_t unk48;  // 56
+    uintptr_t unk56;  // 64
 };
 #pragma endregion
 
@@ -681,8 +571,7 @@ void tool::pool::WriteHex(std::ostream& out, uintptr_t base, const byte* buff, s
             for (size_t i = j - 7; i <= j; i++) {
                 if (buff[i] >= ' ' && buff[i] <= '~') {
                     out << (char)buff[i];
-                }
-                else {
+                } else {
                     out << ".";
                 }
             }
@@ -695,18 +584,16 @@ void tool::pool::WriteHex(std::ostream& out, uintptr_t base, const byte* buff, s
                     const char* h = hashutils::ExtractPtr(val);
                     if (h) {
                         out << " #" << h;
-                    }
-                    else if (proc.ReadString(strBuffer, val, sizeof(strBuffer) - 1) >= 0 && HexValidString(strBuffer)) {
+                    } else if (proc.ReadString(strBuffer, val, sizeof(strBuffer) - 1) >= 0 &&
+                               HexValidString(strBuffer)) {
                         out << " ->" << strBuffer;
-                    }
-                    else if (proc.ReadMemory(strBuffer, val, sizeof(uint64_t))) {
+                    } else if (proc.ReadMemory(strBuffer, val, sizeof(uint64_t))) {
                         uint64_t r = *reinterpret_cast<uint64_t*>(strBuffer);
 
                         const char* h = hashutils::ExtractPtr(r);
                         if (h) {
                             out << " ->#" << h;
-                        }
-                        else {
+                        } else {
                             out << " ->0x" << std::hex << r;
                         }
                     }
@@ -737,8 +624,7 @@ void tool::pool::WriteHex(std::ostream& out, uintptr_t base, const byte* buff, s
             for (size_t i = j - 7; i <= j; i++) {
                 if (buff[i] >= ' ' && buff[i] <= '~') {
                     out << (char)buff[i];
-                }
-                else {
+                } else {
                     out << ".";
                 }
             }
@@ -766,7 +652,7 @@ const char* tool::pool::ReadMTString(const Process& proc, uint32_t val) {
     if (!proc.ReadMemory<int16_t>(strptr) || proc.ReadMemory<byte>(strptr + 3) != 7) {
         return nullptr;
     }
-    
+
     if (!strptr || proc.ReadString(str_read, strptr + 0x10, 0x2001) < 0) {
         return nullptr;
     }
@@ -776,8 +662,7 @@ const char* tool::pool::ReadMTString(const Process& proc, uint32_t val) {
     if ((flag & 0x40) || flag >= 0) {
         // not encrypted
         strDec = str_read;
-    }
-    else {
+    } else {
         strDec = decrypt::DecryptString(str_read);
     }
 
@@ -814,8 +699,8 @@ struct SB_Object {
     uint32_t kvpCount;
     uint64_t hash;
     uint64_t sbObjectCount;
-    uint32_t name; // ScrString_t 
-    uint32_t stringRef; // ScrString_t 
+    uint32_t name;      // ScrString_t
+    uint32_t stringRef; // ScrString_t
     uint32_t type;
     union {
         int32_t intVal;
@@ -856,10 +741,10 @@ void ReadSBName(const Process& proc, const SB_ObjectsArray& arr) {
         }
         return;
     }
-
 }
 
-bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr, std::unordered_set<std::string>& strings) {
+bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr,
+                  std::unordered_set<std::string>& strings) {
 
     if (!arr.sbObjectCount && !arr.sbSubCount) {
         defout << "{}";
@@ -920,22 +805,20 @@ bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB
                 utils::Padding(defout << "\n", depth + 2);
                 SB_ObjectsArray item{};
 
-                if (!proc.ReadMemory(&item, sub.item + sizeof(item) * j, sizeof(item))
-                    || !ReadSBObject(proc, defout, depth + 2, item, strings)) {
+                if (!proc.ReadMemory(&item, sub.item + sizeof(item) * j, sizeof(item)) ||
+                    !ReadSBObject(proc, defout, depth + 2, item, strings)) {
                     LOG_ERROR("Can't read array item");
                     return false;
                 }
             }
             if (sub.size) {
                 utils::Padding(defout << "\n", depth + 1) << "]";
-            }
-            else {
+            } else {
                 defout << "]";
             }
-
         }
     }
-    
+
     if (arr.sbObjectCount) {
         for (size_t i = 0; i < arr.sbObjectCount; i++) {
             auto& obj = objects[i];
@@ -967,7 +850,7 @@ bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB
             defout << "\"" << hashutils::ExtractTmp("var", obj.name) << "\": ";
 
             switch (obj.type) {
-            case 2: 
+            case 2:
             case 22:
             case 25: // int?
                 defout << std::dec << obj.value.intVal;
@@ -989,8 +872,7 @@ bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB
                         defout << "\"" << strval << "\"";
                         continue;
                     }
-                }
-                else if (obj.hash & 0x7FFFFFFFFFFFFFFF) {
+                } else if (obj.hash & 0x7FFFFFFFFFFFFFFF) {
                     // hash?
                     defout << "\"#" << hashutils::ExtractTmp("hash", obj.hash) << "\"";
                     continue;
@@ -1002,8 +884,7 @@ bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB
     }
     if (nofirst) {
         utils::Padding(defout << "\n", depth) << "}";
-    }
-    else {
+    } else {
         defout << "}";
     }
 
@@ -1017,10 +898,10 @@ bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB
 struct DDLDef {
     XHash name;
     uint64_t unk10;
-    uint64_t metatable; // ID64Metatable
+    uint64_t metatable;   // ID64Metatable
     uintptr_t structList; // DDLStruct*
-    uintptr_t enumList; // DDLEnum*
-    uintptr_t next; // DDLDef*
+    uintptr_t enumList;   // DDLEnum*
+    uintptr_t next;       // DDLDef*
     uint32_t unk38;
     uint32_t byteSize;
     int32_t structCount;
@@ -1031,8 +912,7 @@ struct DDLDef {
     uint16_t unk52;
     uint32_t unk54;
 };
-enum DDLType : byte
-{
+enum DDLType : byte {
     DDL_INVALID_TYPE = 0xFF,
     DDL_BYTE_TYPE = 0,
     DDL_SHORT_TYPE,
@@ -1049,7 +929,7 @@ enum DDLType : byte
 };
 
 struct DDLHashTable {
-    uintptr_t list; //DDLHash*
+    uintptr_t list; // DDLHash*
     int count;
     int max;
 };
@@ -1057,7 +937,7 @@ struct DDLStruct {
     Hash name;
     uint32_t bitSize;
     uint32_t memberCount;
-    uintptr_t members; // DDLMember* 
+    uintptr_t members; // DDLMember*
     DDLHashTable hashTableLower;
     DDLHashTable hashTableUpper;
 };
@@ -1088,34 +968,44 @@ struct DDLEnum {
 
 const char* DDLTypeName(const DDLMember& member) {
     switch (member.type) {
-    case DDL_BYTE_TYPE: return "byte";
-    case DDL_SHORT_TYPE: return "short";
+    case DDL_BYTE_TYPE:
+        return "byte";
+    case DDL_SHORT_TYPE:
+        return "short";
     case DDL_UINT_TYPE: {
-        if (member.intSize == 1) return "bool";
-        if (member.intSize == 32) return "uint";
+        if (member.intSize == 1)
+            return "bool";
+        if (member.intSize == 32)
+            return "uint";
         return utils::va("uint:%lld", member.intSize);
     }
     case DDL_INT_TYPE: {
-        if (member.intSize == 32) return "int";
+        if (member.intSize == 32)
+            return "int";
         return utils::va("int:%lld", member.intSize);
     }
-    case DDL_UINT64_TYPE: return "uint64";
-    case DDL_FLOAT_TYPE: return "float";
+    case DDL_UINT64_TYPE:
+        return "uint64";
+    case DDL_FLOAT_TYPE:
+        return "float";
     case DDL_FIXEDPOINT_TYPE: {
         return utils::va("fixed<%lld,%lld>", member.intSize, member.maxIntValue);
     }
-    case DDL_HASH_TYPE: return "xhash";
-    case DDL_STRING_TYPE: return utils::va("string(%lld)", (member.bitSize / (member.isArray ? member.arraySize : 1)) / 8);
-    case DDL_STRUCT_TYPE: return "struct";
-    case DDL_ENUM_TYPE: return "enum";
-    case DDL_PAD_TYPE: return "uint:1";
+    case DDL_HASH_TYPE:
+        return "xhash";
+    case DDL_STRING_TYPE:
+        return utils::va("string(%lld)", (member.bitSize / (member.isArray ? member.arraySize : 1)) / 8);
+    case DDL_STRUCT_TYPE:
+        return "struct";
+    case DDL_ENUM_TYPE:
+        return "enum";
+    case DDL_PAD_TYPE:
+        return "uint:1";
     case DDL_INVALID_TYPE:
-    default: return "<invalid>";
+    default:
+        return "<invalid>";
     }
 }
-
-
-
 
 void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef& def, DDLStruct& stct, size_t idx) {
     bool isRoot = stct.name.name == hash::Hash64("root");
@@ -1129,13 +1019,13 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
         return;
     }
     // sort members because they don't match the internal structure (they match the hashmap)
-    std::sort(&members[0], &members[stct.memberCount], [](const DDLMember& e1, const DDLMember& e2) {
-        return e1.offset < e2.offset;
-    });
+    std::sort(&members[0], &members[stct.memberCount],
+              [](const DDLMember& e1, const DDLMember& e2) { return e1.offset < e2.offset; });
 
-    utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << stct.memberCount << " size 0x" << std::hex << stct.bitSize;
-    if (!isRoot) utils::Padding(defout << "\n", depth) << "struct " << hashutils::ExtractTmp("hash", stct.name.name) << " {";
-
+    utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << stct.memberCount << " size 0x"
+                              << std::hex << stct.bitSize;
+    if (!isRoot)
+        utils::Padding(defout << "\n", depth) << "struct " << hashutils::ExtractTmp("hash", stct.name.name) << " {";
 
     int64_t currentShift = 0;
     for (size_t i = 0; i < stct.memberCount; i++) {
@@ -1149,15 +1039,15 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
             int64_t delta = (currentShift - (int64_t)mbm.offset);
             if (delta >= 0) {
                 defout << "0x" << std::hex << delta;
-            }
-            else {
+            } else {
                 defout << "-0x" << std::hex << (-delta);
             }
             defout << " bits\n";
             utils::Padding(defout, depthFields);
         }
 
-        utils::Padding(defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n", depthFields);
+        utils::Padding(defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n",
+                       depthFields);
         currentShift = mbm.offset + mbm.bitSize;
 
         bool addSize = false;
@@ -1168,16 +1058,14 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
                 return;
             }
             defout << hashutils::ExtractTmp("hash", substct.name.name);
-        }
-        else if (mbm.type == DDL_ENUM_TYPE) {
+        } else if (mbm.type == DDL_ENUM_TYPE) {
             DDLEnum subenum{};
             if (!proc.ReadMemory(&subenum, def.enumList + mbm.externalIndex * sizeof(subenum), sizeof(subenum))) {
                 defout << "<error reading sub enum entry>\n";
                 return;
             }
             defout << hashutils::ExtractTmp("hash", subenum.name.name);
-        }
-        else {
+        } else {
             defout << DDLTypeName(mbm);
         }
 
@@ -1186,13 +1074,13 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
         if (mbm.isArray) {
             if (mbm.externalEnumType >= 0 && mbm.externalEnumType < def.enumCount) {
                 DDLEnum subenum{};
-                if (!proc.ReadMemory(&subenum, def.enumList + mbm.externalEnumType * sizeof(subenum), sizeof(subenum))) {
+                if (!proc.ReadMemory(&subenum, def.enumList + mbm.externalEnumType * sizeof(subenum),
+                                     sizeof(subenum))) {
                     defout << "<error reading sub enum entry>\n";
                     return;
                 }
                 defout << "[" << hashutils::ExtractTmp("hash", subenum.name.name) << "]";
-            }
-            else {
+            } else {
                 defout << "[" << std::dec << mbm.arraySize << "]";
             }
         }
@@ -1205,9 +1093,9 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
     }
     defout << "\n";
 
-    if (!isRoot)utils::Padding(defout, depth) << "};\n\n";
+    if (!isRoot)
+        utils::Padding(defout, depth) << "};\n\n";
 }
-
 
 void ReadDDLEnum(Process& proc, std::ostream& defout, DDLEnum& enumst, size_t idx) {
     utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << enumst.memberCount << "\n";
@@ -1217,12 +1105,12 @@ void ReadDDLEnum(Process& proc, std::ostream& defout, DDLEnum& enumst, size_t id
 
     if (!proc.ReadMemory(&members[0], enumst.members, sizeof(members[0]) * enumst.memberCount)) {
         defout << "<error reading members entry>\n";
-    }
-    else {
+    } else {
 
         for (size_t i = 0; i < enumst.memberCount; i++) {
             auto& mbm = members[i];
-            if (i) defout << ",";
+            if (i)
+                defout << ",";
             defout << "\n";
 
             const char* ext{ hashutils::ExtractTmp("hash", mbm.name) };
@@ -1237,16 +1125,14 @@ void ReadDDLEnum(Process& proc, std::ostream& defout, DDLEnum& enumst, size_t id
                 ext2++;
             }
 
-
             utils::Padding(defout, 2);
-            
+
             if (containBad) {
                 utils::PrintFormattedString(defout << "\"", ext) << "\"";
-            }
-            else {
+            } else {
                 defout << ext;
             }
-            
+
             defout << ", // 0x" << std::hex << i;
         }
         defout << "\n";
@@ -1272,19 +1158,14 @@ void ReadDDLDefEntry(PoolOption& opt, Process& proc, std::ostream& defout, uintp
     // 3A8B1F6E71786EFF
     // 37A455F7364D8C91
 
-
-    defout
-        << "// " << hashutils::ExtractTmp("hash", def.name.name) << "\n"
-        << "// metatable \"" << hashutils::ExtractTmp("hash", def.metatable) << "\"\n"
-        << "\n"
-        ;
+    defout << "// " << hashutils::ExtractTmp("hash", def.name.name) << "\n"
+           << "// metatable \"" << hashutils::ExtractTmp("hash", def.metatable) << "\"\n"
+           << "\n";
 
     if (def.structCount) {
         auto structList = proc.ReadMemoryArrayEx<DDLStruct>(def.structList, def.structCount);
 
-        defout
-            << "version " << std::dec << def.version << " {\n"
-            ;
+        defout << "version " << std::dec << def.version << " {\n";
         for (size_t i = 1; i < def.structCount; i++) {
             ReadDDLStruct(opt, proc, defout, def, structList[i], i);
         }
@@ -1297,8 +1178,7 @@ void ReadDDLDefEntry(PoolOption& opt, Process& proc, std::ostream& defout, uintp
 
         ReadDDLStruct(opt, proc, defout, def, structList[0], 0);
         defout << "}\n\n";
-    }
-    else {
+    } else {
         defout << "version " << std::dec << def.version << "{}\n";
     }
 
@@ -1316,7 +1196,6 @@ int pooltoolnames(Process& proc, int argc, const char* argv[]) {
     hashutils::ReadDefaultFile();
 
     XAssetPoolEntry entry{};
-
 
     for (size_t i = 0; i < ASSET_TYPE_COUNT; i++) {
         auto id = (XAssetType)i;
@@ -1340,7 +1219,6 @@ int pooltoolnames(Process& proc, int argc, const char* argv[]) {
             LOG_ERROR("Can't open output file");
             continue;
         }
-            
 
         defout << "id,name,type,offset";
         size_t off{ GetAssetNameOffset(id) };
@@ -1349,7 +1227,9 @@ int pooltoolnames(Process& proc, int argc, const char* argv[]) {
             uintptr_t offset = entry.pool + entry.itemSize * asset;
             uint64_t xhash = proc.ReadMemory<uint64_t>(offset + off);
 
-            defout << "\n" << std::dec << asset << "," << hashutils::ExtractTmp("hash", xhash) << "," << name << "," << std::hex << offset;
+            defout << "\n"
+                   << std::dec << asset << "," << hashutils::ExtractTmp("hash", xhash) << "," << name << "," << std::hex
+                   << offset;
         }
 
         defout.close();
@@ -1406,14 +1286,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
             auto e = entry[i];
-            out << std::dec
-                << i << std::hex << ","
-                << str << ","
-                << e.pool << ","
-                << e.itemSize << ","
-                << e.itemAllocCount << ","
-                << e.itemCount << ","
-                << (e.isSingleton ? "true" : "false") << ",";
+            out << std::dec << i << std::hex << "," << str << "," << e.pool << "," << e.itemSize << ","
+                << e.itemAllocCount << "," << e.itemCount << "," << (e.isSingleton ? "true" : "false") << ",";
 
             proc.WriteLocation(out, entryinfo[i].SetName) << ",";
             proc.WriteLocation(out, entryinfo[i].GetName) << "\n";
@@ -1450,19 +1324,17 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
         sprintf_s(outputName, "%s/pool_%s", opt.m_output, XAssetNameFromId(id));
 
-        std::cout << std::hex
-            << "pool ........ " << entry.pool << "\n"
-            << "free head ... " << entry.freeHead << "\n"
-            << "item size ... " << entry.itemSize << "\n"
-            << "count ....... " << entry.itemCount << "\n"
-            << "alloc count . " << entry.itemAllocCount << "\n"
-            << "singleton ... " << (entry.isSingleton ? "true" : "false") << "\n"
-            ;
+        std::cout << std::hex << "pool ........ " << entry.pool << "\n"
+                  << "free head ... " << entry.freeHead << "\n"
+                  << "item size ... " << entry.itemSize << "\n"
+                  << "count ....... " << entry.itemCount << "\n"
+                  << "alloc count . " << entry.itemAllocCount << "\n"
+                  << "singleton ... " << (entry.isSingleton ? "true" : "false") << "\n";
 
         return true;
     };
 
-    if (ShouldHandle(ASSET_TYPE_LOCALIZE_ENTRY)) { 
+    if (ShouldHandle(ASSET_TYPE_LOCALIZE_ENTRY)) {
         std::ofstream out{ outputName, std::ios::out };
 
         if (!out) {
@@ -1477,14 +1349,13 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             return tool::BASIC_ERROR;
         }
 
-
         char str[4096];
         out << "key,translation\n";
         for (size_t i = 0; i < entry.itemAllocCount; i++) {
             if (proc.ReadString(str, raw[i].data, 4096) < 0) {
                 std::cerr << "Can't read translation " << i << "\n";
             }
-            
+
             out << hashutils::ExtractTmp("hash", raw[i].name) << "," << decrypt::DecryptString(str) << "\n";
         }
         out.close();
@@ -1516,19 +1387,17 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto n = hashutils::ExtractPtr(e.name);
 
             std::cout << std::dec << i << ": ";
-            
+
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << e.name << std::dec;
                 sprintf_s(dumpbuff, "%s/hashed/stringtables/file_%llx.csv", opt.m_output, e.name);
-
             }
 
-            std::cout << " (columns: " << e.columnCount << ", rows:" << e.rowCount << "/" << std::hex << (entry.pool + i * sizeof(entry)) << std::dec << ") into " << dumpbuff;
-
+            std::cout << " (columns: " << e.columnCount << ", rows:" << e.rowCount << "/" << std::hex
+                      << (entry.pool + i * sizeof(entry)) << std::dec << ") into " << dumpbuff;
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -1546,29 +1415,29 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
 
-            //e.cells
+            // e.cells
             if (!(size)) {
                 out.close();
                 continue;
             }
 
             for (size_t i = 0; i < e.rowCount; i++) {
-                if (!proc.ReadMemory(&cell[0], e.values + sizeof(cell[0]) * e.columnCount * i, sizeof(cell[0]) * std::min(cellsize, (size_t)e.columnCount))) {
+                if (!proc.ReadMemory(&cell[0], e.values + sizeof(cell[0]) * e.columnCount * i,
+                                     sizeof(cell[0]) * std::min(cellsize, (size_t)e.columnCount))) {
                     std::cerr << "can't read cells for " << dumpbuff << "\n";
                     out.close();
                     continue;
                 }
                 for (size_t j = 0; j < e.columnCount; j++) {
-                    switch (cell[j].type)
-                    {
+                    switch (cell[j].type) {
                     case STC_TYPE_UNDEFINED:
                         out << "undefined";
                         break;
-                    case STC_TYPE_STRING: 
-                        if (proc.ReadString(namebuf, *reinterpret_cast<uintptr_t*>(&cell[j].value[0]), sizeof(namebuf)) < 0) {
+                    case STC_TYPE_STRING:
+                        if (proc.ReadString(namebuf, *reinterpret_cast<uintptr_t*>(&cell[j].value[0]),
+                                            sizeof(namebuf)) < 0) {
                             out << "<bad_str:" << std::hex << *reinterpret_cast<uintptr_t*>(&cell[j].value[0]) << ">";
-                        }
-                        else {
+                        } else {
                             out << namebuf;
                         }
                         break;
@@ -1578,21 +1447,21 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     case STC_TYPE_FLOAT:
                         out << *reinterpret_cast<FLOAT*>(&cell[j].value[0]);
                         break;
-                    case STC_TYPE_BOOL: 
+                    case STC_TYPE_BOOL:
                         out << (cell[j].value[0] ? "true" : "false");
                         break;
                     case STC_TYPE_HASHED7:
                     case STC_TYPE_HASHED8:
-                        //out << cell[j].type;
+                        // out << cell[j].type;
                     case STC_TYPE_HASHED2:
                         out << "#" << hashutils::ExtractTmp("hash", *reinterpret_cast<uint64_t*>(&cell[j].value[0]));
                         break;
                     default:
-                        //out << "unk type: " << cell[j].type;
+                        // out << "unk type: " << cell[j].type;
                         out << "?" << std::hex
                             << *reinterpret_cast<uint64_t*>(&cell[j].value[0])
-                        //    << ':' << *reinterpret_cast<uint64_t*>(&cell[j].value[8])
-                        //    << ':' << *reinterpret_cast<uint32_t*>(&cell[j].value[16])
+                            //    << ':' << *reinterpret_cast<uint64_t*>(&cell[j].value[8])
+                            //    << ':' << *reinterpret_cast<uint32_t*>(&cell[j].value[16])
                             << std::dec;
                         break;
                     }
@@ -1619,7 +1488,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             return tool::BASIC_ERROR;
         }
 
-
         auto pool = std::make_unique<RawString[]>(entry.itemAllocCount);
 
         if (!proc.ReadMemory(&pool[0], entry.pool, sizeof(pool[0]) * entry.itemAllocCount)) {
@@ -1632,7 +1500,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             const auto& p = pool[i];
             const auto* name = hashutils::ExtractTmp("hash", p.name);
             if (proc.ReadString(str, p.stringvalue, sizeof(str) - 1) < 0) {
-                std::cerr << "error when reading " << std::dec << i << " (" << name << ")" << " at " << p.stringvalue << "\n";
+                std::cerr << "error when reading " << std::dec << i << " (" << name << ")" << " at " << p.stringvalue
+                          << "\n";
                 continue;
             }
 
@@ -1664,8 +1533,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (name) {
                 outFile = outDir / name;
                 std::filesystem::create_directories(outFile.parent_path());
-            }
-            else {
+            } else {
                 outFile = outDir / std::format("hashed/{:x}.lua", p.name);
             }
             {
@@ -1702,8 +1570,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name << std::dec;
                 sprintf_s(dumpbuff, "%s/hashed/rawfile/file_%llx.raw", opt.m_output, p.name);
             }
@@ -1731,8 +1598,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (!p.size) {
                 output = "";
                 outputsize = 0;
-            }
-            else {
+            } else {
                 read.resize(p.size);
                 std::fill(read.begin(), read.end(), 0);
 
@@ -1744,18 +1610,15 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 outputsize = p.size;
             }
 
-
             if (!utils::WriteFile(file, output, outputsize)) {
                 std::cerr << "error when writting file " << file << "\n";
             }
-
         }
 
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_GAMETYPETABLE)) {
         size_t readFile = 0;
-
 
         auto pool = std::make_unique<GameTypeTable[]>(entry.itemAllocCount);
 
@@ -1775,8 +1638,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/gametype/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/gametype/file_%llx.json", opt.m_output, p.name);
             }
@@ -1798,7 +1660,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto entries = std::make_unique<GameTypeTableEntry[]>(p.gameTypeCount);
 
-
             if (!proc.ReadMemory(&entries[0], p.gameTypes, sizeof(entries[0]) * p.gameTypeCount)) {
                 std::cerr << "Can't read entries data\n";
                 break;
@@ -1811,12 +1672,10 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 break;
             }
 
-            out
-                << "{\n"
+            out << "{\n"
                 << "    \"name\": \"" << hashutils::ExtractTmp("hash", p.name) << std::flush << "\",\n"
                 << "    \"sessionMode\": \"" << EModeName(p.sessionMode) << "\",\n"
-                << "    \"gametypes\": ["
-                ;
+                << "    \"gametypes\": [";
 
             for (size_t j = 0; j < p.gameTypeCount; j++) {
                 auto& e = entries[j];
@@ -1824,48 +1683,47 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 if (j) {
                     out << ",";
                 }
-                out
-                    << "\n"
+                out << "\n"
                     << "        {\n"
                     << "            \"uniqueID\": " << std::dec << e.uniqueID << ",\n"
                     << "            \"name\": \"" << ReadTmpStr(proc, e.name.name) << std::flush << "\",\n"
-                    << "            \"baseGameType\": \"" << ReadTmpStr(proc, e.baseGameType.name) << std::flush << "\",\n"
-                    << "            \"nameRef\": \"#" << hashutils::ExtractTmp("hash", e.nameRef.name) << std::flush << "\",\n"
-                    << "            \"nameRefCaps\": \"#" << hashutils::ExtractTmp("hash", e.nameRefCaps.name) << std::flush << "\",\n"
-                    << "            \"descriptionRef\": \"#" << hashutils::ExtractTmp("hash", e.descriptionRef.name) << std::flush << "\",\n"
+                    << "            \"baseGameType\": \"" << ReadTmpStr(proc, e.baseGameType.name) << std::flush
+                    << "\",\n"
+                    << "            \"nameRef\": \"#" << hashutils::ExtractTmp("hash", e.nameRef.name) << std::flush
+                    << "\",\n"
+                    << "            \"nameRefCaps\": \"#" << hashutils::ExtractTmp("hash", e.nameRefCaps.name)
+                    << std::flush << "\",\n"
+                    << "            \"descriptionRef\": \"#" << hashutils::ExtractTmp("hash", e.descriptionRef.name)
+                    << std::flush << "\",\n"
                     << "            \"isHardcoreAvailable\": " << (e.isHardcoreAvailable ? "true" : "false") << ",\n"
-                    << "            \"hardcoreNameRef\": \"#" << hashutils::ExtractTmp("hash", e.hardcoreNameRef.name) << std::flush << "\",\n"
+                    << "            \"hardcoreNameRef\": \"#" << hashutils::ExtractTmp("hash", e.hardcoreNameRef.name)
+                    << std::flush << "\",\n"
                     << "            \"isTeamBased\": " << (e.isTeamBased ? "true" : "false") << ",\n"
                     << "            \"hideHudScore\": " << (e.hideHudScore ? "true" : "false") << ",\n"
                     << "            \"groupname\": \"" << ReadTmpStr(proc, e.groupName) << "\",\n"
-                    << "            \"presenceString\": \"#" << hashutils::ExtractTmp("hash", e.presenceString.name) << std::flush << "\"\n"
-                    << "        }"
-                    ;
+                    << "            \"presenceString\": \"#" << hashutils::ExtractTmp("hash", e.presenceString.name)
+                    << std::flush << "\"\n"
+                    << "        }";
             }
 
-            out
-                << "\n"
+            out << "\n"
                 << "    ]\n"
-                << "}"
-                ;
+                << "}";
 
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_CUSTOMIZATION_TABLE)) {
-        struct CustomizationTable
-        {
+        struct CustomizationTable {
             Hash name;
             uint32_t numPlayerRoles;
             uintptr_t playerRoles; // PlayerRoleLevelsPtr*
             uint32_t numHeads;
             uintptr_t heads; // characterHead*
         };
-
 
         auto pool = std::make_unique<CustomizationTable[]>(entry.itemAllocCount);
 
@@ -1885,8 +1743,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/customization/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/customization/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -1904,8 +1761,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             }
 
             out << "{\n"
-                << "    \"heads\": ["
-                ;
+                << "    \"heads\": [";
 
             if (p.numHeads) {
                 struct characterHead {
@@ -1934,25 +1790,21 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     }
                     auto& h = heads[j];
 
-                    out 
-                        << "\n"
+                    out << "\n"
                         << "        {\n"
                         << "            \"name\": \"#" << hashutils::ExtractTmp("hash", h.assetName.name) << "\",\n"
-                        << "            \"displayName\": \"#" << hashutils::ExtractTmp("hash", h.displayName.name) << "\",\n"
-                        << "            \"xmodel\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(h.xmodel)) << "\",\n"
+                        << "            \"displayName\": \"#" << hashutils::ExtractTmp("hash", h.displayName.name)
+                        << "\",\n"
+                        << "            \"xmodel\": \"#"
+                        << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(h.xmodel)) << "\",\n"
                         << "            \"gender\": " << std::dec << h.gender << "\n"
-                        << "        }"
-                        ;
+                        << "        }";
                 }
-
             }
 
-
-            out
-                << "\n"
+            out << "\n"
                 << "    ],\n"
-                << "    \"playerRoles\": ["
-                ;
+                << "    \"playerRoles\": [";
 
             if (p.numPlayerRoles) {
                 auto roles = std::make_unique<uintptr_t[]>(p.numPlayerRoles);
@@ -1980,8 +1832,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         uint64_t unk10;
                         uint64_t unk18;
                         Hash unk20;
-                        uintptr_t bodyType; //characterBodyType*
-                        uintptr_t category; //PlayerRoleCategory*
+                        uintptr_t bodyType; // characterBodyType*
+                        uintptr_t category; // PlayerRoleCategory*
                         uint64_t unk40;
                         uint64_t unk48;
                         Hash specialistEquipment;
@@ -1996,7 +1848,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         Hash description;
                         Hash heroWeapon;
                         uintptr_t mpDialog; // ScriptBundle*
-                        uintptr_t chrName; // const char*
+                        uintptr_t chrName;  // const char*
 
                         uint64_t pad[13];
                         uint32_t gender;
@@ -2034,15 +1886,16 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         break;
                     }
 
-                    out
-                        << "        {\n"
+                    out << "        {\n"
                         << "            \"id\": " << std::dec << j << ",\n"
                         << "            \"enabled\": " << (prl.enabled ? "true" : "false") << ",\n"
                         << "            \"name\": \"#" << hashutils::ExtractTmp("hash", tmpl.name.name) << "\",\n"
-                        << "            \"specialistEquipment\": \"#" << hashutils::ExtractTmp("hash", tmpl.specialistEquipment.name) << "\",\n"
-                        << "            \"specialistWeapon\": \"#" << hashutils::ExtractTmp("hash", tmpl.specialistWeapon.name) << "\",\n"
-                        << "            \"ultimateWeapon\": \"#" << hashutils::ExtractTmp("hash", tmpl.ultimateWeapon.name) << "\",\n"
-                        ;
+                        << "            \"specialistEquipment\": \"#"
+                        << hashutils::ExtractTmp("hash", tmpl.specialistEquipment.name) << "\",\n"
+                        << "            \"specialistWeapon\": \"#"
+                        << hashutils::ExtractTmp("hash", tmpl.specialistWeapon.name) << "\",\n"
+                        << "            \"ultimateWeapon\": \"#"
+                        << hashutils::ExtractTmp("hash", tmpl.ultimateWeapon.name) << "\",\n";
 
                     if (tmpl.category) {
                         PlayerRoleCategory cat;
@@ -2050,69 +1903,61 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                             std::cerr << "Can't read category\n";
                             break;
                         }
-                        out
-                            << "            \"category\": {\n"
-                            << "                \"name\": \"#" << hashutils::ExtractTmp("hash", cat.name.name) << "\",\n"
-                            << "                \"displayName\": \"#" << hashutils::ExtractTmp("hash", cat.displayName.name) << "\",\n"
-                            << "                \"description\": \"#" << hashutils::ExtractTmp("hash", cat.description.name) << "\",\n"
+                        out << "            \"category\": {\n"
+                            << "                \"name\": \"#" << hashutils::ExtractTmp("hash", cat.name.name)
+                            << "\",\n"
+                            << "                \"displayName\": \"#"
+                            << hashutils::ExtractTmp("hash", cat.displayName.name) << "\",\n"
+                            << "                \"description\": \"#"
+                            << hashutils::ExtractTmp("hash", cat.description.name) << "\",\n"
                             << "                \"sortOrder\": " << std::dec << cat.sortOrder << ",\n"
-                            << "                \"fields\": "
-                            ;
+                            << "                \"fields\": ";
 
                         if (!ReadSBObject(proc, out, 4, cat.kvp, strings)) {
                             std::cerr << "Can't read cat kvp array\n";
                             break;
                         }
 
-                        out
-                            << "\n"
-                            << "            },\n"
-                            ;
+                        out << "\n"
+                            << "            },\n";
                     }
 
-                    out
-                        << "            \"body\": {\n"
+                    out << "            \"body\": {\n"
                         << "                \"name\": \"#" << hashutils::ExtractTmp("hash", body.name.name) << "\",\n"
-                        << "                \"displayName\": \"#" << hashutils::ExtractTmp("hash", body.displayName.name) << "\",\n"
-                        << "                \"description\": \"#" << hashutils::ExtractTmp("hash", body.description.name) << "\",\n"
-                        << "                \"heroWeapon\": \"#" << hashutils::ExtractTmp("hash", body.heroWeapon.name) << "\",\n"
-                        << "                \"gender\": \"" << (body.gender ? "female" : "male") << "\",\n"
-                        ;
+                        << "                \"displayName\": \"#"
+                        << hashutils::ExtractTmp("hash", body.displayName.name) << "\",\n"
+                        << "                \"description\": \"#"
+                        << hashutils::ExtractTmp("hash", body.description.name) << "\",\n"
+                        << "                \"heroWeapon\": \"#" << hashutils::ExtractTmp("hash", body.heroWeapon.name)
+                        << "\",\n"
+                        << "                \"gender\": \"" << (body.gender ? "female" : "male") << "\",\n";
                     if (body.mpDialog) {
-                        out << "                \"mpDialogBundle\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(body.mpDialog)) << "\",\n";
+                        out << "                \"mpDialogBundle\": \"#"
+                            << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(body.mpDialog)) << "\",\n";
                     }
                     if (body.chrName) {
                         out << "                \"chrName\": \"" << ReadTmpStr(proc, body.chrName) << "\",\n";
                     }
 
-
-                    out
-                        << "                \"fields\": "
-                        ;
+                    out << "                \"fields\": ";
 
                     if (!ReadSBObject(proc, out, 4, body.kvp, strings)) {
                         std::cerr << "Can't read kvp array\n";
                         break;
                     }
 
-                    out
-                        << "\n"
+                    out << "\n"
                         << "            }\n"
-                        << "        }"
-                        ;
-
+                        << "        }";
                 }
             }
 
-            out
-                << "\n"
+            out << "\n"
                 << "    ]\n"
                 << "}";
 
-
             out.close();
         }
-
     }
     if (ShouldHandle(ASSET_TYPE_HIERARCHICAL_TASK_NETWORK)) {
         size_t readFile = 0;
@@ -2141,22 +1986,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             HTN_INVALID_TYPE = 0x7,
         };
 
-        static const char* hierarchicalTaskNetworkValueTypeNames[]{
-            "bool",
-            "float",
-            "int",
-            "hash"
-        };
+        static const char* hierarchicalTaskNetworkValueTypeNames[]{ "bool", "float", "int", "hash" };
 
-        static const char* hierarchicalTaskNetworkNodeTypeNames[]{
-            "action",
-            "goto",
-            "planner",
-            "postcondition",
-            "precondition",
-            "selector",
-            "sequence"
-        };
+        static const char* hierarchicalTaskNetworkNodeTypeNames[]{ "action",        "goto",         "planner",
+                                                                   "postcondition", "precondition", "selector",
+                                                                   "sequence" };
 
         struct __declspec(align(8)) HierarchicalTaskNetworkNode {
             XHash name;
@@ -2200,8 +2034,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/hierarchicaltasknetwork/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/hierarchicaltasknetwork/file_%llx.ai_htn", opt.m_output, p.name.name);
             }
@@ -2223,11 +2056,9 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 break;
             }
 
-            out
-                << "{\n"
+            out << "{\n"
                 << "    \"name\": \"" << hashutils::ExtractTmp("hash", p.name.name) << std::flush << "\",\n"
-                << "    \"nodes\": ["
-                ;
+                << "    \"nodes\": [";
 
             if (p.numNodes) {
                 auto [htnNodes, ok2] = proc.ReadMemoryArray<HierarchicalTaskNetworkNode>(p.htnNodes, p.numNodes);
@@ -2243,34 +2074,38 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     if (j) {
                         out << ",";
                     }
-                    out
-                        << "\n"
+                    out << "\n"
                         << "        {\n"
                         << "            \"id\": " << std::dec << j << ",\n"
-                        << "            \"name\": \"#" << hashutils::ExtractTmp("hash", htnNode.name.name) << std::flush << "\",\n"
+                        << "            \"name\": \"#" << hashutils::ExtractTmp("hash", htnNode.name.name) << std::flush
+                        << "\",\n"
                         << "            \"index\": " << std::dec << htnNode.index << ",\n"
-                        << "            \"type\": \"" << (htnNode.type >= HTN_TYPE_COUNT ? "<invalid>" : hierarchicalTaskNetworkNodeTypeNames[htnNode.type]) << "\",\n"
-                        << "            \"childindexes\": ["
-                        ;
+                        << "            \"type\": \""
+                        << (htnNode.type >= HTN_TYPE_COUNT ? "<invalid>"
+                                                           : hierarchicalTaskNetworkNodeTypeNames[htnNode.type])
+                        << "\",\n"
+                        << "            \"childindexes\": [";
 
                     if (htnNode.numChildrenNodes) {
-                        auto [childNodeIndexes, ok3] = proc.ReadMemoryArray<uint32_t>(htnNode.childNodeIndexes, htnNode.numChildrenNodes);
+                        auto [childNodeIndexes, ok3] =
+                            proc.ReadMemoryArray<uint32_t>(htnNode.childNodeIndexes, htnNode.numChildrenNodes);
 
                         if (!ok3) {
                             std::cerr << "Can't read childNodeIndexes\n";
                             continue;
                         }
                         for (size_t k = 0; k < htnNode.numChildrenNodes; k++) {
-                            if (k) out << ", ";
+                            if (k)
+                                out << ", ";
                             out << std::dec << childNodeIndexes[k];
                         }
                     }
                     out << "],\n"
-                        << "            \"constants\": {"
-                        ;
+                        << "            \"constants\": {";
 
                     if (htnNode.numConstants) {
-                        auto [constants, ok3] = proc.ReadMemoryArray<HierarchicalTaskNetworkNodeConstant>(htnNode.constants, htnNode.numConstants);
+                        auto [constants, ok3] = proc.ReadMemoryArray<HierarchicalTaskNetworkNodeConstant>(
+                            htnNode.constants, htnNode.numConstants);
 
                         if (!ok3) {
                             std::cerr << "Can't read childNodeIndexes\n";
@@ -2279,14 +2114,18 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         for (size_t k = 0; k < htnNode.numConstants; k++) {
                             HierarchicalTaskNetworkNodeConstant& constant{ constants[k] };
 
-                            if (k) out << ", ";
+                            if (k)
+                                out << ", ";
 
-                            out
-                                << "\n"
-                                << "                \"#" << hashutils::ExtractTmp("hash", constant.key.name) << "\": {\n"
-                                << "                    \"type\": \"" << (constant.type < HTN_DATA_TYPE_COUNT ? hierarchicalTaskNetworkValueTypeNames[constant.type] : "undefined") << "\",\n"
-                                << "                    \"value\": "
-                                ;
+                            out << "\n"
+                                << "                \"#" << hashutils::ExtractTmp("hash", constant.key.name)
+                                << "\": {\n"
+                                << "                    \"type\": \""
+                                << (constant.type < HTN_DATA_TYPE_COUNT
+                                        ? hierarchicalTaskNetworkValueTypeNames[constant.type]
+                                        : "undefined")
+                                << "\",\n"
+                                << "                    \"value\": ";
 
                             switch (constant.type) {
                             case HTN_BOOL_TYPE:
@@ -2305,31 +2144,21 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                                 out << "null";
                             }
 
-                            out
-                                << "\n"
-                                << "                }"
-                                ;
+                            out << "\n"
+                                << "                }";
                         }
 
-                        out
-                            << "\n"
-                            << "            }\n"
-                            ;
-                    }
-                    else {
+                        out << "\n"
+                            << "            }\n";
+                    } else {
                         out << "}\n";
                     }
-                    out
-                        << "        }"
-                        ;
+                    out << "        }";
                 }
 
-                out
-                    << "\n"
-                    << "    ]\n"
-                    ;
-            }
-            else {
+                out << "\n"
+                    << "    ]\n";
+            } else {
                 out << "]\n";
             }
             out << "}";
@@ -2337,13 +2166,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_MAPTABLE)) {
         size_t readFile = 0;
-
 
         auto pool = std::make_unique<MapTable[]>(entry.itemAllocCount);
 
@@ -2363,8 +2190,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/map/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/map/file_%llx.json", opt.m_output, p.name);
             }
@@ -2384,8 +2210,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 std::cout << " (new)";
             }
 
-            struct __declspec(align(8)) MapTableEntry
-            {
+            struct __declspec(align(8)) MapTableEntry {
                 uintptr_t name;
                 Hash name_hashed;
                 int size;
@@ -2400,10 +2225,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 uint64_t uniqueID;
             };
 
-
-
             auto entries = std::make_unique<MapTableEntry[]>(p.mapCount);
-
 
             if (!proc.ReadMemory(&entries[0], p.maps, sizeof(entries[0]) * p.mapCount)) {
                 std::cerr << "Can't read entries data\n";
@@ -2417,12 +2239,10 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 break;
             }
 
-            out
-                << "{\n"
+            out << "{\n"
                 << "    \"name\": \"" << hashutils::ExtractTmp("hash", p.name) << std::flush << "\",\n"
                 << "    \"sessionMode\": \"" << EModeName(p.sessionMode) << "\",\n"
-                << "    \"maps\": ["
-                ;
+                << "    \"maps\": [";
 
             for (size_t j = 0; j < p.mapCount; j++) {
                 auto& e = entries[j];
@@ -2430,40 +2250,36 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 if (j) {
                     out << ",";
                 }
-                out
-                    << "\n"
+                out << "\n"
                     << "        {\n"
                     << "            \"uniqueID\": " << std::dec << e.uniqueID << ",\n"
                     << "            \"name\": \"" << ReadTmpStr(proc, e.name) << std::flush << "\",\n"
-                    << "            \"hashname\": \"#" << hashutils::ExtractTmp("hash", e.name_hashed.name) << std::flush << "\",\n"
+                    << "            \"hashname\": \"#" << hashutils::ExtractTmp("hash", e.name_hashed.name)
+                    << std::flush << "\",\n"
                     << "            \"missionName\": \"" << ReadTmpStr(proc, e.missionName) << std::flush << "\",\n"
-                    << "            \"mapName\": \"#" << hashutils::ExtractTmp("hash", e.mapName.name) << std::flush << "\",\n"
-                    << "            \"rootMapName\": \"#" << hashutils::ExtractTmp("hash", e.rootMapName.name) << std::flush << "\",\n"
-                    << "            \"mapDescription\": \"#" << hashutils::ExtractTmp("hash", e.mapDescription.name) << std::flush << "\",\n"
-                    ;
+                    << "            \"mapName\": \"#" << hashutils::ExtractTmp("hash", e.mapName.name) << std::flush
+                    << "\",\n"
+                    << "            \"rootMapName\": \"#" << hashutils::ExtractTmp("hash", e.rootMapName.name)
+                    << std::flush << "\",\n"
+                    << "            \"mapDescription\": \"#" << hashutils::ExtractTmp("hash", e.mapDescription.name)
+                    << std::flush << "\",\n";
 
                 if (e.loadingmovie) {
-                    out
-                        << "            \"loadingmovie\": \"" << ReadTmpStr(proc, e.loadingmovie) << std::flush << "\",\n"
-                        ;
+                    out << "            \"loadingmovie\": \"" << ReadTmpStr(proc, e.loadingmovie) << std::flush
+                        << "\",\n";
                 }
 
-                out
-                    << "            \"size\": " << std::dec << e.size << "\n"
-                    << "        }"
-                    ;
+                out << "            \"size\": " << std::dec << e.size << "\n"
+                    << "        }";
             }
 
-            out
-                << "\n"
+            out << "\n"
                 << "    ]\n"
-                << "}"
-                ;
+                << "}";
 
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -2499,8 +2315,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/weapon/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/weapon/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -2529,8 +2344,10 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             out << "{\n";
             utils::Padding(out, 1) << "\"name\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n";
-            utils::Padding(out, 1) << "\"baseWeapon\": \"#" << hashutils::ExtractTmp("hash", p.baseWeapon.name) << "\",\n";
-            utils::Padding(out, 1) << "\"displayname\": \"#" << hashutils::ExtractTmp("hash", p.displayname.name) << "\",\n";
+            utils::Padding(out, 1) << "\"baseWeapon\": \"#" << hashutils::ExtractTmp("hash", p.baseWeapon.name)
+                                   << "\",\n";
+            utils::Padding(out, 1) << "\"displayname\": \"#" << hashutils::ExtractTmp("hash", p.displayname.name)
+                                   << "\",\n";
             utils::Padding(out, 1) << "\"sessionMode\": \"" << EModeName(p.sessionMode, false, "all") << "\",\n";
             utils::Padding(out, 1) << "\"itemIndex\": " << std::dec << p.itemIndex << ",\n";
             utils::Padding(out, 1) << "\"dualWieldWeaponIndex\": " << std::dec << p.dualWieldWeaponIndex << ",\n";
@@ -2547,7 +2364,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             utils::Padding(out, 1) << "\"unk900\": " << std::dec << p.unk900 << ",\n";
             utils::Padding(out, 1) << "\"unk904\": " << std::dec << p.unk904 << ",\n";
             utils::Padding(out, 1) << "\"unka38\": " << std::dec << p.unka38 << ",\n";
-            
+
 #endif
 
             auto addPtrName = [&proc, &out](const char* title, uintptr_t ptr, size_t offset) {
@@ -2559,20 +2376,22 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     return;
                 }
                 utils::Padding(out, 1) << "\"" << title << "\": \"#" << hashutils::ExtractTmp("hash", name) << "\",\n";
-                };
+            };
             auto addPtrName2 = [&proc, &addPtrName](const char* title, uintptr_t ptr, size_t offset, size_t offset2) {
                 return addPtrName(title, proc.ReadMemory<uintptr_t>(ptr + offset), offset2);
-                };
-            auto addPtrName3 = [&proc, &addPtrName2](const char* title, uintptr_t ptr, size_t offset, size_t offset2, size_t offset3) {
+            };
+            auto addPtrName3 = [&proc, &addPtrName2](const char* title, uintptr_t ptr, size_t offset, size_t offset2,
+                                                     size_t offset3) {
                 return addPtrName2(title, proc.ReadMemory<uintptr_t>(ptr + offset), offset2, offset3);
-                };
+            };
 
             auto addXHashName = [&proc, &out](const char* title, XHash& val) {
                 if (!val.name) {
                     return;
                 }
-                utils::Padding(out, 1) << "\"" << title << "\": \"#" << hashutils::ExtractTmp("hash", val.name) << "\",\n";
-                };
+                utils::Padding(out, 1) << "\"" << title << "\": \"#" << hashutils::ExtractTmp("hash", val.name)
+                                       << "\",\n";
+            };
             addXHashName("unk30", p.unk30);
             addXHashName("unk40", p.unk40);
             addXHashName("unk50", p.unk50);
@@ -2591,8 +2410,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             addPtrName("unkc90", p.unkc90, 0);
             addPtrName("unkc98", p.unkc98, 0);
 
-            //addPtrName3("unkcb0", p.unkcb0, 0, 0, 0); // ???
-
+            // addPtrName3("unkcb0", p.unkcb0, 0, 0, 0); // ???
 
             // XModel
             addPtrName2("frontendmodel", p.frontendmodel, 0, 0);
@@ -2602,8 +2420,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             addPtrName2("stowedmodel", p.stowedmodel, 0, 0);
             addPtrName2("clipmodel", p.clipmodel, 0, 0);
 
-            //addPtrName("unkd18", p.unkd18, 0);
-            //addPtrName("unkd20", p.unkd20, 0);
+            // addPtrName("unkd18", p.unkd18, 0);
+            // addPtrName("unkd20", p.unkd20, 0);
             addPtrName("unkd28", p.unkd28, 0);
 
             addPtrName("var_22082a57", p.var_22082a57, 0);
@@ -2742,50 +2560,64 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             addXHashName("unk880", p.unk880);
 
-
             addPtrName("customsettings", p.customsettings, 0);
             addPtrName("shrapnelsettings", p.shrapnelsettings, 0);
             addPtrName("var_2e4a8800", p.var_2e4a8800, 0);
             addPtrName("var_8456d4d", p.var_8456d4d, 0);
-            
+
             if (p.properties) {
                 utils::Padding(out, 1) << "\"properties\": {\n";
                 utils::Padding(out, 2) << "\"var_f56ac2bd\": \"" << ReadTmpStr(proc, props.var_f56ac2bd) << "\",\n";
-                utils::Padding(out, 2) << "\"spawninfluencer\": \"" << ReadTmpStr(proc, props.spawninfluencer) << "\",\n";
-                utils::Padding(out, 2) << "\"var_77b46a8c\": \"#" << hashutils::ExtractTmp("hash", props.var_77b46a8c.name) << "\",\n";
+                utils::Padding(out, 2) << "\"spawninfluencer\": \"" << ReadTmpStr(proc, props.spawninfluencer)
+                                       << "\",\n";
+                utils::Padding(out, 2) << "\"var_77b46a8c\": \"#"
+                                       << hashutils::ExtractTmp("hash", props.var_77b46a8c.name) << "\",\n";
                 if (props.hackertriggerorigintag) {
-                    utils::Padding(out, 2) << "\"hackertriggerorigintag\": \"" << ReadMTString(proc, props.hackertriggerorigintag) << "\",\n";
+                    utils::Padding(out, 2) << "\"hackertriggerorigintag\": \""
+                                           << ReadMTString(proc, props.hackertriggerorigintag) << "\",\n";
                 }
                 utils::Padding(out, 2) << "\"weapClass\": \"" << WeapClassName(props.weapClass) << "\",\n";
                 utils::Padding(out, 2) << "\"gadgetType\": \"" << GadgetTypeName(props.gadget_type) << "\",\n";
-                utils::Padding(out, 2) << "\"guidedMissileType\": \"" << GuidedMissileTypeName(props.guidedMissileType) << "\",\n";
-                utils::Padding(out, 2) << "\"inventoryType\": \"" << WeapInventoryTypeName(props.inventoryType) << "\",\n";
+                utils::Padding(out, 2) << "\"guidedMissileType\": \"" << GuidedMissileTypeName(props.guidedMissileType)
+                                       << "\",\n";
+                utils::Padding(out, 2) << "\"inventoryType\": \"" << WeapInventoryTypeName(props.inventoryType)
+                                       << "\",\n";
                 utils::Padding(out, 2) << "\"weapType\": \"" << WeapTypeName(props.weapType) << "\",\n";
                 utils::Padding(out, 2) << "\"offhandClass\": \"" << OffhandClassName(props.offhandClass) << "\",\n";
                 utils::Padding(out, 2) << "\"offhandSlot\": \"" << OffhandSlotName(props.offhandSlot) << "\",\n";
                 utils::Padding(out, 2) << "\"lockontype\": \"" << LockOnTypeName(props.lockontype) << "\",\n";
-                utils::Padding(out, 2) << "\"projExplosionType\": \"" << ProjExplosionTypeName(props.projExplosionType) << "\",\n";
-                utils::Padding(out, 2) << "\"bAltWeaponDisableSwitching\": " << (props.bAltWeaponDisableSwitching ? "true" : "false") << ",\n";
+                utils::Padding(out, 2) << "\"projExplosionType\": \"" << ProjExplosionTypeName(props.projExplosionType)
+                                       << "\",\n";
+                utils::Padding(out, 2) << "\"bAltWeaponDisableSwitching\": "
+                                       << (props.bAltWeaponDisableSwitching ? "true" : "false") << ",\n";
                 utils::Padding(out, 2) << "\"bDieOnRespawn\": " << (props.bDieOnRespawn ? "true" : "false") << ",\n";
                 utils::Padding(out, 2) << "\"isdualwield\": " << (props.isdualwield ? "true" : "false") << ",\n";
-                utils::Padding(out, 2) << "\"istimeddetonation\": " << (props.istimeddetonation ? "true" : "false") << ",\n";
+                utils::Padding(out, 2) << "\"istimeddetonation\": " << (props.istimeddetonation ? "true" : "false")
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"unlimitedAmmo\": " << (props.unlimitedAmmo ? "true" : "false") << ",\n";
                 utils::Padding(out, 2) << "\"altoffhand\": " << std::dec << (int)props.altoffhand << ",\n";
-                utils::Padding(out, 2) << "\"ammoCountClipRelative\": " << std::dec << (int)props.ammoCountClipRelative << ",\n";
+                utils::Padding(out, 2) << "\"ammoCountClipRelative\": " << std::dec << (int)props.ammoCountClipRelative
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"ammoregen\": " << std::dec << (int)props.ammoregen << ",\n";
-                utils::Padding(out, 2) << "\"anyplayercanretrieve\": " << std::dec << (int)props.anyplayercanretrieve << ",\n";
+                utils::Padding(out, 2) << "\"anyplayercanretrieve\": " << std::dec << (int)props.anyplayercanretrieve
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"bIsHybridWeapon\": " << std::dec << (int)props.bIsHybridWeapon << ",\n";
                 utils::Padding(out, 2) << "\"blocksprone\": " << std::dec << (int)props.blocksprone << ",\n";
-                utils::Padding(out, 2) << "\"bulletimpactexplode\": " << std::dec << (int)props.bulletimpactexplode << ",\n";
+                utils::Padding(out, 2) << "\"bulletimpactexplode\": " << std::dec << (int)props.bulletimpactexplode
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"canuseunderwater\": " << std::dec << (int)props.canuseunderwater << ",\n";
                 utils::Padding(out, 2) << "\"craftitem\": " << std::dec << (int)props.craftitem << ",\n";
-                utils::Padding(out, 2) << "\"damagealwayskillsplayer\": " << std::dec << (int)props.damagealwayskillsplayer << ",\n";
+                utils::Padding(out, 2) << "\"damagealwayskillsplayer\": " << std::dec
+                                       << (int)props.damagealwayskillsplayer << ",\n";
                 utils::Padding(out, 2) << "\"decoy\": " << std::dec << (int)props.decoy << ",\n";
                 utils::Padding(out, 2) << "\"deployable\": " << std::dec << (int)props.deployable << ",\n";
-                utils::Padding(out, 2) << "\"destroyablebytrophysystem\": " << std::dec << (int)props.destroyablebytrophysystem << ",\n";
-                utils::Padding(out, 2) << "\"destroysequipment\": " << std::dec << (int)props.destroysequipment << ",\n";
+                utils::Padding(out, 2) << "\"destroyablebytrophysystem\": " << std::dec
+                                       << (int)props.destroyablebytrophysystem << ",\n";
+                utils::Padding(out, 2) << "\"destroysequipment\": " << std::dec << (int)props.destroysequipment
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"disabledeploy\": " << std::dec << (int)props.disabledeploy << ",\n";
-                utils::Padding(out, 2) << "\"disallowatmatchstart\": " << std::dec << (int)props.disallowatmatchstart << ",\n";
+                utils::Padding(out, 2) << "\"disallowatmatchstart\": " << std::dec << (int)props.disallowatmatchstart
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"doannihilate\": " << std::dec << (int)props.doannihilate << ",\n";
                 utils::Padding(out, 2) << "\"doblowback\": " << std::dec << (int)props.doblowback << ",\n";
                 utils::Padding(out, 2) << "\"dodamagefeedback\": " << std::dec << (int)props.dodamagefeedback << ",\n";
@@ -2796,25 +2628,40 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 utils::Padding(out, 2) << "\"dohackedstats\": " << std::dec << (int)props.dohackedstats << ",\n";
                 utils::Padding(out, 2) << "\"donotdamageowner\": " << std::dec << (int)props.donotdamageowner << ",\n";
                 utils::Padding(out, 2) << "\"dostun\": " << std::dec << (int)props.dostun << ",\n";
-                utils::Padding(out, 2) << "\"forcedamagehitlocation\": " << std::dec << (int)props.forcedamagehitlocation << ",\n";
-                utils::Padding(out, 2) << "\"gadget_heroversion_2_0\": " << std::dec << (int)props.gadget_heroversion_2_0 << ",\n";
-                utils::Padding(out, 2) << "\"gadget_power_consume_on_ammo_use\": " << std::dec << (int)props.gadget_power_consume_on_ammo_use << ",\n";
-                utils::Padding(out, 2) << "\"gadget_power_reset_on_class_change\": " << std::dec << (int)props.gadget_power_reset_on_class_change << ",\n";
-                utils::Padding(out, 2) << "\"gadget_power_reset_on_round_switch\": " << std::dec << (int)props.gadget_power_reset_on_round_switch << ",\n";
-                utils::Padding(out, 2) << "\"gadget_power_reset_on_spawn\": " << std::dec << (int)props.gadget_power_reset_on_spawn << ",\n";
-                utils::Padding(out, 2) << "\"gadget_power_reset_on_team_change\": " << std::dec << (int)props.gadget_power_reset_on_team_change << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powergainscoreignoreself\": " << std::dec << (int)props.gadget_powergainscoreignoreself << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powergainscoreignorewhenactive\": " << std::dec << (int)props.gadget_powergainscoreignorewhenactive << ",\n";
-                utils::Padding(out, 2) << "\"gadget_turnoff_onempjammed\": " << std::dec << (int)props.gadget_turnoff_onempjammed << ",\n";
+                utils::Padding(out, 2) << "\"forcedamagehitlocation\": " << std::dec
+                                       << (int)props.forcedamagehitlocation << ",\n";
+                utils::Padding(out, 2) << "\"gadget_heroversion_2_0\": " << std::dec
+                                       << (int)props.gadget_heroversion_2_0 << ",\n";
+                utils::Padding(out, 2) << "\"gadget_power_consume_on_ammo_use\": " << std::dec
+                                       << (int)props.gadget_power_consume_on_ammo_use << ",\n";
+                utils::Padding(out, 2) << "\"gadget_power_reset_on_class_change\": " << std::dec
+                                       << (int)props.gadget_power_reset_on_class_change << ",\n";
+                utils::Padding(out, 2) << "\"gadget_power_reset_on_round_switch\": " << std::dec
+                                       << (int)props.gadget_power_reset_on_round_switch << ",\n";
+                utils::Padding(out, 2) << "\"gadget_power_reset_on_spawn\": " << std::dec
+                                       << (int)props.gadget_power_reset_on_spawn << ",\n";
+                utils::Padding(out, 2) << "\"gadget_power_reset_on_team_change\": " << std::dec
+                                       << (int)props.gadget_power_reset_on_team_change << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powergainscoreignoreself\": " << std::dec
+                                       << (int)props.gadget_powergainscoreignoreself << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powergainscoreignorewhenactive\": " << std::dec
+                                       << (int)props.gadget_powergainscoreignorewhenactive << ",\n";
+                utils::Padding(out, 2) << "\"gadget_turnoff_onempjammed\": " << std::dec
+                                       << (int)props.gadget_turnoff_onempjammed << ",\n";
                 utils::Padding(out, 2) << "\"grappleweapon\": " << std::dec << (int)props.grappleweapon << ",\n";
-                utils::Padding(out, 2) << "\"ignoresflakjacket\": " << std::dec << (int)props.ignoresflakjacket << ",\n";
-                utils::Padding(out, 2) << "\"ignoreslightarmor\": " << std::dec << (int)props.ignoreslightarmor << ",\n";
-                utils::Padding(out, 2) << "\"ignorespowerarmor\": " << std::dec << (int)props.ignorespowerarmor << ",\n";
+                utils::Padding(out, 2) << "\"ignoresflakjacket\": " << std::dec << (int)props.ignoresflakjacket
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"ignoreslightarmor\": " << std::dec << (int)props.ignoreslightarmor
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"ignorespowerarmor\": " << std::dec << (int)props.ignorespowerarmor
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"ignoreteamkills\": " << std::dec << (int)props.ignoreteamkills << ",\n";
-                utils::Padding(out, 2) << "\"isaikillstreakdamage\": " << std::dec << (int)props.isaikillstreakdamage << ",\n";
+                utils::Padding(out, 2) << "\"isaikillstreakdamage\": " << std::dec << (int)props.isaikillstreakdamage
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"isballisticknife\": " << std::dec << (int)props.isballisticknife << ",\n";
                 utils::Padding(out, 2) << "\"isboltaction\": " << std::dec << (int)props.isboltaction << ",\n";
-                utils::Padding(out, 2) << "\"iscarriedkillstreak\": " << std::dec << (int)props.iscarriedkillstreak << ",\n";
+                utils::Padding(out, 2) << "\"iscarriedkillstreak\": " << std::dec << (int)props.iscarriedkillstreak
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"iscliponly\": " << std::dec << (int)props.iscliponly << ",\n";
                 utils::Padding(out, 2) << "\"isemp\": " << std::dec << (int)props.isemp << ",\n";
                 utils::Padding(out, 2) << "\"isflash\": " << std::dec << (int)props.isflash << ",\n";
@@ -2824,26 +2671,33 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 utils::Padding(out, 2) << "\"isnotdroppable\": " << std::dec << (int)props.isnotdroppable << ",\n";
                 utils::Padding(out, 2) << "\"isperkbottle\": " << std::dec << (int)props.isperkbottle << ",\n";
                 utils::Padding(out, 2) << "\"isscavengable\": " << std::dec << (int)props.isscavengable << ",\n";
-                utils::Padding(out, 2) << "\"issignatureweapon\": " << std::dec << (int)props.issignatureweapon << ",\n";
+                utils::Padding(out, 2) << "\"issignatureweapon\": " << std::dec << (int)props.issignatureweapon
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"issniperweapon\": " << std::dec << (int)props.issniperweapon << ",\n";
                 utils::Padding(out, 2) << "\"isstun\": " << std::dec << (int)props.isstun << ",\n";
-                utils::Padding(out, 2) << "\"issupplydropweapon\": " << std::dec << (int)props.issupplydropweapon << ",\n";
-                utils::Padding(out, 2) << "\"istacticalinsertion\": " << std::dec << (int)props.istacticalinsertion << ",\n";
+                utils::Padding(out, 2) << "\"issupplydropweapon\": " << std::dec << (int)props.issupplydropweapon
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"istacticalinsertion\": " << std::dec << (int)props.istacticalinsertion
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"isthrowback\": " << std::dec << (int)props.isthrowback << ",\n";
                 utils::Padding(out, 2) << "\"isvaluable\": " << std::dec << (int)props.isvaluable << ",\n";
-                utils::Padding(out, 2) << "\"meleeignoreslightarmor\": " << std::dec << (int)props.meleeignoreslightarmor << ",\n";
+                utils::Padding(out, 2) << "\"meleeignoreslightarmor\": " << std::dec
+                                       << (int)props.meleeignoreslightarmor << ",\n";
                 utils::Padding(out, 2) << "\"mountable\": " << std::dec << (int)props.mountable << ",\n";
                 utils::Padding(out, 2) << "\"noadslockoncheck\": " << std::dec << (int)props.noadslockoncheck << ",\n";
                 utils::Padding(out, 2) << "\"nohitmarker\": " << std::dec << (int)props.nohitmarker << ",\n";
                 utils::Padding(out, 2) << "\"nonstowedweapon\": " << std::dec << (int)props.nonstowedweapon << ",\n";
                 utils::Padding(out, 2) << "\"notkillstreak\": " << std::dec << (int)props.notkillstreak << ",\n";
-                utils::Padding(out, 2) << "\"requirelockontofire\": " << std::dec << (int)props.requirelockontofire << ",\n";
+                utils::Padding(out, 2) << "\"requirelockontofire\": " << std::dec << (int)props.requirelockontofire
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"setusedstat\": " << std::dec << (int)props.setusedstat << ",\n";
                 utils::Padding(out, 2) << "\"shownenemyequip\": " << std::dec << (int)props.shownenemyequip << ",\n";
                 utils::Padding(out, 2) << "\"shownenemyexplo\": " << std::dec << (int)props.shownenemyexplo << ",\n";
                 utils::Padding(out, 2) << "\"shownretrievable\": " << std::dec << (int)props.shownretrievable << ",\n";
-                utils::Padding(out, 2) << "\"skipbattlechatterkill\": " << std::dec << (int)props.skipbattlechatterkill << ",\n";
-                utils::Padding(out, 2) << "\"skipbattlechatterreload\": " << std::dec << (int)props.skipbattlechatterreload << ",\n";
+                utils::Padding(out, 2) << "\"skipbattlechatterkill\": " << std::dec << (int)props.skipbattlechatterkill
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"skipbattlechatterreload\": " << std::dec
+                                       << (int)props.skipbattlechatterreload << ",\n";
                 utils::Padding(out, 2) << "\"skiplowammovox\": " << std::dec << (int)props.skiplowammovox << ",\n";
                 utils::Padding(out, 2) << "\"specialpain\": " << std::dec << (int)props.specialpain << ",\n";
                 utils::Padding(out, 2) << "\"var_130391b9\": " << std::dec << (int)props.var_130391b9 << ",\n";
@@ -2888,19 +2742,30 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 utils::Padding(out, 2) << "\"aimeleerange\": " << std::dec << props.aimeleerange << ",\n";
                 utils::Padding(out, 2) << "\"damagetoownerscalar\": " << std::dec << props.damagetoownerscalar << ",\n";
                 utils::Padding(out, 2) << "\"fightdist\": " << std::dec << props.fightdist << ",\n";
-                utils::Padding(out, 2) << "\"gadget_power_usage_rate\": " << std::dec << props.gadget_power_usage_rate << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powergainscorefactor\": " << std::dec << props.gadget_powergainscorefactor << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powermovespeed\": " << std::dec << props.gadget_powermovespeed << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powerofflossondamage\": " << std::dec << props.gadget_powerofflossondamage << ",\n";
-                utils::Padding(out, 2) << "\"gadget_poweronlossondamage\": " << std::dec << props.gadget_poweronlossondamage << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powerreplenishfactor\": " << std::dec << props.gadget_powerreplenishfactor << ",\n";
-                utils::Padding(out, 2) << "\"gadget_shockfield_damage\": " << std::dec << props.gadget_shockfield_damage << ",\n";
-                utils::Padding(out, 2) << "\"gadget_shockfield_radius\": " << std::dec << props.gadget_shockfield_radius << ",\n";
+                utils::Padding(out, 2) << "\"gadget_power_usage_rate\": " << std::dec << props.gadget_power_usage_rate
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powergainscorefactor\": " << std::dec
+                                       << props.gadget_powergainscorefactor << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powermovespeed\": " << std::dec << props.gadget_powermovespeed
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powerofflossondamage\": " << std::dec
+                                       << props.gadget_powerofflossondamage << ",\n";
+                utils::Padding(out, 2) << "\"gadget_poweronlossondamage\": " << std::dec
+                                       << props.gadget_poweronlossondamage << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powerreplenishfactor\": " << std::dec
+                                       << props.gadget_powerreplenishfactor << ",\n";
+                utils::Padding(out, 2) << "\"gadget_shockfield_damage\": " << std::dec << props.gadget_shockfield_damage
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_shockfield_radius\": " << std::dec << props.gadget_shockfield_radius
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"lifetime\": " << std::dec << props.lifetime << ",\n";
-                utils::Padding(out, 2) << "\"lockonanglehorizontal\": " << std::dec << props.lockonanglehorizontal << ",\n";
+                utils::Padding(out, 2) << "\"lockonanglehorizontal\": " << std::dec << props.lockonanglehorizontal
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"lockonanglevertical\": " << std::dec << props.lockonanglevertical << ",\n";
-                utils::Padding(out, 2) << "\"lockonlossanglehorizontal\": " << std::dec << props.lockonlossanglehorizontal << ",\n";
-                utils::Padding(out, 2) << "\"lockonlossanglevertical\": " << std::dec << props.lockonlossanglevertical << ",\n";
+                utils::Padding(out, 2) << "\"lockonlossanglehorizontal\": " << std::dec
+                                       << props.lockonlossanglehorizontal << ",\n";
+                utils::Padding(out, 2) << "\"lockonlossanglevertical\": " << std::dec << props.lockonlossanglevertical
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"maxdist\": " << std::dec << props.maxdist << ",\n";
                 utils::Padding(out, 2) << "\"maxgibdistance\": " << std::dec << props.maxgibdistance << ",\n";
                 utils::Padding(out, 2) << "\"meleelungerange\": " << std::dec << props.meleelungerange << ",\n";
@@ -2934,26 +2799,39 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 utils::Padding(out, 2) << "\"var_e2b40cd5\": " << std::dec << props.var_e2b40cd5 << ",\n";
                 utils::Padding(out, 2) << "\"var_e4d4fa7e\": " << std::dec << props.var_e4d4fa7e << ",\n";
                 utils::Padding(out, 2) << "\"var_f9eec1ec\": " << std::dec << props.var_f9eec1ec << ",\n";
-                utils::Padding(out, 2) << "\"vehicleprojectiledamagescalar\": " << std::dec << props.vehicleprojectiledamagescalar << ",\n";
-                utils::Padding(out, 2) << "\"vehicleprojectilesplashdamagescalar\": " << std::dec << props.vehicleprojectilesplashdamagescalar << ",\n";
+                utils::Padding(out, 2) << "\"vehicleprojectiledamagescalar\": " << std::dec
+                                       << props.vehicleprojectiledamagescalar << ",\n";
+                utils::Padding(out, 2) << "\"vehicleprojectilesplashdamagescalar\": " << std::dec
+                                       << props.vehicleprojectilesplashdamagescalar << ",\n";
                 utils::Padding(out, 2) << "\"aiFuseTime\": " << std::dec << props.aiFuseTime << ",\n";
                 utils::Padding(out, 2) << "\"ammoindex\": " << std::dec << props.ammoindex << ",\n";
                 utils::Padding(out, 2) << "\"burndamage\": " << std::dec << props.burndamage << ",\n";
                 utils::Padding(out, 2) << "\"burndamageinterval\": " << std::dec << props.burndamageinterval << ",\n";
                 utils::Padding(out, 2) << "\"burnduration\": " << std::dec << props.burnduration << ",\n";
                 utils::Padding(out, 2) << "\"burstcount\": " << std::dec << props.burstcount << ",\n";
-                utils::Padding(out, 2) << "\"explosioninnerdamage\": " << std::dec << props.explosioninnerdamage << ",\n";
-                utils::Padding(out, 2) << "\"explosionouterdamage\": " << std::dec << props.explosionouterdamage << ",\n";
+                utils::Padding(out, 2) << "\"explosioninnerdamage\": " << std::dec << props.explosioninnerdamage
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"explosionouterdamage\": " << std::dec << props.explosionouterdamage
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"fuellife\": " << std::dec << props.fuellife << ",\n";
-                utils::Padding(out, 2) << "\"gadget_flickerondamage\": " << std::dec << props.gadget_flickerondamage << ",\n";
-                utils::Padding(out, 2) << "\"gadget_flickeronpowerloss\": " << std::dec << props.gadget_flickeronpowerloss << ",\n";
-                utils::Padding(out, 2) << "\"gadget_max_hitpoints\": " << std::dec << props.gadget_max_hitpoints << ",\n";
-                utils::Padding(out, 2) << "\"gadget_power_round_end_active_penalty\": " << std::dec << props.gadget_power_round_end_active_penalty << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powergainonretrieve\": " << std::dec << props.gadget_powergainonretrieve << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powermoveloss\": " << std::dec << props.gadget_powermoveloss << ",\n";
-                utils::Padding(out, 2) << "\"gadget_powersprintloss\": " << std::dec << props.gadget_powersprintloss << ",\n";
-                utils::Padding(out, 2) << "\"gadget_pulse_duration\": " << std::dec << props.gadget_pulse_duration << ",\n";
-                utils::Padding(out, 2) << "\"gadget_pulse_max_range\": " << std::dec << props.gadget_pulse_max_range << ",\n";
+                utils::Padding(out, 2) << "\"gadget_flickerondamage\": " << std::dec << props.gadget_flickerondamage
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_flickeronpowerloss\": " << std::dec
+                                       << props.gadget_flickeronpowerloss << ",\n";
+                utils::Padding(out, 2) << "\"gadget_max_hitpoints\": " << std::dec << props.gadget_max_hitpoints
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_power_round_end_active_penalty\": " << std::dec
+                                       << props.gadget_power_round_end_active_penalty << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powergainonretrieve\": " << std::dec
+                                       << props.gadget_powergainonretrieve << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powermoveloss\": " << std::dec << props.gadget_powermoveloss
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_powersprintloss\": " << std::dec << props.gadget_powersprintloss
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_pulse_duration\": " << std::dec << props.gadget_pulse_duration
+                                       << ",\n";
+                utils::Padding(out, 2) << "\"gadget_pulse_max_range\": " << std::dec << props.gadget_pulse_max_range
+                                       << ",\n";
                 utils::Padding(out, 2) << "\"heal\": " << std::dec << props.heal << ",\n";
                 utils::Padding(out, 2) << "\"lockonlossradius\": " << std::dec << props.lockonlossradius << ",\n";
                 utils::Padding(out, 2) << "\"lockonminrange\": " << std::dec << props.lockonminrange << ",\n";
@@ -3013,22 +2891,15 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 utils::Padding(out, 2) << "\"meleepowertimeleft\": " << std::dec << props.meleepowertimeleft << ",\n";
                 utils::Padding(out, 2) << "\"meleetime\": " << std::dec << props.meleetime << "\n";
 
-                
                 utils::Padding(out, 1) << "}\n";
             }
-            out
-                << "}\n"
-                ;
-
-
+            out << "}\n";
 
             tool::pool::WriteHex(out, entry.pool + sizeof(pool[0]) * i, (byte*)&p, sizeof(p), proc);
-            
 
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -3051,8 +2922,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/map/list/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/map/list/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -3062,13 +2932,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
 
-
-            auto names = std::make_unique<Hash[]>(
-                std::max(
-                    std::max(p.list_campaign.count, p.list_multiplayer.count),
-                    std::max(p.list_warzone.count, p.list_zombies.count)
-                )
-            );
+            auto names = std::make_unique<Hash[]>(std::max(std::max(p.list_campaign.count, p.list_multiplayer.count),
+                                                           std::max(p.list_warzone.count, p.list_zombies.count)));
 
             std::ofstream out{ file };
 
@@ -3077,13 +2942,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
 
-
             auto func = [&proc, &names, &out](MapTableListElem& lst, const char* name, bool begin = false) {
                 if (!begin) {
                     out << ",";
                 }
-                out
-                    << "\n"
+                out << "\n"
                     << "    \"" << name << "\": [";
 
                 if (lst.count && !proc.ReadMemory(&names[0], lst.names, sizeof(names[0]) * lst.count)) {
@@ -3091,8 +2954,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     return;
                 }
 
-                for (size_t j = 0; j < lst.count; j++)
-                {
+                for (size_t j = 0; j < lst.count; j++) {
                     if (j) {
                         out << ",";
                     }
@@ -3112,7 +2974,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             out << "\n}";
 
-
             out.close();
         }
     }
@@ -3126,7 +2987,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint64_t maps_count;
             uintptr_t gametypes; // PlaylistGametype*
             uint64_t gametypes_count;
-            uintptr_t categories; //PlaylistData*
+            uintptr_t categories; // PlaylistData*
             uint64_t categories_count;
         };
 
@@ -3153,12 +3014,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint64_t unk18;
             Hash unique_name;
             uint64_t unk30;
-            uintptr_t image; // GfxImageHandle
-            uintptr_t imageBackground; // GfxImageHandle
+            uintptr_t image;                // GfxImageHandle
+            uintptr_t imageBackground;      // GfxImageHandle
             uintptr_t imageBackgroundFocus; // GfxImageHandle
-            uintptr_t imageTileLarge; // GfxImageHandle
-            uintptr_t imageTileSmall; // GfxImageHandle
-            uintptr_t imageTileSideInfo; // GfxImageHandle
+            uintptr_t imageTileLarge;       // GfxImageHandle
+            uintptr_t imageTileSmall;       // GfxImageHandle
+            uintptr_t imageTileSideInfo;    // GfxImageHandle
             int minPartySize;
             int maxPartySize;
             int maxLocalPlayers;
@@ -3207,7 +3068,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint32_t type;
             uint32_t unk4;
             Hash name;
-            uintptr_t value; // const char* 
+            uintptr_t value; // const char*
             int32_t environmentMask;
             byte platformMask;
             uint64_t unk28;
@@ -3219,7 +3080,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         };
 
         struct PlaylistRotation {
-            uintptr_t map; // ?
+            uintptr_t map;      // ?
             uintptr_t gametype; // ?
             uint32_t weight;
             bool isFree;
@@ -3254,8 +3115,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/playlists/%lld_%s", opt.m_output, i, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/playlists/%lld_%llx", opt.m_output, i, p.name.name);
             }
@@ -3275,86 +3135,78 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
                 auto checksum = fastfile::ComputeChecksum32(reinterpret_cast<char*>(&p.unk0), 4, 0);
 
-
                 out << "{\n"
                     << "    \"name\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n"
                     << "    \"unk0\": " << std::dec << p.unk0 << ",\n"
                     << "    \"checksum\": " << std::dec << *reinterpret_cast<uint32_t*>(&checksum) << ",\n"
-                    << "    \"maps\": ["
-                    ;
+                    << "    \"maps\": [";
 
                 if (p.maps_count) {
                     auto maps = std::make_unique<uintptr_t[]>(p.maps_count);
-
 
                     if (proc.ReadMemory(&maps[0], p.maps, sizeof(maps[0]) * p.maps_count)) {
 
                         PlaylistMap mapInfo;
                         for (size_t j = 0; j < p.maps_count; j++) {
-                            if (j) out << ",";
+                            if (j)
+                                out << ",";
                             if (!proc.ReadMemory(&mapInfo, maps[j], sizeof(PlaylistMap))) {
                                 out << "Can't read data\n";
                                 continue;
                             }
-                            out
-                                << "\n"
+                            out << "\n"
                                 << "        {\n"
                                 << "            \"index\": " << std::dec << j << ",\n"
-                                << "            \"name\": \"#" << hashutils::ExtractTmp("hash", mapInfo.name.name) << "\",\n"
-                                << "            \"baseMapName\": \"#" << hashutils::ExtractTmp("hash", mapInfo.baseMapName.name) << "\",\n"
-                                << "            \"mapPlatformMask\": " << std::dec << (int)mapInfo.mapPlatformMask << "\n"
-                                << "        }"
-                                ;
-                            //tool::pool::WriteHex(out, 0, reinterpret_cast<byte*>(&mapInfo), sizeof(mapInfo), proc);
+                                << "            \"name\": \"#" << hashutils::ExtractTmp("hash", mapInfo.name.name)
+                                << "\",\n"
+                                << "            \"baseMapName\": \"#"
+                                << hashutils::ExtractTmp("hash", mapInfo.baseMapName.name) << "\",\n"
+                                << "            \"mapPlatformMask\": " << std::dec << (int)mapInfo.mapPlatformMask
+                                << "\n"
+                                << "        }";
+                            // tool::pool::WriteHex(out, 0, reinterpret_cast<byte*>(&mapInfo), sizeof(mapInfo), proc);
                         }
                     }
 
-
                     out << "\n    ],\n";
-                }
-                else {
+                } else {
                     out << "],\n";
                 }
 
-                out
-                    << "    \"gametypes\": ["
-                    ;
-
+                out << "    \"gametypes\": [";
 
                 if (p.gametypes_count) {
                     auto gametypes = std::make_unique<uintptr_t[]>(p.gametypes_count);
-
 
                     if (proc.ReadMemory(&gametypes[0], p.gametypes, sizeof(gametypes[0]) * p.gametypes_count)) {
 
                         PlaylistGametype gtInfo;
                         for (size_t j = 0; j < p.gametypes_count; j++) {
-                            if (j) out << ",";
+                            if (j)
+                                out << ",";
                             if (!proc.ReadMemory(&gtInfo, gametypes[j], sizeof(gtInfo))) {
                                 out << "Can't read data\n";
                                 continue;
                             }
-                            out
-                                << "\n"
+                            out << "\n"
                                 << "        {\n"
                                 << "            \"index\": " << std::dec << j << ",\n"
-                                << "            \"name\": \"#" << hashutils::ExtractTmp("hash", gtInfo.name.name) << "\",\n"
-                                << "            \"description\": \"#" << hashutils::ExtractTmp("hash", gtInfo.description.name) << "\",\n"
-                                << "            \"mode\": \"#" << hashutils::ExtractTmp("hash", gtInfo.mode.name) << "\"\n"
-                                << "        }"
-                                ;
+                                << "            \"name\": \"#" << hashutils::ExtractTmp("hash", gtInfo.name.name)
+                                << "\",\n"
+                                << "            \"description\": \"#"
+                                << hashutils::ExtractTmp("hash", gtInfo.description.name) << "\",\n"
+                                << "            \"mode\": \"#" << hashutils::ExtractTmp("hash", gtInfo.mode.name)
+                                << "\"\n"
+                                << "        }";
                         }
                     }
 
                     out << "\n    ]\n";
-                }
-                else {
+                } else {
                     out << "]\n";
                 }
 
-                out
-                    << "}\n"
-                    ;
+                out << "}\n";
 
                 out.close();
             }
@@ -3370,11 +3222,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     continue;
                 }
 
-
                 for (size_t j = 0; j < p.categories_count; j++) {
                     auto& pl = data[j];
 
-                    std::filesystem::path categoryFile = categoryDir / std::format("{}.json", hashutils::ExtractTmp("file", pl.name.name));
+                    std::filesystem::path categoryFile =
+                        categoryDir / std::format("{}.json", hashutils::ExtractTmp("file", pl.name.name));
 
                     std::ofstream out{ categoryFile };
 
@@ -3382,21 +3234,17 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         std::cerr << "Can't open " << categoryFile << "\n";
                         continue;
                     }
-                    out 
-                        << "\n"
+                    out << "\n"
                         << "{\n"
                         << "    \"index\": " << std::dec << j << ",\n"
                         << "    \"name\": \"#" << hashutils::ExtractTmp("hash", pl.name.name) << "\",\n"
                         << "    \"description\": \"#" << hashutils::ExtractTmp("hash", pl.description.name) << "\",\n"
                         << "    \"lobbyMainMode\": " << (int)pl.lobbyMainMode << ",\n"
-                        << "    \"hidden\": " << (pl.hidden ? "true" : "false") << ",\n"
-                        ;
+                        << "    \"hidden\": " << (pl.hidden ? "true" : "false") << ",\n";
                     if (pl.icon) {
                         out << "    \"icon\": \"#" << hashutils::ExtractTmp("hash", pl.icon) << "\",\n";
                     }
-                    out
-                        << "    \"entries\": ["
-                        ;
+                    out << "    \"entries\": [";
 
                     if (pl.unk40_count) {
                         auto entries = std::make_unique<PlaylistEntry[]>(pl.unk40_count);
@@ -3405,19 +3253,22 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                             out.close();
                             continue;
                         }
-                        
+
                         for (size_t k = 0; k < pl.unk40_count; k++) {
                             auto& ple = entries[k];
-                            if (k) out << ",";
-                            out
-                                << "\n"
+                            if (k)
+                                out << ",";
+                            out << "\n"
                                 << "        {\n"
                                 << "            \"index\": " << std::dec << k << ",\n"
                                 << "            \"id\": " << std::dec << ple.id << ",\n"
-                                << "            \"name\": \"#" << hashutils::ExtractTmp("hash", ple.name.name) << "\",\n"
-                                << "            \"uniqueName\": \"#" << hashutils::ExtractTmp("hash", ple.unique_name.name) << "\",\n"
+                                << "            \"name\": \"#" << hashutils::ExtractTmp("hash", ple.name.name)
+                                << "\",\n"
+                                << "            \"uniqueName\": \"#"
+                                << hashutils::ExtractTmp("hash", ple.unique_name.name) << "\",\n"
                                 << "            \"mainMode\": \"" << EModeName(ple.mainMode, true) << "\",\n"
-                                //<< "            \"unka8\": \"" << ReadTmpStr(proc, ple.unka8) << "\",\n" // constantly NULL, check in zombies?
+                                //<< "            \"unka8\": \"" << ReadTmpStr(proc, ple.unka8) << "\",\n" // constantly
+                                // NULL, check in zombies?
                                 ;
 
                             auto addGFXName = [&proc, &ple, &out](const char* title, uintptr_t ptr) {
@@ -3428,7 +3279,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                                 if (!name) {
                                     return;
                                 }
-                                out << "            \"" << title << "\": \"#" << hashutils::ExtractTmp("hash", name) << "\",\n";
+                                out << "            \"" << title << "\": \"#" << hashutils::ExtractTmp("hash", name)
+                                    << "\",\n";
                             };
                             addGFXName("image", ple.image);
                             addGFXName("imageBackground", ple.imageBackground);
@@ -3436,9 +3288,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                             addGFXName("imageTileLarge", ple.imageTileLarge);
                             addGFXName("imageTileSmall", ple.imageTileSmall);
                             addGFXName("imageTileSideInfo", ple.imageTileSideInfo);
-                            out
-                                << std::dec
-                                << "            \"unlockXp\": " << std::dec << ple.unlockXp << ",\n"
+                            out << std::dec << "            \"unlockXp\": " << std::dec << ple.unlockXp << ",\n"
                                 << "            \"unlockPLevel\": " << std::dec << ple.unlockPLevel << ",\n"
                                 << "            \"maxPartySize\": " << std::dec << ple.maxPartySize << ",\n"
                                 << "            \"minPartySize\": " << std::dec << ple.minPartySize << ",\n"
@@ -3451,16 +3301,23 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                                 << "            \"maxUserTier\": " << std::dec << ple.maxUserTier << ",\n"
                                 << "            \"arenaSlot\": " << std::dec << ple.arenaSlot << ",\n"
                                 << "            \"parkingPlaylist\": " << std::dec << ple.parkingPlaylist << ",\n"
-                                << "            \"disableGuests\": " << std::dec << (ple.disableGuests ? "true" : "false") << ",\n"
-                                << "            \"excludePublicLobby\": " << std::dec << (ple.excludePublicLobby ? "true" : "false") << ",\n"
-                                << "            \"customMutation\": " << std::dec << (ple.customMutation ? "true" : "false") << ",\n"
-                                << "            \"isSpectreRising\": " << std::dec << (ple.isSpectreRising ? "true" : "false") << ",\n"
-                                << "            \"isQuickplayCard\": " << std::dec << (ple.isQuickplayCard ? "true" : "false") << ",\n"
-                                << "            \"hideifmissingdlc\": " << std::dec << (ple.hideifmissingdlc ? "true" : "false") << ",\n"
-                                << "            \"isCustomMatch\": " << std::dec << (ple.isCustomMatch ? "true" : "false") << ",\n"
-                                << "            \"isNewGameOrResumeGame\": " << std::dec << (ple.isNewGameOrResumeGame ? "true" : "false") << ",\n"
-                                << "            \"rules\": ["
-                                ;
+                                << "            \"disableGuests\": " << std::dec
+                                << (ple.disableGuests ? "true" : "false") << ",\n"
+                                << "            \"excludePublicLobby\": " << std::dec
+                                << (ple.excludePublicLobby ? "true" : "false") << ",\n"
+                                << "            \"customMutation\": " << std::dec
+                                << (ple.customMutation ? "true" : "false") << ",\n"
+                                << "            \"isSpectreRising\": " << std::dec
+                                << (ple.isSpectreRising ? "true" : "false") << ",\n"
+                                << "            \"isQuickplayCard\": " << std::dec
+                                << (ple.isQuickplayCard ? "true" : "false") << ",\n"
+                                << "            \"hideifmissingdlc\": " << std::dec
+                                << (ple.hideifmissingdlc ? "true" : "false") << ",\n"
+                                << "            \"isCustomMatch\": " << std::dec
+                                << (ple.isCustomMatch ? "true" : "false") << ",\n"
+                                << "            \"isNewGameOrResumeGame\": " << std::dec
+                                << (ple.isNewGameOrResumeGame ? "true" : "false") << ",\n"
+                                << "            \"rules\": [";
 
                             if (ple.rules_count) {
                                 auto rules = std::make_unique<PlaylistRule[]>(ple.rules_count);
@@ -3473,99 +3330,90 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                                 for (size_t l = 0; l < ple.rules_count; l++) {
                                     auto& rule = rules[l];
 
-                                    if (l) out << ",";
-                                    out
-                                        << "\n"
+                                    if (l)
+                                        out << ",";
+                                    out << "\n"
                                         << "                {\n"
                                         << "                    \"type\": " << std::dec << rule.type << ",\n"
-                                        << "                    \"name\": \"#" << hashutils::ExtractTmp("hash", rule.name.name) << "\",\n"
-                                        << "                    \"value\": \"" << ReadTmpStr(proc, rule.value) << "\",\n"
-                                        << "                    \"utcStartTime\": " << std::dec << rule.utcStartTime << ",\n"
-                                        << "                    \"utcEndTime\": " << std::dec << rule.utcEndTime << ",\n"
-                                        << "                    \"platformMask\": " << std::dec << (int)rule.platformMask << ",\n"
-                                        << "                    \"environmentMask\": " << std::dec << (int)rule.environmentMask << "\n"
-                                        << "                }"
-                                        ;
+                                        << "                    \"name\": \"#"
+                                        << hashutils::ExtractTmp("hash", rule.name.name) << "\",\n"
+                                        << "                    \"value\": \"" << ReadTmpStr(proc, rule.value)
+                                        << "\",\n"
+                                        << "                    \"utcStartTime\": " << std::dec << rule.utcStartTime
+                                        << ",\n"
+                                        << "                    \"utcEndTime\": " << std::dec << rule.utcEndTime
+                                        << ",\n"
+                                        << "                    \"platformMask\": " << std::dec
+                                        << (int)rule.platformMask << ",\n"
+                                        << "                    \"environmentMask\": " << std::dec
+                                        << (int)rule.environmentMask << "\n"
+                                        << "                }";
                                 }
 
-                                // 
-                                out
-                                    << "\n"
+                                //
+                                out << "\n"
                                     << "            ],\n";
-                            }
-                            else {
+                            } else {
                                 out << "],\n";
                             }
 
-                            out
-                                << "            \"rotationList\": [";
+                            out << "            \"rotationList\": [";
                             if (ple.rotations_count) {
                                 auto rotations = std::make_unique<PlaylistRotation[]>(ple.rotations_count);
-                                if (!proc.ReadMemory(&rotations[0], ple.rotations, sizeof(rotations[0]) * ple.rotations_count)) {
+                                if (!proc.ReadMemory(&rotations[0], ple.rotations,
+                                                     sizeof(rotations[0]) * ple.rotations_count)) {
                                     out << "Can't read rotations\n";
                                     out.close();
                                     continue;
                                 }
 
                                 byte tmpBuffer[0x28];
-                                
+
                                 for (size_t l = 0; l < ple.rotations_count; l++) {
                                     auto& rotation = rotations[l];
 
-
-
-                                    if (l) out << ",";
-                                    out
-                                        << "\n"
-                                        << "                {\n"
-                                        ;
+                                    if (l)
+                                        out << ",";
+                                    out << "\n"
+                                        << "                {\n";
 
                                     if (proc.ReadMemory(tmpBuffer, rotation.map, sizeof(tmpBuffer))) {
-                                        out
-                                            << "                    \"map\": \"#" << hashutils::ExtractTmp("hash", reinterpret_cast<Hash*>(tmpBuffer)->name) << "\",\n"
-                                            << "                    \"mapPlatformMask\": " << std::dec << (int)tmpBuffer[0x20] << ",\n"
-                                            ;
+                                        out << "                    \"map\": \"#"
+                                            << hashutils::ExtractTmp("hash", reinterpret_cast<Hash*>(tmpBuffer)->name)
+                                            << "\",\n"
+                                            << "                    \"mapPlatformMask\": " << std::dec
+                                            << (int)tmpBuffer[0x20] << ",\n";
                                     }
 
                                     if (proc.ReadMemory(tmpBuffer, rotation.gametype, sizeof(tmpBuffer))) {
-                                        out
-                                            << "                    \"gametype\": \"#" << hashutils::ExtractTmp("hash", reinterpret_cast<Hash*>(tmpBuffer)->name) << "\",\n"
-                                            ;
+                                        out << "                    \"gametype\": \"#"
+                                            << hashutils::ExtractTmp("hash", reinterpret_cast<Hash*>(tmpBuffer)->name)
+                                            << "\",\n";
                                     }
 
-                                    out
-                                        << "                    \"weight\": " << std::dec << rotation.weight << ",\n"
-                                        << "                    \"isFree\": " << (rotation.isFree ? "true" : "false") << "\n"
-                                        << "                }"
-                                        ;
+                                    out << "                    \"weight\": " << std::dec << rotation.weight << ",\n"
+                                        << "                    \"isFree\": " << (rotation.isFree ? "true" : "false")
+                                        << "\n"
+                                        << "                }";
                                 }
 
-                                // 
-                                out
-                                    << "\n"
+                                //
+                                out << "\n"
                                     << "            ]\n";
-                            }
-                            else {
+                            } else {
                                 out << "]\n";
                             }
 
-                            out
-                                << "        }"
-                                ;
-
+                            out << "        }";
                         }
 
-                        out
-                            << "\n"
+                        out << "\n"
                             << "    ]\n";
-                    }
-                    else {
+                    } else {
                         out << "]\n";
                     }
 
-
-                    out
-                        << "}";
+                    out << "}";
                 }
             }
         }
@@ -3578,7 +3426,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uintptr_t gscScripts; // Hash*
             uintptr_t cscScripts; // Hash*
         };
-
 
         auto pool = std::make_unique<ScriptParseTreeForced[]>(entry.itemAllocCount);
 
@@ -3601,14 +3448,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/scriptparsetreeforced/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/scriptparsetreeforced/file_%llx.json", opt.m_output, p.name.name);
             }
 
             std::cout << "Element #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -3634,15 +3478,15 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < p.gscCount; j++) {
-                    if (j) defout << ",";
-                    utils::Padding(defout << "\n", 2) << "\"#" << hashutils::ExtractTmp("script", scripts[j].name) << "\"";
+                    if (j)
+                        defout << ",";
+                    utils::Padding(defout << "\n", 2)
+                        << "\"#" << hashutils::ExtractTmp("script", scripts[j].name) << "\"";
                 }
                 utils::Padding(defout << "\n", 1) << "],\n";
-            }
-            else {
+            } else {
                 defout << "],\n";
             }
-
 
             utils::Padding(defout, 1) << "\"cscScripts\": [";
 
@@ -3654,12 +3498,13 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < p.cscCount; j++) {
-                    if (j) defout << ",";
-                    utils::Padding(defout << "\n", 2) << "\"#" << hashutils::ExtractTmp("script", scripts[j].name) << "\"";
+                    if (j)
+                        defout << ",";
+                    utils::Padding(defout << "\n", 2)
+                        << "\"#" << hashutils::ExtractTmp("script", scripts[j].name) << "\"";
                 }
                 utils::Padding(defout << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 defout << "]\n";
             }
             defout << "}\n";
@@ -3680,9 +3525,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uintptr_t iconName;
             uintptr_t iconNameLarge;
         };
-
-
-
 
         auto pool = std::make_unique<PrestigeInfo[]>(entry.itemAllocCount);
 
@@ -3705,14 +3547,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/prestige/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/prestige/file_%llx.json", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -3726,19 +3565,23 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             defout << "{\n";
             utils::Padding(defout, 1) << "\"name\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name) << "\",\n";
+            utils::Padding(defout, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name)
+                                      << "\",\n";
             if (p.iconName) {
-                utils::Padding(defout, 1) << "\"iconName\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.iconName + 0x20)) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"iconName\": \"#"
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.iconName + 0x20)) << "\",\n";
             }
             if (p.iconNameLarge) {
-                utils::Padding(defout, 1) << "\"iconNameLarge\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.iconNameLarge + 0x20)) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"iconNameLarge\": \"#"
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.iconNameLarge + 0x20)) << "\",\n";
             }
             utils::Padding(defout, 1) << "\"unlockLevel\": " << std::dec << p.unlockLevel << ",\n";
             utils::Padding(defout, 1) << "\"winsRequired\": " << std::dec << p.winsRequired << ",\n";
             utils::Padding(defout, 1) << "\"titleOfOrigin\": " << std::dec << p.titleOfOrigin << "\n";
 
             defout << "}\n";
-
 
             defout.close();
         }
@@ -3763,7 +3606,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uintptr_t iconNameLarge;
         };
 
-
         auto pool = std::make_unique<PrestigeTable[]>(entry.itemAllocCount);
 
         if (!proc.ReadMemory(&pool[0], entry.pool, sizeof(pool[0]) * entry.itemAllocCount)) {
@@ -3785,14 +3627,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/prestige/table/%s.csv", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/prestige/table/file_%llx.csv", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -3822,20 +3661,17 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         std::cerr << "Can't read memory\n";
                         continue;
                     }
-                    defout 
-                        << "\n" 
-                        << std::dec << i << ","
-                        << "#" << hashutils::ExtractTmp("hash", nfo.name.name) << ","
-                        << "#" << hashutils::ExtractTmp("hash", nfo.displayName.name) << ","
-                        << std::dec << nfo.unlockLevel << ","
-                        << std::dec << nfo.winsRequired << ","
-                        << std::dec << nfo.titleOfOrigin << ","
-                        << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.iconName + 0x20)) << ","
-                        << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.iconNameLarge + 0x20))
-                        ;
+                    defout << "\n"
+                           << std::dec << i << ","
+                           << "#" << hashutils::ExtractTmp("hash", nfo.name.name) << ","
+                           << "#" << hashutils::ExtractTmp("hash", nfo.displayName.name) << "," << std::dec
+                           << nfo.unlockLevel << "," << std::dec << nfo.winsRequired << "," << std::dec
+                           << nfo.titleOfOrigin << ","
+                           << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.iconName + 0x20))
+                           << ","
+                           << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.iconNameLarge + 0x20));
                 }
             }
-
 
             defout.close();
         }
@@ -3851,7 +3687,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             XHash shortNameRef;
             XHash fullNameRef;
             XHash ingameNameRef;
-            uintptr_t icon; // GfxImagePtr
+            uintptr_t icon;      // GfxImagePtr
             uintptr_t iconLarge; // GfxImagePtr
             uint64_t rewardsCount;
             uintptr_t rewards; // RankInfoReward*
@@ -3882,14 +3718,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/rank/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/rank/file_%llx.json", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -3903,14 +3736,21 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             defout << "{\n";
             utils::Padding(defout, 1) << "\"name\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"shortNameRef\": \"#" << hashutils::ExtractTmp("hash", p.shortNameRef.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"fullNameRef\": \"#" << hashutils::ExtractTmp("hash", p.fullNameRef.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"ingameNameRef\": \"#" << hashutils::ExtractTmp("hash", p.ingameNameRef.name) << "\",\n";
+            utils::Padding(defout, 1) << "\"shortNameRef\": \"#" << hashutils::ExtractTmp("hash", p.shortNameRef.name)
+                                      << "\",\n";
+            utils::Padding(defout, 1) << "\"fullNameRef\": \"#" << hashutils::ExtractTmp("hash", p.fullNameRef.name)
+                                      << "\",\n";
+            utils::Padding(defout, 1) << "\"ingameNameRef\": \"#" << hashutils::ExtractTmp("hash", p.ingameNameRef.name)
+                                      << "\",\n";
             if (p.icon) {
-                utils::Padding(defout, 1) << "\"iconName\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.icon + 0x20)) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"iconName\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.icon + 0x20))
+                    << "\",\n";
             }
             if (p.iconLarge) {
-                utils::Padding(defout, 1) << "\"iconNameLarge\": \"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.iconLarge + 0x20)) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"iconNameLarge\": \"#"
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.iconLarge + 0x20)) << "\",\n";
             }
             utils::Padding(defout, 1) << "\"level\": " << std::dec << p.level << ",\n";
             utils::Padding(defout, 1) << "\"minXp\": " << std::dec << p.minXp << ",\n";
@@ -3928,22 +3768,23 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 for (size_t j = 0; j < p.rewardsCount; j++) {
                     auto& rew = rewards[j];
 
-                    if (j) defout << ",";
+                    if (j)
+                        defout << ",";
                     defout << "\n";
                     utils::Padding(defout, 2) << "{\n";
-                    utils::Padding(defout, 3) << "\"prestigeTarget\": \"#" << hashutils::ExtractTmp("hash", rew.prestigeTarget.name) << "\",\n";
-                    utils::Padding(defout, 3) << "\"rewardName\": \"#" << hashutils::ExtractTmp("hash", rew.rewardName.name) << "\"\n";
+                    utils::Padding(defout, 3) << "\"prestigeTarget\": \"#"
+                                              << hashutils::ExtractTmp("hash", rew.prestigeTarget.name) << "\",\n";
+                    utils::Padding(defout, 3)
+                        << "\"rewardName\": \"#" << hashutils::ExtractTmp("hash", rew.rewardName.name) << "\"\n";
                     utils::Padding(defout, 2) << "}";
                 }
 
                 utils::Padding(defout << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 defout << "]\n";
             }
 
             defout << "}\n";
-
 
             defout.close();
         }
@@ -3964,7 +3805,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             XHash shortNameRef;
             XHash fullNameRef;
             XHash ingameNameRef;
-            uintptr_t icon; // GfxImagePtr
+            uintptr_t icon;      // GfxImagePtr
             uintptr_t iconLarge; // GfxImagePtr
             uint64_t rewardsCount;
             uintptr_t rewards; // RankInfoReward*
@@ -3995,14 +3836,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/rank/table/%s.csv", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/rank/table/file_%llx.csv", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4016,7 +3854,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             RankInfo nfo{};
 
-            defout << "iconId,name,level,minXp,maxXp,shortNameRef,fullNameRef,ingameNameRef,iconName,iconNameLarge,rewards";
+            defout << "iconId,name,level,minXp,maxXp,shortNameRef,fullNameRef,ingameNameRef,iconName,iconNameLarge,"
+                      "rewards";
 
             if (p.rankCount) {
                 auto tableVals = std::make_unique<uintptr_t[]>(p.rankCount);
@@ -4034,20 +3873,15 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         continue;
                     }
 
-
-                    defout
-                        << "\n"
-                        << std::dec << i << ","
-                        << "#" << hashutils::ExtractTmp("hash", nfo.name.name) << ","
-                        << std::dec << nfo.level << ","
-                        << std::dec << nfo.minXp << ","
-                        << std::dec << nfo.maxXp << ","
-                        << "#" << hashutils::ExtractTmp("hash", nfo.shortNameRef.name) << ","
-                        << "#" << hashutils::ExtractTmp("hash", nfo.fullNameRef.name) << ","
-                        << "#" << hashutils::ExtractTmp("hash", nfo.ingameNameRef.name) << ","
-                        << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.icon + 0x20)) << ","
-                        << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.icon + 0x20)) << ","
-                        ;
+                    defout << "\n"
+                           << std::dec << i << ","
+                           << "#" << hashutils::ExtractTmp("hash", nfo.name.name) << "," << std::dec << nfo.level << ","
+                           << std::dec << nfo.minXp << "," << std::dec << nfo.maxXp << ","
+                           << "#" << hashutils::ExtractTmp("hash", nfo.shortNameRef.name) << ","
+                           << "#" << hashutils::ExtractTmp("hash", nfo.fullNameRef.name) << ","
+                           << "#" << hashutils::ExtractTmp("hash", nfo.ingameNameRef.name) << ","
+                           << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.icon + 0x20)) << ","
+                           << "#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.icon + 0x20)) << ",";
 
                     if (nfo.rewardsCount) {
                         auto rewards = std::make_unique<RankInfoReward[]>(nfo.rewardsCount);
@@ -4060,14 +3894,14 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         for (size_t j = 0; j < nfo.rewardsCount; j++) {
                             auto& rew = rewards[j];
 
-                            if (j) defout << ";";
+                            if (j)
+                                defout << ";";
 
                             defout << "#" << hashutils::ExtractTmp("hash", rew.rewardName.name);
                         }
                     }
                 }
             }
-
 
             defout.close();
         }
@@ -4102,14 +3936,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/store/category/list/%s.csv", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/store/category/list/file_%llx.csv", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4131,8 +3962,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     std::cerr << "Can't read memory\n";
                     break;
                 }
-                struct StoreCategory
-                {
+                struct StoreCategory {
                     uintptr_t name2; // const char*
                     XHash name;
                     uintptr_t image; // GfxImage*
@@ -4154,19 +3984,15 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
                     hashutils::Add(nameUn);
 
-                    defout << std::dec << "\n" << i
-                        << "," << nameUn
-                        << ",#" << hashutils::ExtractTmp("hash", nfo.name.name)
-                        << ",#" << hashutils::ExtractTmp("hash", nfo.displayName.name)
-                        << ",#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.image + 0x20))
-                        << "," << std::dec << (int)nfo.productsCount
-                        << "," << (nfo.visibility ? "true" : "false")
-                        ;
+                    defout << std::dec << "\n"
+                           << i << "," << nameUn << ",#" << hashutils::ExtractTmp("hash", nfo.name.name) << ",#"
+                           << hashutils::ExtractTmp("hash", nfo.displayName.name) << ",#"
+                           << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(nfo.image + 0x20)) << ","
+                           << std::dec << (int)nfo.productsCount << "," << (nfo.visibility ? "true" : "false");
 
-                    //tool::pool::WriteHex(defout << "\n", 0, (byte*)&nfo, sizeof(nfo), proc);
+                    // tool::pool::WriteHex(defout << "\n", 0, (byte*)&nfo, sizeof(nfo), proc);
                 }
             }
-
 
             defout.close();
         }
@@ -4174,8 +4000,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_STORECATEGORY)) {
-        struct StoreCategory
-        {
+        struct StoreCategory {
             uintptr_t name2; // const char*
             XHash name;
             uintptr_t image; // GfxImage*
@@ -4210,14 +4035,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/store/category/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/store/category/file_%llx.json", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4232,7 +4054,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             defout << "{\n";
             utils::Padding(defout, 1) << "\"name\": \"" << nameUn << "\",\n";
             utils::Padding(defout, 1) << "\"nameHash\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name) << "\",\n";
+            utils::Padding(defout, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name)
+                                      << "\",\n";
             utils::Padding(defout, 1) << "\"imageName\": \"#" << proc.ReadMemory<uint64_t>(p.image + 0x20) << "\",\n";
             utils::Padding(defout, 1) << "\"visibility\": " << (p.visibility ? "true" : "false") << ",\n";
             utils::Padding(defout, 1) << "\"products\": [";
@@ -4245,34 +4068,33 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < p.productsCount; j++) {
-                    if (j) defout << ",";
-                    utils::Padding(defout << "\n", 2) << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(products[j])) << "\"";
+                    if (j)
+                        defout << ",";
+                    utils::Padding(defout << "\n", 2)
+                        << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(products[j])) << "\"";
                 }
                 utils::Padding(defout << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 defout << "]\n";
             }
             defout << "}";
-
 
             defout.close();
         }
     }
     if (ShouldHandle(ASSET_TYPE_STOREPRODUCT)) {
-        struct StoreProduct
-        {
+        struct StoreProduct {
             XHash name;
-            uintptr_t previewImage;// GfxImage*
-            uintptr_t productImage; // GfxImage*
-            uintptr_t blackMarketImage;// GfxImage*
-            uintptr_t metadata;// const char*
-            uintptr_t videoHighResRef;// const char*
-            uintptr_t videoLowResRef;// const char*
+            uintptr_t previewImage;     // GfxImage*
+            uintptr_t productImage;     // GfxImage*
+            uintptr_t blackMarketImage; // GfxImage*
+            uintptr_t metadata;         // const char*
+            uintptr_t videoHighResRef;  // const char*
+            uintptr_t videoLowResRef;   // const char*
             XHash blackMarketName;
             XHash blackMarketDesc;
             XHash entitlementNameXHash; // const char*
-            uintptr_t productID; // const char*
+            uintptr_t productID;        // const char*
             uintptr_t unk78;
             uint64_t unk80;
             uint64_t unk88;
@@ -4288,7 +4110,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint64_t unkb8;
             uint64_t unkc0;
         };
-
 
         auto pool = std::make_unique<StoreProduct[]>(entry.itemAllocCount);
 
@@ -4311,14 +4132,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/tables/store/product/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/tables/store/product/file_%llx.json", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4332,9 +4150,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             defout << "{\n";
             utils::Padding(defout, 1) << "\"name\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"blackMarketName\": \"#" << hashutils::ExtractTmp("hash", p.blackMarketName.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"blackMarketDesc\": \"#" << hashutils::ExtractTmp("hash", p.blackMarketDesc.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"entitlementNameXHash\": \"#" << hashutils::ExtractTmp("hash", p.entitlementNameXHash.name) << "\",\n";
+            utils::Padding(defout, 1) << "\"blackMarketName\": \"#"
+                                      << hashutils::ExtractTmp("hash", p.blackMarketName.name) << "\",\n";
+            utils::Padding(defout, 1) << "\"blackMarketDesc\": \"#"
+                                      << hashutils::ExtractTmp("hash", p.blackMarketDesc.name) << "\",\n";
+            utils::Padding(defout, 1) << "\"entitlementNameXHash\": \"#"
+                                      << hashutils::ExtractTmp("hash", p.entitlementNameXHash.name) << "\",\n";
             if (p.productID) {
                 utils::Padding(defout, 1) << "\"productID\": \"" << ReadTmpStr(proc, p.productID) << "\",\n";
             }
@@ -4345,23 +4166,28 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 utils::Padding(defout, 1) << "\"videoLowResRef\": \"" << ReadTmpStr(proc, p.videoLowResRef) << "\",\n";
             }
             if (p.videoHighResRef) {
-                utils::Padding(defout, 1) << "\"videoHighResRef\": \"" << ReadTmpStr(proc, p.videoHighResRef) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"videoHighResRef\": \"" << ReadTmpStr(proc, p.videoHighResRef) << "\",\n";
             }
             if (p.previewImage) {
-                utils::Padding(defout, 1) << "\"previewImageName\": \"" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.previewImage + 0x20)) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"previewImageName\": \""
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.previewImage + 0x20)) << "\",\n";
             }
             if (p.productImage) {
-                utils::Padding(defout, 1) << "\"productImageName\": \"" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.productImage + 0x20)) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"productImageName\": \""
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.productImage + 0x20)) << "\",\n";
             }
             if (p.blackMarketImage) {
-                utils::Padding(defout, 1) << "\"blackMarketImageName\": \"" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.blackMarketImage + 0x20)) << "\",\n";
+                utils::Padding(defout, 1)
+                    << "\"blackMarketImageName\": \""
+                    << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(p.blackMarketImage + 0x20)) << "\",\n";
             }
             utils::Padding(defout, 1) << "\"visibility\": " << (p.visibility ? "true" : "false") << "\n";
 
-            
-            //tool::pool::WriteHex(defout << "\n", 0, (byte*)&p, sizeof(p), proc);
+            // tool::pool::WriteHex(defout << "\n", 0, (byte*)&p, sizeof(p), proc);
             defout << "}";
-
 
             defout.close();
         }
@@ -4369,15 +4195,14 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_STRUCTURED_TABLE)) {
-        struct StructuredTable
-        {
+        struct StructuredTable {
             XHash name;
             int cellCount;
             int columnCount;
             int rowCount;
-            uintptr_t cells; // StructuredTableCell*
-            uintptr_t cellIndex; // int*
-            uintptr_t headers; // StructuredTableHeader*
+            uintptr_t cells;       // StructuredTableCell*
+            uintptr_t cellIndex;   // int*
+            uintptr_t headers;     // StructuredTableHeader*
             uintptr_t headerIndex; // int*
         };
         enum StructuredTableCellType {
@@ -4386,8 +4211,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             STRUCTURED_TABLE_CELL_TYPE_NUMBER = 0x2,
             STRUCTURED_TABLE_CELL_TYPE_COUNT = 0x3,
         };
-        struct StructuredTableCell
-        {
+        struct StructuredTableCell {
             union {
                 int number;
                 int hash;
@@ -4396,15 +4220,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             StructuredTableCellType type;
             int unkc;
         };
-        struct StructuredTableHeader
-        {
+        struct StructuredTableHeader {
             uintptr_t string; // const char*
             int hash;
             int index;
         };
-
-
-
 
         auto pool = std::make_unique<StructuredTable[]>(entry.itemAllocCount);
 
@@ -4427,14 +4247,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/hashed/structuredtable/file_%llx.json", opt.m_output, p.name.name);
             }
 
             std::cout << "Table #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4453,18 +4270,18 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             }
 
             auto headerInfo = std::make_unique<StructuredTableHeader[]>(p.columnCount);
-            
+
             if (!proc.ReadMemory(&headerInfo[0], p.headers, sizeof(headerInfo[0]) * p.columnCount)) {
                 defout.close();
                 std::cerr << "Can't read memory\n";
                 break;
             }
 
-            //for (size_t col = 0; col < p.columnCount; col++) {
-            //    auto& column = headerInfo[col];
-            //    if (col) defout << ",";
-            //    defout << ReadTmpStr(proc, column.string);
-            //}
+            // for (size_t col = 0; col < p.columnCount; col++) {
+            //     auto& column = headerInfo[col];
+            //     if (col) defout << ",";
+            //     defout << ReadTmpStr(proc, column.string);
+            // }
 
             defout << "[";
             if (p.rowCount) {
@@ -4478,7 +4295,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 for (size_t row = 0; row < p.rowCount; row++) {
                     auto* rowcells = &cells[row * p.columnCount];
 
-                    if (row) defout << ",";
+                    if (row)
+                        defout << ",";
                     utils::Padding(defout << "\n", 1) << "{";
                     int count = 0;
                     for (size_t col = 0; col < p.columnCount; col++) {
@@ -4488,7 +4306,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                             continue;
                         }
 
-                        if (count++) defout << ",";
+                        if (count++)
+                            defout << ",";
                         utils::Padding(defout << "\n", 2) << "\"" << ReadTmpStr(proc, headerInfo[col].string) << "\": ";
                         switch (cell.type) {
                         case STRUCTURED_TABLE_CELL_TYPE_STRING:
@@ -4503,7 +4322,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         }
                     }
                     utils::Padding(defout << "\n", 1) << "}";
-
                 }
                 defout << "\n";
             }
@@ -4528,7 +4346,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint32_t unk4c;
         };
 
-
         auto pool = std::make_unique<TTFDef[]>(entry.itemAllocCount);
 
         if (!proc.ReadMemory(&pool[0], entry.pool, sizeof(pool[0]) * entry.itemAllocCount)) {
@@ -4552,13 +4369,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 auto* n = hashutils::ExtractPtr(p.name.name);
                 if (n) {
                     sprintf_s(dumpbuff, "%s/tables/ttf/%s.ttf", opt.m_output, n);
-                }
-                else {
+                } else {
                     sprintf_s(dumpbuff, "%s/tables/ttf/file_%llx.ttf", opt.m_output, p.name.name);
                 }
 
                 std::cout << "Font #" << std::dec << i << " -> " << dumpbuff << "\n";
-
 
                 std::filesystem::path file(dumpbuff);
                 std::filesystem::create_directories(file.parent_path(), ec);
@@ -4569,8 +4384,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     std::cerr << "Can't read/write font\n";
                 }
             }
-        }
-        else {
+        } else {
             sprintf_s(dumpbuff, "%s/tables/ttf.csv", opt.m_output);
             std::cout << dumpbuff << "\n";
             std::filesystem::path file(dumpbuff);
@@ -4592,7 +4406,9 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     continue;
                 }
 
-                ttfdump << "\n" << hashutils::ExtractTmp("hash", p.name.name) << "," << hashutils::ExtractTmp("hash", p.file2.name) << "," << std::dec << p.size;
+                ttfdump << "\n"
+                        << hashutils::ExtractTmp("hash", p.name.name) << ","
+                        << hashutils::ExtractTmp("hash", p.file2.name) << "," << std::dec << p.size;
             }
 
             ttfdump.close();
@@ -4606,7 +4422,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uintptr_t ddlDef; // DDLDef*
             uint64_t pad[8];
         };
-
 
         auto pool = std::make_unique<DDLEntry[]>(entry.itemAllocCount);
 
@@ -4625,14 +4440,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto* n = hashutils::ExtractPtr(p.name.name);
             if (n) {
                 sprintf_s(dumpbuff, "%s/%s", opt.m_output, n);
-            }
-            else {
+            } else {
                 sprintf_s(dumpbuff, "%s/hashed/ddl/file_%llx.ddl", opt.m_output, p.name.name);
             }
 
             std::cout << "Writing DDL #" << std::dec << i << " -> " << dumpbuff << "\n";
-
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4658,8 +4470,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             std::cerr << "Can't read pool data\n";
             return tool::BASIC_ERROR;
         }
-
-
 
         BGCacheInfo entryinfo[BG_CACHE_TYPE_COUNT]{};
 
@@ -4687,7 +4497,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
 
-
             auto n = hashutils::ExtractPtr(p.name);
 
             std::cout << std::dec << i << ": " << std::dec << p.count << " elem (0x" << std::hex << p.def << ") : ";
@@ -4695,12 +4504,10 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/bgcache/%s.csv", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name << std::dec;
                 sprintf_s(dumpbuff, "%s/bgcache/file_%llx.csv", opt.m_output, p.name);
             }
-
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4712,8 +4519,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 std::cout << " (new)";
             }
             std::cout << "\n";
-
-
 
             auto defs = std::make_unique<BGCacheInfoDef[]>(p.count);
 
@@ -4733,11 +4538,9 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             for (size_t i = 0; i < p.count; i++) {
                 auto& p2 = defs[i];
 
-                defout << "\n" 
-                    << (p2.type >= 0 && p2.type < BG_CACHE_TYPE_COUNT ? nameInfo[p2.type] : "<error>") << ","
-                    << hashutils::ExtractTmp("hash", p2.name) << "," 
-                    << std::hex << p2.string_count
-                    << std::flush;
+                defout << "\n"
+                       << (p2.type >= 0 && p2.type < BG_CACHE_TYPE_COUNT ? nameInfo[p2.type] : "<error>") << ","
+                       << hashutils::ExtractTmp("hash", p2.name) << "," << std::hex << p2.string_count << std::flush;
             }
 
             defout.close();
@@ -4748,8 +4551,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
     if (ShouldHandle(ASSET_TYPE_SCRIPTBUNDLELIST)) {
         size_t readFile = 0;
 
-        struct ScriptBundleList
-        {
+        struct ScriptBundleList {
             XHash name;
             ScrString_t assetType;
             uint32_t assetCount;
@@ -4773,14 +4575,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/scriptbundle/list/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/scriptbundle/list/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -4817,13 +4617,14 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < p.assetCount; j++) {
-                    if (j) out << ",";
-                    utils::Padding(out << "\n", 2) << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(assets[j])) << "\"";
+                    if (j)
+                        out << ",";
+                    utils::Padding(out << "\n", 2)
+                        << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(assets[j])) << "\"";
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
 
@@ -4832,7 +4633,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -4858,8 +4658,9 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             std::cout << std::dec << i << ": ";
 
-            sprintf_s(dumpbuff, "%s/scriptbundle/%s/%s.json", opt.m_output, p.bundleType.name ? hashutils::ExtractTmp("hash", p.bundleType.name) : "default", hashutils::ExtractTmp("hash", p.name.name));
-
+            sprintf_s(dumpbuff, "%s/scriptbundle/%s/%s.json", opt.m_output,
+                      p.bundleType.name ? hashutils::ExtractTmp("hash", p.bundleType.name) : "default",
+                      hashutils::ExtractTmp("hash", p.name.name));
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -4871,7 +4672,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 std::cout << " (new)";
             }
             std::cout << "\n";
-
 
             std::ofstream defout{ file };
 
@@ -4928,9 +4728,9 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         }
 
         // todo: replace with decompiler call
-        //std::cout << "Decompiling dumped GSC scripts...\n";
+        // std::cout << "Decompiling dumped GSC scripts...\n";
         //
-        //const char* argvinfo[] = {
+        // const char* argvinfo[] = {
         //    argv[0],
         //    "gscinfo",
         //    "-g", // run decompiler
@@ -4938,7 +4738,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         //    "-o", opt.m_output, // output dir
         //};
         //
-        //tool::gsc::gscinfo(ACTS_ARRAYSIZE(argvinfo), argvinfo);
+        // tool::gsc::gscinfo(ACTS_ARRAYSIZE(argvinfo), argvinfo);
     }
     if (ShouldHandle(ASSET_TYPE_UNLOCKABLE_ITEM)) {
         struct UnlockableItemTableElem {
@@ -4949,11 +4749,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             Hash description;
             Hash wzDescription;
             Hash zmDescription;
-            uintptr_t previewImage; // GfxImage*
-            uintptr_t previewImageLarge; // GfxImage*
-            uintptr_t wzPreviewImage; // GfxImage*
+            uintptr_t previewImage;        // GfxImage*
+            uintptr_t previewImageLarge;   // GfxImage*
+            uintptr_t wzPreviewImage;      // GfxImage*
             uintptr_t wzPreviewImageLarge; // GfxImage*
-            uintptr_t zmPreviewImage; // GfxImage*
+            uintptr_t zmPreviewImage;      // GfxImage*
             uintptr_t zmPreviewImageLarge; // GfxImage*
             uint32_t globalItemIndex;
             uint32_t itemIndex;
@@ -5009,14 +4809,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.nameHash.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/unlockableitem/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.nameHash.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/unlockableitem/file_%llx.json", opt.m_output, p.nameHash.name);
             }
@@ -5052,11 +4850,16 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             utils::Padding(out, 1) << "\"name\": \"" << nameclear << "\",\n";
             utils::Padding(out, 1) << "\"nameHash\": \"#" << hashutils::ExtractTmp("hash", p.nameHash.name) << "\",\n";
-            utils::Padding(out, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name) << "\",\n";
-            utils::Padding(out, 1) << "\"displayNameShort\": \"#" << hashutils::ExtractTmp("hash", p.displayNameShort.name) << "\",\n";
-            utils::Padding(out, 1) << "\"description\": \"#" << hashutils::ExtractTmp("hash", p.description.name) << "\",\n";
-            utils::Padding(out, 1) << "\"wzDescription\": \"#" << hashutils::ExtractTmp("hash", p.wzDescription.name) << "\",\n";
-            utils::Padding(out, 1) << "\"zmDescription\": \"#" << hashutils::ExtractTmp("hash", p.zmDescription.name) << "\",\n";
+            utils::Padding(out, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name)
+                                   << "\",\n";
+            utils::Padding(out, 1) << "\"displayNameShort\": \"#"
+                                   << hashutils::ExtractTmp("hash", p.displayNameShort.name) << "\",\n";
+            utils::Padding(out, 1) << "\"description\": \"#" << hashutils::ExtractTmp("hash", p.description.name)
+                                   << "\",\n";
+            utils::Padding(out, 1) << "\"wzDescription\": \"#" << hashutils::ExtractTmp("hash", p.wzDescription.name)
+                                   << "\",\n";
+            utils::Padding(out, 1) << "\"zmDescription\": \"#" << hashutils::ExtractTmp("hash", p.zmDescription.name)
+                                   << "\",\n";
 
             addGFXName("previewImage", p.previewImage);
             addGFXName("previewImageLarge", p.previewImageLarge);
@@ -5068,10 +4871,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             utils::Padding(out, 1) << "\"globalItemIndex\": " << std::dec << p.globalItemIndex << ",\n";
             utils::Padding(out, 1) << "\"itemIndex\": " << std::dec << p.itemIndex << ",\n";
             utils::Padding(out, 1) << "\"scoreToUnlock\": " << std::dec << p.scoreToUnlock << ",\n";
-            utils::Padding(out, 1) << "\"lowestScoreToUnlockAllowed\": " << std::dec << p.lowestScoreToUnlockAllowed << ",\n";
+            utils::Padding(out, 1) << "\"lowestScoreToUnlockAllowed\": " << std::dec << p.lowestScoreToUnlockAllowed
+                                   << ",\n";
             utils::Padding(out, 1) << "\"allocation\": " << std::dec << p.allocation << ",\n";
             utils::Padding(out, 1) << "\"attributeItems\": " << (p.attributeItems ? "true" : "false") << ",\n";
-            utils::Padding(out, 1) << "\"itemGroupIndex\": \"" << (p.itemGroupIndex == -1 ? "none" : itemGroupNames[p.itemGroupIndex]) << "\",\n";
+            utils::Padding(out, 1) << "\"itemGroupIndex\": \""
+                                   << (p.itemGroupIndex == -1 ? "none" : itemGroupNames[p.itemGroupIndex]) << "\",\n";
             utils::Padding(out, 1) << "\"attachments\": [";
 
             if (p.attachmentsCount) {
@@ -5083,33 +4888,29 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < p.attachmentsCount; j++) {
-                    if (j) out << ",";
-                    utils::Padding(out << "\n", 2);;
+                    if (j)
+                        out << ",";
+                    utils::Padding(out << "\n", 2);
+                    ;
 
                     if (attachments[j] < ACTS_ARRAYSIZE(attachmentsNames)) {
                         out << "\"" << attachmentsNames[attachments[j]] << "\"";
-                    }
-                    else {
+                    } else {
                         out << std::dec << attachments[j];
                     }
-
                 }
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
-
 
             out << "}";
 
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
-
     }
     if (ShouldHandle(ASSET_TYPE_UNLOCKABLE_ITEM_TABLE)) {
         size_t readFile = 0;
@@ -5132,7 +4933,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uintptr_t unk48;
         };
 
-
         // 12D15670
         auto pool = std::make_unique<UnlockableItemTable[]>(entry.itemAllocCount);
 
@@ -5151,22 +4951,20 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/unlockableitem/table/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/unlockableitem/table/file_%llx.json", opt.m_output, p.name.name);
             }
 
-            //if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
-            //    std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
-            //    continue;
-            //}
+            // if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
+            //     std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
+            //     continue;
+            // }
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -5198,14 +4996,14 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (p.elements_count) {
                 auto entries = std::make_unique<uintptr_t[]>(p.elements_count);
 
-
                 if (!proc.ReadMemory(&entries[0], p.elements, sizeof(uintptr_t) * p.elements_count)) {
                     std::cerr << "Can't read elements\n";
                     break;
                 }
                 for (size_t i = 0; i < p.elements_count; i++) {
                     auto name = proc.ReadMemory<uint64_t>(entries[i] + 0x8); // skip name
-                    if (i) out << ",";
+                    if (i)
+                        out << ",";
                     auto* nameclear = ReadTmpStr(proc, proc.ReadMemory<uintptr_t>(entries[i]));
 
                     if (*nameclear != '<') {
@@ -5216,8 +5014,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
 
@@ -5226,20 +5023,17 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_PLAYER_ROLE_CATEGORY_TABLE)) {
         size_t readFile = 0;
 
-        struct PlayerRoleCategoryTable
-        {
+        struct PlayerRoleCategoryTable {
             Hash name;
             uint32_t numPlayerRoleCategories;
             uintptr_t playerRoleCategories; // PlayerRoleCategoryPtr*
         };
-
 
         // 12D15670
         auto pool = std::make_unique<PlayerRoleCategoryTable[]>(entry.itemAllocCount);
@@ -5259,22 +5053,20 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/playerrolecategory/table/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/playerrolecategory/table/file_%llx.json", opt.m_output, p.name.name);
             }
 
-            //if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
-            //    std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
-            //    continue;
-            //}
+            // if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
+            //     std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
+            //     continue;
+            // }
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -5300,20 +5092,20 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (p.numPlayerRoleCategories) {
                 auto entries = std::make_unique<uintptr_t[]>(p.numPlayerRoleCategories);
 
-
-                if (!proc.ReadMemory(&entries[0], p.playerRoleCategories, sizeof(uintptr_t) * p.numPlayerRoleCategories)) {
+                if (!proc.ReadMemory(&entries[0], p.playerRoleCategories,
+                                     sizeof(uintptr_t) * p.numPlayerRoleCategories)) {
                     std::cerr << "Can't read elements\n";
                     break;
                 }
                 for (size_t i = 0; i < p.numPlayerRoleCategories; i++) {
-                    if (i) out << ",";
+                    if (i)
+                        out << ",";
                     auto name = proc.ReadMemory<uint64_t>(entries[i]); // skip name
                     utils::Padding(out << "\n", 2) << "\"#" << hashutils::ExtractTmp("hash", name) << "\"";
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
 
@@ -5322,13 +5114,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_PLAYER_ROLE_CATEGORY)) {
         size_t readFile = 0;
-
 
         struct PlayerRoleCategory {
             Hash name;
@@ -5357,22 +5147,20 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/playerrolecategory/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/playerrolecategory/file_%llx.json", opt.m_output, p.name.name);
             }
 
-            //if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
-            //    std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
-            //    continue;
-            //}
+            // if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
+            //     std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
+            //     continue;
+            // }
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -5392,10 +5180,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             }
 
             out << "{\n";
-            
+
             utils::Padding(out, 1) << "\"name\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n";
-            utils::Padding(out, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name) << "\",\n";
-            utils::Padding(out, 1) << "\"description\": \"#" << hashutils::ExtractTmp("hash", p.description.name) << "\",\n";
+            utils::Padding(out, 1) << "\"displayName\": \"#" << hashutils::ExtractTmp("hash", p.displayName.name)
+                                   << "\",\n";
+            utils::Padding(out, 1) << "\"description\": \"#" << hashutils::ExtractTmp("hash", p.description.name)
+                                   << "\",\n";
             utils::Padding(out, 1) << "\"sortOrder\": " << std::dec << p.sortOrder << ",\n";
             utils::Padding(out, 1) << "\"fields\": ";
 
@@ -5409,7 +5199,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -5429,7 +5218,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint64_t unk58;
         };
 
-
         // 12D15670
         auto pool = std::make_unique<StorageFile[]>(entry.itemAllocCount);
 
@@ -5446,7 +5234,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
 
-
             auto* str = ReadTmpStr(proc, p.nameStr);
 
             auto ddlGuess = std::format("gamedata/ddl/generated/{}.ddl", str);
@@ -5456,14 +5243,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/storagefile/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/storagefile/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -5494,7 +5279,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -5506,7 +5290,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint32_t count;
             uintptr_t list;
         };
-
 
         // 12D15670
         auto pool = std::make_unique<StorageFileList[]>(entry.itemAllocCount);
@@ -5526,14 +5309,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/storagefile/list/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/storagefile/list/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -5568,17 +5349,18 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < p.count; j++) {
-                    if (j) out << ",";
+                    if (j)
+                        out << ",";
 
                     auto* str = ReadTmpStr(proc, proc.ReadMemory<uint64_t>(entries[j]));
 
                     hashutils::Add(str);
-                    utils::Padding(out << "\n", 2) << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(entries[j] + 0x8)) << "\"";
+                    utils::Padding(out << "\n", 2)
+                        << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(entries[j] + 0x8)) << "\"";
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
 
@@ -5587,15 +5369,13 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_MAPTABLE_LOADING_IMAGES)) {
         size_t readFile = 0;
 
-        struct MapTableLoadingImages
-        {
+        struct MapTableLoadingImages {
             XHash name;
             uint64_t imageCount;
             uintptr_t images; // GfxImage**
@@ -5619,14 +5399,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/map/loadingimages/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/map/loadingimages/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -5665,17 +5443,18 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < count; j++) {
-                    if (j) out << ",";
+                    if (j)
+                        out << ",";
 
                     auto* str = ReadTmpStr(proc, proc.ReadMemory<uint64_t>(entries[j]));
 
                     hashutils::Add(str);
-                    utils::Padding(out << "\n", 2) << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(entries[j] + 0x20)) << "\"";
+                    utils::Padding(out << "\n", 2)
+                        << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(entries[j] + 0x20)) << "\"";
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
 
@@ -5684,15 +5463,13 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
     if (ShouldHandle(ASSET_TYPE_MAPTABLE_PREVIEW_IMAGES)) {
         size_t readFile = 0;
 
-        struct MapTablePreviewImages
-        {
+        struct MapTablePreviewImages {
             XHash name;
             uint64_t imageCount;
             uintptr_t images; // GfxImage**
@@ -5716,14 +5493,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/map/previewimages/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/map/previewimages/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -5762,17 +5537,18 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 }
 
                 for (size_t j = 0; j < count; j++) {
-                    if (j) out << ",";
+                    if (j)
+                        out << ",";
 
                     auto* str = ReadTmpStr(proc, proc.ReadMemory<uint64_t>(entries[j]));
 
                     hashutils::Add(str);
-                    utils::Padding(out << "\n", 2) << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(entries[j] + 0x20)) << "\"";
+                    utils::Padding(out << "\n", 2)
+                        << "\"#" << hashutils::ExtractTmp("hash", proc.ReadMemory<uint64_t>(entries[j] + 0x20)) << "\"";
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
 
@@ -5781,7 +5557,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -5801,8 +5576,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint32_t unk44;
         };
 
-
-
         // 12D15670
         auto pool = std::make_unique<StreamKey[]>(entry.itemAllocCount);
 
@@ -5821,22 +5594,20 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/tables/streamkey/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/tables/streamkey/file_%llx.json", opt.m_output, p.name.name);
             }
 
-            //if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
-            //    std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
-            //    continue;
-            //}
+            // if (!p.gameTypes || !proc.ReadMemory<uint64_t>(p.gameTypes)) {
+            //     std::cerr << "error when reading buffer at " << p.gameTypes << "\n";
+            //     continue;
+            // }
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -5857,7 +5628,8 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             defout << "{\n";
             utils::Padding(defout, 1) << "\"name\": \"#" << hashutils::ExtractTmp("hash", p.name.name) << "\",\n";
-            utils::Padding(defout, 1) << "\"xanim\": \"#" << std::hex << hashutils::ExtractTmp("hash", p.xanim) << "\",\n";
+            utils::Padding(defout, 1) << "\"xanim\": \"#" << std::hex << hashutils::ExtractTmp("hash", p.xanim)
+                                      << "\",\n";
 
             utils::Padding(defout, 1) << "\"unk10\": \"" << std::hex << p.unk10 << "\",\n";
             utils::Padding(defout, 1) << "\"unk18\": \"" << std::hex << p.unk18 << "\",\n";
@@ -5872,7 +5644,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             defout.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -5886,8 +5657,7 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             GFXF_ARRAY = 0x200,
         };
-        struct GfxImage
-        {
+        struct GfxImage {
             uintptr_t unk0;
             uintptr_t unk8;
             uintptr_t unk10;
@@ -5919,9 +5689,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             uint32_t unk7c;
             uint64_t unk80;
         };
-
-
-
 
         // 12D15670
         auto pool = std::make_unique<GfxImage[]>(entry.itemAllocCount);
@@ -5957,34 +5724,19 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             if (p.imageFlags & (GfxImageFlags::GFXF_ARRAY | GfxImageFlags::GFXF_ARRAY)) {
                 type = "cubearray";
-            }
-            else if (p.imageFlags & GfxImageFlags::GFXF_ARRAY) {
+            } else if (p.imageFlags & GfxImageFlags::GFXF_ARRAY) {
                 type = "array";
-            }
-            else if (p.imageFlags & GfxImageFlags::GFXF_3D) {
+            } else if (p.imageFlags & GfxImageFlags::GFXF_3D) {
                 type = "3d";
-            }
-            else if (p.imageFlags & GfxImageFlags::GFXF_ARRAY) {
+            } else if (p.imageFlags & GfxImageFlags::GFXF_ARRAY) {
                 type = "2darray";
-            }
-            else {
+            } else {
                 type = "2d";
             }
 
             out << "\n"
-                << std::dec
-                << hashutils::ExtractTmp("hash", p.name.name) << ","
-                << p.width << ","
-                << p.height << ","
-                << std::hex
-                << (int)p.imageFlags << ","
-                << (int)p.imageFormat << ","
-                << (int)p.alignment << ","
-                << type
-                ;
-
-
-
+                << std::dec << hashutils::ExtractTmp("hash", p.name.name) << "," << p.width << "," << p.height << ","
+                << std::hex << (int)p.imageFlags << "," << (int)p.imageFormat << "," << (int)p.alignment << "," << type;
         }
         out.close();
         std::cout << "Dump " << file << "\n";
@@ -6020,14 +5772,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/labelstore/list/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/labelstore/list/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -6066,15 +5816,15 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         LOG_ERROR("Can't read memory");
                         break;
                     }
-                    if (j) out << ",";
+                    if (j)
+                        out << ",";
                     out << "\n";
 
                     utils::Padding(out, 2) << "\"#" << hashutils::ExtractTmp("hash", store.name.name) << "\"";
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
             out << "}";
@@ -6082,7 +5832,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -6112,14 +5861,12 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             auto n = hashutils::ExtractPtr(p.name.name);
 
-
             std::cout << std::dec << i << ": ";
 
             if (n) {
                 std::cout << n;
                 sprintf_s(dumpbuff, "%s/labelstore/%s.json", opt.m_output, n);
-            }
-            else {
+            } else {
                 std::cout << "file_" << std::hex << p.name.name << std::dec;
                 sprintf_s(dumpbuff, "%s/labelstore/file_%llx.json", opt.m_output, p.name.name);
             }
@@ -6158,15 +5905,15 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         LOG_ERROR("Can't read memory");
                         break;
                     }
-                    if (j) out << ",";
+                    if (j)
+                        out << ",";
                     out << "\n";
 
                     utils::Padding(out, 2) << "\"#" << hashutils::ExtractTmp("hash", val.name) << "\"";
                 }
 
                 utils::Padding(out << "\n", 1) << "]\n";
-            }
-            else {
+            } else {
                 out << "]\n";
             }
             out << "}";
@@ -6174,7 +5921,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             out.close();
 
             std::cout << "\n";
-
         }
         std::cout << "Dump " << readFile << " new file(s)\n";
     }
@@ -6198,8 +5944,6 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
                 std::cout << "Element #" << std::dec << i << " -> " << dumpbuff << "\n";
 
-
-
                 std::filesystem::path file(dumpbuff);
                 std::filesystem::create_directories(file.parent_path(), ec);
 
@@ -6210,11 +5954,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     continue;
                 }
 
-                tool::pool::WriteHex(defout, entry.pool + entry.itemSize * i, &raw[0] + (entry.itemSize * i), entry.itemSize, proc);
+                tool::pool::WriteHex(defout, entry.pool + entry.itemSize * i, &raw[0] + (entry.itemSize * i),
+                                     entry.itemSize, proc);
 
                 defout.close();
             }
-
         }
     }
 
@@ -6229,10 +5973,9 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
         }
     }
 
-
-    //tool::pool::WriteHex(defout, 0, (byte*)&p, entry.itemSize, proc);
+    // tool::pool::WriteHex(defout, 0, (byte*)&p, entry.itemSize, proc);
     hashutils::WriteExtracted(opt.m_dump_hashmap);
-	return tool::OK;
+    return tool::OK;
 }
 
 int dumpbgcache(Process& proc, int argc, const char* argv[]) {
@@ -6262,20 +6005,17 @@ int dumpbgcache(Process& proc, int argc, const char* argv[]) {
 
     out << "id,name,xasset,count,registerfunc,unregisterFunc,hash,start,checksum";
 
-    for (size_t i = 0; i < (sizeof(info) / sizeof(info[0])); i++)
-    {
+    for (size_t i = 0; i < (sizeof(info) / sizeof(info[0])); i++) {
         auto& nfo = info[i];
         out << "\n" << std::dec << i << ",";
 
         if (nfo.name) {
             if (proc.ReadString(strBuff, nfo.name, sizeof(strBuff)) < 0) {
                 out << "<error>";
-            }
-            else {
+            } else {
                 out << strBuff;
             }
-        }
-        else {
+        } else {
             out << "<undef>";
         }
 
@@ -6284,23 +6024,19 @@ int dumpbgcache(Process& proc, int argc, const char* argv[]) {
         if (nfo.assetType >= 0 && nfo.assetType < pool::ASSET_TYPE_COUNT && entryinfo[nfo.assetType].name) {
             if (proc.ReadString(strBuff, entryinfo[nfo.assetType].name, sizeof(strBuff)) < 0) {
                 out << "<error>";
-            }
-            else {
+            } else {
                 out << strBuff;
             }
-        }
-        else {
+        } else {
             out << "<none>";
         }
-        
+
         out << "," << nfo.allocItems << ",";
 
         proc.WriteLocation(out, nfo.registerFunc) << ",";
         proc.WriteLocation(out, nfo.unregisterFunc) << ",";
 
-        out << hashutils::ExtractTmp("hash", nfo.hash) << "," << std::flush
-            << nfo.startIndex << ","
-            << nfo.checksum;
+        out << hashutils::ExtractTmp("hash", nfo.hash) << "," << std::flush << nfo.startIndex << "," << nfo.checksum;
     }
 
     out.close();
@@ -6350,7 +6086,6 @@ int dbgp(Process& proc, int argc, const char* argv[]) {
         return tool::BASIC_ERROR;
     }
 
-    
     std::filesystem::path out{ "bgpool/bo4" };
 
     std::filesystem::create_directories(out);
@@ -6362,7 +6097,6 @@ int dbgp(Process& proc, int argc, const char* argv[]) {
         std::cerr << "Can't open caches.csv file\n";
         return tool::BASIC_ERROR;
     }
-
 
     outInfo << "id,name,start,count";
 
@@ -6379,10 +6113,10 @@ int dbgp(Process& proc, int argc, const char* argv[]) {
 
         outInfo << "\n" << std::dec << i << "," << nameInfo << "," << info[i].startIndex << "," << info[i].allocItems;
 
-
         auto entries = std::make_unique<BGPoolEntry[]>(info[i].allocItems);
 
-        if (!proc.ReadMemory(&entries[0], pool + sizeof(entries[0]) * info[i].startIndex, sizeof(entries[0]) * info[i].allocItems)) {
+        if (!proc.ReadMemory(&entries[0], pool + sizeof(entries[0]) * info[i].startIndex,
+                             sizeof(entries[0]) * info[i].allocItems)) {
             std::cerr << "Can't read cache entries\n";
             break;
         }
@@ -6406,7 +6140,9 @@ int dbgp(Process& proc, int argc, const char* argv[]) {
             if (!entries[j].name) {
                 continue;
             }
-            entriesFile << "\n" << std::dec << j << "," << nameInfo << "," << hashutils::ExtractTmp("hash", entries[j].name) << "," << std::hex << entries[j].assetHeader;
+            entriesFile << "\n"
+                        << std::dec << j << "," << nameInfo << "," << hashutils::ExtractTmp("hash", entries[j].name)
+                        << "," << std::hex << entries[j].assetHeader;
             res++;
         }
 

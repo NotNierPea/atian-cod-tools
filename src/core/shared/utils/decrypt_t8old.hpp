@@ -1,5 +1,5 @@
 #pragma once
 
 namespace decrypt {
-	char* DecryptStringT8Old(char* str);
+    char* DecryptStringT8Old(char* str);
 }

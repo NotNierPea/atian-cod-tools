@@ -22,19 +22,19 @@
 #include <acts_api/gsc_decompiler.h>
 #include <acts_api_impl/api_impl.hpp>
 
-
 namespace tool::gsc {
     using namespace tool::gsc::opcode;
 
     bool GscDecompilerGlobalContext::WarningType(GscDecompilerGlobalContextWarn warn) {
         core::async::opt_lock_guard lg{ asyncMtx };
-        if ((warningOpt & warn)) return false;
+        if ((warningOpt & warn))
+            return false;
         warningOpt |= warn;
         return true;
     }
 
-
-    int DecompileGsc(byte* data, size_t size, std::filesystem::path fsPath, GscDecompilerGlobalContext& gdctx, byte* dbgData, size_t dbgSize) {
+    int DecompileGsc(byte* data, size_t size, std::filesystem::path fsPath, GscDecompilerGlobalContext& gdctx,
+                     byte* dbgData, size_t dbgSize) {
         std::string pathStr{ fsPath.string() };
         const char* path{ pathStr.data() };
         actslib::profiler::Profiler profiler{ "f" };
@@ -80,8 +80,7 @@ namespace tool::gsc {
                         det.replaceNamespace = detour->replaceNamespace;
                         det.replaceScript = *reinterpret_cast<uint64_t*>(&detour->replaceScriptTop);
                     }
-                }
-                break;
+                } break;
                 default:
                     LOG_ERROR("Bad GSIC field type: {}", fieldType);
                     gsicError = true;
@@ -119,8 +118,7 @@ namespace tool::gsc {
                 LOG_ERROR("Can't find gscbin vm 0x{:x}", (uint64_t)ctx.opt.m_vm);
                 return tool::BASIC_ERROR;
             }
-        }
-        else {
+        } else {
             if (size < 8) {
                 LOG_ERROR("GSC file too small, no magic");
                 return tool::BASIC_ERROR;
@@ -164,16 +162,15 @@ namespace tool::gsc {
 
         std::ofstream asmoutFileOut{};
         if (opt.WriteAsmFunction) {
-			asmoutFile.callback = opt.WriteAsmFunction;
-			asmoutFile.callbackUd = opt.udWriteAsmFunction;
-        }
-        else {
+            asmoutFile.callback = opt.WriteAsmFunction;
+            asmoutFile.callbackUd = opt.udWriteAsmFunction;
+        } else {
             // use the output file as default callback
             asmoutFile.callback = [](const char* str, size_t len, void* ud) {
                 std::ofstream* file{ (std::ofstream*)ud };
                 file->write(str, len);
             };
-			asmoutFile.callbackUd = &asmoutFileOut;
+            asmoutFile.callbackUd = &asmoutFileOut;
         }
         std::ostream asmout{ &asmoutFile };
         std::ostream& nullstream{ utils::NullStream() };
@@ -181,7 +178,7 @@ namespace tool::gsc {
         ctx.lineBuf = &asmoutFile;
 
         if (ctx.opt.m_usePathOutput) {
-            std::filesystem::path file{ std::filesystem::path{opt.m_outputDir} / fsPath };
+            std::filesystem::path file{ std::filesystem::path{ opt.m_outputDir } / fsPath };
 
             file.replace_extension();
             bool loaded{};
@@ -198,8 +195,8 @@ namespace tool::gsc {
                             file = std::filesystem::path{ opt.m_outputDir } / opaque;
                             loaded = true;
                         }
+                    } catch (...) {
                     }
-                    catch (...) {}
                 }
             }
             if (!loaded) {
@@ -230,7 +227,8 @@ namespace tool::gsc {
             endianSwapped = true;
         }
 
-        if (ctx.m_vmInfo->HasFlag(VmFlags::VMF_NO_PLATFORM) && (!ctx.currentPlatform || ctx.currentPlatform == tool::gsc::opcode::PLATFORM_PC)) {
+        if (ctx.m_vmInfo->HasFlag(VmFlags::VMF_NO_PLATFORM) &&
+            (!ctx.currentPlatform || ctx.currentPlatform == tool::gsc::opcode::PLATFORM_PC)) {
             ctx.currentPlatform = scriptfile->ComputePlatform(ctx);
             if (!ctx.currentPlatform) {
                 LOG_INFO("This VM requires a platform which can't be computed");
@@ -244,13 +242,13 @@ namespace tool::gsc {
             return preloadRet > 0 ? 0 : preloadRet;
         }
 
-
         std::stringstream dbgHeader{};
 
         {
             // read possible addon data from file after the header (old gdb format / addon format)
             // we duplicate the buffer because the data are relative to the script base, not the gdb base
-            core::bytebuffer::ByteBuffer addonReader{ scriptfile->Ptr(), scriptfile->GetFileSize(), scriptfile->GetHeaderSize() };
+            core::bytebuffer::ByteBuffer addonReader{ scriptfile->Ptr(), scriptfile->GetFileSize(),
+                                                      scriptfile->GetHeaderSize() };
             if (addonReader.CanRead(8)) {
                 uint64_t magic{ *addonReader.Ptr<uint64_t>() };
 
@@ -258,8 +256,7 @@ namespace tool::gsc {
                 if (gdb) {
                     try {
                         gdb->DbgLoad(ctx, addonReader, dbgHeader);
-                    }
-                    catch (std::runtime_error& err) {
+                    } catch (std::runtime_error& err) {
                         LOG_WARNING("Can't parse gdb data {}", err.what());
                     }
                 }
@@ -281,12 +278,10 @@ namespace tool::gsc {
 
                     try {
                         dbgreader->DbgLoad(ctx, dbgReader, dbgHeader);
-                    }
-                    catch (std::runtime_error& err) {
+                    } catch (std::runtime_error& err) {
                         LOG_WARNING("Can't parse gdb data {}", err.what());
                     }
-                }
-                else {
+                } else {
                     LOG_WARNING("No debug handler for magic 0x{:x}", magic);
                 }
             }
@@ -304,7 +299,8 @@ namespace tool::gsc {
             uint64_t hashPath{ ctx.m_vmInfo->HashPath(extractedName) };
 
             if (hashPath != scriptfile->GetName() && gdctx.WarningType(GDGCW_BAD_HASH_PATH)) {
-                LOG_WARNING("Invalid hash algorithm for extracted name 0x{:x} != 0x{:x} for {}", scriptfile->GetName(), hashPath, extractedName);
+                LOG_WARNING("Invalid hash algorithm for extracted name 0x{:x} != 0x{:x} for {}", scriptfile->GetName(),
+                            hashPath, extractedName);
             }
         }
         bool isCsc{};
@@ -317,14 +313,13 @@ namespace tool::gsc {
                 if (sw.ends_with(".csc")) {
                     isCsc = true;
                     typeSure = true;
-                }
-                else if (sw.ends_with(".gsc")) {
+                } else if (sw.ends_with(".gsc")) {
                     isCsc = false;
                     typeSure = true;
-                }
-                else {
+                } else {
                     // the default script doesn't end with .gsc/.csc, it's fine
-                    // LOG_WARNING("Script's name doesn't end with .gsc or .csc extension, can't extrapolate type: {}", scriptNamePtr);
+                    // LOG_WARNING("Script's name doesn't end with .gsc or .csc extension, can't extrapolate type: {}",
+                    // scriptNamePtr);
                     goto ignoreCscGsc;
                 }
             }
@@ -342,27 +337,28 @@ namespace tool::gsc {
                             if (sw.ends_with(".csc")) {
                                 if (!isCsc && typeSure) {
                                     typeSure = false;
-                                    LOG_WARNING("Found csc and gsc includes in the same script, can't extrapolate type");
+                                    LOG_WARNING(
+                                        "Found csc and gsc includes in the same script, can't extrapolate type");
                                     break;
                                 }
                                 isCsc = true;
                                 typeSure = true;
-                            }
-                            else if (sw.ends_with(".gsc")) {
+                            } else if (sw.ends_with(".gsc")) {
                                 if (isCsc && typeSure) {
                                     typeSure = false;
-                                    LOG_WARNING("Found csc and gsc includes in the same script, can't extrapolate type");
+                                    LOG_WARNING(
+                                        "Found csc and gsc includes in the same script, can't extrapolate type");
                                     break;
                                 }
                                 isCsc = false;
                                 typeSure = true;
-                            }
-                            else {
+                            } else {
                                 typeSure = false;
-                                LOG_WARNING("Found an include without .gsc or .csc extension, can't extrapolate type: {}", incPtr);
+                                LOG_WARNING(
+                                    "Found an include without .gsc or .csc extension, can't extrapolate type: {}",
+                                    incPtr);
                                 break;
                             }
-
                         }
                     }
                 }
@@ -376,8 +372,7 @@ namespace tool::gsc {
             const char* outDir;
             if (opt.m_splitByVm) {
                 outDir = utils::va("%s/%s", opt.m_outputDir, tool::gsc::opcode::VMIdFancyName(ctx.m_vmInfo->vmMagic));
-            }
-            else {
+            } else {
                 outDir = opt.m_outputDir;
             }
 
@@ -388,12 +383,10 @@ namespace tool::gsc {
                     const char* fileExt{ typeSure && isCsc ? "csc" : "gsc" };
                     if (actscli::options().heavyHashes) {
                         sprintf_s(asmfnamebuff, "%s/%016llX.%s", outDir, hashname, fileExt);
-                    }
-                    else {
+                    } else {
                         sprintf_s(asmfnamebuff, "%s/hashed/script/script_%llx.%s", outDir, hashname, fileExt);
                     }
-                }
-                else {
+                } else {
                     sprintf_s(asmfnamebuff, "%s/%s", outDir, name);
 
                     char* extName{ utils::CloneString(name) };
@@ -416,8 +409,7 @@ namespace tool::gsc {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 const char* fileExt{ typeSure && isCsc ? "csc" : "gsc" };
                 std::filesystem::path fn = fsPath;
 
@@ -427,8 +419,7 @@ namespace tool::gsc {
                 LOG_WARNING("Can't find script name, using {}", name);
                 sprintf_s(asmfnamebuff, "%s/%s", outDir, name.data());
             }
-        }
-        else {
+        } else {
             sprintf_s(asmfnamebuff, "%sasm", path);
         }
         profiler.GetCurrent().name = asmfnamebuff;
@@ -444,16 +435,17 @@ namespace tool::gsc {
                 asmoutFileOut.open(file);
 
                 if (!asmoutFileOut) {
-                    LOG_ERROR("Can't open output file {} ({})", asmfnamebuff, hashutils::ExtractTmpScript(scriptfile->GetName()));
+                    LOG_ERROR("Can't open output file {} ({})", asmfnamebuff,
+                              hashutils::ExtractTmpScript(scriptfile->GetName()));
                     return tool::BASIC_ERROR;
                 }
                 if (!opt.m_noLogs) {
                     LOG_INFO("Decompiling into '{}'{}...", asmfnamebuff, (gsicInfo.isGsic ? " (GSIC)" : ""));
                 }
-            }
-            else {
+            } else {
                 if (!opt.m_noLogs) {
-                    LOG_INFO("Decompiling '{}'{}...", hashutils::ExtractTmpScript(scriptfile->GetName()), (gsicInfo.isGsic ? " (GSIC)" : ""));
+                    LOG_INFO("Decompiling '{}'{}...", hashutils::ExtractTmpScript(scriptfile->GetName()),
+                             (gsicInfo.isGsic ? " (GSIC)" : ""));
                 }
             }
         }
@@ -491,8 +483,7 @@ namespace tool::gsc {
             GscDecompilerGDBData*& gdb{ gdctx.gdbData[scriptfile->GetName()] };
             if (gdb) {
                 LOG_WARNING("GDB data defined twice for file {}", hashutils::ExtractTmpScript(scriptfile->GetName()));
-            }
-            else {
+            } else {
                 gdb = gdctx.alloc.New<GscDecompilerGDBData>();
                 ctx.gdbData = gdb;
                 gdb->gdb = ctx.m_vmInfo->gdbMagic;
@@ -504,8 +495,7 @@ namespace tool::gsc {
             asmout << "// ";
             if (!ctx.m_vmInfo->HasFlag(VmFlags::VMF_GSCBIN)) {
                 asmout << hashutils::ExtractTmpScript(scriptfile->GetName()) << "  (" << path << ")";
-            }
-            else {
+            } else {
                 asmout << path;
             }
             asmout << " (size: " << size << " Bytes / " << std::hex << "0x" << size;
@@ -535,21 +525,19 @@ namespace tool::gsc {
                         asmout << "::";
                     }
 
-                    asmout
-                        << hashutils::ExtractTmp("function", detour.replaceFunction) << std::flush
-                        << " offset: 0x" << std::hex << detour.fixupOffset << ", size: 0x" << detour.fixupSize << std::endl;
+                    asmout << hashutils::ExtractTmp("function", detour.replaceFunction) << std::flush << " offset: 0x"
+                           << std::hex << detour.fixupOffset << ", size: 0x" << detour.fixupSize << std::endl;
                 }
             }
-
 
             if (!ctx.m_vmInfo->HasFlag(VmFlags::VMF_NO_VERSION)) {
                 if (!ctx.m_vmInfo->HasFlag(VmFlags::VMF_NO_MAGIC)) {
                     asmout << "// magic .... 0x" << scriptfile->GetMagic();
-                }
-                else {
+                } else {
                     asmout << "//";
                 }
-                asmout << " vm: " << ctx.m_vmInfo->name << " (" << PlatformName(ctx.currentPlatform) << ")" << std::endl;
+                asmout << " vm: " << ctx.m_vmInfo->name << " (" << PlatformName(ctx.currentPlatform) << ")"
+                       << std::endl;
             }
 
             scriptfile->DumpHeader(asmout, opt);
@@ -559,16 +547,17 @@ namespace tool::gsc {
 
         // write the strings before the patch to avoid reading pre-decrypted strings
         if (opt.m_strings) {
-            if (scriptfile->GetDevStringsOffset() && !(opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NOERROR_STR))) {
+            if (scriptfile->GetDevStringsOffset() &&
+                !(opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NOERROR_STR))) {
                 T8GSCString* val = scriptfile->Ptr<T8GSCString>(scriptfile->GetDevStringsOffset());
                 for (size_t i = 0; i < scriptfile->GetDevStringsCount(); i++) {
 
                     const char* str = utils::va("<dev string:x%x>", val->string); // Ptr<char>(val->string); // no gdb
 
                     asmout << "Dev String: "
-                        << "addr:" << std::hex << val->string << ", "
-                        << "count:" << std::dec << (int)val->num_address << ", stype:"
-                        << (int)val->type << " -> \"" << str << "\"" << std::endl;
+                           << "addr:" << std::hex << val->string << ", "
+                           << "count:" << std::dec << (int)val->num_address << ", stype:" << (int)val->type << " -> \""
+                           << str << "\"" << std::endl;
                     asmout << "loc: ";
 
                     uint32_t* loc = reinterpret_cast<uint32_t*>(val + 1);
@@ -588,10 +577,13 @@ namespace tool::gsc {
 
                     const auto* str = reinterpret_cast<T8GSCString*>(str_location);
 
-                    asmout << std::hex << "String addr:" << str->string << ", count:" << std::dec << (int)str->num_address << ", type:" << (int)str->type << ", loc:0x" << std::hex << (str_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr())) << std::endl;
+                    asmout << std::hex << "String addr:" << str->string << ", count:" << std::dec
+                           << (int)str->num_address << ", type:" << (int)str->type << ", loc:0x" << std::hex
+                           << (str_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr())) << std::endl;
 
                     if (str->string >= scriptfile->GetFileSize()) {
-                        asmout << "bad string location : 0x" << std::hex << str->string << "/0x" << scriptfile->GetFileSize() << std::endl;
+                        asmout << "bad string location : 0x" << std::hex << str->string << "/0x"
+                               << scriptfile->GetFileSize() << std::endl;
                         break;
                     }
 
@@ -601,15 +593,15 @@ namespace tool::gsc {
                     byte type{ (byte)(*reinterpret_cast<byte*>(encryptedString)) };
 
                     if (str->string + len > scriptfile->GetFileSize()) {
-                        asmout << "bad string location + len : 0x" << std::hex << str->string << "/0x" << scriptfile->GetFileSize() << std::endl;
+                        asmout << "bad string location + len : 0x" << std::hex << str->string << "/0x"
+                               << scriptfile->GetFileSize() << std::endl;
                         break;
                     }
 
                     asmout << "encryption: ";
                     if ((type & 0xC0) != 0x80) {
                         asmout << "(none)";
-                    }
-                    else {
+                    } else {
                         asmout << "0x" << std::hex << (int)type;
                     }
                     asmout << " elen: " << std::dec << len << " -> " << std::flush;
@@ -635,12 +627,12 @@ namespace tool::gsc {
                             if (delta && delta < 5) {
                                 asmout << ",data=";
                                 for (size_t i = 0; i < delta; i++) {
-                                    if (i) asmout << ",";
+                                    if (i)
+                                        asmout << ",";
                                     asmout << "0x" << std::hex << (int)reinterpret_cast<byte*>(encryptedString)[i];
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             asmout << ",delta:-0x" << (encryptedString - cstr);
                         }
                     }
@@ -686,8 +678,7 @@ namespace tool::gsc {
                             if (hash) {
                                 hashutils::AddPrecomputed(hash, str, true);
                             }
-                        }
-                        catch (std::exception&) {
+                        } catch (std::exception&) {
                             // ignore
                         }
                     }
@@ -707,10 +698,11 @@ namespace tool::gsc {
 
                 for (size_t i = 0; i < scriptfile->GetIncludesCount(); i++) {
                     if (includes[i] >= scriptfile->GetFileSize()) {
-                        LOG_ERROR("Invalid include string offset 0x{:x} > 0x{:x}", includes[i], scriptfile->GetFileSize());
+                        LOG_ERROR("Invalid include string offset 0x{:x} > 0x{:x}", includes[i],
+                                  scriptfile->GetFileSize());
                         return tool::BASIC_ERROR;
                     }
-                    //asmout << "#using " << scriptfile->Ptr<char>(includes[i]) << ";" << std::endl;
+                    // asmout << "#using " << scriptfile->Ptr<char>(includes[i]) << ";" << std::endl;
                     const char* usingName{ scriptfile->Ptr<char>(includes[i]) };
                     usingsList.emplace_back(usingName);
 
@@ -726,8 +718,7 @@ namespace tool::gsc {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 uint64_t* includes = scriptfile->Ptr<uint64_t>(includeOffset);
                 if (includeOffset + scriptfile->GetIncludesCount() * sizeof(uint64_t) > scriptfile->GetFileSize()) {
                     LOG_ERROR("Invalid include offset 0x{:x} > 0x{:x}", includeOffset, scriptfile->GetFileSize());
@@ -761,7 +752,7 @@ namespace tool::gsc {
                     }
 
                     usingsList.emplace_back(usingName);
-                    //asmout << "#using " << usingName << ";" << std::endl;
+                    // asmout << "#using " << usingName << ";" << std::endl;
 
                     if (opt.m_debugHashes) {
                         const char* incExt{ hashutils::ExtractPtr(includes[i]) };
@@ -769,7 +760,8 @@ namespace tool::gsc {
                             uint64_t hashPath{ ctx.m_vmInfo->HashPath(incExt) };
 
                             if (hashPath != includes[i] && gdctx.WarningType(GDGCW_BAD_HASH_PATH_INCLUDE)) {
-                                LOG_WARNING("Invalid hash algorithm for extracted include 0x{:x} != 0x{:x} for {}", includes[i], hashPath, incExt);
+                                LOG_WARNING("Invalid hash algorithm for extracted include 0x{:x} != 0x{:x} for {}",
+                                            includes[i], hashPath, incExt);
                             }
                         }
                     }
@@ -787,8 +779,7 @@ namespace tool::gsc {
             asmout << std::endl;
         }
 
-        asmout
-            << std::flush;
+        asmout << std::flush;
 
         scriptfile->DumpExperimental(asmout, opt, ctx);
 
@@ -800,8 +791,7 @@ namespace tool::gsc {
                 asmout << "token 0x" << std::hex << i << " loc:0x" << data.loc << " | ";
                 if (data.isString) {
                     asmout << "(str) " << data.val.str;
-                }
-                else {
+                } else {
                     asmout << "(id) " << tool::gsc::iw::GetOpaqueStringForVm(ctx.m_vmInfo->vmMagic, data.val.id);
                 }
                 asmout << std::endl;
@@ -814,7 +804,8 @@ namespace tool::gsc {
 
             for (size_t i = 0; i < scriptfile->GetGVarsCount(); i++) {
                 const auto* globalvar = reinterpret_cast<T8GSCGlobalVar*>(gvars_location);
-                asmout << std::hex << "Global var " << hashutils::ExtractTmp("var", globalvar->name) << " " << globalvar->num_address << std::endl;
+                asmout << std::hex << "Global var " << hashutils::ExtractTmp("var", globalvar->name) << " "
+                       << globalvar->num_address << std::endl;
 
                 asmout << "location(s): ";
 
@@ -843,7 +834,8 @@ namespace tool::gsc {
                 uint16_t numAddress;
 
                 if (ctx.m_vmInfo->HasFlag(VmFlags::VMF_IW_LIKE)) {
-                    if (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr<>()) + sizeof(IW23GSCImport) > scriptfile->GetFileSize()) {
+                    if (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr<>()) + sizeof(IW23GSCImport) >
+                        scriptfile->GetFileSize()) {
                         LOG_ERROR("Invalid import {} location", i);
                         return tool::BASIC_ERROR;
                     }
@@ -854,9 +846,9 @@ namespace tool::gsc {
                     numAddress = imp->num_address;
                     param_count = imp->param_count;
                     impSize = sizeof(*imp);
-                }
-                else {
-                    if (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr<>()) + sizeof(T8GSCImport) > scriptfile->GetFileSize()) {
+                } else {
+                    if (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr<>()) + sizeof(T8GSCImport) >
+                        scriptfile->GetFileSize()) {
                         LOG_ERROR("Invalid import {} location", i);
                         return tool::BASIC_ERROR;
                     }
@@ -868,7 +860,9 @@ namespace tool::gsc {
                     numAddress = imp->num_address;
                     impSize = sizeof(*imp);
                 }
-                if (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr<>()) + impSize + sizeof(uint32_t) * numAddress > scriptfile->GetFileSize()) {
+                if (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr<>()) + impSize +
+                        sizeof(uint32_t) * numAddress >
+                    scriptfile->GetFileSize()) {
                     LOG_ERROR("Invalid import {} num address {}", i, numAddress);
                     return tool::BASIC_ERROR;
                 }
@@ -878,19 +872,45 @@ namespace tool::gsc {
                 auto remapedFlags = scriptfile->RemapFlagsImport(flags);
 
                 switch (remapedFlags & T8GSCImportFlags::CALLTYPE_MASK) {
-                case FUNC_METHOD: asmout << "get "; break;
-                case FUNCTION: asmout << "function "; break;
-                case FUNCTION_THREAD: asmout << "function thread "; break;
-                case FUNCTION_CHILDTHREAD: asmout << "function childthread "; break;
-                case METHOD: asmout << "method "; break;
-                case METHOD_THREAD: asmout << "method thread "; break;
-                case METHOD_CHILDTHREAD: asmout << "method childthread "; break;
-                case ACTS_CALL_BUILTIN_FUNCTION: asmout << "builtin function "; break;
-                case ACTS_CALL_BUILTIN_METHOD: asmout << "builtin method "; break;
-                case ACTS_GET_BUILTIN_FUNCTION: asmout << "get builtin function "; break;
-                case ACTS_GET_BUILTIN_METHOD: asmout << "get builtin method "; break;
-                case ACTS_CALL_BUILTIN_FUNCTION_NO_PARAMS: asmout << "builtin function (np) "; break;
-                case ACTS_CALL_BUILTIN_METHOD_NO_PARAMS: asmout << "builtin method (np) "; break;
+                case FUNC_METHOD:
+                    asmout << "get ";
+                    break;
+                case FUNCTION:
+                    asmout << "function ";
+                    break;
+                case FUNCTION_THREAD:
+                    asmout << "function thread ";
+                    break;
+                case FUNCTION_CHILDTHREAD:
+                    asmout << "function childthread ";
+                    break;
+                case METHOD:
+                    asmout << "method ";
+                    break;
+                case METHOD_THREAD:
+                    asmout << "method thread ";
+                    break;
+                case METHOD_CHILDTHREAD:
+                    asmout << "method childthread ";
+                    break;
+                case ACTS_CALL_BUILTIN_FUNCTION:
+                    asmout << "builtin function ";
+                    break;
+                case ACTS_CALL_BUILTIN_METHOD:
+                    asmout << "builtin method ";
+                    break;
+                case ACTS_GET_BUILTIN_FUNCTION:
+                    asmout << "get builtin function ";
+                    break;
+                case ACTS_GET_BUILTIN_METHOD:
+                    asmout << "get builtin method ";
+                    break;
+                case ACTS_CALL_BUILTIN_FUNCTION_NO_PARAMS:
+                    asmout << "builtin function (np) ";
+                    break;
+                case ACTS_CALL_BUILTIN_METHOD_NO_PARAMS:
+                    asmout << "builtin method (np) ";
+                    break;
                 default:
                     asmout << "<errorflag:" << std::hex << (remapedFlags & 0xF) << "> ";
                     break;
@@ -914,12 +934,10 @@ namespace tool::gsc {
 
                 asmout << std::endl;
 
-                asmout << std::hex << "address: " << numAddress
-                    << ", params: " << std::dec << (int)param_count
-                    << ", iflags: 0x" << std::hex << (uint16_t)(flags)
-                    << ", iftype: 0x" << std::hex << (int)(flags & T8GSCImportFlags::CALLTYPE_MASK)
-                    << ", loc: 0x" << std::hex << (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr()))
-                    << std::endl;
+                asmout << std::hex << "address: " << numAddress << ", params: " << std::dec << (int)param_count
+                       << ", iflags: 0x" << std::hex << (uint16_t)(flags) << ", iftype: 0x" << std::hex
+                       << (int)(flags & T8GSCImportFlags::CALLTYPE_MASK) << ", loc: 0x" << std::hex
+                       << (import_location - reinterpret_cast<uintptr_t>(scriptfile->Ptr())) << std::endl;
 
                 asmout << "location(s): ";
 
@@ -942,7 +960,8 @@ namespace tool::gsc {
             if (ctx.m_vmInfo->HasFlag(VmFlags::VMF_ANIMTREE_T7)) {
                 // in t7 the anims are in a single struct
                 if (scriptfile->GetAnimTreeDoubleOffset()) {
-                    uintptr_t animt_location = reinterpret_cast<uintptr_t>(scriptfile->Ptr(scriptfile->GetAnimTreeDoubleOffset()));
+                    uintptr_t animt_location =
+                        reinterpret_cast<uintptr_t>(scriptfile->Ptr(scriptfile->GetAnimTreeDoubleOffset()));
                     size_t anims_count = (size_t)scriptfile->GetAnimTreeDoubleCount();
 
                     for (size_t i = 0; i < anims_count; i++) {
@@ -950,26 +969,27 @@ namespace tool::gsc {
 
                         if (animt->name >= scriptfile->GetFileSize()) {
                             asmout << std::hex << "invalid animtree name 0x" << animt->name << std::endl;
-                        }
-                        else {
+                        } else {
                             char* s = scriptfile->Ptr<char>(animt->name);
 
-                            asmout << std::hex << "animtree " << (s ? s : "<err>") << " : 0x" << ((byte*)animt - scriptfile->Ptr()) << std::endl;
+                            asmout << std::hex << "animtree " << (s ? s : "<err>") << " : 0x"
+                                   << ((byte*)animt - scriptfile->Ptr()) << std::endl;
 
                             const uint32_t* vars = reinterpret_cast<const uint32_t*>(&animt[1]);
-                            asmout << "tree address (" << std::dec << animt->num_tree_address << ", 0x" << std::hex << ((byte*)vars - scriptfile->Ptr()) << "):";
+                            asmout << "tree address (" << std::dec << animt->num_tree_address << ", 0x" << std::hex
+                                   << ((byte*)vars - scriptfile->Ptr()) << "):";
                             for (size_t j = 0; j < animt->num_tree_address; j++) {
                                 asmout << " " << ctx.GetFLocName(*(vars++));
                             }
                             asmout << std::endl;
                             const uint64_t* vars2 = reinterpret_cast<const uint64_t*>(vars);
-                            asmout << "node address (" << std::dec << animt->num_node_address << ", 0x" << std::hex << ((byte*)vars2 - scriptfile->Ptr()) << "):";
+                            asmout << "node address (" << std::dec << animt->num_node_address << ", 0x" << std::hex
+                                   << ((byte*)vars2 - scriptfile->Ptr()) << "):";
                             for (size_t j = 0; j < animt->num_node_address; j++) {
 
                                 if (vars2[0] >= scriptfile->GetFileSize()) {
                                     asmout << std::hex << "invalid animtree 2nd name 0x" << animt->name << std::endl;
-                                }
-                                else {
+                                } else {
                                     char* v = scriptfile->Ptr<char>(vars2[0]);
                                     // why u64?
                                     asmout << " " << ctx.GetFLocName((uint32_t)vars2[1]) << ":" << v;
@@ -980,16 +1000,17 @@ namespace tool::gsc {
                             asmout << std::endl;
                         }
 
-                        animt_location += sizeof(*animt) + sizeof(uint32_t) * (animt->num_tree_address + (size_t)animt->num_node_address * 4);
+                        animt_location += sizeof(*animt) + sizeof(uint32_t) * (animt->num_tree_address +
+                                                                               (size_t)animt->num_node_address * 4);
                     }
                     if (scriptfile->GetAnimTreeDoubleCount()) {
                         asmout << std::endl;
                     }
                 }
-            }
-            else {
+            } else {
                 if (scriptfile->GetAnimTreeSingleOffset()) {
-                    uintptr_t animt_location = reinterpret_cast<uintptr_t>(scriptfile->Ptr(scriptfile->GetAnimTreeSingleOffset()));
+                    uintptr_t animt_location =
+                        reinterpret_cast<uintptr_t>(scriptfile->Ptr(scriptfile->GetAnimTreeSingleOffset()));
                     size_t anims_count = (size_t)scriptfile->GetAnimTreeSingleCount();
 
                     for (size_t i = 0; i < anims_count; i++) {
@@ -997,8 +1018,7 @@ namespace tool::gsc {
 
                         if (animt->address >= scriptfile->GetFileSize()) {
                             asmout << std::hex << "invalid animtree name 0x" << animt->address << std::endl;
-                        }
-                        else {
+                        } else {
                             char* s = scriptfile->Ptr<char>(animt->address);
 
                             asmout << "#using_animtree(";
@@ -1038,7 +1058,8 @@ namespace tool::gsc {
             uint64_t currentNSP{};
             const char* currentAnimTree{};
 
-            if (scriptfile->GetExportsOffset() + scriptfile->GetExportsCount() * exp->SizeOf() > scriptfile->GetFileSize()) {
+            if (scriptfile->GetExportsOffset() + scriptfile->GetExportsCount() * exp->SizeOf() >
+                scriptfile->GetFileSize()) {
                 asmout << "// INVALID EXPORT TABLE: 0x" << std::hex << scriptfile->GetExportsOffset() << std::endl;
                 return -1;
             }
@@ -1054,10 +1075,11 @@ namespace tool::gsc {
                     currentNSP = exp->GetNamespace();
 
                     if (opt.m_dasm) {
-                        output << "#namespace " << hashutils::ExtractTmpPath("namespace", currentNSP) << ";" << std::endl << std::endl;
+                        output << "#namespace " << hashutils::ExtractTmpPath("namespace", currentNSP) << ";"
+                               << std::endl
+                               << std::endl;
                     }
-                }
-                else if (!currentNSP && !i) {
+                } else if (!currentNSP && !i) {
                     if (opt.m_dasm) {
                         output << std::endl;
                     }
@@ -1070,17 +1092,17 @@ namespace tool::gsc {
                     continue;
                 }
 
-                auto r = ctx.contextes.try_emplace(rname, scriptfile->Ptr(exp->GetAddress()), *scriptfile, ctx, opt, currentNSP, *exp, handle, ctx.m_vmInfo->vmMagic, ctx.currentPlatform);
+                auto r =
+                    ctx.contextes.try_emplace(rname, scriptfile->Ptr(exp->GetAddress()), *scriptfile, ctx, opt,
+                                              currentNSP, *exp, handle, ctx.m_vmInfo->vmMagic, ctx.currentPlatform);
 
                 if (!r.second) {
-                    asmout << "Duplicate node "
-                        << hashutils::ExtractTmpPath("namespace", exp->GetNamespace()) << std::flush << "::"
-                        << hashutils::ExtractTmp("function", exp->GetName()) << std::endl;
+                    asmout << "Duplicate node " << hashutils::ExtractTmpPath("namespace", exp->GetNamespace())
+                           << std::flush << "::" << hashutils::ExtractTmp("function", exp->GetName()) << std::endl;
                     continue;
                 }
 
                 auto& asmctx = r.first->second;
-
 
                 if (opt.m_debugHashes) {
                     uint64_t name{ exp->GetName() };
@@ -1089,7 +1111,8 @@ namespace tool::gsc {
                         uint64_t hashScr{ ctx.m_vmInfo->HashField(namePtr) };
 
                         if (hashScr != name && gdctx.WarningType(GDGCW_BAD_HASH_FIELD)) {
-                            LOG_WARNING("Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}", name, hashScr, namePtr);
+                            LOG_WARNING("Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}", name,
+                                        hashScr, namePtr);
                         }
                     }
                     uint64_t fileNameSpace{ exp->GetFileNamespace() };
@@ -1100,7 +1123,8 @@ namespace tool::gsc {
                             uint64_t hashFSScr{ ctx.m_vmInfo->HashFilePath(fnsPtr) };
 
                             if (hashFSScr != fileNameSpace && gdctx.WarningType(GDGCW_BAD_HASH_FILE)) {
-                                LOG_WARNING("Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}", fileNameSpace, hashFSScr, fnsPtr);
+                                LOG_WARNING("Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}",
+                                            fileNameSpace, hashFSScr, fnsPtr);
                             }
                         }
                     }
@@ -1110,16 +1134,14 @@ namespace tool::gsc {
 
                 if (asmctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                     output << std::endl;
-                }
-                else {
+                } else {
                     output << " ";
                 }
                 output << "gscasm {" << std::endl;
 
                 try {
                     tool::gsc::DumpAsm(*exp, output, *scriptfile, ctx, asmctx);
-                }
-                catch (std::runtime_error& err) {
+                } catch (std::runtime_error& err) {
                     output << "FAILURE, " << err.what() << std::endl;
                     asmctx.DisableDecompiler(err.what());
 
@@ -1132,7 +1154,6 @@ namespace tool::gsc {
                     }
                 }
 
-
                 output << "}" << std::endl;
 
                 if (asmctx.m_disableDecompiler) {
@@ -1142,13 +1163,16 @@ namespace tool::gsc {
                     }
 
                     if (opt.m_dasm) {
-                        output << "// Can't decompile export " << hashutils::ExtractTmpPath("namespace", exp->GetNamespace()) << "::" << hashutils::ExtractTmp("function", exp->GetName()) << " " << asmctx.m_disableDecompilerError << std::endl;
-                    }
-                    else if (!opt.m_dcomp) {
-                        LOG_WARNING("Can't decompile export {}::{}", hashutils::ExtractTmpPath("namespace", exp->GetNamespace()), hashutils::ExtractTmp("function", exp->GetName()));
+                        output << "// Can't decompile export "
+                               << hashutils::ExtractTmpPath("namespace", exp->GetNamespace())
+                               << "::" << hashutils::ExtractTmp("function", exp->GetName()) << " "
+                               << asmctx.m_disableDecompilerError << std::endl;
+                    } else if (!opt.m_dcomp) {
+                        LOG_WARNING("Can't decompile export {}::{}",
+                                    hashutils::ExtractTmpPath("namespace", exp->GetNamespace()),
+                                    hashutils::ExtractTmp("function", exp->GetName()));
                     }
                 }
-
 
                 if ((!opt.m_dasm || opt.m_dcomp || opt.m_func_header_post) && !asmctx.m_disableDecompiler) {
                     asmctx.ComputeDefaultParamValue();
@@ -1164,7 +1188,10 @@ namespace tool::gsc {
                             int ret{ DumpVTable(*exp, output, *scriptfile, ctx, asmctx, dctx) };
                             asmctx.m_vtable = ret != DVA_NOT;
                             if (ret == DVA_BAD) {
-                                output << "// Can't decompile vtable " << hashutils::ExtractTmpPath("namespace", exp->GetNamespace()) << "::" << hashutils::ExtractTmp("function", exp->GetName()) << " " << ret << std::endl;
+                                output << "// Can't decompile vtable "
+                                       << hashutils::ExtractTmpPath("namespace", exp->GetNamespace())
+                                       << "::" << hashutils::ExtractTmp("function", exp->GetName()) << " " << ret
+                                       << std::endl;
                             }
                         }
 
@@ -1173,13 +1200,14 @@ namespace tool::gsc {
                             if (!(asmctx.m_opt.m_stepskip & STEPSKIP_DEV)) {
                                 asmctx.ComputeDevBlocks();
 
-                                if (//(scriptfile->RemapFlagsExport(exp->GetFlags()) & T8GSCExportFlags::PRIVATE) != 0 &&
+                                if ( //(scriptfile->RemapFlagsExport(exp->GetFlags()) & T8GSCExportFlags::PRIVATE) != 0
+                                     //&&
                                     SizeNoEmptyNode(asmctx.m_funcBlock.m_statements) == 2) {
                                     auto* node = GetNoEmptyNode(asmctx.m_funcBlock.m_statements, 0);
                                     auto* ret = GetNoEmptyNode(asmctx.m_funcBlock.m_statements, 1);
-                                    if (ret->node && ret->node->m_type == TYPE_END
-                                        && node->node && node->node->m_type == TYPE_BLOCK
-                                        && static_cast<ASMContextNodeBlock*>(node->node)->m_blockType == BLOCK_DEV) {
+                                    if (ret->node && ret->node->m_type == TYPE_END && node->node &&
+                                        node->node->m_type == TYPE_BLOCK &&
+                                        static_cast<ASMContextNodeBlock*>(node->node)->m_blockType == BLOCK_DEV) {
                                         asmctx.m_devFuncCandidate = true;
                                     }
                                 }
@@ -1210,17 +1238,16 @@ namespace tool::gsc {
                                 asmctx.ComputeCustomCompilerPattern();
                             }
                             if (opt.m_dasm) {
-                                if (asmctx.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
+                                if (asmctx.m_opt.m_formatter->HasFlag(
+                                        tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                                     output << std::endl;
-                                }
-                                else {
+                                } else {
                                     output << " ";
                                 }
                                 asmctx.Dump(output, dctx);
                             }
                         }
-                    }
-                    else {
+                    } else {
                         output << ";" << std::endl;
                     }
                 }
@@ -1236,7 +1263,6 @@ namespace tool::gsc {
 
                 uint64_t constructorName{ ctx.m_vmInfo->HashField("__constructor") };
                 uint64_t destructorName{ ctx.m_vmInfo->HashField("__destructor") };
-
 
                 auto handleClsAnimTree = [&ctx](uint64_t name, uint64_t method, gscclass& cls) -> bool {
                     NameLocated lname{ name, method };
@@ -1265,14 +1291,18 @@ namespace tool::gsc {
                     }
 
                     return true;
-                    };
+                };
 
                 for (auto& [name, cls] : ctx.m_classes) {
-                    if (!handleClsAnimTree(name, constructorName, cls)) continue;
-                    if (!handleClsAnimTree(name, destructorName, cls)) continue;
+                    if (!handleClsAnimTree(name, constructorName, cls))
+                        continue;
+                    if (!handleClsAnimTree(name, destructorName, cls))
+                        continue;
                     for (const auto& method : cls.m_methods) {
-                        if (method == constructorName || method == destructorName) continue; // ignore const/destr
-                        if (!handleClsAnimTree(name, method, cls)) break;
+                        if (method == constructorName || method == destructorName)
+                            continue; // ignore const/destr
+                        if (!handleClsAnimTree(name, method, cls))
+                            break;
                     }
                 }
 
@@ -1280,7 +1310,9 @@ namespace tool::gsc {
                     if (cls.name_space != currentNSP) {
                         currentNSP = cls.name_space;
 
-                        asmout << "#namespace " << hashutils::ExtractTmpPath("namespace", currentNSP) << ";" << std::endl << std::endl;
+                        asmout << "#namespace " << hashutils::ExtractTmpPath("namespace", currentNSP) << ";"
+                               << std::endl
+                               << std::endl;
                     }
 
                     if (cls.animtree && (ctx.opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_ANIM_REAL))) {
@@ -1305,7 +1337,8 @@ namespace tool::gsc {
                     }
 
                     asmout << "// Namespace " << hashutils::ExtractTmpPath("namespace", cls.name_space) << std::endl;
-                    asmout << "// Method(s) " << std::dec << cls.m_methods.size() << " Total " << cls.m_vtable.size() << std::endl;
+                    asmout << "// Method(s) " << std::dec << cls.m_methods.size() << " Total " << cls.m_vtable.size()
+                           << std::endl;
                     asmout << "class " << hashutils::ExtractTmp("class", name) << std::flush;
 
                     if (cls.m_superClass.size()) {
@@ -1323,15 +1356,14 @@ namespace tool::gsc {
 
                     if (opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                         asmout << std::endl;
-                    }
-                    else {
+                    } else {
                         asmout << " ";
                     }
                     asmout << "{" << std::endl << std::endl;
 
-
-
-                    auto handleMethod = [&currentPadding, &opt, &asmout, &scriptfile, name, &ctx, &currentAnimTree](uint64_t method, const char* forceName, bool ignoreEmpty, bool specialMember) -> void {
+                    auto handleMethod = [&currentPadding, &opt, &asmout, &scriptfile, name, &ctx,
+                                         &currentAnimTree](uint64_t method, const char* forceName, bool ignoreEmpty,
+                                                           bool specialMember) -> void {
                         auto lname = NameLocated{ name, method };
 
                         auto masmctxit = ctx.contextes.find(lname);
@@ -1342,7 +1374,8 @@ namespace tool::gsc {
 
                         auto& e = masmctxit->second;
 
-                        if (specialMember) e.noFunctionPrefix = true;
+                        if (specialMember)
+                            e.noFunctionPrefix = true;
 
                         // set the export handle
                         e.m_exp.SetHandle(e.m_readerHandle);
@@ -1357,13 +1390,11 @@ namespace tool::gsc {
                         if (!ignoreEmpty || SizeNoEmptyNode(e.m_funcBlock.m_statements) > 1) {
                             // ignore empty exports (constructor/destructors)
 
-
                             DumpFunctionHeader(e.m_exp, asmout, *scriptfile, ctx, e, 1, forceName, &currentAnimTree);
                             DecompContext dctx{ 0, 0, e.m_opt, currentPadding + 1, floc, ctx.gdbData, ctx.lineBuf };
                             if (opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                                 dctx.WritePadding(asmout << std::endl);
-                            }
-                            else {
+                            } else {
                                 asmout << " ";
                             }
                             e.Dump(asmout, dctx);
@@ -1371,7 +1402,7 @@ namespace tool::gsc {
                         }
 
                         ctx.contextes.erase(masmctxit);
-                        };
+                    };
 
                     std::unordered_set<uint64_t> selfmembers{};
 
@@ -1449,11 +1480,9 @@ namespace tool::gsc {
                             }
 
                             funcRef = dynamic_cast<ASMContextNodeFuncRef*>(callFunc->m_operands[0]);
-                        }
-                        else if (node->m_type == TYPE_FUNC_REFNAME) {
+                        } else if (node->m_type == TYPE_FUNC_REFNAME) {
                             funcRef = dynamic_cast<ASMContextNodeFuncRef*>(node);
-                        }
-                        else {
+                        } else {
                             return;
                         }
 
@@ -1472,9 +1501,8 @@ namespace tool::gsc {
                         if (!sctx.devBlockDepth) {
                             f->second.m_devFuncCandidate = false; // called outside a dev block, can't be a canditate
                         }
-                        });
+                    });
                 }
-
 
                 for (size_t i = 0; i < scriptfile->GetExportsCount(); i++) {
                     void* handle = scriptfile->Ptr(scriptfile->GetExportsOffset()) + i * exp->SizeOf();
@@ -1496,20 +1524,19 @@ namespace tool::gsc {
                     if (exp->GetNamespace() != currentNSP) {
                         currentNSP = exp->GetNamespace();
 
-                        asmout << "#namespace " << hashutils::ExtractTmpPath("namespace", currentNSP) << ";" << std::endl << std::endl;
-                    }
-                    else if (!currentNSP && !i) {
+                        asmout << "#namespace " << hashutils::ExtractTmpPath("namespace", currentNSP) << ";"
+                               << std::endl
+                               << std::endl;
+                    } else if (!currentNSP && !i) {
                         asmout << std::endl;
                     }
-
-
 
                     if (asmctx.m_devFuncCandidate) {
                         auto* dvb = GetNoEmptyNode(asmctx.m_funcBlock.m_statements, 0);
 
                         if (dvb->node && dvb->node->m_type == TYPE_BLOCK) {
                             auto* dvbn = dynamic_cast<ASMContextNodeBlock*>(dvb->node);
-                            dvbn->m_disabled = true; // disable the dev block 
+                            dvbn->m_disabled = true; // disable the dev block
                         }
 
                         if (!inDevBlock) {
@@ -1528,37 +1555,41 @@ namespace tool::gsc {
 
                             ctx.gdctx.exportInfos[loc].devFunc = true;
                         }
-                    }
-                    else {
+                    } else {
                         if (inDevBlock) {
                             currentPadding--;
                             utils::Padding(asmout, currentPadding) << "#/" << std::endl << std::endl;
                             inDevBlock = false;
                         }
                     }
-                    DecompContext dctx{ 0, 0, asmctx.m_opt, currentPadding, exp->GetAddress(), ctx.gdbData, ctx.lineBuf };
+                    DecompContext dctx{
+                        0, 0, asmctx.m_opt, currentPadding, exp->GetAddress(), ctx.gdbData, ctx.lineBuf
+                    };
 
                     if (asmctx.m_disableDecompiler) {
-                        DumpFunctionHeader(*exp, asmout, *scriptfile, ctx, asmctx, currentPadding, nullptr, &currentAnimTree);
+                        DumpFunctionHeader(*exp, asmout, *scriptfile, ctx, asmctx, currentPadding, nullptr,
+                                           &currentAnimTree);
                         if (opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                             dctx.WritePadding(asmout << std::endl);
-                        }
-                        else {
+                        } else {
                             asmout << " ";
                         }
                         asmout << "{" << std::endl;
                         dctx.padding++;
-                        dctx.WritePadding(asmout) << "// Can't decompile export " << hashutils::ExtractTmpPath("namespace", exp->GetNamespace()) << "::" << hashutils::ExtractTmp("function", exp->GetName()) << " " << asmctx.m_disableDecompilerError << std::endl;
+                        dctx.WritePadding(asmout) << "// Can't decompile export "
+                                                  << hashutils::ExtractTmpPath("namespace", exp->GetNamespace())
+                                                  << "::" << hashutils::ExtractTmp("function", exp->GetName()) << " "
+                                                  << asmctx.m_disableDecompilerError << std::endl;
                         dctx.padding--;
                         asmout << "}" << std::endl << std::endl;
                         continue;
                     }
 
-                    DumpFunctionHeader(*exp, asmout, *scriptfile, ctx, asmctx, currentPadding, nullptr, &currentAnimTree);
+                    DumpFunctionHeader(*exp, asmout, *scriptfile, ctx, asmctx, currentPadding, nullptr,
+                                       &currentAnimTree);
                     if (opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                         dctx.WritePadding(asmout << std::endl);
-                    }
-                    else {
+                    } else {
                         asmout << " ";
                     }
                     asmctx.Dump(asmout, dctx);
@@ -1575,7 +1606,8 @@ namespace tool::gsc {
             }
         }
 
-        if (opt.m_generateGdbData && (opt.m_generateGdbBaseData || (ctx.m_unkstrings.size() || ctx.m_devblocks.size() || ctx.m_lazyLinks.size()))) {
+        if (opt.m_generateGdbData && (opt.m_generateGdbBaseData ||
+                                      (ctx.m_unkstrings.size() || ctx.m_devblocks.size() || ctx.m_lazyLinks.size()))) {
 
             char asmfnamebuffgdb[1000];
             if (opt.m_dbgOutputDir) {
@@ -1583,9 +1615,9 @@ namespace tool::gsc {
 
                 const char* outDir;
                 if (opt.m_splitByVm) {
-                    outDir = utils::va("%s/%s", opt.m_dbgOutputDir, tool::gsc::opcode::VMIdFancyName(ctx.m_vmInfo->vmMagic));
-                }
-                else {
+                    outDir =
+                        utils::va("%s/%s", opt.m_dbgOutputDir, tool::gsc::opcode::VMIdFancyName(ctx.m_vmInfo->vmMagic));
+                } else {
                     outDir = opt.m_dbgOutputDir;
                 }
 
@@ -1593,16 +1625,14 @@ namespace tool::gsc {
                     const char* fileExt{ typeSure && isCsc ? "csc" : "gsc" };
                     if (actscli::options().heavyHashes) {
                         sprintf_s(asmfnamebuffgdb, "%s/%016llX.%s", outDir, scriptfile->GetName(), fileExt);
+                    } else {
+                        sprintf_s(asmfnamebuffgdb, "%s/hashed/script/script_%llx.%s", outDir, scriptfile->GetName(),
+                                  fileExt);
                     }
-                    else {
-                        sprintf_s(asmfnamebuffgdb, "%s/hashed/script/script_%llx.%s", outDir, scriptfile->GetName(), fileExt);
-                    }
-                }
-                else {
+                } else {
                     sprintf_s(asmfnamebuffgdb, "%s/%s", outDir, name);
                 }
-            }
-            else {
+            } else {
                 sprintf_s(asmfnamebuffgdb, "%sasm", path);
             }
 
@@ -1630,19 +1660,15 @@ namespace tool::gsc {
                 gdbpos << "# file " << asmfnamebuff << std::endl;
             }
 
-            gdbpos
-                << "NAME " << hashutils::ExtractTmpScript(scriptfile->GetName()) << std::endl
-                << "VERSION 0" << std::endl
-                << "CHECKSUM 0x" << std::hex << scriptfile->GetChecksum() << std::endl
-                ;
+            gdbpos << "NAME " << hashutils::ExtractTmpScript(scriptfile->GetName()) << std::endl
+                   << "VERSION 0" << std::endl
+                   << "CHECKSUM 0x" << std::hex << scriptfile->GetChecksum() << std::endl;
 
             // strings
             if (ctx.m_unkstrings.size()) {
-                gdbpos
-                    << "######################################################" << std::endl
-                    << "####################  DEV STRINGS  ###################" << std::endl
-                    << "######################################################" << std::endl
-                    ;
+                gdbpos << "######################################################" << std::endl
+                       << "####################  DEV STRINGS  ###################" << std::endl
+                       << "######################################################" << std::endl;
                 for (auto& [val, flocs] : ctx.m_unkstrings) {
                     gdbpos << "#";
 
@@ -1650,14 +1676,9 @@ namespace tool::gsc {
                         gdbpos << " " << ctx.GetFLocName(floc);
                     }
 
-                    gdbpos
-                        << std::endl
-                        << "STRING \"";
+                    gdbpos << std::endl << "STRING \"";
 
-                    utils::PrintFormattedString(gdbpos, val.c_str())
-                        << "\""
-                        << std::hex
-                        ;
+                    utils::PrintFormattedString(gdbpos, val.c_str()) << "\"" << std::hex;
 
                     for (const uint32_t floc : flocs) {
                         gdbpos << " 0x" << floc;
@@ -1666,23 +1687,18 @@ namespace tool::gsc {
                 }
             }
             if (ctx.m_devblocks.size()) {
-                gdbpos
-                    << "######################################################" << std::endl
-                    << "####################  DEV BLOCKS  ####################" << std::endl
-                    << "######################################################" << std::endl
-                    ;
+                gdbpos << "######################################################" << std::endl
+                       << "####################  DEV BLOCKS  ####################" << std::endl
+                       << "######################################################" << std::endl;
                 for (auto& floc : ctx.m_devblocks) {
-                    gdbpos
-                        << "# " << ctx.GetFLocName(floc) << std::endl
-                        << "DEVBLOCK 0x" << std::hex << floc << std::endl;
+                    gdbpos << "# " << ctx.GetFLocName(floc) << std::endl
+                           << "DEVBLOCK 0x" << std::hex << floc << std::endl;
                 }
             }
             if (ctx.m_lazyLinks.size()) {
-                gdbpos
-                    << "######################################################" << std::endl
-                    << "####################  LAZY LINKS  ####################" << std::endl
-                    << "######################################################" << std::endl
-                    ;
+                gdbpos << "######################################################" << std::endl
+                       << "####################  LAZY LINKS  ####################" << std::endl
+                       << "######################################################" << std::endl;
                 for (auto& [val, flocs] : ctx.m_lazyLinks) {
                     gdbpos << "#";
 
@@ -1690,14 +1706,16 @@ namespace tool::gsc {
                         gdbpos << " " << ctx.GetFLocName(floc);
                     }
 
-                    gdbpos
-                        << std::endl
-                        << "LAZYLINK"
-                        " \"" << hashutils::ExtractTmp("namespace", val.name_space) << "\""
-                        " \"" << hashutils::ExtractTmp("script", val.script) << "\""
-                        " \"" << hashutils::ExtractTmp("function", val.name) << "\""
-                        << std::hex
-                        ;
+                    gdbpos << std::endl
+                           << "LAZYLINK"
+                              " \""
+                           << hashutils::ExtractTmp("namespace", val.name_space)
+                           << "\""
+                              " \""
+                           << hashutils::ExtractTmp("script", val.script)
+                           << "\""
+                              " \""
+                           << hashutils::ExtractTmp("function", val.name) << "\"" << std::hex;
 
                     for (const uint32_t floc : flocs) {
                         gdbpos << " 0x" << floc;
@@ -1705,7 +1723,6 @@ namespace tool::gsc {
                     gdbpos << std::endl;
                 }
             }
-
 
             gdbpos.close();
         }
@@ -1717,10 +1734,9 @@ namespace tool::gsc {
                 for (auto& [n, c] : ctx.m_classes) {
                     auto& t = gdctx.vtables[scriptfile->GetName()][n];
                     for (auto& meth : c.m_vtableMethods) {
-                        t.insert(NameLocated{ meth.name_space , meth.name });
+                        t.insert(NameLocated{ meth.name_space, meth.name });
                     }
                 }
-
             }
             gdctx.decompiledFiles++;
             if (exportErrors) {
@@ -1730,8 +1746,6 @@ namespace tool::gsc {
 
         return 0;
     }
-
-
 
     GscInfoOption::GscInfoOption() {
         // set default formatter
@@ -1745,83 +1759,57 @@ namespace tool::gsc {
 
             if (!strcmp("-?", arg) || !_strcmpi("--help", arg) || !strcmp("-h", arg)) {
                 m_help = true;
-            }
-            else if (!strcmp("-g", arg) || !_strcmpi("--gsc", arg)) {
+            } else if (!strcmp("-g", arg) || !_strcmpi("--gsc", arg)) {
                 m_dcomp = true;
-            }
-            else if (!strcmp("-a", arg) || !_strcmpi("--asm", arg)) {
+            } else if (!strcmp("-a", arg) || !_strcmpi("--asm", arg)) {
                 m_dasm = true;
-            }
-            else if (!strcmp("-H", arg) || !_strcmpi("--header", arg)) {
+            } else if (!strcmp("-H", arg) || !_strcmpi("--header", arg)) {
                 m_header = true;
-            }
-            else if (!strcmp("-I", arg) || !_strcmpi("--imports", arg)) {
+            } else if (!strcmp("-I", arg) || !_strcmpi("--imports", arg)) {
                 m_imports = true;
-            }
-            else if (!strcmp("-S", arg) || !_strcmpi("--strings", arg)) {
+            } else if (!strcmp("-S", arg) || !_strcmpi("--strings", arg)) {
                 m_strings = true;
-            }
-            else if (!strcmp("-G", arg) || !_strcmpi("--gvars", arg)) {
+            } else if (!strcmp("-G", arg) || !_strcmpi("--gvars", arg)) {
                 m_gvars = true;
-            }
-            else if (!strcmp("-U", arg) || !_strcmpi("--noincludes", arg)) {
+            } else if (!strcmp("-U", arg) || !_strcmpi("--noincludes", arg)) {
                 m_includes = false;
-            }
-            else if (!strcmp("-X", arg) || !_strcmpi("--exptests", arg)) {
+            } else if (!strcmp("-X", arg) || !_strcmpi("--exptests", arg)) {
                 m_exptests = true;
-            }
-            else if (!_strcmpi("--nofunc", arg)) {
+            } else if (!_strcmpi("--nofunc", arg)) {
                 m_func = false;
-            }
-            else if (!_strcmpi("--tokens", arg)) {
+            } else if (!_strcmpi("--tokens", arg)) {
                 m_tokens = true;
-            }
-            else if (!strcmp("-F", arg) || !_strcmpi("--nofuncheader", arg)) {
+            } else if (!strcmp("-F", arg) || !_strcmpi("--nofuncheader", arg)) {
                 m_func_header = false;
-            }
-            else if (!strcmp("-p", arg) || !_strcmpi("--postfunchead", arg)) {
+            } else if (!strcmp("-p", arg) || !_strcmpi("--postfunchead", arg)) {
                 m_func_header_post = true;
-            }
-            else if (!strcmp("-l", arg) || !_strcmpi("--rloc", arg)) {
+            } else if (!strcmp("-l", arg) || !_strcmpi("--rloc", arg)) {
                 m_func_rloc = true;
-            }
-            else if (!strcmp("-L", arg) || !_strcmpi("--floc", arg)) {
+            } else if (!strcmp("-L", arg) || !_strcmpi("--floc", arg)) {
                 m_func_floc = true;
-            }
-            else if (!strcmp("-P", arg) || !_strcmpi("--nopatch", arg)) {
+            } else if (!strcmp("-P", arg) || !_strcmpi("--nopatch", arg)) {
                 m_patch = false;
-            }
-            else if (!strcmp("-V", arg) || !_strcmpi("--vars", arg)) {
+            } else if (!strcmp("-V", arg) || !_strcmpi("--vars", arg)) {
                 m_show_func_vars = true;
-            }
-            else if (!strcmp("-d", arg) || !_strcmpi("--gdb", arg)) {
+            } else if (!strcmp("-d", arg) || !_strcmpi("--gdb", arg)) {
                 m_generateGdbData = true;
-            }
-            else if (!_strcmpi("--gdb-small", arg)) {
+            } else if (!_strcmpi("--gdb-small", arg)) {
                 m_generateGdbBaseData = false;
-            }
-            else if (!_strcmpi("--path-output", arg)) {
+            } else if (!_strcmpi("--path-output", arg)) {
                 m_usePathOutput = true;
-            }
-            else if (!_strcmpi("--no-usings-sort", arg)) {
+            } else if (!_strcmpi("--no-usings-sort", arg)) {
                 m_noUsingsSort = true;
-            }
-            else if (!_strcmpi("--no-str-decrypt", arg)) {
+            } else if (!_strcmpi("--no-str-decrypt", arg)) {
                 m_noStrDecrypt = true;
-            }
-            else if (!_strcmpi("--lc", arg)) {
+            } else if (!_strcmpi("--lc", arg)) {
                 m_lineCount = true;
-            }
-            else if (!strcmp("-s", arg) || !_strcmpi("--skip-data", arg)) {
+            } else if (!strcmp("-s", arg) || !_strcmpi("--skip-data", arg)) {
                 m_dumpSkipData = true;
-            }
-            else if (!_strcmpi("--ignore-dbg-plt", arg)) {
+            } else if (!_strcmpi("--ignore-dbg-plt", arg)) {
                 m_ignoreDebugPlatform = true;
-            }
-            else if (!_strcmpi("--data-dump", arg)) {
+            } else if (!_strcmpi("--data-dump", arg)) {
                 m_dataDump = true;
-            }
-            else if (!strcmp("-A", arg) || !_strcmpi("--sync", arg)) {
+            } else if (!strcmp("-A", arg) || !_strcmpi("--sync", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
@@ -1829,35 +1817,27 @@ namespace tool::gsc {
                 const char* mode{ args[++i] };
                 if (!_strcmpi("sync", mode)) {
                     m_sync = true;
-                }
-                else if (!_strcmpi("async", mode)) {
+                } else if (!_strcmpi("async", mode)) {
                     m_sync = false;
-                }
-                else {
+                } else {
                     LOG_ERROR("Bad value for param: {}!", arg);
                     return false;
                 }
-            }
-            else if (!_strcmpi("--vm-split", arg)) {
+            } else if (!_strcmpi("--vm-split", arg)) {
                 m_splitByVm = true;
-            }
-            else if (!_strcmpi("--test-header", arg)) {
+            } else if (!_strcmpi("--test-header", arg)) {
                 m_test_header = true;
-            }
-            else if (!_strcmpi("--vtable", arg)) {
+            } else if (!_strcmpi("--vtable", arg)) {
                 m_vtable = true;
-            }
-            else if (!_strcmpi("--debug-hashes", arg)) {
+            } else if (!_strcmpi("--debug-hashes", arg)) {
                 m_debugHashes = true;
-            }
-            else if (!_strcmpi("--vtable-dump", arg)) {
+            } else if (!_strcmpi("--vtable-dump", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 vtable_dump = args[++i];
-            }
-            else if (!strcmp("-t", arg) || !_strcmpi("--type", arg)) {
+            } else if (!strcmp("-t", arg) || !_strcmpi("--type", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
@@ -1868,8 +1848,7 @@ namespace tool::gsc {
                     LOG_ERROR("Unknown platform: {}!", args[i]);
                     return false;
                 }
-            }
-            else if (!strcmp("-f", arg) || !_strcmpi("--format", arg)) {
+            } else if (!strcmp("-f", arg) || !_strcmpi("--format", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
@@ -1882,8 +1861,7 @@ namespace tool::gsc {
                 }
 
                 m_formatter = fmt;
-            }
-            else if (!strcmp("-v", arg) || !_strcmpi("--vm", arg)) {
+            } else if (!strcmp("-v", arg) || !_strcmpi("--vm", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
@@ -1894,38 +1872,27 @@ namespace tool::gsc {
                     LOG_ERROR("Unknown vm: {}!", args[i]);
                     return false;
                 }
-            }
-            else if (!_strcmpi("--internalblocks", arg)) {
+            } else if (!_strcmpi("--internalblocks", arg)) {
                 m_show_internal_blocks = true;
-            }
-            else if (!_strcmpi("--internalnames", arg)) {
+            } else if (!_strcmpi("--internalnames", arg)) {
                 m_use_internal_names = true;
-            }
-            else if (!_strcmpi("--jumpdelta", arg)) {
+            } else if (!_strcmpi("--jumpdelta", arg)) {
                 m_show_jump_delta = true;
-            }
-            else if (!_strcmpi("--prestruct", arg)) {
+            } else if (!_strcmpi("--prestruct", arg)) {
                 m_show_pre_dump = true;
-            }
-            else if (!_strcmpi("--markjump", arg)) {
+            } else if (!_strcmpi("--markjump", arg)) {
                 m_mark_jump_type = true;
-            }
-            else if (!_strcmpi("--refcount", arg)) {
+            } else if (!_strcmpi("--refcount", arg)) {
                 m_show_ref_count = true;
-            }
-            else if (!_strcmpi("--hideop", arg)) {
+            } else if (!_strcmpi("--hideop", arg)) {
                 m_show_opcode_values = false;
-            }
-            else if (!_strcmpi("--rawhash", arg)) {
+            } else if (!_strcmpi("--rawhash", arg)) {
                 m_rawhash = true;
-            }
-            else if (!_strcmpi("--no-path", arg)) {
+            } else if (!_strcmpi("--no-path", arg)) {
                 m_noPath = true;
-            }
-            else if (!_strcmpi("--displaystack", arg)) {
+            } else if (!_strcmpi("--displaystack", arg)) {
                 m_display_stack = true;
-            }
-            else if (!strcmp("-i", arg) || !_strcmpi("--ignore", arg)) {
+            } else if (!strcmp("-i", arg) || !_strcmpi("--ignore", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
@@ -1977,66 +1944,57 @@ namespace tool::gsc {
                         return false;
                     }
                 }
-            }
-            else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
+            } else if (!strcmp("-o", arg) || !_strcmpi("--output", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_outputDir = args[++i];
-            }
-            else if (!strcmp("-O", arg) || !_strcmpi("--output-dbg", arg)) {
+            } else if (!strcmp("-O", arg) || !_strcmpi("--output-dbg", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_dbgOutputDir = args[++i];
-            }
-            else if (!_strcmpi("--input-dbg", arg)) {
+            } else if (!_strcmpi("--input-dbg", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_dbgInputDir = args[++i];
-            }
-            else if (!_strcmpi("--gdb-dump", arg)) {
+            } else if (!_strcmpi("--gdb-dump", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_gdbZipOutputFile = args[++i];
-            }
-            else if (!strcmp("-m", arg) || !_strcmpi("--hashmap", arg)) {
+            } else if (!strcmp("-m", arg) || !_strcmpi("--hashmap", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_dump_hashmap = args[++i];
-            }
-            else if (!_strcmpi("--dumpstrings", arg)) {
+            } else if (!_strcmpi("--dumpstrings", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_dump_strings = args[++i];
-            }
-            else if (!strcmp("-C", arg) || !_strcmpi("--copyright", arg)) {
+            } else if (!strcmp("-C", arg) || !_strcmpi("--copyright", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param: {}!", arg);
                     return false;
                 }
                 m_copyright = args[++i];
-            }
-            else if (*arg == '-') {
+            } else if (*arg == '-') {
                 LOG_ERROR("Unknown option: {}!", arg);
                 return false;
-            }
-            else {
+            } else {
                 m_inputFiles.push_back(arg);
             }
         }
         if (!m_inputFiles.size()) {
-            //m_inputFiles.push_back("scriptparsetree");
+            // m_inputFiles.push_back("scriptparsetree");
             LOG_ERROR("No input param");
             return false; // missing param
         }
@@ -2071,7 +2029,8 @@ namespace tool::gsc {
                 formats << " '" << fmt->name << "'";
             }
 
-            LOG_INFO("-f --format [f]    : Use formatter, values:{}, default: '{}'", formats.str(), formatter::GetDefaultFormatter().name);
+            LOG_INFO("-f --format [f]    : Use formatter, values:{}, default: '{}'", formats.str(),
+                     formatter::GetDefaultFormatter().name);
         }
         LOG_INFO("-l --rloc          : Write relative location of the function code");
         LOG_INFO("-L --floc          : Write file location of the function code");
@@ -2114,7 +2073,8 @@ namespace tool::gsc {
         LOG_DEBUG("--data-dump        : Dump data in asm");
         LOG_DEBUG("--lc               : Write line count");
         LOG_DEBUG("-i --ignore[t + ]  : ignore step : ");
-        LOG_DEBUG("                     a : all, d: devblocks, s : switch, e : foreach, w : while, i : if, f : for, r : return");
+        LOG_DEBUG("                     a : all, d: devblocks, s : switch, e : foreach, w : while, i : if, f : for, r "
+                  ": return");
         LOG_DEBUG("                     R : bool return, c: class members, D: devblocks inline, S : special patterns");
     }
 
@@ -2131,22 +2091,23 @@ namespace tool::gsc {
 
             LOG_INFO("Loaded debug data {}", dbgPath.string());
             return true;
-            };
+        };
 
         if (ext == ".gscc") {
-            if (TestLoad(".gsc.gdb") || TestLoad(".gscgdbc")) return true;
-        }
-        else if (ext == ".cscc") {
-            if (TestLoad(".csc.gdb") || TestLoad(".cscgdbc")) return true;
-        }
-        else if (ext == ".gscbin") {
-            if (TestLoad(".gscbin.gdb") || TestLoad(".gscbingdbc")) return true;
-        }
-        else if (ext == ".gshc") {
-            if (TestLoad(".gsh.gdb") || TestLoad(".gshgdbc")) return true;
-        }
-        else if (ext == ".cshc") {
-            if (TestLoad(".csh.gdb") || TestLoad(".cshgdbc")) return true;
+            if (TestLoad(".gsc.gdb") || TestLoad(".gscgdbc"))
+                return true;
+        } else if (ext == ".cscc") {
+            if (TestLoad(".csc.gdb") || TestLoad(".cscgdbc"))
+                return true;
+        } else if (ext == ".gscbin") {
+            if (TestLoad(".gscbin.gdb") || TestLoad(".gscbingdbc"))
+                return true;
+        } else if (ext == ".gshc") {
+            if (TestLoad(".gsh.gdb") || TestLoad(".gshgdbc"))
+                return true;
+        } else if (ext == ".cshc") {
+            if (TestLoad(".csh.gdb") || TestLoad(".cshgdbc"))
+                return true;
         }
         return false;
     }
@@ -2165,7 +2126,7 @@ namespace tool::gsc {
             utils::GetFileRecurse(gdctx.opt.m_dbgInputDir, dbgs, [](const std::filesystem::path& path) -> bool {
                 auto str = path.string();
                 return str.ends_with(".gdb");
-                });
+            });
 
             for (const std::filesystem::path& dbg : dbgs) {
                 tool::gsc::gdb::ACTS_GSC_GDB* gdb = gdctx.alloc.New<tool::gsc::gdb::ACTS_GSC_GDB>(dbg);
@@ -2195,7 +2156,6 @@ namespace tool::gsc {
             gdctx.dumpStringsStore = &dumpStringsStore;
         }
 
-
         const char* globalHM = actscli::options().dumpHashmap;
         if (!globalHM && gdctx.opt.m_dump_hashmap != nullptr) {
             // keep the option for backward compatibility
@@ -2213,18 +2173,20 @@ namespace tool::gsc {
             scriptFiles.emplace_back(file);
             FileOrigin& orFi{ scriptFiles[scriptFiles.size() - 1] };
             if (std::filesystem::is_directory(orFi.base)) {
-                utils::GetFileRecurse(orFi.base, orFi.scriptFiles, [](const std::filesystem::path& path) -> bool {
-                    std::string pathname = path.string();
+                utils::GetFileRecurse(
+                    orFi.base, orFi.scriptFiles,
+                    [](const std::filesystem::path& path) -> bool {
+                        std::string pathname = path.string();
 
-                    return pathname.ends_with(".gscc") || pathname.ends_with(".cscc")
-                        || pathname.ends_with(".gscbin") || pathname.ends_with(".cscbin") // xensik GSCBIN format
-                        || pathname.ends_with(".gshc") || pathname.ends_with(".cshc")
-                        || pathname.ends_with(".gsic") || pathname.ends_with(".csic") // Serious GSIC format
-                        ;
-                    }, true);
+                        return pathname.ends_with(".gscc") || pathname.ends_with(".cscc") ||
+                               pathname.ends_with(".gscbin") || pathname.ends_with(".cscbin") // xensik GSCBIN format
+                               || pathname.ends_with(".gshc") || pathname.ends_with(".cshc") ||
+                               pathname.ends_with(".gsic") || pathname.ends_with(".csic") // Serious GSIC format
+                            ;
+                    },
+                    true);
                 orFi.dir = true;
-            }
-            else {
+            } else {
                 orFi.scriptFiles.emplace_back(orFi.base.filename());
             }
         }
@@ -2249,19 +2211,18 @@ namespace tool::gsc {
                     }
 
                     try {
-                        auto lret = DecompileGsc((byte*)bufferAlign, size, pathRel, gdctx, (byte*)dbgBuffer.data(), dbgBuffer.size());
+                        auto lret = DecompileGsc((byte*)bufferAlign, size, pathRel, gdctx, (byte*)dbgBuffer.data(),
+                                                 dbgBuffer.size());
                         if (lret != tool::OK) {
                             ret = lret;
                         }
-                    }
-                    catch (std::runtime_error& e) {
+                    } catch (std::runtime_error& e) {
                         LOG_ERROR("Exception when reading {}: {}", path.string(), e.what());
                         ret = tool::BASIC_ERROR;
                     }
                 }
             }
-        }
-        else {
+        } else {
             LOG_WARNING("Using experimental async mode");
             uint64_t prevAsyncTypes = core::async::GetAsyncTypes();
             core::async::SetAsync(core::async::AT_ALL);
@@ -2283,12 +2244,10 @@ namespace tool::gsc {
                         int lret;
                         if (!utils::ReadFileAlign(path, buffer, bufferAlign, size)) {
                             lret = tool::BASIC_ERROR;
-                        }
-                        else if (size < 0x8) { // MAGIC (8) or GSC\0 + 3 * uint32_t
+                        } else if (size < 0x8) { // MAGIC (8) or GSC\0 + 3 * uint32_t
                             LOG_ERROR("Invalid header, file size: {:x}/{:x} for {}", size, 0x8, path.string());
                             lret = tool::BASIC_ERROR;
-                        }
-                        else {
+                        } else {
                             lret = DecompileGsc((byte*)bufferAlign, size, pathRel, gdctx);
                         }
 
@@ -2296,7 +2255,7 @@ namespace tool::gsc {
                             std::lock_guard lg{ mtx };
                             ret = lret;
                         }
-                        });
+                    });
                 }
             }
 
@@ -2304,7 +2263,6 @@ namespace tool::gsc {
 
             core::async::SetAsync(prevAsyncTypes);
         }
-
 
         if (gdctx.hardErrors) {
             LOG_ERROR("{} (0x{:x}) error(s), are you using the right vm type?", gdctx.hardErrors, gdctx.hardErrors);
@@ -2319,8 +2277,7 @@ namespace tool::gsc {
             std::ofstream os{ gdctx.opt.m_dump_strings };
             if (!os) {
                 LOG_ERROR("Can't open string output");
-            }
-            else {
+            } else {
                 for (const auto& str : dumpStringsStore) {
                     os << str << std::endl;
                 }
@@ -2331,28 +2288,22 @@ namespace tool::gsc {
             std::ofstream os{ gdctx.opt.vtable_dump };
             if (!os) {
                 LOG_ERROR("Can't open vtable output");
-            }
-            else {
+            } else {
                 os << "script,class,namespace,name";
                 for (auto& [script, clss] : gdctx.vtables) {
                     for (auto& [cls, ns] : clss) {
                         for (auto& n : ns) {
-                            os
-                                << std::endl
-                                << hashutils::ExtractTmp("script", script) << ","
-                                << hashutils::ExtractTmp("class", cls) << ","
-                                << hashutils::ExtractTmp("namespace", n.name_space) << ","
-                                << hashutils::ExtractTmp("function", n.name)
-                                ;
+                            os << std::endl
+                               << hashutils::ExtractTmp("script", script) << "," << hashutils::ExtractTmp("class", cls)
+                               << "," << hashutils::ExtractTmp("namespace", n.name_space) << ","
+                               << hashutils::ExtractTmp("function", n.name);
                         }
                     }
                 }
 
-
                 os.close();
                 LOG_INFO("btable into '{}'", gdctx.opt.vtable_dump);
             }
-
         }
 
         if (gdctx.opt.m_gdbZipOutputFile) {
@@ -2361,9 +2312,11 @@ namespace tool::gsc {
 
             bool any{};
             for (auto& [fn, gdb] : gdctx.gdbData) {
-                if (!gdb->gdb) continue;
+                if (!gdb->gdb)
+                    continue;
                 tool::gsc::vm::GscGdb* reader{ tool::gsc::vm::GetGdbReader(gdb->gdb) };
-                if (!reader) continue; // can't find reader
+                if (!reader)
+                    continue; // can't find reader
                 std::string bytes{};
                 bool r{ reader->DbgSave(gdb, bytes) };
                 char* n{ utils::va("%s.gdb", hashutils::ExtractTmp("script", fn)) };
@@ -2379,8 +2332,7 @@ namespace tool::gsc {
             if (any) {
                 zf.save(zip.string());
                 LOG_INFO("gdb data saved into {}", zip.string());
-            }
-            else {
+            } else {
                 LOG_WARNING("No gdb data generated");
             }
         }
@@ -2391,20 +2343,19 @@ namespace tool::gsc {
 
     ADD_TOOL(gscinfo, "gsc", "", "GSC decompiler/disassembler", gscinfo);
     ADD_TOOL(gscd, "gsc", "", "GSC decompiler/disassembler", gscinfo);
-}
+} // namespace tool::gsc
 
 namespace {
-	struct ActsAPIGscDecompiler_Context {
-		tool::gsc::GscDecompilerGlobalContext globalContext;
-	};
-}
+    struct ActsAPIGscDecompiler_Context {
+        tool::gsc::GscDecompilerGlobalContext globalContext;
+    };
+} // namespace
 
-ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(
-    ActsAPIGsc_Platform platform, ActsAPIGscDecompiler_OptionalConfig* optCfg
-) {
-	ActsAPIGscDecompiler_Context* ctx{ ActsAPIImpl_New<ActsAPIGscDecompiler_Context>() };
+ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(ActsAPIGsc_Platform platform,
+                                                        ActsAPIGscDecompiler_OptionalConfig* optCfg) {
+    ActsAPIGscDecompiler_Context* ctx{ ActsAPIImpl_New<ActsAPIGscDecompiler_Context>() };
 
-	ctx->globalContext.opt.m_platform = (tool::gsc::opcode::Platform)platform;
+    ctx->globalContext.opt.m_platform = (tool::gsc::opcode::Platform)platform;
 
     ctx->globalContext.noDump = optCfg && optCfg->outputDir;
     if (optCfg) {
@@ -2414,8 +2365,8 @@ ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(
         ctx->globalContext.opt.m_dasm = optCfg->writeAsm;
         ctx->globalContext.opt.m_dcomp = optCfg->writeDecompilation;
         ctx->globalContext.opt.m_header = optCfg->writeHeader;
-		ctx->globalContext.opt.m_vm = (tool::gsc::opcode::VMId)optCfg->vm;
-        
+        ctx->globalContext.opt.m_vm = (tool::gsc::opcode::VMId)optCfg->vm;
+
         ctx->globalContext.opt.m_imports = optCfg->dumpImports;
         ctx->globalContext.opt.m_strings = optCfg->dumpStrings;
         ctx->globalContext.opt.m_gvars = optCfg->dumpGvars;
@@ -2438,8 +2389,7 @@ ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(
                     ActsAPISetLastMessage("Unknown formatter: %s!", optCfg->formatter);
                     return INVALID_ACTS_HANDLE_VALUE;
                 }
-            }
-            catch (std::runtime_error& e) {
+            } catch (std::runtime_error& e) {
                 ActsAPISetLastMessage("%s", e.what());
                 return INVALID_ACTS_HANDLE_VALUE;
             }
@@ -2453,16 +2403,16 @@ ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(
     return ctx;
 }
 
-ActsStatus ActsAPIGscDecompiler_DecompileObject(ActsHandle context, uint8_t* data, size_t size, uint8_t* dbgData, size_t dbgSize) {
+ActsStatus ActsAPIGscDecompiler_DecompileObject(ActsHandle context, uint8_t* data, size_t size, uint8_t* dbgData,
+                                                size_t dbgSize) {
     ActsAPIGscDecompiler_Context* ctx{ (ActsAPIGscDecompiler_Context*)context };
     try {
         if (tool::gsc::DecompileGsc(data, size, {}, ctx->globalContext, dbgData, dbgSize)) {
             return ACTS_STATUS_ERROR;
         }
         return ACTS_STATUS_OK;
-    }
-    catch (std::runtime_error& e) {
-		ActsAPISetLastMessage("%s", e.what());
+    } catch (std::runtime_error& e) {
+        ActsAPISetLastMessage("%s", e.what());
         return ACTS_STATUS_ERROR;
     }
 }
@@ -2480,9 +2430,8 @@ ActsStatus ActsAPIGscDecompiler_DecompileFile(ActsHandle context, const char* fi
             dbgDataSize = dbgBuffer.size();
         }
 
-		return ActsAPIGscDecompiler_DecompileObject(context, data.data(), data.size(), dbgData, dbgDataSize);
-    }
-    catch (std::runtime_error& e) {
+        return ActsAPIGscDecompiler_DecompileObject(context, data.data(), data.size(), dbgData, dbgDataSize);
+    } catch (std::runtime_error& e) {
         ActsAPISetLastMessage("%s", e.what());
         return ACTS_STATUS_ERROR;
     }
@@ -2490,12 +2439,12 @@ ActsStatus ActsAPIGscDecompiler_DecompileFile(ActsHandle context, const char* fi
 
 ActsAPIGscDecompiler_Formatters* ActsAPIGscDecompiler_GetFormatters() {
     static std::vector<const char*> formattersNames{};
-	static ActsAPIGscDecompiler_Formatters formatters{};
+    static ActsAPIGscDecompiler_Formatters formatters{};
 
     if (formatters.count == 0) {
         const std::vector<tool::gsc::formatter::FormatterInfo*>& fmts{ tool::gsc::formatter::GetFormatters() };
         formattersNames.resize(fmts.size());
-        
+
         for (tool::gsc::formatter::FormatterInfo* fmt : fmts) {
             formattersNames[formatters.count++] = fmt->name;
         }
@@ -2504,5 +2453,4 @@ ActsAPIGscDecompiler_Formatters* ActsAPIGscDecompiler_GetFormatters() {
     }
 
     return &formatters;
-
 }

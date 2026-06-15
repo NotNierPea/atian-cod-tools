@@ -6,31 +6,20 @@ struct XHash {
     uint64_t name;
     uint64_t str;
 
-    constexpr bool operator==(const char* other) const {
-        return name == hash::Hash64(other);
-    }
-    constexpr bool operator!=(const char* other) const {
-        return name != hash::Hash64(other);
-    }
-    constexpr bool operator==(const XHash& other) const {
-        return name == other.name;
-    }
-    constexpr bool operator!=(const XHash& other) const {
-        return name != other.name;
-    }
-    constexpr operator bool() const {
-        return name;
-    }
-    constexpr operator uint64_t() const {
-        return name;
-    }
-}; static_assert(sizeof(XHash) == 0x10);
+    constexpr bool operator==(const char* other) const { return name == hash::Hash64(other); }
+    constexpr bool operator!=(const char* other) const { return name != hash::Hash64(other); }
+    constexpr bool operator==(const XHash& other) const { return name == other.name; }
+    constexpr bool operator!=(const XHash& other) const { return name != other.name; }
+    constexpr operator bool() const { return name; }
+    constexpr operator uint64_t() const { return name; }
+};
+static_assert(sizeof(XHash) == 0x10);
 namespace games::bo4::pool {
     typedef float vec2_t[2];
     typedef float vec3_t[3];
     typedef float vec4_t[4];
 
-    enum XAssetType : byte{
+    enum XAssetType : byte {
         ASSET_TYPE_PHYSPRESET = 0,
         ASSET_TYPE_PHYSCONSTRAINTS = 1,
         ASSET_TYPE_DESTRUCTIBLEDEF = 2,
@@ -205,8 +194,7 @@ namespace games::bo4::pool {
         ASSET_TYPE_FULL_COUNT = 170,
     };
 
-    enum BGCacheTypes : unsigned __int8
-    {
+    enum BGCacheTypes : unsigned __int8 {
         BG_CACHE_TYPE_INVALID = 0x0,
         BG_CACHE_TYPE_VEHICLE = 0x1,
         BG_CACHE_TYPE_MODEL = 0x2,
@@ -401,7 +389,6 @@ namespace games::bo4::pool {
         AI_CATEGORY_COUNT = 0x8,
     };
 
-
     /*
      * Get the xasset type id from a name
      * @param name xasset name
@@ -436,4 +423,4 @@ namespace games::bo4::pool {
     AIWeaponFireType GetAIWeaponFireType(const char* name);
     const char* GetAICategoryName(AICategory type);
     AICategory GetAICategory(const char* name);
-}
+} // namespace games::bo4::pool

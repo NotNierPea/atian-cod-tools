@@ -18,7 +18,7 @@ namespace tool::gsc::compiler {
     };
 
     class FunctionObject {
-    public:
+      public:
         CompileObject& obj;
         int64_t autoexecOrder{};
         uint64_t m_name;
@@ -38,23 +38,15 @@ namespace tool::gsc::compiler {
         std::unordered_map<std::string, FunctionJumpLoc> m_jumpLocs{};
         VmInfo* m_vmInfo;
         DetourData detour{};
-        FunctionObject(
-            CompileObject& obj,
-            uint64_t name,
-            uint64_t name_space,
-            uint64_t file_name_space,
-            VmInfo* vmInfo
-        ) : obj(obj), m_name(name), m_name_space(name_space), m_data_name(file_name_space), m_vmInfo(vmInfo) {
-        }
+        FunctionObject(CompileObject& obj, uint64_t name, uint64_t name_space, uint64_t file_name_space, VmInfo* vmInfo)
+            : obj(obj), m_name(name), m_name_space(name_space), m_data_name(file_name_space), m_vmInfo(vmInfo) {}
         ~FunctionObject() {
             for (AscmNode* node : m_nodes) {
                 delete node;
             }
         }
 
-        bool IsDetour() const {
-            return detour.func || detour.nsp || detour.script;
-        }
+        bool IsDetour() const { return detour.func || detour.nsp || detour.script; }
 
         AscmNode* CreateParamNode() const;
 
@@ -87,7 +79,6 @@ namespace tool::gsc::compiler {
         void AddNode(ParseTree* tree, AscmNode* node);
 
         void AddNode(decltype(m_nodes)::iterator it, ParseTree* tree, AscmNode* node);
-
 
         /*
          * Find a variable with its name
@@ -125,5 +116,4 @@ namespace tool::gsc::compiler {
         void OptimizeNodes();
     };
 
-
-}
+} // namespace tool::gsc::compiler

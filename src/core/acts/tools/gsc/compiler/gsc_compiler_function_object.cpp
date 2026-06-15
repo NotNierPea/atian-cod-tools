@@ -18,7 +18,8 @@ namespace tool::gsc::compiler {
     }
 
     AscmNode* FunctionObject::CreateFieldHashRaw(uint64_t v) const {
-        return m_vmInfo->HasFlag(VmFlags::VMF_HASH64) ? (AscmNode*)new AscmNodeRawData<uint64_t>(v) : new AscmNodeRawData<uint32_t>((uint32_t)v);
+        return m_vmInfo->HasFlag(VmFlags::VMF_HASH64) ? (AscmNode*)new AscmNodeRawData<uint64_t>(v)
+                                                      : new AscmNodeRawData<uint32_t>((uint32_t)v);
     }
 
     AscmNode* FunctionObject::CreateFieldHash(uint64_t v, OPCode op) const {
@@ -53,7 +54,6 @@ namespace tool::gsc::compiler {
         return CreateFieldHashRaw(m_vmInfo->HashField(v));
     }
 
-
     AscmNode* FunctionObject::PeekBreakNode() const {
         if (m_jumpBreak.size()) {
             return m_jumpBreak.top();
@@ -68,27 +68,18 @@ namespace tool::gsc::compiler {
         return nullptr;
     }
 
-    void FunctionObject::PushBreakNode(AscmNode* node) {
-        m_jumpBreak.push(node);
-    }
+    void FunctionObject::PushBreakNode(AscmNode* node) { m_jumpBreak.push(node); }
 
-    void FunctionObject::PopBreakNode() {
-        m_jumpBreak.pop();
-    }
+    void FunctionObject::PopBreakNode() { m_jumpBreak.pop(); }
 
-    void FunctionObject::PushContinueNode(AscmNode* node) {
-        m_jumpContinue.push(node);
-    }
+    void FunctionObject::PushContinueNode(AscmNode* node) { m_jumpContinue.push(node); }
 
-    void FunctionObject::PopContinueNode() {
-        m_jumpContinue.pop();
-    }
+    void FunctionObject::PopContinueNode() { m_jumpContinue.pop(); }
 
-    FunctionVar* FunctionObject::VarEnd() {
-        return &m_vars[m_allocatedVar];
-    }
+    FunctionVar* FunctionObject::VarEnd() { return &m_vars[m_allocatedVar]; }
 
-    std::pair<const char*, FunctionVar*> FunctionObject::RegisterVar(const std::string& name, bool allowExisting, byte flags) {
+    std::pair<const char*, FunctionVar*> FunctionObject::RegisterVar(const std::string& name, bool allowExisting,
+                                                                     byte flags) {
         static FunctionVar badVar{ "$BAD_VAR", 0, 0 };
         FunctionVar* it = FindVar(name);
         if (it != VarEnd()) {
@@ -99,7 +90,8 @@ namespace tool::gsc::compiler {
         }
 
         if (m_allocatedVar >= ACTS_ARRAYSIZE(m_vars)) {
-            return std::make_pair<>(utils::va("Can't create var '%s': too much variable for function", name.c_str()), &badVar);
+            return std::make_pair<>(utils::va("Can't create var '%s': too much variable for function", name.c_str()),
+                                    &badVar);
         }
 
         FunctionVar& var = m_vars[m_allocatedVar] = { name, m_allocatedVar, flags };
@@ -110,7 +102,8 @@ namespace tool::gsc::compiler {
     }
 
     FunctionVar* FunctionObject::FindVar(const std::string& name) {
-        return std::find_if(std::begin(m_vars), VarEnd(), [&name](const FunctionVar& var) -> bool { return name == var.name; });
+        return std::find_if(std::begin(m_vars), VarEnd(),
+                            [&name](const FunctionVar& var) -> bool { return name == var.name; });
     }
 
     std::pair<const char*, FunctionVar*> FunctionObject::RegisterVarRnd() {
@@ -151,4 +144,4 @@ namespace tool::gsc::compiler {
         // todo: find something to do?
     }
 
-}
+} // namespace tool::gsc::compiler

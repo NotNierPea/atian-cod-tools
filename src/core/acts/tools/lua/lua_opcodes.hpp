@@ -1,17 +1,15 @@
 #pragma once
 
 namespace tool::lua::opcodes {
-	constexpr uint32_t HKS_MAGIC = 0x61754c1b;
+    constexpr uint32_t HKS_MAGIC = 0x61754c1b;
 
-	constexpr uint64_t LuaVmOf(uint32_t magic, byte vm) {
-		return (((uint64_t)magic << 32) | vm);
-	}
-	enum LuaVM : uint64_t {
-		LVM_Unknown = 0,
-		LVM_HKS_51 = LuaVmOf(HKS_MAGIC, 0x51),
-	};
+    constexpr uint64_t LuaVmOf(uint32_t magic, byte vm) { return (((uint64_t)magic << 32) | vm); }
+    enum LuaVM : uint64_t {
+        LVM_Unknown = 0,
+        LVM_HKS_51 = LuaVmOf(HKS_MAGIC, 0x51),
+    };
 
-	enum HKSInstId : uint64_t {
+    enum HKSInstId : uint64_t {
         LUA_OPCODE_UNDEFINED = 0,
         LUA_OPCODE_GETFIELD,
         LUA_OPCODE_TEST,
@@ -117,10 +115,10 @@ namespace tool::lua::opcodes {
         LUA_OPCODE_DELETE,
         LUA_OPCODE_DELETE_BK,
         LUA_OPCODE_UNK,
-	};
+    };
 
     HKSInstId GetOpCode(LuaVM vm, uint64_t val);
     const char* GetOpCodeName(HKSInstId val);
-	void RegisterLuaVm(LuaVM vm, const char* name);
-	void RegisterOpCode(LuaVM vm, HKSInstId id, uint64_t val);
-}
+    void RegisterLuaVm(LuaVM vm, const char* name);
+    void RegisterOpCode(LuaVM vm, HKSInstId id, uint64_t val);
+} // namespace tool::lua::opcodes

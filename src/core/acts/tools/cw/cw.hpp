@@ -7,47 +7,47 @@ namespace cw {
     constexpr uint64_t GSC_MAGIC = 0x38000a0d43534780;
     constexpr uint64_t GSC_MAGIC_37 = 0x37000a0d43534780;
 
-	enum T9ScrVarType : unsigned __int32 {
-		TYPE_UNDEFINED = 0x0,
-		TYPE_POINTER = 0x1,
-		TYPE_STRING = 0x2,
-		TYPE_VECTOR = 0x3,
-		TYPE_HASH = 0x4,
-		TYPE_FLOAT = 0x5,
-		TYPE_INTEGER = 0x6,
-		TYPE_FINALIZATION = 0x7,
-		TYPE_UINTPTR = 0x8,
-		TYPE_ENTITY_OFFSET = 0x9,
-		TYPE_CODEPOS = 0xA,
-		TYPE_PRECODEPOS = 0xB,
-		TYPE_API_FUNCTION = 0xC,
-		TYPE_SCRIPT_FUNCTION = 0xD,
-		TYPE_STACK = 0xE,
-		TYPE_THREAD = 0xF,
-		TYPE_NOTIFY_THREAD = 0x10,
-		TYPE_TIME_THREAD = 0x11,
-		TYPE_FRAME_THREAD = 0x12,
-		TYPE_CHILD_THREAD = 0x13,
-		TYPE_REMOVED_THREAD = 0x14,
-		TYPE_ARRAY = 0x15,
-		TYPE_CLASS = 0x16,
-		TYPE_SHARED_STRUCT = 0x17,
-		TYPE_STRUCT = 0x18,
-		TYPE_REMOVED_ENTITY = 0x19,
-		TYPE_ENTITY = 0x1A,
-		TYPE_FREE = 0x1B,
-		TYPE_THREAD_LIST = 0x1C,
-		TYPE_ENT_LIST = 0x1D,
-	};
+    enum T9ScrVarType : unsigned __int32 {
+        TYPE_UNDEFINED = 0x0,
+        TYPE_POINTER = 0x1,
+        TYPE_STRING = 0x2,
+        TYPE_VECTOR = 0x3,
+        TYPE_HASH = 0x4,
+        TYPE_FLOAT = 0x5,
+        TYPE_INTEGER = 0x6,
+        TYPE_FINALIZATION = 0x7,
+        TYPE_UINTPTR = 0x8,
+        TYPE_ENTITY_OFFSET = 0x9,
+        TYPE_CODEPOS = 0xA,
+        TYPE_PRECODEPOS = 0xB,
+        TYPE_API_FUNCTION = 0xC,
+        TYPE_SCRIPT_FUNCTION = 0xD,
+        TYPE_STACK = 0xE,
+        TYPE_THREAD = 0xF,
+        TYPE_NOTIFY_THREAD = 0x10,
+        TYPE_TIME_THREAD = 0x11,
+        TYPE_FRAME_THREAD = 0x12,
+        TYPE_CHILD_THREAD = 0x13,
+        TYPE_REMOVED_THREAD = 0x14,
+        TYPE_ARRAY = 0x15,
+        TYPE_CLASS = 0x16,
+        TYPE_SHARED_STRUCT = 0x17,
+        TYPE_STRUCT = 0x18,
+        TYPE_REMOVED_ENTITY = 0x19,
+        TYPE_ENTITY = 0x1A,
+        TYPE_FREE = 0x1B,
+        TYPE_THREAD_LIST = 0x1C,
+        TYPE_ENT_LIST = 0x1D,
+    };
 
-	struct XAssetPool {
-		uintptr_t pool; // void*
-		unsigned int itemSize;
-		int itemCount;
-		bool isSingleton;
-		int itemAllocCount;
-		void* freeHead;
-	};
+    struct XAssetPool {
+        uintptr_t pool; // void*
+        unsigned int itemSize;
+        int itemCount;
+        bool isSingleton;
+        int itemAllocCount;
+        void* freeHead;
+    };
 
     enum XAssetType : byte {
         ASSET_TYPE_ZONE = 0,
@@ -322,19 +322,20 @@ namespace cw {
         uint64_t name;
         uintptr_t buffer; // GSC_OBJ*
         int len;
-    }; static_assert(sizeof(ScriptParseTree) == 0x18);
+    };
+    static_assert(sizeof(ScriptParseTree) == 0x18);
 
     struct ScriptParseTreeAlpha {
         uint64_t name;
         uint64_t namenull;
         uintptr_t buffer; // GSC_OBJ*
         int32_t len;
-    }; static_assert(sizeof(ScriptParseTreeAlpha) == 0x20);
+    };
+    static_assert(sizeof(ScriptParseTreeAlpha) == 0x20);
 
-	char* DecryptString(char* str);
-	byte* DecryptRawBuffer(byte* buffer);
-	uintptr_t ScanPool(Process& proc);
-
+    char* DecryptString(char* str);
+    byte* DecryptRawBuffer(byte* buffer);
+    uintptr_t ScanPool(Process& proc);
 
     const char* PoolName(cw::XAssetType type);
     XAssetType PoolId(const char* name);
@@ -344,6 +345,6 @@ namespace cw {
     uint64_t* GetAssetName(cw::XAssetType type, void* asset, size_t size = 0);
 
     int InjectScriptCW(Process& proc, const char* script, const char* target, const char* replace, std::string& notify);
-    int InjectScriptCWAlpha(Process& proc, const char* script, const char* target, const char* replaced, std::string& notify);
-}
-
+    int InjectScriptCWAlpha(Process& proc, const char* script, const char* target, const char* replaced,
+                            std::string& notify);
+} // namespace cw

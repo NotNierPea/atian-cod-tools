@@ -3,154 +3,150 @@
 #include <hook/library.hpp>
 
 namespace deps::idc_builder {
-	size_t GetRva(void* loc) {
-		hook::library::Library library{ hook::library::GetLibraryInfo(loc) };
-		if (!library) {
-			return 0;
-		}
-		return (size_t)((byte*)loc - (byte*)*library);
-	}
+    size_t GetRva(void* loc) {
+        hook::library::Library library{ hook::library::GetLibraryInfo(loc) };
+        if (!library) {
+            return 0;
+        }
+        return (size_t)((byte*)loc - (byte*)*library);
+    }
 
-	IdcBuilder::IdcBuilder() {
+    IdcBuilder::IdcBuilder() {}
 
-	}
+    void IdcBuilder::AddHeader(const char* header) { headers.emplace_back(alloc.CloneStr(header)); }
 
-	void IdcBuilder::AddHeader(const char* header) {
-		headers.emplace_back(alloc.CloneStr(header));
-	}
-	
-	void IdcBuilder::AddStruct(const char* name, bool force) {
-		structs.emplace_back(alloc.CloneStr(name), force);
-	}
+    void IdcBuilder::AddStruct(const char* name, bool force) { structs.emplace_back(alloc.CloneStr(name), force); }
 
-	void IdcBuilder::AddAddress(size_t rva, const char* name, const char* type) {
-		AddAddressEx(rva, name, nullptr, type);
-	}
+    void IdcBuilder::AddAddress(size_t rva, const char* name, const char* type) {
+        AddAddressEx(rva, name, nullptr, type);
+    }
 
-	void IdcBuilder::AddAddressEx(size_t rva, const char* name, const char* flags, const char* type) {
-		addresses.emplace_back(rva, alloc.CloneStr(name), type ? alloc.CloneStr(type) : nullptr, flags ? alloc.CloneStr(flags) : nullptr);
-	}
+    void IdcBuilder::AddAddressEx(size_t rva, const char* name, const char* flags, const char* type) {
+        addresses.emplace_back(rva, alloc.CloneStr(name), type ? alloc.CloneStr(type) : nullptr,
+                               flags ? alloc.CloneStr(flags) : nullptr);
+    }
 
-	void IdcBuilder::AddCDecl(const char* decl, const char* flags) {
-		cdecls.emplace_back(decl, flags);
-	}
+    void IdcBuilder::AddCDecl(const char* decl, const char* flags) { cdecls.emplace_back(decl, flags); }
 
-	EnumDefinition& IdcBuilder::GetEnumDef(IdcEnumId id) {
-		if (id >= enums.size()) throw std::runtime_error("Invalid IdcEnumId");
-		return enums[id];
-	}
+    EnumDefinition& IdcBuilder::GetEnumDef(IdcEnumId id) {
+        if (id >= enums.size())
+            throw std::runtime_error("Invalid IdcEnumId");
+        return enums[id];
+    }
 
-	IdcEnumId IdcBuilder::AddEnum(const char* name, bool force) {
-		IdcEnumId idx{ enums.size() };
-		enums.emplace_back(alloc.CloneStr(name), force);
-		return idx;
-	}
+    IdcEnumId IdcBuilder::AddEnum(const char* name, bool force) {
+        IdcEnumId idx{ enums.size() };
+        enums.emplace_back(alloc.CloneStr(name), force);
+        return idx;
+    }
 
-	void IdcBuilder::AddEnumMember(IdcEnumId id, const char* name, int64_t val) {
-		GetEnumDef(id).values.emplace_back(alloc.CloneStr(name), val);
-	}
+    void IdcBuilder::AddEnumMember(IdcEnumId id, const char* name, int64_t val) {
+        GetEnumDef(id).values.emplace_back(alloc.CloneStr(name), val);
+    }
 
-	void IdcBuilder::AddEnumMember(IdcEnumId id, const char* name) {
-		std::vector<EnumValueDefinition>& values{ GetEnumDef(id).values };
-		values.emplace_back(alloc.CloneStr(name), (int64_t)values.size());
-	}
+    void IdcBuilder::AddEnumMember(IdcEnumId id, const char* name) {
+        std::vector<EnumValueDefinition>& values{ GetEnumDef(id).values };
+        values.emplace_back(alloc.CloneStr(name), (int64_t)values.size());
+    }
 
-	void IdcBuilder::WriteIdcFile(std::filesystem::path out) {
-		utils::OutFileCE os{ out, true };
-		os << 
-			// base include
-			"#include <idc/idc.idc>\n"
-			"\n"
-			// custom funcs
-			"// Create struct opt\n"
-			"#define AddStrucOpt(u, name) if (GetStrucIdByName(name) == -1) AddStruc(u, name)\n"
-			"\n"
-			;
-		if (headers.size()) {
-			os << "// headers\n";
-			for (const char* header : headers) {
-				os << header << "\n";
-			}
-			os << "\n";
-		}
+    void IdcBuilder::WriteIdcFile(std::filesystem::path out) {
+        utils::OutFileCE os{ out, true };
+        os <<
+            // base include
+            "#include <idc/idc.idc>\n"
+            "\n"
+            // custom funcs
+            "// Create struct opt\n"
+            "#define AddStrucOpt(u, name) if (GetStrucIdByName(name) == -1) AddStruc(u, name)\n"
+            "\n";
+        if (headers.size()) {
+            os << "// headers\n";
+            for (const char* header : headers) {
+                os << header << "\n";
+            }
+            os << "\n";
+        }
 
-		os <<
-			"static ClearEnum(eid) {\n"
-			"    auto mid = GetFirstConst(eid, -1);\n"
-			"    Message(\"clear enum %s%s...\\n\", GetEnumName(eid), mid == -1 ? \" (empty)\" : \"\");\n"
-			"    while (mid != -1) {\n"
-			"        auto value = GetConstValue(mid);\n"
-			"        auto bmask = GetConstBmask(mid);\n"
-			"        DelConst(eid, value, bmask);\n"
-			"        mid = GetNextConst(eid, value, bmask);\n"
-	        "     }\n"
-			"}\n"
-			"\n"
-			"static main() {";
+        os << "static ClearEnum(eid) {\n"
+              "    auto mid = GetFirstConst(eid, -1);\n"
+              "    Message(\"clear enum %s%s...\\n\", GetEnumName(eid), mid == -1 ? \" (empty)\" : \"\");\n"
+              "    while (mid != -1) {\n"
+              "        auto value = GetConstValue(mid);\n"
+              "        auto bmask = GetConstBmask(mid);\n"
+              "        DelConst(eid, value, bmask);\n"
+              "        mid = GetNextConst(eid, value, bmask);\n"
+              "     }\n"
+              "}\n"
+              "\n"
+              "static main() {";
 
-		if (enums.size()) {
-			utils::Padding(os << "\n", 1) << "// enums\n";
-			for (size_t i = 0; i < enums.size(); i++) {
-				EnumDefinition& def{ enums[i] };
-				int pad{ 1 };
-				utils::Padding(os, pad) << "auto enumId" << std::dec << i << " = GetEnum(\"" << def.name << "\");\n";
+        if (enums.size()) {
+            utils::Padding(os << "\n", 1) << "// enums\n";
+            for (size_t i = 0; i < enums.size(); i++) {
+                EnumDefinition& def{ enums[i] };
+                int pad{ 1 };
+                utils::Padding(os, pad) << "auto enumId" << std::dec << i << " = GetEnum(\"" << def.name << "\");\n";
 
-				utils::Padding(os, pad) << "if (enumId" << std::dec << i << " == -1) {\n";
-				pad++;
-				// create missing enum
-				utils::Padding(os, pad) << "enumId" << std::dec << i << " = AddEnum(0, \"" << def.name << "\", 0x20);\n";
-				if (def.force) {
-					pad--;
-					utils::Padding(os, pad) << "} else {\n";
-					pad++;
-					utils::Padding(os, pad) << "ClearEnum(enumId" << std::dec << i << ");\n";
-					pad--;
-					utils::Padding(os, pad) << "}\n";
-				}
+                utils::Padding(os, pad) << "if (enumId" << std::dec << i << " == -1) {\n";
+                pad++;
+                // create missing enum
+                utils::Padding(os, pad) << "enumId" << std::dec << i << " = AddEnum(0, \"" << def.name
+                                        << "\", 0x20);\n";
+                if (def.force) {
+                    pad--;
+                    utils::Padding(os, pad) << "} else {\n";
+                    pad++;
+                    utils::Padding(os, pad) << "ClearEnum(enumId" << std::dec << i << ");\n";
+                    pad--;
+                    utils::Padding(os, pad) << "}\n";
+                }
 
-				for (EnumValueDefinition& val : def.values) {
-					utils::Padding(os, pad) << "AddConst(enumId" << std::dec << i << ", \"" << val.name << "\", " << val.val << ");\n";
-				}
+                for (EnumValueDefinition& val : def.values) {
+                    utils::Padding(os, pad)
+                        << "AddConst(enumId" << std::dec << i << ", \"" << val.name << "\", " << val.val << ");\n";
+                }
 
-				if (!def.force) {
-					pad--;
-					utils::Padding(os, pad) << "}\n";
-				}
-			}
-		}
+                if (!def.force) {
+                    pad--;
+                    utils::Padding(os, pad) << "}\n";
+                }
+            }
+        }
 
-		if (structs.size()) {
-			utils::Padding(os << "\n", 1) << "// structs\n";
-			for (StructDefinition& def : structs) {
-				utils::Padding(os, 1) << (def.force ? "AddStruc" : "AddStrucOpt") << "(0, \"" << def.name << "\");\n";
-			}
-		}
+        if (structs.size()) {
+            utils::Padding(os << "\n", 1) << "// structs\n";
+            for (StructDefinition& def : structs) {
+                utils::Padding(os, 1) << (def.force ? "AddStruc" : "AddStrucOpt") << "(0, \"" << def.name << "\");\n";
+            }
+        }
 
-		if (cdecls.size()) {
-			utils::Padding(os << "\n", 1) << "// cdecls\n";
-			for (CDeclDefinition& def : cdecls) {
-				utils::Padding(os, 1) << "ParseTypes" << "(\"" << def.value << "\", " << (def.flags ? def.flags : "0") << ");\n";
-			}
-		}
+        if (cdecls.size()) {
+            utils::Padding(os << "\n", 1) << "// cdecls\n";
+            for (CDeclDefinition& def : cdecls) {
+                utils::Padding(os, 1) << "ParseTypes" << "(\"" << def.value << "\", " << (def.flags ? def.flags : "0")
+                                      << ");\n";
+            }
+        }
 
-		if (addresses.size()) {
-			utils::Padding(os << "\n", 1) << "// addresses\n";
-			utils::Padding(os, 1) << "auto base = get_imagebase();\n\n";
+        if (addresses.size()) {
+            utils::Padding(os << "\n", 1) << "// addresses\n";
+            utils::Padding(os, 1) << "auto base = get_imagebase();\n\n";
 
-			for (AddressDefinition& def : addresses) {
-				if (def.flags) {
-					utils::Padding(os, 1) << "MakeNameEx(base + 0x" << std::hex << def.rva << ", \"" << def.name << "\", " << def.flags << "); \n";
-				}
-				else {
-					utils::Padding(os, 1) << "MakeName(base + 0x" << std::hex << def.rva << ", \"" << def.name << "\");\n";
-				}
-				if (def.type) {
-					utils::Padding(os, 1) << "SetType(base + 0x" << std::hex << def.rva << ", \"" << def.type << "\");\n";
-				}
-			}
-		}
+            for (AddressDefinition& def : addresses) {
+                if (def.flags) {
+                    utils::Padding(os, 1) << "MakeNameEx(base + 0x" << std::hex << def.rva << ", \"" << def.name
+                                          << "\", " << def.flags << "); \n";
+                } else {
+                    utils::Padding(os, 1)
+                        << "MakeName(base + 0x" << std::hex << def.rva << ", \"" << def.name << "\");\n";
+                }
+                if (def.type) {
+                    utils::Padding(os, 1)
+                        << "SetType(base + 0x" << std::hex << def.rva << ", \"" << def.type << "\");\n";
+                }
+            }
+        }
 
-
-		os << "}\n";
-	}
-}
+        os << "}\n";
+    }
+} // namespace deps::idc_builder

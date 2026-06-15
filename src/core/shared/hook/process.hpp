@@ -21,14 +21,10 @@ namespace hook::process {
     }
 
     void* LoadLib(const char* lib, int32_t flags = 0);
-    inline void* LoadLib(std::string lib, int32_t flags = 0) {
-        return LoadLib(lib.data(), flags);
-    }
+    inline void* LoadLib(std::string lib, int32_t flags = 0) { return LoadLib(lib.data(), flags); }
 
     void* LoadSysLib(const char* lib);
-    inline void* LoadSysLib(std::string lib) {
-        return LoadSysLib(lib.data());
-    }
+    inline void* LoadSysLib(std::string lib) { return LoadSysLib(lib.data()); }
 
     void** GetImportAddrTableEntry(const char* lib, const char* entry);
     /*
@@ -40,7 +36,7 @@ namespace hook::process {
 
 #ifdef ASMJIT_STATIC
     class AssemblerExp : public asmjit::x86::Assembler {
-    public:
+      public:
         using Assembler::Assembler;
         using Assembler::call;
         using Assembler::jmp;
@@ -51,7 +47,7 @@ namespace hook::process {
         void prepareStackForCall();
         void restoreStackAfterCall();
 
-        template <typename T>
+        template<typename T>
         void callAligned(T&& target) {
             this->prepareStackForCall();
             this->call(std::forward<T>(target));
@@ -63,4 +59,4 @@ namespace hook::process {
     };
 
 #endif
-}
+} // namespace hook::process

@@ -408,4 +408,4 @@ namespace tool::bo7 {
 
     const char* PoolName(SatHashAssetType type);
     SatHashAssetType PoolId(const char* name);
-}
+} // namespace tool::bo7

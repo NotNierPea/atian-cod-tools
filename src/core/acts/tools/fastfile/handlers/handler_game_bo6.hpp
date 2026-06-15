@@ -4,178 +4,194 @@
 #include <tools/bo6/bo6.hpp>
 
 namespace fastfile::handlers::bo6 {
-	using namespace ::bo6;
-	constexpr const char* gamePath = "bo6";
-	constexpr const char* gameDumpId = "bo6";
-	constexpr const char* handlerId = "bo6";
-	constexpr const char* handlerName = "Black Ops 6";
+    using namespace ::bo6;
+    constexpr const char* gamePath = "bo6";
+    constexpr const char* gameDumpId = "bo6";
+    constexpr const char* handlerId = "bo6";
+    constexpr const char* handlerName = "Black Ops 6";
 
-	typedef uint64_t XHash64;
-	typedef uint32_t XHash32;
+    typedef uint64_t XHash64;
+    typedef uint32_t XHash32;
 
-	struct GfxImage;
-	struct MaterialAnimation;
-	struct ParticleSystem;
-	struct FootStepsFxTable;
-	struct FoliagesFXTable;
-	struct HandPlantsFXTable;
-	struct AiImpactVFXTable;
-	struct Dismemberment;
-	struct CalloutMarkerPing;
-	struct WeaponAccuracy;
-	struct Character;
-	struct XModel;
-	struct XBoneSet;
-	struct ReactiveAudioPackage;
-	struct ReactiveVFXPackage;
-	struct FootStepVFX;
-	struct Camo;
-	struct Material;
-	struct ScriptBundle;
+    struct GfxImage;
+    struct MaterialAnimation;
+    struct ParticleSystem;
+    struct FootStepsFxTable;
+    struct FoliagesFXTable;
+    struct HandPlantsFXTable;
+    struct AiImpactVFXTable;
+    struct Dismemberment;
+    struct CalloutMarkerPing;
+    struct WeaponAccuracy;
+    struct Character;
+    struct XModel;
+    struct XBoneSet;
+    struct ReactiveAudioPackage;
+    struct ReactiveVFXPackage;
+    struct FootStepVFX;
+    struct Camo;
+    struct Material;
+    struct ScriptBundle;
 
-	typedef const char* XString;
-	
-	struct ScrString_t {
-		uint32_t id;
+    typedef const char* XString;
 
-		operator uint32_t() {
-			return id;
-		}
-	};
+    struct ScrString_t {
+        uint32_t id;
 
-	class Worker {
-	public:
-		bool requiresRelativeLoads;
-		size_t assetSize;
+        operator uint32_t() { return id; }
+    };
 
-		Worker(size_t assetSize, bool requiresRelativeLoads = false) : requiresRelativeLoads(requiresRelativeLoads), assetSize(assetSize) {}
-		virtual void PreLoadWorker(fastfile::FastFileContext* ctx) {}
-		virtual void Unlink(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx, void* ptr) = 0;
-		virtual void PreXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) {}
-		virtual void PostXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) {}
-	};
+    class Worker {
+      public:
+        bool requiresRelativeLoads;
+        size_t assetSize;
 
-	const char* GetPoolName(uint32_t hash);
-	const char* GetScrString(ScrString_t id);
-	T10HashAssetType GetHashType(T10AssetType type);
-	T10AssetType GetExePoolId(const char* name);
-	T10AssetType GetExePoolId(T10HashAssetType name);
-	uint64_t GetXAssetName(T10HashAssetType type, void* handle);
+        Worker(size_t assetSize, bool requiresRelativeLoads = false)
+            : requiresRelativeLoads(requiresRelativeLoads), assetSize(assetSize) {}
+        virtual void PreLoadWorker(fastfile::FastFileContext* ctx) {}
+        virtual void Unlink(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx, void* ptr) = 0;
+        virtual void PreXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) {}
+        virtual void PostXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) {}
+    };
 
-	class HandlerJsonWriter : public core::hashes::raw_file_extractor::JsonWriter {
-	public:
-		using core::hashes::raw_file_extractor::JsonWriter::JsonWriter;
+    const char* GetPoolName(uint32_t hash);
+    const char* GetScrString(ScrString_t id);
+    T10HashAssetType GetHashType(T10AssetType type);
+    T10AssetType GetExePoolId(const char* name);
+    T10AssetType GetExePoolId(T10HashAssetType name);
+    uint64_t GetXAssetName(T10HashAssetType type, void* handle);
 
-		void WriteFieldValueXHash(const char* name, XHash64 val) {
-			if (!val) return;
-			JsonWriter::WriteFieldValueHash(name, val);
-		}
+    class HandlerJsonWriter : public core::hashes::raw_file_extractor::JsonWriter {
+      public:
+        using core::hashes::raw_file_extractor::JsonWriter::JsonWriter;
 
-		void WriteFieldValueXHash(uint64_t hash, XHash64 val) {
-			if (!val) return;
-			JsonWriter::WriteFieldValueHash(hash, val);
-		}
+        void WriteFieldValueXHash(const char* name, XHash64 val) {
+            if (!val)
+                return;
+            JsonWriter::WriteFieldValueHash(name, val);
+        }
 
+        void WriteFieldValueXHash(uint64_t hash, XHash64 val) {
+            if (!val)
+                return;
+            JsonWriter::WriteFieldValueHash(hash, val);
+        }
 
-		void WriteFieldValueXString(const char* name, XString val) {
-			if (!val) return;
-			JsonWriter::WriteFieldValueString(name, val);
-		}
+        void WriteFieldValueXString(const char* name, XString val) {
+            if (!val)
+                return;
+            JsonWriter::WriteFieldValueString(name, val);
+        }
 
-		void WriteFieldValueXString(uint64_t hash, XString val) {
-			if (!val) return;
-			JsonWriter::WriteFieldValueString(hash, val);
-		}
+        void WriteFieldValueXString(uint64_t hash, XString val) {
+            if (!val)
+                return;
+            JsonWriter::WriteFieldValueString(hash, val);
+        }
 
-		void WriteFieldValueScrString(const char* name, ScrString_t val) {
-			if (!val) return;
-			JsonWriter::WriteFieldValueString(name, GetScrString(val));
-		}
+        void WriteFieldValueScrString(const char* name, ScrString_t val) {
+            if (!val)
+                return;
+            JsonWriter::WriteFieldValueString(name, GetScrString(val));
+        }
 
-		void WriteFieldValueScrString(uint64_t hash, ScrString_t val) {
-			if (!val) return;
-			JsonWriter::WriteFieldValueString(hash, GetScrString(val));
-		}
+        void WriteFieldValueScrString(uint64_t hash, ScrString_t val) {
+            if (!val)
+                return;
+            JsonWriter::WriteFieldValueString(hash, GetScrString(val));
+        }
 
-		void WriteFieldValueScrStringArray(const char* name, size_t count, ScrString_t* val, bool ignoreEmpty = true) {
-			if (ignoreEmpty && (!count || !*val)) return;
-			JsonWriter::WriteFieldNameString(name);
-			JsonWriter::BeginArray();
-			for (size_t i = 0; i < count; i++) {
-				if (!val[i]) break;
-				JsonWriter::WriteValueString(GetScrString(val[i]));
-			}
-			JsonWriter::EndArray();
-		}
+        void WriteFieldValueScrStringArray(const char* name, size_t count, ScrString_t* val, bool ignoreEmpty = true) {
+            if (ignoreEmpty && (!count || !*val))
+                return;
+            JsonWriter::WriteFieldNameString(name);
+            JsonWriter::BeginArray();
+            for (size_t i = 0; i < count; i++) {
+                if (!val[i])
+                    break;
+                JsonWriter::WriteValueString(GetScrString(val[i]));
+            }
+            JsonWriter::EndArray();
+        }
 
-		void WriteFieldValueScrStringArray(uint64_t hash, size_t count, ScrString_t* val, bool ignoreEmpty = true) {
-			if (ignoreEmpty && (!count || !*val)) return;
-			JsonWriter::WriterFieldNameHash(hash);
-			JsonWriter::BeginArray();
-			for (size_t i = 0; i < count; i++) {
-				if (!val[i]) break;
-				JsonWriter::WriteValueString(GetScrString(val[i]));
-			}
-			JsonWriter::EndArray();
-		}
+        void WriteFieldValueScrStringArray(uint64_t hash, size_t count, ScrString_t* val, bool ignoreEmpty = true) {
+            if (ignoreEmpty && (!count || !*val))
+                return;
+            JsonWriter::WriterFieldNameHash(hash);
+            JsonWriter::BeginArray();
+            for (size_t i = 0; i < count; i++) {
+                if (!val[i])
+                    break;
+                JsonWriter::WriteValueString(GetScrString(val[i]));
+            }
+            JsonWriter::EndArray();
+        }
 
-		void WriteFieldValueXAsset(const char* name, T10HashAssetType type, void* val) {
-			if (!val) return;
-			XHash64 hname{ GetXAssetName(type, val) };
-			if (hname) {
-				WriteFieldValueXHash(name, hname);
-			}
-		}
+        void WriteFieldValueXAsset(const char* name, T10HashAssetType type, void* val) {
+            if (!val)
+                return;
+            XHash64 hname{ GetXAssetName(type, val) };
+            if (hname) {
+                WriteFieldValueXHash(name, hname);
+            }
+        }
 
-		void WriteFieldValueXAsset(uint64_t hash, T10HashAssetType type, void* val) {
-			if (!val) return;
-			XHash64 hname{ GetXAssetName(type, val) };
-			if (hname) {
-				WriteFieldValueXHash(hash, hname);
-			}
-		}
+        void WriteFieldValueXAsset(uint64_t hash, T10HashAssetType type, void* val) {
+            if (!val)
+                return;
+            XHash64 hname{ GetXAssetName(type, val) };
+            if (hname) {
+                WriteFieldValueXHash(hash, hname);
+            }
+        }
 
-		void WriteFieldValueXAssetArray(const char* name, T10HashAssetType type, size_t count, void* handle, bool ignoreEmpty = true) {
-			void** val{ (void**)handle };
-			if (ignoreEmpty && (!count || !*val)) return;
+        void WriteFieldValueXAssetArray(const char* name, T10HashAssetType type, size_t count, void* handle,
+                                        bool ignoreEmpty = true) {
+            void** val{ (void**)handle };
+            if (ignoreEmpty && (!count || !*val))
+                return;
 
-			JsonWriter::WriteFieldNameString(name);
-			JsonWriter::BeginArray();
+            JsonWriter::WriteFieldNameString(name);
+            JsonWriter::BeginArray();
 
-			for (size_t i = 0; i < count; i++) {
-				if (!val[i]) break;
-				JsonWriter::WriteValueHash(GetXAssetName(type, val[i]));
-			}
-			JsonWriter::EndArray();
-		}
+            for (size_t i = 0; i < count; i++) {
+                if (!val[i])
+                    break;
+                JsonWriter::WriteValueHash(GetXAssetName(type, val[i]));
+            }
+            JsonWriter::EndArray();
+        }
 
-		void WriteFieldValueXAssetArray(uint64_t hash, T10HashAssetType type, size_t count, void* handle, bool ignoreEmpty = true) {
-			void** val{ (void**)handle };
-			if (ignoreEmpty && (!count || !*val)) return;
-			JsonWriter::WriterFieldNameHash(hash);
-			JsonWriter::BeginArray();
+        void WriteFieldValueXAssetArray(uint64_t hash, T10HashAssetType type, size_t count, void* handle,
+                                        bool ignoreEmpty = true) {
+            void** val{ (void**)handle };
+            if (ignoreEmpty && (!count || !*val))
+                return;
+            JsonWriter::WriterFieldNameHash(hash);
+            JsonWriter::BeginArray();
 
-			for (size_t i = 0; i < count; i++) {
-				if (!val[i]) break;
-				JsonWriter::WriteValueHash(GetXAssetName(type, val[i]));
-			}
-			JsonWriter::EndArray();
-		}
+            for (size_t i = 0; i < count; i++) {
+                if (!val[i])
+                    break;
+                JsonWriter::WriteValueHash(GetXAssetName(type, val[i]));
+            }
+            JsonWriter::EndArray();
+        }
 
-		void WriteValueLocalized(XHash64 val) {
-			fastfile::FastFileOption& opt{ fastfile::GetCurrentOptions() };
-			JsonWriter::WriteValueString(std::format("&#{}", utils::FormattedStringJson{ opt.GetTranslation(val) }));
-		}
+        void WriteValueLocalized(XHash64 val) {
+            fastfile::FastFileOption& opt{ fastfile::GetCurrentOptions() };
+            JsonWriter::WriteValueString(std::format("&#{}", utils::FormattedStringJson{ opt.GetTranslation(val) }));
+        }
 
-		void WriteFieldValueLocalized(const char* name, XHash64 val) {
-			if (!val) {
-				return;
-			}
-			JsonWriter::WriteFieldNameString(name);
-			WriteValueLocalized(val);
-		}
-	};
+        void WriteFieldValueLocalized(const char* name, XHash64 val) {
+            if (!val) {
+                return;
+            }
+            JsonWriter::WriteFieldNameString(name);
+            WriteValueLocalized(val);
+        }
+    };
 
-	std::vector<const char*>* GetXStrings();
-	std::unordered_map<bo6::T10HashAssetType, Worker*>& GetWorkers();
-}
+    std::vector<const char*>* GetXStrings();
+    std::unordered_map<bo6::T10HashAssetType, Worker*>& GetWorkers();
+} // namespace fastfile::handlers::bo6

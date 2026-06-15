@@ -24,23 +24,10 @@ namespace {
         HTN_INVALID_TYPE = 0x7,
     };
 
-    const char* hierarchicalTaskNetworkValueTypeNames[]{
-        "bool",
-        "float",
-        "int",
-        "string",
-        "xhash"
-    };
+    const char* hierarchicalTaskNetworkValueTypeNames[]{ "bool", "float", "int", "string", "xhash" };
 
-    const char* hierarchicalTaskNetworkNodeTypeNames[]{
-        "action",
-        "goto",
-        "planner",
-        "postcondition",
-        "precondition",
-        "selector",
-        "sequence"
-    };
+    const char* hierarchicalTaskNetworkNodeTypeNames[]{ "action",       "goto",     "planner", "postcondition",
+                                                        "precondition", "selector", "sequence" };
 
     union HierarchicalTaskNetworkNodeConstantUnion {
         bool boolValue;
@@ -80,7 +67,8 @@ namespace {
             HierarchicalTaskNetwork* asset{ (HierarchicalTaskNetwork*)ptr };
 
             const char* n = hashutils::ExtractPtr(asset->name);
-            if (!n) n = utils::va("file_%llx.ai_htn", asset->name.name);
+            if (!n)
+                n = utils::va("file_%llx.ai_htn", asset->name.name);
             std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "hierarchicaltasknetwork" / n };
             std::filesystem::create_directories(outFile.parent_path());
             BO4JsonWriter json{};
@@ -99,7 +87,9 @@ namespace {
                     json.WriteFieldValueNumber("id", i);
                     json.WriteFieldValueXHash("name", htnNode.name);
                     json.WriteFieldValueNumber("index", htnNode.index);
-                    json.WriteFieldValueString("type", (htnNode.type >= HTN_TYPE_COUNT ? utils::va("<invalid:%d>", htnNode.type) : hierarchicalTaskNetworkNodeTypeNames[htnNode.type]));
+                    json.WriteFieldValueString("type", (htnNode.type >= HTN_TYPE_COUNT
+                                                            ? utils::va("<invalid:%d>", htnNode.type)
+                                                            : hierarchicalTaskNetworkNodeTypeNames[htnNode.type]));
 
                     if (htnNode.childNodeIndexes) {
                         json.WriteFieldNameString("childindexes");
@@ -116,7 +106,10 @@ namespace {
                             HierarchicalTaskNetworkNodeConstant& constant{ htnNode.constants[j] };
                             json.WriterFieldNameHash(constant.key);
                             json.BeginObject();
-                            json.WriteFieldValueString("type", (constant.type >= HTN_DATA_TYPE_COUNT ? utils::va("<invalid:%d>", constant.type) : hierarchicalTaskNetworkValueTypeNames[constant.type]));
+                            json.WriteFieldValueString("type",
+                                                       (constant.type >= HTN_DATA_TYPE_COUNT
+                                                            ? utils::va("<invalid:%d>", constant.type)
+                                                            : hierarchicalTaskNetworkValueTypeNames[constant.type]));
 
                             json.WriteFieldNameString("value");
                             switch (constant.type) {
@@ -150,12 +143,13 @@ namespace {
 
             json.EndObject();
 
-
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());
             }
         }
     };
 
-    utils::MapAdder<ImplWorker, games::bo4::pool::XAssetType, Worker> impl{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_HIERARCHICAL_TASK_NETWORK };
-}
+    utils::MapAdder<ImplWorker, games::bo4::pool::XAssetType, Worker> impl{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_HIERARCHICAL_TASK_NETWORK
+    };
+} // namespace

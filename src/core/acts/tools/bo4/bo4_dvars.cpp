@@ -71,7 +71,7 @@ namespace {
     struct dvar_t {
         XHash name;
         uintptr_t hashnext; // dvar_t*
-        uintptr_t value; // DvarData*
+        uintptr_t value;    // DvarData*
         dvarType_t type;
         unsigned int flags;
         DvarLimits domain;
@@ -81,35 +81,27 @@ namespace {
     void WriteDVarData(Process& proc, utils::OutFileCE& out, const dvar_t& dvar, const DvarData* value) {
         switch (dvar.type) {
         case DVAR_TYPE_BOOL: {
-            out << "BOOL,,"
-                << (value[0].current.enabled ? "true" : "false");
+            out << "BOOL,," << (value[0].current.enabled ? "true" : "false");
             break;
         }
         case DVAR_TYPE_FLOAT: {
-            out << "FLOAT,"
-                << dvar.domain.value.min << ":" << dvar.domain.value.min << ","
-                << value[0].current.value;
+            out << "FLOAT," << dvar.domain.value.min << ":" << dvar.domain.value.min << "," << value[0].current.value;
             break;
         }
         case DVAR_TYPE_FLOAT_2: {
-            out << "FLOAT_2,"
-                << dvar.domain.vector.min << ":" << dvar.domain.vector.min << ","
+            out << "FLOAT_2," << dvar.domain.vector.min << ":" << dvar.domain.vector.min << ","
                 << value[0].current.vector[0] << " " << value[0].current.vector[1];
             break;
         }
         case DVAR_TYPE_FLOAT_3: {
-            out << "FLOAT_3"
-                << dvar.domain.vector.min << ":" << dvar.domain.vector.min << ","
+            out << "FLOAT_3" << dvar.domain.vector.min << ":" << dvar.domain.vector.min << ","
                 << value[0].current.vector[0] << " " << value[0].current.vector[1] << " " << value[0].current.vector[2];
 
             break;
         }
         case DVAR_TYPE_FLOAT_4: {
-            out << "FLOAT_4"
-                << dvar.domain.vector.min << ":" << dvar.domain.vector.min << ","
-                << value[0].current.vector[0]
-                << " " << value[0].current.vector[1]
-                << " " << value[0].current.vector[2]
+            out << "FLOAT_4" << dvar.domain.vector.min << ":" << dvar.domain.vector.min << ","
+                << value[0].current.vector[0] << " " << value[0].current.vector[1] << " " << value[0].current.vector[2]
                 << " " << value[0].current.vector[3];
 
             break;
@@ -164,7 +156,9 @@ namespace {
 
             break;
         }
-        default: out << "INVALID"; break;
+        default:
+            out << "INVALID";
+            break;
         }
     }
 
@@ -174,8 +168,7 @@ namespace {
         const char* outFile;
         if (argc == 2) {
             outFile = "dvars.csv";
-        }
-        else {
+        } else {
             outFile = argv[2];
         }
 
@@ -195,17 +188,15 @@ namespace {
         out << "address,name,flags,type,domain,value";
 
         for (size_t i = 0; i < count; i++) {
-            if (!proc.ReadMemory(&dvar, pool[i], sizeof(dvar)) || !proc.ReadMemory(&value[0], dvar.value, sizeof(value[0]))) {
+            if (!proc.ReadMemory(&dvar, pool[i], sizeof(dvar)) ||
+                !proc.ReadMemory(&value[0], dvar.value, sizeof(value[0]))) {
                 LOG_INFO("Can't read dvar at index {}", i);
                 continue;
             }
 
-            out
-                << "\n"
-                << proc.GetLocation(pool[i]) << ","
-                << hashutils::ExtractTmp("hash", dvar.name.name) << ","
-                << "0x" << std::hex << dvar.flags << ","
-                ;
+            out << "\n"
+                << proc.GetLocation(pool[i]) << "," << hashutils::ExtractTmp("hash", dvar.name.name) << ","
+                << "0x" << std::hex << dvar.flags << ",";
 
             WriteDVarData(proc, out, dvar, value);
             out << ",";
@@ -215,4 +206,4 @@ namespace {
     }
 
     ADD_TOOL(ddv, "bo4", " [output=dvars.csv]", "dump dvars", L"BlackOps4.exe", dumpdvars);
-}
+} // namespace

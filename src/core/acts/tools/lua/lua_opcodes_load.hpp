@@ -1,5 +1,5 @@
 #pragma once
 
 namespace tool::lua::opcodes {
-	void RegisterLuaOpCodesMap();
+    void RegisterLuaOpCodesMap();
 }

@@ -2,11 +2,12 @@
 #include <compatibility/data_signature.hpp>
 
 namespace compatibility::data_signature {
-	DataType ExtractType(void* data, size_t len) {
-		if (!len) return DATA_UNKNOWN;
+    DataType ExtractType(void* data, size_t len) {
+        if (!len)
+            return DATA_UNKNOWN;
 
-		// TODO
+        // TODO
 
-		return DATA_UNKNOWN;
-	}
-}
+        return DATA_UNKNOWN;
+    }
+} // namespace compatibility::data_signature

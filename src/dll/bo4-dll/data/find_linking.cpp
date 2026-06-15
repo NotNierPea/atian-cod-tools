@@ -31,39 +31,36 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         if (inst) {
             if (!cf) {
                 if (cm) {
-                    sprintf_s(messageBuff, "Can't find %s CSC func, but a CSC method exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(messageBuff, "Can't find %s CSC func, but a CSC method exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else if (sf) {
-                    sprintf_s(messageBuff, "Can't find %s CSC func, but a GSC func exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                } else if (sf) {
+                    sprintf_s(messageBuff, "Can't find %s CSC func, but a GSC func exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else {
+                } else {
                     sprintf_s(messageBuff, "Can't find %s function", hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
                 }
-            }
-            else if (tcf1 == bo4::BUILTIN_DEV) {
+            } else if (tcf1 == bo4::BUILTIN_DEV) {
                 sprintf_s(messageBuff, "Call of dev function %s", hash_lookup::ExtractTmp(inst, name, "function"));
                 return messageBuff;
             }
-        }
-        else {
+        } else {
             if (!sf) {
                 if (sm) {
-                    sprintf_s(messageBuff, "Can't find %s GSC func, but a GSC method exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(messageBuff, "Can't find %s GSC func, but a GSC method exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else if (cf) {
-                    sprintf_s(messageBuff, "Can't find %s GSC func, but a CSC func exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                } else if (cf) {
+                    sprintf_s(messageBuff, "Can't find %s GSC func, but a CSC func exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else {
+                } else {
                     sprintf_s(messageBuff, "Can't find %s function", hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
                 }
-            }
-            else if (tsf3 == bo4::BUILTIN_DEV) {
+            } else if (tsf3 == bo4::BUILTIN_DEV) {
                 sprintf_s(messageBuff, "Call of dev function %s", hash_lookup::ExtractTmp(inst, name, "function"));
                 return messageBuff;
             }
@@ -74,39 +71,36 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         if (inst) {
             if (!cm) {
                 if (cf) {
-                    sprintf_s(messageBuff, "Can't find %s CSC method, but a CSC func exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(messageBuff, "Can't find %s CSC method, but a CSC func exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else if (sm) {
-                    sprintf_s(messageBuff, "Can't find %s CSC method, but a GSC method exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                } else if (sm) {
+                    sprintf_s(messageBuff, "Can't find %s CSC method, but a GSC method exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else {
+                } else {
                     sprintf_s(messageBuff, "Can't find %s method", hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
                 }
-            }
-            else if (tcm2 == bo4::BUILTIN_DEV) {
+            } else if (tcm2 == bo4::BUILTIN_DEV) {
                 sprintf_s(messageBuff, "Call of dev method %s", hash_lookup::ExtractTmp(inst, name, "function"));
                 return messageBuff;
             }
-        }
-        else {
+        } else {
             if (!sm) {
                 if (cm) {
-                    sprintf_s(messageBuff, "Can't find %s GSC method, but a GSC func exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(messageBuff, "Can't find %s GSC method, but a GSC func exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else if (sf) {
-                    sprintf_s(messageBuff, "Can't find %s GSC method, but a CSC method exists", hash_lookup::ExtractTmp(inst, name, "function"));
+                } else if (sf) {
+                    sprintf_s(messageBuff, "Can't find %s GSC method, but a CSC method exists",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
-                }
-                else {
+                } else {
                     sprintf_s(messageBuff, "Can't find %s method", hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
                 }
-            }
-            else if (tcm4 == bo4::BUILTIN_DEV) {
+            } else if (tcm4 == bo4::BUILTIN_DEV) {
                 sprintf_s(messageBuff, "Call of dev method %s", hash_lookup::ExtractTmp(inst, name, "function"));
                 return messageBuff;
             }
@@ -117,28 +111,31 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         if (inst) {
             if (!cf && !cm) {
                 if (sf || sm) {
-                    sprintf_s(messageBuff, "Can't find %s CSC function/method, but a GSC function/method", hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(messageBuff, "Can't find %s CSC function/method, but a GSC function/method",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
                 }
-                sprintf_s(messageBuff, "Can't find %s function/method", hash_lookup::ExtractTmp(inst, name, "function"));
+                sprintf_s(messageBuff, "Can't find %s function/method",
+                          hash_lookup::ExtractTmp(inst, name, "function"));
+                return messageBuff;
+            } else if ((cf && tcf1 == bo4::BUILTIN_DEV) || (cm && tcm2 == bo4::BUILTIN_DEV)) {
+                sprintf_s(messageBuff, "Call of dev function/method %s",
+                          hash_lookup::ExtractTmp(inst, name, "function"));
                 return messageBuff;
             }
-            else if ((cf && tcf1 == bo4::BUILTIN_DEV) || (cm && tcm2 == bo4::BUILTIN_DEV)) {
-                sprintf_s(messageBuff, "Call of dev function/method %s", hash_lookup::ExtractTmp(inst, name, "function"));
-                return messageBuff;
-            }
-        }
-        else {
+        } else {
             if (!sf && !sm) {
                 if (cf || cm) {
-                    sprintf_s(messageBuff, "Can't find %s GSC function/method, but a CSC function/method", hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(messageBuff, "Can't find %s GSC function/method, but a CSC function/method",
+                              hash_lookup::ExtractTmp(inst, name, "function"));
                     return messageBuff;
                 }
-                sprintf_s(messageBuff, "Can't find %s function/method", hash_lookup::ExtractTmp(inst, name, "function"));
+                sprintf_s(messageBuff, "Can't find %s function/method",
+                          hash_lookup::ExtractTmp(inst, name, "function"));
                 return messageBuff;
-            }
-            else if ((sf && tsf3 == bo4::BUILTIN_DEV) || (sm && tcm4 == bo4::BUILTIN_DEV)) {
-                sprintf_s(messageBuff, "Call of dev function/method %s", hash_lookup::ExtractTmp(inst, name, "function"));
+            } else if ((sf && tsf3 == bo4::BUILTIN_DEV) || (sm && tcm4 == bo4::BUILTIN_DEV)) {
+                sprintf_s(messageBuff, "Call of dev function/method %s",
+                          hash_lookup::ExtractTmp(inst, name, "function"));
                 return messageBuff;
             }
         }
@@ -149,9 +146,9 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
 
 int find_linking::CheckLinkingError(scriptinstance::ScriptInstance inst) {
     int issues = 0;
-	LOG_INFO("Check linking issues in {}", scriptinstance::Name(inst));
+    LOG_INFO("Check linking issues in {}", scriptinstance::Name(inst));
 
-	auto c = bo4::objFileInfoCount[inst];
+    auto c = bo4::objFileInfoCount[inst];
 
     char nspBuff[0x100] = { 0 };
     char nameBuff[0x100] = { 0 };
@@ -173,7 +170,8 @@ int find_linking::CheckLinkingError(scriptinstance::ScriptInstance inst) {
             }
 
             // "sys" or "" -> 0
-            uint32_t nsp = imp->import_namespace == 0x222276a9 || imp->import_namespace == 0xc1243180 ? 0 : imp->import_namespace;
+            uint32_t nsp =
+                imp->import_namespace == 0x222276a9 || imp->import_namespace == 0xc1243180 ? 0 : imp->import_namespace;
 
             auto id = utils::CatLocated(nsp, imp->name);
 
@@ -211,14 +209,14 @@ int find_linking::CheckLinkingError(scriptinstance::ScriptInstance inst) {
             }
 
             // shady pass
-            imploc += (size_t) (sizeof(bo4::T8GSCImport) + sizeof(uint32_t) * imp->num_address);
+            imploc += (size_t)(sizeof(bo4::T8GSCImport) + sizeof(uint32_t) * imp->num_address);
         }
 
         auto* exports = reinterpret_cast<bo4::GSCExport*>(script->magic + script->export_table_offset);
 
         for (size_t j = 0; j < script->exports_count; j++) {
             auto exp = exports[j];
-            
+
             auto find = imports.find(utils::CatLocated(exp.name_space, exp.name));
 
             // clear things inside the script
@@ -232,7 +230,9 @@ int find_linking::CheckLinkingError(scriptinstance::ScriptInstance inst) {
         for (size_t i = 0; i < script->include_count; i++) {
             auto usingScript = usings[i];
             auto end = bo4::objFileInfo[inst] + bo4::objFileInfoCount[inst];
-            auto find = std::find_if(bo4::objFileInfo[inst], end, [usingScript](const auto& info) { return info.activeVersion->name == usingScript; });
+            auto find = std::find_if(bo4::objFileInfo[inst], end, [usingScript](const auto& info) {
+                return info.activeVersion->name == usingScript;
+            });
             if (find == end) {
                 LOG_ERROR("Can't find #using in {}", hash_lookup::ExtractTmp(inst, script->name));
                 LOG_ERROR("#using {};", hash_lookup::ExtractTmp(inst, usingScript));
@@ -242,8 +242,8 @@ int find_linking::CheckLinkingError(scriptinstance::ScriptInstance inst) {
 
             auto* otherScript = find->activeVersion;
 
-
-            auto* otherExports = reinterpret_cast<bo4::GSCExport*>(otherScript->magic + otherScript->export_table_offset);
+            auto* otherExports =
+                reinterpret_cast<bo4::GSCExport*>(otherScript->magic + otherScript->export_table_offset);
 
             for (size_t j = 0; j < otherScript->exports_count; j++) {
                 auto exp = otherExports[j];
@@ -279,8 +279,7 @@ int find_linking::CheckLinkingError(scriptinstance::ScriptInstance inst) {
 
                 LOG_ERROR("Can't find import {}::{}, locations:", nsp_lookup, name_lookup);
                 dump_loc = true;
-            }
-            else {
+            } else {
                 // api call
                 auto* err = FindFunc(info, inst, name);
                 if (err) {
@@ -297,6 +296,6 @@ int find_linking::CheckLinkingError(scriptinstance::ScriptInstance inst) {
                 }
             }
         }
-	}
+    }
     return issues;
 }

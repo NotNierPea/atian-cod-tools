@@ -19,7 +19,8 @@ namespace core::preprocessor {
 
         const StringData& FindFile(size_t line) const;
 
-        void PrintLineMessage(core::logs::loglevel lvl, size_t line, size_t charPositionInLine, const std::string& msg) const;
+        void PrintLineMessage(core::logs::loglevel lvl, size_t line, size_t charPositionInLine,
+                              const std::string& msg) const;
 
         bool AppendFile(const std::filesystem::path& filename);
     };
@@ -43,10 +44,14 @@ namespace core::preprocessor {
 
         void ReplaceDefines(std::string& str, size_t start, size_t* end);
 
-        bool ApplyPreProcessorComments(std::string& str, std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler);
+        bool ApplyPreProcessorComments(
+            std::string& str,
+            std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler);
 
-        bool ApplyPreProcessor(std::string& str, std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler);
-        
+        bool ApplyPreProcessor(
+            std::string& str,
+            std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler);
+
         bool ApplyPreProcessor(std::string& str, const char* filename = nullptr);
     };
-}
+} // namespace core::preprocessor

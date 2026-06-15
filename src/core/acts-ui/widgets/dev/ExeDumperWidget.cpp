@@ -3,26 +3,19 @@
 #include <QFileDialog>
 #include <acts_api/process.h>
 
-ExeDumperWidget::ExeDumperWidget(QWidget *parent)
-	: QWidget(parent)
-{
-	ui.setupUi(this);
-	setLayout(ui.verticalLayout);
+ExeDumperWidget::ExeDumperWidget(QWidget* parent) : QWidget(parent) {
+    ui.setupUi(this);
+    setLayout(ui.verticalLayout);
 
-    ui.returnLabel->setText(""); // remove placeholder
+    ui.returnLabel->setText("");      // remove placeholder
     ui.dumpButton->setEnabled(false); // activated using link
 
-    connect(ui.execPathEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
-        ui.dumpButton->setEnabled(!text.isEmpty());
-    });
+    connect(ui.execPathEdit, &QLineEdit::textChanged, this,
+            [this](const QString& text) { ui.dumpButton->setEnabled(!text.isEmpty()); });
 
     connect(ui.execPathButton, &QPushButton::clicked, this, [this] {
-        QString path = QFileDialog::getOpenFileName(
-            this,
-            tr("Executable File"),
-            QString(),
-            tr("Executable File (*.exe)")
-        );
+        QString path =
+            QFileDialog::getOpenFileName(this, tr("Executable File"), QString(), tr("Executable File (*.exe)"));
 
         if (!path.isEmpty()) {
             ui.execPathEdit->setText(path);
@@ -30,12 +23,7 @@ ExeDumperWidget::ExeDumperWidget(QWidget *parent)
     });
 
     connect(ui.dumpPathButton, &QPushButton::clicked, this, [this] {
-        QString path = QFileDialog::getSaveFileName(
-            this,
-            tr("Dump File"),
-            QString(),
-            tr("Executable File (*.exe)")
-        );
+        QString path = QFileDialog::getSaveFileName(this, tr("Dump File"), QString(), tr("Executable File (*.exe)"));
 
         if (!path.isEmpty()) {
             ui.dumpPathEdit->setText(path);
@@ -62,9 +50,6 @@ ExeDumperWidget::ExeDumperWidget(QWidget *parent)
 
 ExeDumperWidget::~ExeDumperWidget() {}
 
-
-void ExeDumperWidget::LoadFile(const QString& path) {
-    ui.execPathEdit->setText(path);
-}
+void ExeDumperWidget::LoadFile(const QString& path) { ui.execPathEdit->setText(path); }
 
 ADD_UI_TOOL(ExeDumperWidget, "Executable Dumper", "Utilities", ".exe");

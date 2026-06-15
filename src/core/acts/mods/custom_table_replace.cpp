@@ -16,24 +16,23 @@ enum StringTableCellType : INT {
     STC_TYPE_HASHED8 = 8,
 };
 
-
 struct StringTableCell {
     byte value[20];
     StringTableCellType type;
 };
 // item size ... 40
 struct StringTableEntry {
-    uint64_t name; // 8
-    int pad8; // 12
-    int pad12; // 16
-    int columnCount; // 20
-    int rowCount; // 24
-    int cellscount; // 28 empty?
-    int unk24; // 32
-    uintptr_t cells; // 40
+    uint64_t name;    // 8
+    int pad8;         // 12
+    int pad12;        // 16
+    int columnCount;  // 20
+    int rowCount;     // 24
+    int cellscount;   // 28 empty?
+    int unk24;        // 32
+    uintptr_t cells;  // 40
     uintptr_t values; // 48 StringTableCell
-    uintptr_t unk48; // 56
-    uintptr_t unk56; // 64
+    uintptr_t unk48;  // 56
+    uintptr_t unk56;  // 64
 };
 struct XAssetPoolEntry {
     uintptr_t pool;
@@ -55,7 +54,8 @@ static int custom_table_replace(int argc, const char* argv[]) {
 
     XAssetPoolEntry entry{};
 
-    if (!proc.ReadMemory(&entry, proc[offset::assetPool] + sizeof(entry) * pool::ASSET_TYPE_STRINGTABLE, sizeof(entry))) {
+    if (!proc.ReadMemory(&entry, proc[offset::assetPool] + sizeof(entry) * pool::ASSET_TYPE_STRINGTABLE,
+                         sizeof(entry))) {
         std::cerr << "Can't read pool entry\n";
         return tool::BASIC_ERROR;
     }
@@ -106,13 +106,8 @@ static int custom_table_replace(int argc, const char* argv[]) {
         bool isstats = std::find(&targetstats[0], std::end(targetstats), e.name) != std::end(targetstats);
         bool isstats2 = std::find(&targetstats2[0], std::end(targetstats2), e.name) != std::end(targetstats2);
 
-        if (!(e.name == target1
-            || e.name == target2
-            || e.name == target3
-            || isstats
-            || isstats2
-            || e.name == global_challenges
-            )) {
+        if (!(e.name == target1 || e.name == target2 || e.name == target3 || isstats || isstats2 ||
+              e.name == global_challenges)) {
             continue; // not our taget
         }
 
@@ -122,8 +117,9 @@ static int custom_table_replace(int argc, const char* argv[]) {
             continue; // check that we can read at least the cell
         }
 
-        std::cout << std::dec << i << ": " << hashutils::ExtractTmpScript(e.name) 
-            << " (columns: " << e.columnCount << ", rows:" << e.rowCount << "/" << std::hex << (entry.pool + i * sizeof(entry)) << "/" << e.values << std::dec << ")\n";
+        std::cout << std::dec << i << ": " << hashutils::ExtractTmpScript(e.name) << " (columns: " << e.columnCount
+                  << ", rows:" << e.rowCount << "/" << std::hex << (entry.pool + i * sizeof(entry)) << "/" << e.values
+                  << std::dec << ")\n";
 
         /*
          * season 2 = 0
@@ -138,8 +134,8 @@ static int custom_table_replace(int argc, const char* argv[]) {
          * season 8 = 13
          */
         auto targetCell1 = 13 * e.columnCount + 2; // old1
-        auto targetCell2 = 0 * e.columnCount + 2; // new1
-        auto targetCell3 = 1 * e.columnCount + 2; // new2
+        auto targetCell2 = 0 * e.columnCount + 2;  // new1
+        auto targetCell3 = 1 * e.columnCount + 2;  // new2
 
         // set season 2
         if (target2 == e.name) {
@@ -178,14 +174,13 @@ static int custom_table_replace(int argc, const char* argv[]) {
             std::cout << "old:" << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
             cell.type = STC_TYPE_INT;
             *reinterpret_cast<int64_t*>(&(cell.value[0])) = 1569862900;
-            //std::cout << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
+            // std::cout << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
 
             if (!proc.WriteMemory(e.values + sizeof(cell) * targetCell1, &cell, sizeof(cell))) {
                 std::cerr << "Can't write cell " << i << "\n";
                 continue;
             }
-        }
-        else if (target1 == e.name) {
+        } else if (target1 == e.name) {
             continue;
             // set all item cost to 0 (not working)
             for (size_t i = 1; i < e.rowCount; i++) {
@@ -193,21 +188,19 @@ static int custom_table_replace(int argc, const char* argv[]) {
                     std::cerr << "Can't read cell " << i << "\n";
                     continue;
                 }
-        
-                //std::cout << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
+
+                // std::cout << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
                 cell3[2].type = STC_TYPE_INT;
                 cell3[3].type = STC_TYPE_INT;
                 *reinterpret_cast<int64_t*>(&(cell3[1].value[0])) = 1; // cp
                 *reinterpret_cast<int64_t*>(&(cell3[3].value[0])) = 1; // crates
-        
-        
+
                 if (!proc.WriteMemory(e.values + sizeof(cell) * (i * e.columnCount + 2), &cell3[0], sizeof(cell) * 4)) {
                     std::cerr << "Can't write cell " << i << "\n";
                     continue;
                 }
             }
-        }
-        else if (target3 == e.name) {
+        } else if (target3 == e.name) {
             // set all item cost to 1 (not working)
             for (size_t i = 0; i < e.rowCount; i++) {
                 if (!proc.ReadMemory(&cell, e.values + sizeof(cell) * (i * e.columnCount + 8), sizeof(cell))) {
@@ -215,18 +208,16 @@ static int custom_table_replace(int argc, const char* argv[]) {
                     continue;
                 }
 
-                //std::cout << "old:" << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
+                // std::cout << "old:" << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
                 cell.type = STC_TYPE_INT;
                 *reinterpret_cast<int64_t*>(&(cell.value[0])) = 1;
-
 
                 if (!proc.WriteMemory(e.values + sizeof(cell) * (i * e.columnCount + 8), &cell, sizeof(cell))) {
                     std::cerr << "Can't write cell " << i << "\n";
                     continue;
                 }
             }
-        }
-        else if (isstats) {
+        } else if (isstats) {
             // set all stats min to 0 (index = 2)
             for (size_t i = 0; i < e.rowCount; i++) {
                 if (!proc.ReadMemory(&cell, e.values + sizeof(cell) * (i * e.columnCount + 2), sizeof(cell))) {
@@ -234,18 +225,16 @@ static int custom_table_replace(int argc, const char* argv[]) {
                     continue;
                 }
 
-                //std::cout << "old:" << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
+                // std::cout << "old:" << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
                 cell.type = STC_TYPE_INT;
                 *reinterpret_cast<int64_t*>(&(cell.value[0])) = 0;
-
 
                 if (!proc.WriteMemory(e.values + sizeof(cell) * (i * e.columnCount + 2), &cell, sizeof(cell))) {
                     std::cerr << "Can't write cell " << i << "\n";
                     continue;
                 }
             }
-        }
-        else if (isstats2) {
+        } else if (isstats2) {
             // set all stats min to 0 (index = 1)
             for (size_t i = 0; i < e.rowCount; i++) {
                 if (!proc.ReadMemory(&cell, e.values + sizeof(cell) * (i * e.columnCount + 1), sizeof(cell))) {
@@ -253,18 +242,16 @@ static int custom_table_replace(int argc, const char* argv[]) {
                     continue;
                 }
 
-                //std::cout << "old:" << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
+                // std::cout << "old:" << cell.type << "  " << *reinterpret_cast<int64_t*>(&(cell.value[0])) << "\n";
                 cell.type = STC_TYPE_INT;
                 *reinterpret_cast<int64_t*>(&(cell.value[0])) = 0;
-
 
                 if (!proc.WriteMemory(e.values + sizeof(cell) * (i * e.columnCount + 1), &cell, sizeof(cell))) {
                     std::cerr << "Can't write cell " << i << "\n";
                     continue;
                 }
             }
-        }
-        else if (global_challenges == e.name) {
+        } else if (global_challenges == e.name) {
             // set all stats min to 0 (index = 1,2,3)
             for (size_t i = 0; i < e.rowCount; i++) {
                 if (!proc.ReadMemory(&cell3[0], e.values + sizeof(cell) * (i * e.columnCount + 1), sizeof(cell) * 3)) {
@@ -282,18 +269,15 @@ static int custom_table_replace(int argc, const char* argv[]) {
                 cell3[2].type = STC_TYPE_INT;
                 *reinterpret_cast<int64_t*>(&(cell3[2].value[0])) = 0;
 
-
                 if (!proc.WriteMemory(e.values + sizeof(cell) * (i * e.columnCount + 1), &cell3[0], sizeof(cell) * 2)) {
                     std::cerr << "Can't write cell " << i << "\n";
                     continue;
                 }
             }
         }
-
     }
 
-
-	return tool::OK;
+    return tool::OK;
 }
 
 #ifndef CI_BUILD

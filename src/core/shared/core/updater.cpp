@@ -9,16 +9,13 @@
 #include <core/actsinfo.hpp>
 #include <core/updater_endpoint.hpp>
 
-
-
 namespace core::updater {
-    
+
     static bool NeedCheck(bool silent) {
         if constexpr (core::actsinfo::DEV_VERSION_ID == core::actsinfo::VERSION_ID) {
             if (core::config::GetBool("updater.allowdev", false)) {
                 LOG_WARNING("Updating DEV version");
-            }
-            else {
+            } else {
                 if (!silent) {
                     LOG_ERROR("Updating DEV version");
                 }
@@ -28,7 +25,7 @@ namespace core::updater {
         return !core::config::GetBool(actssec("updater.disabled"), false);
     }
 
-	bool CheckUpdate(bool forceUpdate, bool silent, bool ui) {
+    bool CheckUpdate(bool forceUpdate, bool silent, bool ui) {
         if (!forceUpdate && !NeedCheck(silent)) {
             return false;
         }
@@ -39,12 +36,10 @@ namespace core::updater {
                     if (!platform::InfoMessageBox("Updater", fmt.data(), true, false)) {
                         return false;
                     }
-                }
-                else {
+                } else {
                     platform::InfoMessageBox("Updater", fmt.data(), false, false);
                 }
-            }
-            else {
+            } else {
                 LOG_INFO("{}", fmt);
             }
             return true;
@@ -73,7 +68,8 @@ namespace core::updater {
             }
 
             if (latestVersion.v <= core::actsinfo::VERSION_ID) {
-                LOG_LVLF(lvl, "Latest version {} <= {}", GetVersionName(latestVersion.v), GetVersionName(core::actsinfo::VERSION_ID));
+                LOG_LVLF(lvl, "Latest version {} <= {}", GetVersionName(latestVersion.v),
+                         GetVersionName(core::actsinfo::VERSION_ID));
                 LOG_DEBUG("0x{:x} <= 0x{:x}", latestVersion.v, core::actsinfo::VERSION_ID);
                 return false; // nothing to update
             }
@@ -93,7 +89,6 @@ namespace core::updater {
             return false;
         }
 
-
         std::filesystem::path zipOut{ std::filesystem::absolute(mainPath / UPDATE_ZIP_NAME) };
         if (!utils::WriteFile(zipOut, latest)) {
             LOG_ERROR("Error when writing '{}'", zipOut.string());
@@ -107,7 +102,7 @@ namespace core::updater {
         std::string updaterOtherExeStr{ std::format("{} -U {}", updaterOtherExe.string(), ui ? "-u" : "") };
 
         return platform::CreatePlatformProcess(updaterOtherExeStr.data(), true);
-	}
+    }
 
     void ApplyUpdate(bool ui) {
         static hook::library::Library main{};
@@ -130,8 +125,7 @@ namespace core::updater {
             std::filesystem::path out;
             if (utils::IsSubDir(bindir, rdir)) {
                 out = mainPath / std::filesystem::relative(rdir, bindir);
-            }
-            else {
+            } else {
                 out = mainPath / member.filename;
             }
 
@@ -162,7 +156,6 @@ namespace core::updater {
         static std::filesystem::path mainPath{ utils::GetProgDir() };
         static std::filesystem::path updaterTest{ mainPath / "acts-updater.json" };
 
-
         if (!NeedCheck(true)) {
             return false;
         }
@@ -170,7 +163,6 @@ namespace core::updater {
         LOG_TRACE("Check for update...");
 
         int64_t now{ utils::GetTimestamp() };
-
 
         core::config::Config cfg{ updaterTest };
         try {
@@ -196,30 +188,22 @@ namespace core::updater {
                 return true;
             }
             return false;
-        }
-        catch (std::runtime_error& err) {
+        } catch (std::runtime_error& err) {
             LOG_ERROR("Can't read {}: {}", updaterTest.string(), err.what());
         }
         return false;
     }
-}
+} // namespace core::updater
 #else
 
 namespace core::updater {
-    bool CheckUpdate(bool forceUpdate, bool silent, bool ui) {
-        return false;
-    }
-    void ApplyUpdate(bool ui) {
-		throw std::runtime_error("Updater not supported");
-    }
+    bool CheckUpdate(bool forceUpdate, bool silent, bool ui) { return false; }
+    void ApplyUpdate(bool ui) { throw std::runtime_error("Updater not supported"); }
 
-    bool FindUpdate(bool cli) {
-        return false;
-    }
-}
+    bool FindUpdate(bool cli) { return false; }
+} // namespace core::updater
 
 #endif
-
 
 namespace core::updater {
 
@@ -246,8 +230,7 @@ namespace core::updater {
         }
         try {
             v = std::stoul(line, nullptr, 16);
-        }
-        catch (std::exception) {
+        } catch (std::exception) {
             return false;
         }
         return true;
@@ -263,8 +246,7 @@ namespace core::updater {
         std::string buffer{};
         try {
             return utils::io::DownloadFile(url, buffer) && Read(buffer);
-        }
-        catch (std::exception) {
+        } catch (std::exception) {
             return false;
         }
     }
@@ -281,11 +263,7 @@ namespace core::updater {
         return utils::va("%d.%d.%d", major, minor, patch);
     }
 
-    const char* GetUpdateUrl() {
-        return core::config::GetCString("updater.versionUrl", VERSION_ENDPOINT);
-    }
+    const char* GetUpdateUrl() { return core::config::GetCString("updater.versionUrl", VERSION_ENDPOINT); }
 
-    const char* GetUpdateZip() {
-        return core::config::GetCString("updater.zipUrl", ZIP_ENDPOINT);
-    }
-}
+    const char* GetUpdateZip() { return core::config::GetCString("updater.zipUrl", ZIP_ENDPOINT); }
+} // namespace core::updater

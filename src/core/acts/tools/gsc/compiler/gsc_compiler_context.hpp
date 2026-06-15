@@ -12,7 +12,6 @@ namespace tool::gsc::compiler {
     class ACTSErrorListener;
     struct InputInfo;
 
-
     struct FunctionVar {
         std::string name;
         size_t id;
@@ -43,18 +42,18 @@ namespace tool::gsc::compiler {
     constexpr int64_t MAX_JUMP = maxNumberSize<uint16_t>();
 
     class AscmCompilerContext {
-    public:
+      public:
         const VmInfo* vmInfo;
         CompilerConfig& cfg;
         Platform plt;
         std::vector<byte>& data;
         size_t lvars;
 
-        AscmCompilerContext(const VmInfo* vmInfo, Platform plt, size_t lvars, std::vector<byte>& data, CompilerConfig& cfg) : vmInfo(vmInfo), plt(plt), data(data), lvars(lvars), cfg(cfg) {}
+        AscmCompilerContext(const VmInfo* vmInfo, Platform plt, size_t lvars, std::vector<byte>& data,
+                            CompilerConfig& cfg)
+            : vmInfo(vmInfo), plt(plt), data(data), lvars(lvars), cfg(cfg) {}
 
-        bool HasAlign() const {
-            return vmInfo->HasFlag(VmFlags::VMF_ALIGN);
-        }
+        bool HasAlign() const { return vmInfo->HasFlag(VmFlags::VMF_ALIGN); }
 
         void Align(size_t len) {
             if (HasAlign()) {
@@ -78,4 +77,4 @@ namespace tool::gsc::compiler {
         }
     };
 
-}
+} // namespace tool::gsc::compiler

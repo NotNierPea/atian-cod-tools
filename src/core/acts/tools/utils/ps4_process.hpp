@@ -5,13 +5,13 @@ namespace utils::ps4 {
         PS4N_CONNECTED = 210,
         PS4N_MESSAGE = 222,
     };
-	class PS4Process {
-		libdebug::PS4DBG ps4;
+    class PS4Process {
+        libdebug::PS4DBG ps4;
         int32_t pid;
         uint64_t base{};
 
-	public:
-		PS4Process(const std::string& ipd, const char* process = "eboot.bin") : ps4(ipd) {
+      public:
+        PS4Process(const std::string& ipd, const char* process = "eboot.bin") : ps4(ipd) {
             if (ipd.empty()) {
                 throw std::runtime_error("Empty PS4 IP");
             }
@@ -28,7 +28,6 @@ namespace utils::ps4 {
 
             auto entries = ps4.GetProcessMaps(proc->pid);
 
-
             for (const auto& entry : entries.entries) {
                 if (entry->prot == 5) {
                     base = entry->start;
@@ -40,14 +39,10 @@ namespace utils::ps4 {
                 ps4.Disconnect();
                 throw std::runtime_error("Can't find executable base");
             }
-		}
-        ~PS4Process() {
-            ps4.Disconnect();
         }
+        ~PS4Process() { ps4.Disconnect(); }
 
-        uint64_t operator[](size_t delta) {
-            return base + delta;
-        }
+        uint64_t operator[](size_t delta) { return base + delta; }
 
         template<typename T>
         T Read(uint64_t location) {
@@ -72,7 +67,8 @@ namespace utils::ps4 {
         }
 
         std::string ReadString(uint64_t location, size_t buffLen = 1) {
-            if (!location) return {};
+            if (!location)
+                return {};
             std::vector<char> buff{};
 
             while (true) {
@@ -80,14 +76,13 @@ namespace utils::ps4 {
 
                 for (byte b : p) {
                     buff.push_back((char)b);
-                    if (!b) return buff.data();
+                    if (!b)
+                        return buff.data();
                 }
             }
         }
-        
-        std::vector<byte> ReadBuffer(uint64_t location, int32_t len) {
-            return ps4.ReadMemory(pid, location, len);
-        }
+
+        std::vector<byte> ReadBuffer(uint64_t location, int32_t len) { return ps4.ReadMemory(pid, location, len); }
 
         void Write(uint64_t location, const void* ptr, size_t size) {
             std::vector<byte> data{};
@@ -100,22 +95,13 @@ namespace utils::ps4 {
             Write(location, (const void*)&value, sizeof(value));
         }
 
-        void Notify(int32_t type, const std::string& message) {
-            ps4.Notify(type, message);
-        }
+        void Notify(int32_t type, const std::string& message) { ps4.Notify(type, message); }
 
-        inline void Notify(const std::string& message) {
-            Notify(utils::ps4::PS4N_MESSAGE, message);
-        }
+        inline void Notify(const std::string& message) { Notify(utils::ps4::PS4N_MESSAGE, message); }
 
-        libdebug::PS4DBG& Ps4Dbg() {
-            return this->ps4;
-        }
+        libdebug::PS4DBG& Ps4Dbg() { return this->ps4; }
 
-        constexpr int32_t Pid() const {
-            return this->pid;
-        }
-	};
+        constexpr int32_t Pid() const { return this->pid; }
+    };
 
-
-}
+} // namespace utils::ps4

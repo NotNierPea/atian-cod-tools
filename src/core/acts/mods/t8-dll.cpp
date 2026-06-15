@@ -3,139 +3,138 @@
 #include <cli/clisync.hpp>
 
 namespace {
-	int t8dll(int argc, const char* argv[]) {
-		constexpr auto gameName = "blackops4.exe";
-		constexpr auto dllName = "acts-bo4-dll.dll";
-		uint64_t features{};
-		for (size_t i = 3; i < argc; i++) {
-			auto arg = argv[i];
+    int t8dll(int argc, const char* argv[]) {
+        constexpr auto gameName = "blackops4.exe";
+        constexpr auto dllName = "acts-bo4-dll.dll";
+        uint64_t features{};
+        for (size_t i = 3; i < argc; i++) {
+            auto arg = argv[i];
 
-			if (strcmp(arg, "-l") || _strcmpi(arg, "--log")) {
-				features |= cli::clisync::FEATURE_LOG;
-			}
-			else {
-				std::cerr << "Unknown option: " << arg << "\n";
-				return tool::BAD_USAGE;
-			}
-		}
+            if (strcmp(arg, "-l") || _strcmpi(arg, "--log")) {
+                features |= cli::clisync::FEATURE_LOG;
+            } else {
+                std::cerr << "Unknown option: " << arg << "\n";
+                return tool::BAD_USAGE;
+            }
+        }
 
-		Process proc{ gameName };
+        Process proc{ gameName };
 
-		if (!proc) {
-			std::wcerr << L"Can't find game process\n";
-			return tool::BASIC_ERROR;
-		}
-	
-		if (!proc.Open()) {
-			std::cerr << "Can't open game process: x" << std::hex << GetLastError() << "\n";
-			return tool::BASIC_ERROR;
-		}
+        if (!proc) {
+            std::wcerr << L"Can't find game process\n";
+            return tool::BASIC_ERROR;
+        }
 
-		std::filesystem::path progpath = utils::GetProgDir();
-		std::filesystem::path dllfile = progpath / std::filesystem::path(dllName);
-		auto str = dllfile.string();
-	
-		std::cout << "dll location -> " << str << "\n";
+        if (!proc.Open()) {
+            std::cerr << "Can't open game process: x" << std::hex << GetLastError() << "\n";
+            return tool::BASIC_ERROR;
+        }
 
-		if (!proc.LoadDll(str.c_str())) {
-			std::cerr << "Can't inject dll\n";
-			return tool::BASIC_ERROR;
-		}
-		std::cout << "dll injected, sync data\n";
+        std::filesystem::path progpath = utils::GetProgDir();
+        std::filesystem::path dllfile = progpath / std::filesystem::path(dllName);
+        auto str = dllfile.string();
 
-		auto& rSyncCLI = proc[dllName]["SyncCLI"];
+        std::cout << "dll location -> " << str << "\n";
 
-		if (!rSyncCLI) {
-			std::cerr << "Can't find " << dllName << "@SyncCLI\n";
-			return tool::BASIC_ERROR;
-		}
+        if (!proc.LoadDll(str.c_str())) {
+            std::cerr << "Can't inject dll\n";
+            return tool::BASIC_ERROR;
+        }
+        std::cout << "dll injected, sync data\n";
 
-		cli::clisync::CliSyncData data{ .features = features };
+        auto& rSyncCLI = proc[dllName]["SyncCLI"];
 
-		auto ppstr = progpath.string();
+        if (!rSyncCLI) {
+            std::cerr << "Can't find " << dllName << "@SyncCLI\n";
+            return tool::BASIC_ERROR;
+        }
 
-		std::filesystem::path pwd = std::filesystem::current_path();
-		auto cpstr = pwd.string();
+        cli::clisync::CliSyncData data{ .features = features };
 
-		strncpy_s(data.execDir, sizeof(data.execDir), ppstr.c_str(), ppstr.length());
-		strncpy_s(data.workDir, sizeof(data.workDir), cpstr.c_str(), cpstr.length());
+        auto ppstr = progpath.string();
 
-		auto rsync = proc.AllocateMemory(sizeof(data));
+        std::filesystem::path pwd = std::filesystem::current_path();
+        auto cpstr = pwd.string();
 
-		if (!rsync || !proc.WriteMemory(rsync, &data, sizeof(data))) {
-			std::cerr << "Can't write sync data\n";
-			proc.FreeMemory(rsync, sizeof(data));
-			return tool::BASIC_ERROR;
-		}
+        strncpy_s(data.execDir, sizeof(data.execDir), ppstr.c_str(), ppstr.length());
+        strncpy_s(data.workDir, sizeof(data.workDir), cpstr.c_str(), cpstr.length());
 
-		auto thr = proc.Exec(rSyncCLI.m_location, rsync);
+        auto rsync = proc.AllocateMemory(sizeof(data));
 
-		if (thr == INVALID_HANDLE_VALUE || !thr) {
-			std::cerr << "Can't call sync data\n";
-			proc.FreeMemory(rsync, sizeof(data));
-			return tool::BASIC_ERROR;
-		}
+        if (!rsync || !proc.WriteMemory(rsync, &data, sizeof(data))) {
+            std::cerr << "Can't write sync data\n";
+            proc.FreeMemory(rsync, sizeof(data));
+            return tool::BASIC_ERROR;
+        }
 
-		WaitForSingleObject(thr, INFINITE);
-		CloseHandle(thr);
+        auto thr = proc.Exec(rSyncCLI.m_location, rsync);
 
-		proc.FreeMemory(rsync, sizeof(data));
-		return tool::OK;
-	}
+        if (thr == INVALID_HANDLE_VALUE || !thr) {
+            std::cerr << "Can't call sync data\n";
+            proc.FreeMemory(rsync, sizeof(data));
+            return tool::BASIC_ERROR;
+        }
 
-	int t9dll(int argc, const char* argv[]) {
-		Process proc{ "BlackOpsColdWar.exe" };
+        WaitForSingleObject(thr, INFINITE);
+        CloseHandle(thr);
 
-		if (!proc) {
-			std::wcerr << L"Can't find game process\n";
-			return tool::BASIC_ERROR;
-		}
+        proc.FreeMemory(rsync, sizeof(data));
+        return tool::OK;
+    }
 
-		if (!proc.Open()) {
-			std::cerr << "Can't open game process: x" << std::hex << GetLastError() << "\n";
-			return tool::BASIC_ERROR;
-		}
+    int t9dll(int argc, const char* argv[]) {
+        Process proc{ "BlackOpsColdWar.exe" };
 
-		std::filesystem::path progpath = utils::GetProgDir();
-		std::filesystem::path dllfile = progpath / std::filesystem::path("acts-bocw-dll.dll");
-		auto str = dllfile.string();
+        if (!proc) {
+            std::wcerr << L"Can't find game process\n";
+            return tool::BASIC_ERROR;
+        }
 
-		std::cout << "dll location -> " << str << "\n";
+        if (!proc.Open()) {
+            std::cerr << "Can't open game process: x" << std::hex << GetLastError() << "\n";
+            return tool::BASIC_ERROR;
+        }
 
-		if (!proc.LoadDll(str.c_str())) {
-			std::cerr << "Can't inject dll\n";
-			return tool::BASIC_ERROR;
-		}
-		std::cout << "dll injected\n";
+        std::filesystem::path progpath = utils::GetProgDir();
+        std::filesystem::path dllfile = progpath / std::filesystem::path("acts-bocw-dll.dll");
+        auto str = dllfile.string();
 
-		if (argc > 3) {
-			proc.ComputeModules();
-			for (size_t i = 3; i < argc; i++) {
-				auto& mod = proc["acts-bocw-dll.dll"][argv[i]];
+        std::cout << "dll location -> " << str << "\n";
 
-				if (!mod) {
-					std::cerr << "Can't find export " << argv[i] << "\n";
-					continue;
-				}
+        if (!proc.LoadDll(str.c_str())) {
+            std::cerr << "Can't inject dll\n";
+            return tool::BASIC_ERROR;
+        }
+        std::cout << "dll injected\n";
 
-				std::cout << "Calling " << mod << "\n";
+        if (argc > 3) {
+            proc.ComputeModules();
+            for (size_t i = 3; i < argc; i++) {
+                auto& mod = proc["acts-bocw-dll.dll"][argv[i]];
 
-				auto thr = proc.Exec(mod.m_location, 0);
+                if (!mod) {
+                    std::cerr << "Can't find export " << argv[i] << "\n";
+                    continue;
+                }
 
-				if (thr == INVALID_HANDLE_VALUE || !thr) {
-					return false;
-				}
-				WaitForSingleObject(thr, INFINITE);
-				CloseHandle(thr);
+                std::cout << "Calling " << mod << "\n";
 
-				std::cout << "Done\n";
-			}
-		}
+                auto thr = proc.Exec(mod.m_location, 0);
 
-		return tool::OK;
-	}
+                if (thr == INVALID_HANDLE_VALUE || !thr) {
+                    return false;
+                }
+                WaitForSingleObject(thr, INFINITE);
+                CloseHandle(thr);
 
-}
+                std::cout << "Done\n";
+            }
+        }
+
+        return tool::OK;
+    }
+
+} // namespace
 ADD_MOD("t8dll", "Inject BO4 DLL", t8dll);
 ADD_MOD("t9dll", "Inject CW DLL", t9dll);
 

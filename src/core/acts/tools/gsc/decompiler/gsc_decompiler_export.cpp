@@ -4,10 +4,8 @@
 #include <tools/gsc/gsc_iw.hpp>
 #include <acts_vm.hpp>
 
-
 namespace tool::gsc {
     using namespace opcode;
-
 
     struct H32T7GSCExportReader : GSCExportReader {
         T7GSCExport* exp{};
@@ -106,7 +104,6 @@ namespace tool::gsc {
         size_t SizeOf() override { return sizeof(*exp); };
     };
 
-
     std::unique_ptr<GSCExportReader> CreateExportReader(VmInfo* vmInfo) {
         if (vmInfo->HasFlag(VmFlags::VMF_HASH_ACTS)) {
             return std::make_unique<ACTSExportReader>();
@@ -116,20 +113,16 @@ namespace tool::gsc {
         }
         if (vmInfo->HasFlag(VmFlags::VMF_HASH64 | VmFlags::VMF_EXPORT_NOCHECKSUM)) {
             return std::make_unique<H64CERGSCExportReader>();
-        }
-        else if (vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
+        } else if (vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
             if (vmInfo->HasFlag(VmFlags::VMF_EXPORT_CRC32)) {
                 return std::make_unique<H64CER2GSCExportReader>();
-            }
-            else {
+            } else {
                 return std::make_unique<H64GSCExportReader>();
             }
-        }
-        else if (vmInfo->flags & VmFlags::VMF_NO_FILE_NAMESPACE) {
+        } else if (vmInfo->flags & VmFlags::VMF_NO_FILE_NAMESPACE) {
             return std::make_unique<H32T7GSCExportReader>();
-        }
-        else {
+        } else {
             return std::make_unique<H32GSCExportReader>();
         }
     }
-}
+} // namespace tool::gsc

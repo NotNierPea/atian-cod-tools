@@ -1,6 +1,6 @@
 #pragma once
 
 namespace core::shared_cfg {
-	void* GetSharedConfigPtr();
-	void SetSharedConfigPtr(void* cfg);
-}
+    void* GetSharedConfigPtr();
+    void SetSharedConfigPtr(void* cfg);
+} // namespace core::shared_cfg

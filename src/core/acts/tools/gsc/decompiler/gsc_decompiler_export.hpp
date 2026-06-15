@@ -16,4 +16,4 @@ namespace tool::gsc {
     };
 
     std::unique_ptr<GSCExportReader> CreateExportReader(tool::gsc::opcode::VmInfo* vmInfo);
-}
+} // namespace tool::gsc

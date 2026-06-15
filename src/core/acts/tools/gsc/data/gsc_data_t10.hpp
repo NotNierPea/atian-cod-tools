@@ -48,4 +48,4 @@ namespace tool::gsc {
         uint8_t flags;
     };
 
-}
+} // namespace tool::gsc

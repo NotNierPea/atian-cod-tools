@@ -696,9 +696,7 @@ const char* bo6::PoolName(T10HashAssetType type) {
     return it->second;
 }
 
-bo6::T10HashAssetType bo6::PoolId(const char* name) {
-    return (T10HashAssetType) hash::HashX32(name);
-}
+bo6::T10HashAssetType bo6::PoolId(const char* name) { return (T10HashAssetType)hash::HashX32(name); }
 
 const char* bo6::PoolNameRelease(bo6::T10RAssetType type) {
     return type >= 0 && type < ACTS_ARRAYSIZE(poolNamesRelease) ? poolNamesRelease[type] : "<invalid>";
@@ -714,7 +712,7 @@ bo6::T10RAssetType bo6::PoolIdRelease(const char* name) {
 
 namespace {
     struct DB_AssetPool {
-        uintptr_t m_entries; // void*
+        uintptr_t m_entries;  // void*
         uintptr_t m_freeHead; // void*
         unsigned int m_poolSize;
         unsigned int m_elementSize;
@@ -740,8 +738,8 @@ namespace {
         uint64_t buffer;
         uint64_t unk48;
         uint64_t unk50;
-    }; static_assert(sizeof(LuaFileEntry) == 0x58);
-
+    };
+    static_assert(sizeof(LuaFileEntry) == 0x58);
 
     int ps4dumpbo6(Process& _, int argc, const char* argv[]) {
         if (argc < 4) {
@@ -754,7 +752,7 @@ namespace {
             const char* poolName{ argv[i] };
 
             if (!_strcmpi(poolName, "pools")) {
-                //const char* poolnames[311]
+                // const char* poolnames[311]
                 constexpr size_t poolsCount = bo6::T10_ASSET_COUNT;
                 auto pools = ps4.ReadArray<DB_AssetPool>(ps4[0x98FEFA0], poolsCount);
                 auto names = ps4.ReadArray<uint64_t>(ps4[0x3206610], poolsCount);
@@ -769,11 +767,14 @@ namespace {
                 utils::CloseEnd ce{ os };
 
                 os << "id,name,itemsize,count,alloc";
-            
+
                 for (size_t i = 0; i < poolsCount; i++) {
-                    std::string name{ ps4.ReadString(names[i], 128) }; // we can go unsafe because we are in the middle of the eboot
+                    std::string name{ ps4.ReadString(
+                        names[i], 128) }; // we can go unsafe because we are in the middle of the eboot
                     auto& pool{ pools[i] };
-                    os << "\n" << std::dec << i << "," << name << "," << std::hex << pool.m_elementSize << "," << pool.m_poolSize << "," << pool.m_loadedPoolSize;
+                    os << "\n"
+                       << std::dec << i << "," << name << "," << std::hex << pool.m_elementSize << ","
+                       << pool.m_poolSize << "," << pool.m_loadedPoolSize;
                 }
 
                 LOG_INFO("Pools dumped into bo6pools.csv");
@@ -783,8 +784,8 @@ namespace {
             if (!_strcmpi(poolName, "gscobj")) {
                 auto pool = ps4.ReadObject<DB_AssetPool>(ps4[0x98FEFA0] + sizeof(DB_AssetPool) * bo6::T10_ASSET_GSCOBJ);
 
-
-                LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize, pool->m_poolSize, pool->m_elementSize);
+                LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize,
+                         pool->m_poolSize, pool->m_elementSize);
                 auto objs = ps4.ReadArray<GscObjEntry>(pool->m_entries, pool->m_loadedPoolSize);
 
                 std::filesystem::path gsc{ "gsc" };
@@ -801,22 +802,22 @@ namespace {
 
                     auto bytes3 = ps4.ReadBuffer(obj.buffer, obj.len);
 
-                    if (!utils::WriteFile(gsc / utils::va("script_%llx.gscc", obj.name), bytes3.data(), bytes3.size())) {
+                    if (!utils::WriteFile(gsc / utils::va("script_%llx.gscc", obj.name), bytes3.data(),
+                                          bytes3.size())) {
                         LOG_ERROR("Error when writting {:x}", obj.name);
-                    }
-                    else {
+                    } else {
                         LOG_INFO("Dump script_{:x}.gscc", obj.name);
                     }
-
                 }
                 continue;
             }
 
             if (!_strcmpi(poolName, "luafile")) {
-                auto pool = ps4.ReadObject<DB_AssetPool>(ps4[0x98FEFA0] + sizeof(DB_AssetPool) * bo6::T10_ASSET_LUAFILE);
+                auto pool =
+                    ps4.ReadObject<DB_AssetPool>(ps4[0x98FEFA0] + sizeof(DB_AssetPool) * bo6::T10_ASSET_LUAFILE);
 
-
-                LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize, pool->m_poolSize, pool->m_elementSize);
+                LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize,
+                         pool->m_poolSize, pool->m_elementSize);
                 auto objs = ps4.ReadArray<LuaFileEntry>(pool->m_entries, pool->m_loadedPoolSize);
 
                 std::filesystem::path gsc{ "lua" };
@@ -830,16 +831,14 @@ namespace {
                         LOG_WARNING("Ignore {:x}", obj.name);
                         continue;
                     }
-                    
+
                     auto bytes3 = ps4.ReadBuffer(obj.buffer, obj.len);
-                    
+
                     if (!utils::WriteFile(gsc / utils::va("%llx.lua", obj.name), bytes3.data(), bytes3.size())) {
                         LOG_ERROR("Error when writting {:x}", obj.name);
-                    }
-                    else {
+                    } else {
                         LOG_INFO("Dump {:x}.lua", obj.name);
                     }
-
                 }
                 continue;
             }
@@ -867,8 +866,6 @@ namespace {
             ps4.Connect();
 
             LOG_TRACE("Connected to {}", ipd);
-
-
 
             auto procList = ps4.GetProcessList();
             auto proc = procList.FindProcess("eboot.bin");
@@ -920,10 +917,8 @@ namespace {
 
             ps4.WriteMemory(pid, cbuf2, data);
 
-
             ps4.Notify(utils::ps4::PS4N_MESSAGE, std::format("cbuf {}", cmd));
-        }
-        catch (std::exception& res) {
+        } catch (std::exception& res) {
             LOG_ERROR("{}", res.what());
         }
         ps4.Disconnect();
@@ -956,14 +951,11 @@ namespace {
 
         LOG_INFO("Loaded script {} -> name = script_{:x}", file, name);
 
-
         libdebug::PS4DBG ps4{ ipd };
         try {
             ps4.Connect();
 
             LOG_TRACE("Connected to {}", ipd);
-
-
 
             auto procList = ps4.GetProcessList();
             auto proc = procList.FindProcess("eboot.bin");
@@ -999,14 +991,13 @@ namespace {
                 return tool::BASIC_ERROR;
             }
 
-
             uintptr_t poolIdx = base + 0x98FEFA0 + sizeof(DB_AssetPool) * 69; // 69 = gscobj
             auto bytes = ps4.ReadMemory(pid, poolIdx, sizeof(DB_AssetPool));
 
             auto* pool = reinterpret_cast<DB_AssetPool*>(bytes.data());
 
-
-            LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize, pool->m_poolSize, pool->m_elementSize);
+            LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize, pool->m_poolSize,
+                     pool->m_elementSize);
             auto bytes2 = ps4.ReadMemory(pid, pool->m_entries, sizeof(GscObjEntry) * pool->m_loadedPoolSize);
 
             auto* objs = reinterpret_cast<GscObjEntry*>(bytes2.data());
@@ -1044,8 +1035,7 @@ namespace {
             }
             ps4.Notify(utils::ps4::PS4N_MESSAGE, "script injected");
 
-        }
-        catch (std::exception& res) {
+        } catch (std::exception& res) {
             LOG_ERROR("{}", res.what());
         }
         ps4.Disconnect();
@@ -1075,157 +1065,51 @@ namespace {
     }
 
     int Render(HWND window, HINSTANCE hInstance) {
-        info.titleLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            L"Black Ops 6 Beta tools",
-            SS_CENTER | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.titleLabel = CreateWindowExW(0, L"STATIC", L"Black Ops 6 Beta tools", SS_CENTER | WS_CHILD | WS_VISIBLE, 0,
+                                          0, 0, 0, window, NULL, hInstance, NULL);
 
-        info.notificationLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            info.lastNotif.c_str(),
-            SS_CENTER | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.notificationLabel =
+            CreateWindowExW(0, L"STATIC", info.lastNotif.c_str(), SS_CENTER | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, window,
+                            NULL, hInstance, NULL);
 
-        info.filePathEdit = CreateWindowExW(
-            0,
-            L"EDIT",
-            L"",
-            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.filePathEdit =
+            CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0,
+                            window, NULL, hInstance, NULL);
 
-        info.filePathEditLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            L"GSC File : ",
-            SS_RIGHT | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
-        info.ps4Edit = CreateWindowExW(
-            0,
-            L"EDIT",
-            L"",
-            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.filePathEditLabel = CreateWindowExW(0, L"STATIC", L"GSC File : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0,
+                                                 0, 0, window, NULL, hInstance, NULL);
+        info.ps4Edit = CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0,
+                                       0, 0, 0, window, NULL, hInstance, NULL);
 
-        info.ps4EditLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            L"PS4 : ",
-            SS_RIGHT | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.ps4EditLabel = CreateWindowExW(0, L"STATIC", L"PS4 : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
+                                            window, NULL, hInstance, NULL);
 
-        info.filePathButton = CreateWindowExW(
-            0,
-            L"BUTTON",
-            L"...",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.filePathButton = CreateWindowExW(0, L"BUTTON", L"...", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
+                                              0, 0, 0, 0, window, NULL, hInstance, NULL);
 
-        info.injectButton = CreateWindowExW(
-            0,
-            L"BUTTON",
-            L"Inject GSC script",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.injectButton =
+            CreateWindowExW(0, L"BUTTON", L"Inject GSC script", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 0,
+                            0, 0, 0, window, NULL, hInstance, NULL);
 
-        info.cbuffEdit = CreateWindowExW(
-            0,
-            L"EDIT",
-            L"",
-            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.cbuffEdit = CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                                         0, 0, 0, 0, window, NULL, hInstance, NULL);
 
-        info.cbuffEditLabel = CreateWindowExW(
-            0,
-            L"STATIC",
-            L"Command : ",
-            SS_RIGHT | WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.cbuffEditLabel = CreateWindowExW(0, L"STATIC", L"Command : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
+                                              window, NULL, hInstance, NULL);
 
-        info.cbuffButton = CreateWindowExW(
-            0,
-            L"BUTTON",
-            L"Send command",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            0, 0, 0, 0,
-            window,
-            NULL,
-            hInstance,
-            NULL
-        );
+        info.cbuffButton =
+            CreateWindowExW(0, L"BUTTON", L"Send command", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 0, 0, 0,
+                            0, window, NULL, hInstance, NULL);
 
-
-        if (
-            info.filePathEdit == NULL
-            || info.filePathEditLabel == NULL
-            || info.filePathButton == NULL
-            || info.injectButton == NULL
-            || info.ps4Edit == NULL
-            || info.ps4EditLabel == NULL
-            || info.titleLabel == NULL
-            || info.cbuffEdit == NULL
-            || info.cbuffEditLabel == NULL
-            || info.cbuffButton == NULL
-            ) {
+        if (info.filePathEdit == NULL || info.filePathEditLabel == NULL || info.filePathButton == NULL ||
+            info.injectButton == NULL || info.ps4Edit == NULL || info.ps4EditLabel == NULL || info.titleLabel == NULL ||
+            info.cbuffEdit == NULL || info.cbuffEditLabel == NULL || info.cbuffButton == NULL) {
             return -1;
         }
 
         SendMessage(info.filePathEdit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
         SendMessage(info.ps4Edit, EM_SETLIMITTEXT, (WPARAM)MAX_PATH, (LPARAM)0);
         SendMessage(info.cbuffEdit, EM_SETLIMITTEXT, (WPARAM)0x1000, (LPARAM)0);
-        
 
         std::wstring gscPath = utils::StrToWStr(core::config::GetString("ui.bo6.path", ""));
         std::wstring ps4Path = utils::StrToWStr(core::config::GetString("ui.ps4.ipd", ""));
@@ -1247,16 +1131,14 @@ namespace {
                         core::config::SetString("ui.bo6.path", utils::WStrToStr(path));
                         core::config::SaveConfig();
                     }
-                }
-                else if (info.ps4Edit == (HWND)lParam) {
+                } else if (info.ps4Edit == (HWND)lParam) {
                     wchar_t path[MAX_PATH + 1];
 
                     if (SUCCEEDED(GetWindowTextW(info.ps4Edit, &path[0], ACTS_ARRAYSIZE(path)))) {
                         core::config::SetString("ui.ps4.ipd", utils::WStrToStr(path));
                         core::config::SaveConfig();
                     }
-                }
-                else if (info.cbuffEdit == (HWND)lParam) {
+                } else if (info.cbuffEdit == (HWND)lParam) {
                     wchar_t path[MAX_PATH + 1];
 
                     if (SUCCEEDED(GetWindowTextW(info.cbuffEdit, &path[0], ACTS_ARRAYSIZE(path)))) {
@@ -1264,8 +1146,7 @@ namespace {
                         core::config::SaveConfig();
                     }
                 }
-            }
-            else if (wParam == BN_CLICKED) {
+            } else if (wParam == BN_CLICKED) {
                 if (info.filePathButton == (HWND)lParam) {
                     // Open file
 
@@ -1292,8 +1173,7 @@ namespace {
                         SendMessage(info.filePathEdit, WM_SETTEXT, (WPARAM)0, (LPARAM)ofn.lpstrFile);
                     }
                     return 1;
-                }
-                else if (info.injectButton == (HWND)lParam) {
+                } else if (info.injectButton == (HWND)lParam) {
                     std::string filePath = utils::WStrToStr(tool::ui::GetWindowTextVal(info.filePathEdit));
                     std::string ps4Path = utils::WStrToStr(tool::ui::GetWindowTextVal(info.ps4Edit));
 
@@ -1317,9 +1197,9 @@ namespace {
                             tool::gsc::opcode::VmInfo* nfo{};
                             if (tool::gsc::opcode::IsValidVmMagic(magic, nfo)) {
                                 SetNotif(std::format("This script is for {}, not Black Ops 6", nfo->name));
-                            }
-                            else {
-                                SetNotif(std::format("Invalid script magic {:x}, are you sure to use a compiled bo6 script?", magic));
+                            } else {
+                                SetNotif(std::format(
+                                    "Invalid script magic {:x}, are you sure to use a compiled bo6 script?", magic));
                             }
                             return TRUE;
                         }
@@ -1328,10 +1208,11 @@ namespace {
 
                         utils::ps4::PS4Process ps4{ ps4Path };
 
-                        auto pool = ps4.ReadObject<DB_AssetPool>(ps4[0x98FEFA0] + sizeof(DB_AssetPool) * bo6::T10_ASSET_GSCOBJ);
+                        auto pool =
+                            ps4.ReadObject<DB_AssetPool>(ps4[0x98FEFA0] + sizeof(DB_AssetPool) * bo6::T10_ASSET_GSCOBJ);
 
-
-                        LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize, pool->m_poolSize, pool->m_elementSize);
+                        LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize,
+                                 pool->m_poolSize, pool->m_elementSize);
                         auto objs = ps4.ReadArray<GscObjEntry>(pool->m_entries, pool->m_loadedPoolSize);
 
                         for (size_t i = 0; i < pool->m_loadedPoolSize; i++) {
@@ -1365,13 +1246,11 @@ namespace {
                             return TRUE;
                         }
                         SetNotif("Can't find hook script");
-                    }
-                    catch (std::exception& e) {
+                    } catch (std::exception& e) {
                         SetNotif(std::format("Exception: {}", e.what()));
                     }
                     return TRUE;
-                }
-                else if (info.cbuffButton == (HWND)lParam) {
+                } else if (info.cbuffButton == (HWND)lParam) {
                     SetNotif("");
                     std::string ps4Path = utils::WStrToStr(tool::ui::GetWindowTextVal(info.ps4Edit));
                     std::string cmd = utils::WStrToStr(tool::ui::GetWindowTextVal(info.cbuffEdit));
@@ -1387,29 +1266,20 @@ namespace {
                         ps4.Write(cbuf1, cmd.data(), cmd.size() + 1);
                         ps4.Write<uint32_t>(cbuf2, (uint32_t)cmd.size());
 
-
                         ps4.Notify(std::format("cbuf {}", cmd));
-                    }
-                    catch (std::exception& e) {
+                    } catch (std::exception& e) {
                         SetNotif(std::format("Exception: {}", e.what()));
                     }
                     return TRUE;
                 }
             }
-        }
-        else if (uMsg == WM_CTLCOLORSTATIC) {
-            if (lParam == (LPARAM)info.filePathEdit
-                || lParam == (LPARAM)info.filePathEditLabel
-                || lParam == (LPARAM)info.filePathButton
-                || lParam == (LPARAM)info.ps4Edit
-                || lParam == (LPARAM)info.ps4EditLabel
-                || lParam == (LPARAM)info.cbuffEdit
-                || lParam == (LPARAM)info.cbuffEditLabel
-                || lParam == (LPARAM)info.cbuffButton
-                || lParam == (LPARAM)info.injectButton
-                || lParam == (LPARAM)info.notificationLabel
-                || lParam == (LPARAM)info.titleLabel
-                ) {
+        } else if (uMsg == WM_CTLCOLORSTATIC) {
+            if (lParam == (LPARAM)info.filePathEdit || lParam == (LPARAM)info.filePathEditLabel ||
+                lParam == (LPARAM)info.filePathButton || lParam == (LPARAM)info.ps4Edit ||
+                lParam == (LPARAM)info.ps4EditLabel || lParam == (LPARAM)info.cbuffEdit ||
+                lParam == (LPARAM)info.cbuffEditLabel || lParam == (LPARAM)info.cbuffButton ||
+                lParam == (LPARAM)info.injectButton || lParam == (LPARAM)info.notificationLabel ||
+                lParam == (LPARAM)info.titleLabel) {
                 return 0;
             }
         }
@@ -1419,11 +1289,9 @@ namespace {
         int y{ height / 2 - 28 * 4 };
         SetWindowPos(info.titleLabel, NULL, 0, y - 68, width, 60, SWP_SHOWWINDOW);
 
-
         SetWindowPos(info.ps4Edit, NULL, width / 2 - 250, y, 500, 24, SWP_SHOWWINDOW);
         SetWindowPos(info.ps4EditLabel, NULL, 0, y, width / 2 - 250, 24, SWP_SHOWWINDOW);
         y += 28;
-
 
         // GSC TOOL
         y += 20;
@@ -1453,8 +1321,10 @@ namespace {
     }
 
     const char* SendCbuffCmd(const char* cmd, const char* ps4ipd) {
-        if (!cmd || !*cmd) return "Empty command";
-        if (!ps4ipd || !*ps4ipd) return "Empty PS4 IP";
+        if (!cmd || !*cmd)
+            return "Empty command";
+        if (!ps4ipd || !*ps4ipd)
+            return "Empty PS4 IP";
         try {
             std::string cmd = cmd;
 
@@ -1466,17 +1336,17 @@ namespace {
             ps4.Write(cbuf1, cmd.data(), cmd.size() + 1);
             ps4.Write<uint32_t>(cbuf2, (uint32_t)cmd.size());
 
-
             ps4.Notify(std::format("cbuf {}", cmd));
             return "";
-        }
-        catch (std::exception& e) {
+        } catch (std::exception& e) {
             return utils::va("Exception: %s", e.what());
         }
     }
     const char* SendPS4Gsc(const char* path, const char* ps4ipd) {
-        if (!path || !*path) return "Empty path";
-        if (!ps4ipd || !*ps4ipd) return "Empty PS4 IP";
+        if (!path || !*path)
+            return "Empty path";
+        if (!ps4ipd || !*ps4ipd)
+            return "Empty PS4 IP";
 
         std::string file{};
 
@@ -1500,8 +1370,7 @@ namespace {
             tool::gsc::opcode::VmInfo* nfo{};
             if (!tool::gsc::opcode::IsValidVmMagic(magic, nfo)) {
                 return utils::va("Invalid magic: 0x%llx", magic);
-            }
-            else if (nfo->vmMagic == tool::gsc::opcode::VMI_T10_06) {
+            } else if (nfo->vmMagic == tool::gsc::opcode::VMI_T10_06) {
                 // bo6 injector
 
                 try {
@@ -1511,10 +1380,11 @@ namespace {
 
                     utils::ps4::PS4Process ps4{ ps4ipd };
 
-                    auto pool = ps4.ReadObject<bo6::DB_AssetPool>(ps4[0x98FEFA0] + sizeof(bo6::DB_AssetPool) * bo6::T10_ASSET_GSCOBJ);
+                    auto pool = ps4.ReadObject<bo6::DB_AssetPool>(ps4[0x98FEFA0] +
+                                                                  sizeof(bo6::DB_AssetPool) * bo6::T10_ASSET_GSCOBJ);
 
-
-                    LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize, pool->m_poolSize, pool->m_elementSize);
+                    LOG_INFO("Pool: {:x}, count: {}/{}, len 0x{:x}", pool->m_entries, pool->m_loadedPoolSize,
+                             pool->m_poolSize, pool->m_elementSize);
                     auto objs = ps4.ReadArray<bo6::GscObjEntry>(pool->m_entries, pool->m_loadedPoolSize);
 
                     size_t i;
@@ -1530,7 +1400,8 @@ namespace {
                         }
 
                         if (obj.len < file.size()) {
-                            throw std::runtime_error(utils::va("Buffer too small, can't remplace %llu < %llu", (size_t)obj.len, file.size()));
+                            throw std::runtime_error(utils::va("Buffer too small, can't remplace %llu < %llu",
+                                                               (size_t)obj.len, file.size()));
                         }
 
                         auto scriptTarget = ps4.ReadObject<tool::gsc::GscObj24>(obj.buffer);
@@ -1545,16 +1416,13 @@ namespace {
                         return "Script injected";
                     }
                     return "Can't find hook script";
-                }
-                catch (std::exception& e) {
+                } catch (std::exception& e) {
                     return utils::va("Exception: %s", e.what());
                 }
-            }
-            else {
+            } else {
                 return utils::va("PS4 injector not implemented for VM: %s", nfo->name);
             }
-        }
-        catch (std::exception& e) {
+        } catch (std::exception& e) {
             return utils::va("Exception: %s", e.what());
         }
     }
@@ -1578,7 +1446,7 @@ namespace {
             snprintf(cbuffIn, sizeof(cbuffIn), "%s", injCbuff.data());
             snprintf(ps4In, sizeof(ps4In), "%s", injPs4.data());
             c = true;
-           });
+        });
 
         ImGui::SeparatorText("BO6 PS4 utilitites");
 
@@ -1633,7 +1501,6 @@ namespace {
             }
         }
 
-
         if (ImGui::Button("Inject PS4 Script")) {
             notif = SendPS4Gsc(gscFileIn, ps4In);
         }
@@ -1644,23 +1511,18 @@ namespace {
             ImGui::Text("%s", notif.data());
         }
 
-        if (c) tool::nui::SaveNextConfig();
+        if (c)
+            tool::nui::SaveNextConfig();
     }
-    
+
     ADD_TOOL(ps4cbufbo6, "bo6", " [ip:port] [cmd]", "", nullptr, ps4cbufbo6);
     ADD_TOOL(ps4dumpbo6, "bo6", " [ip:port]", "", nullptr, ps4dumpbo6);
     ADD_TOOL(ps4repbo6, "bo6", " [ip:port] [file]", "", nullptr, ps4repbo6);
     ADD_TOOL_UI(bo6_tools, L"BO6 PS4", Render, Update, Resize);
     ADD_TOOL_NUI(bo6_tools, "BO6 PS4", bo6_tools);
-}
+} // namespace
 
-std::ostream& operator<<(std::ostream& os, const bo6::T10RAssetType& obj) {
-    return os << bo6::PoolNameRelease(obj);
-}
+std::ostream& operator<<(std::ostream& os, const bo6::T10RAssetType& obj) { return os << bo6::PoolNameRelease(obj); }
 
-const char* ActsAPIBO6PS4_Cbuff(const char* cbuff, const char* ps4ip) {
-    return SendCbuffCmd(cbuff, ps4ip);
-}
-const char* ActsAPIBO6PS4_InjectScript(const char* path, const char* ps4ip) {
-    return SendPS4Gsc(path, ps4ip);
-}
+const char* ActsAPIBO6PS4_Cbuff(const char* cbuff, const char* ps4ip) { return SendCbuffCmd(cbuff, ps4ip); }
+const char* ActsAPIBO6PS4_InjectScript(const char* path, const char* ps4ip) { return SendPS4Gsc(path, ps4ip); }

@@ -40,8 +40,7 @@ namespace cw {
             if (uExitCode) {
                 LOG_ERROR("ExitProcess with {}", uExitCode);
                 hook::error::DumpStackTraceFrom(core::logs::LVL_ERROR);
-            }
-            else {
+            } else {
                 LOG_INFO("ExitProcess with {}", uExitCode);
                 hook::error::DumpStackTraceFrom(core::logs::LVL_INFO);
             }
@@ -84,8 +83,7 @@ namespace cw {
                     try {
                         core::system::PostInit();
                         hook::library::SaveScanContainer();
-                    }
-                    catch (std::exception& e) {
+                    } catch (std::exception& e) {
                         LOG_ERROR("Error at ACTS DLL post init {}", e.what());
                         MessageBoxA(NULL, utils::va("%s", e.what()), "Error at ACTS DLL post init", MB_ICONERROR);
                         *reinterpret_cast<byte*>(0x123456789) = 2;
@@ -96,7 +94,7 @@ namespace cw {
         }
 
         byte* DecryptSTR(byte* str) {
-            return reinterpret_cast<byte * (*)(byte * str)>(hook::process::Relativise(0xc990ad0))(str);
+            return reinterpret_cast<byte* (*)(byte * str)>(hook::process::Relativise(0xc990ad0))(str);
         }
 
         int DecryptGSCFile(T9GSCOBJ* script) {
@@ -111,7 +109,7 @@ namespace cw {
 
                 auto* sd = reinterpret_cast<const char*>(DecryptSTR(encryptedString));
 
-                //LOG_INFO("decrypted: {}", sd);
+                // LOG_INFO("decrypted: {}", sd);
 
                 decrypted++;
 
@@ -163,7 +161,7 @@ namespace cw {
             utils::GetFileRecurse(spt, files, [](const std::filesystem::path& path) {
                 auto name = path.string();
                 return name.ends_with(".gscc");
-                });
+            });
 
             for (const auto& file : files) {
                 LOG_INFO("decrypting {}...", file.string());
@@ -192,8 +190,7 @@ namespace cw {
                     if (!utils::WriteFile(out, s, sizeAlign)) {
                         LOG_ERROR("Error when writing back the file");
                     }
-                }
-                else {
+                } else {
                     LOG_ERROR("BAD MAGIC/SIZE");
                 }
 
@@ -246,7 +243,6 @@ namespace cw {
             const char* lastNotif{};
         };
         MenuData menuData{};
-
 
         void HandleImGuiMenu() {
             ImGui::Begin("Atian Tools", nullptr, 0);
@@ -315,12 +311,10 @@ namespace cw {
                 ImGui_ImplDX11_CreateDeviceObjects();
                 break;
             case MDT_D12:
-                ImGui_ImplDX12_Init(
-                    menuData.dx12.d3dDevice, menuData.dx12.bufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
-                    menuData.dx12.descHeap,
-                    menuData.dx12.descHeap->GetCPUDescriptorHandleForHeapStart(),
-                    menuData.dx12.descHeap->GetGPUDescriptorHandleForHeapStart()
-                );
+                ImGui_ImplDX12_Init(menuData.dx12.d3dDevice, menuData.dx12.bufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
+                                    menuData.dx12.descHeap,
+                                    menuData.dx12.descHeap->GetCPUDescriptorHandleForHeapStart(),
+                                    menuData.dx12.descHeap->GetGPUDescriptorHandleForHeapStart());
                 ImGui_ImplDX12_CreateDeviceObjects();
                 break;
             }
@@ -335,7 +329,9 @@ namespace cw {
         }
 
         HRESULT PresentStub(IDXGISwapChain* chain, UINT SyncInterval, UINT Flags) {
-            auto hresf = [chain, SyncInterval, Flags]() -> HRESULT { return PresentDetour.Call<HRESULT>(chain, SyncInterval, Flags); };
+            auto hresf = [chain, SyncInterval, Flags]() -> HRESULT {
+                return PresentDetour.Call<HRESULT>(chain, SyncInterval, Flags);
+            };
             if (!menuData.init) {
                 if (SUCCEEDED(chain->GetDevice(__uuidof(ID3D11Device), (void**)&menuData.dx11.d3dDevice))) {
                     menuData.d3dType = MDT_D11;
@@ -356,8 +352,7 @@ namespace cw {
                     menuData.init = true;
                     InitImGui();
                     LOG_DEBUG("ImGui init (D3D11)");
-                }
-                else if (SUCCEEDED(chain->GetDevice(__uuidof(ID3D12Device), (void**)&menuData.dx12.d3dDevice))) {
+                } else if (SUCCEEDED(chain->GetDevice(__uuidof(ID3D12Device), (void**)&menuData.dx12.d3dDevice))) {
                     if (!menuData.dx12.queue) {
                         if (!D3D12ExecuteCommandListsDetour) {
                             // detour not set, we need to create it
@@ -368,12 +363,14 @@ namespace cw {
                             queueDesc.NodeMask = 0;
 
                             ID3D12CommandQueue* queueTmp{};
-                            if (menuData.dx12.d3dDevice->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void**)&queueTmp) < 0) {
+                            if (menuData.dx12.d3dDevice->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue),
+                                                                            (void**)&queueTmp) < 0) {
                                 return hresf();
                             }
                             void* D3D12ExecuteCommandListsFunc = reinterpret_cast<void***>(queueTmp)[0][10];
 
-                            D3D12ExecuteCommandListsDetour.Create(D3D12ExecuteCommandListsFunc, D3D12ExecuteCommandListsStub);
+                            D3D12ExecuteCommandListsDetour.Create(D3D12ExecuteCommandListsFunc,
+                                                                  D3D12ExecuteCommandListsStub);
                             queueTmp->Release();
                             LOG_DEBUG("detour ExecuteCommandLists defined");
                         }
@@ -392,12 +389,14 @@ namespace cw {
                     desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
                     desc.NumDescriptors = sd.BufferCount;
                     desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-                    if (menuData.dx12.d3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&menuData.dx12.descHeap)) != S_OK) {
+                    if (menuData.dx12.d3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&menuData.dx12.descHeap)) !=
+                        S_OK) {
                         LOG_ERROR("Can't create D12 descriptor heap");
                         return hresf();
                     }
                     ID3D12CommandAllocator* alloc{};
-                    if (menuData.dx12.d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)) != S_OK) {
+                    if (menuData.dx12.d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                                        IID_PPV_ARGS(&alloc)) != S_OK) {
                         return hresf();
                     }
 
@@ -405,7 +404,8 @@ namespace cw {
                         menuData.dx12.frames[i].allocator = alloc;
                     }
 
-                    if (menuData.dx12.d3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, alloc, NULL, IID_PPV_ARGS(&menuData.dx12.commandList)) != S_OK ||
+                    if (menuData.dx12.d3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, alloc, NULL,
+                                                                   IID_PPV_ARGS(&menuData.dx12.commandList)) != S_OK ||
                         menuData.dx12.commandList->Close() != S_OK) {
                         return hresf();
                     }
@@ -416,11 +416,13 @@ namespace cw {
                     descBuffs.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
                     descBuffs.NodeMask = 1;
 
-                    if (menuData.dx12.d3dDevice->CreateDescriptorHeap(&descBuffs, IID_PPV_ARGS(&menuData.dx12.descBuffers)) != S_OK) {
+                    if (menuData.dx12.d3dDevice->CreateDescriptorHeap(
+                            &descBuffs, IID_PPV_ARGS(&menuData.dx12.descBuffers)) != S_OK) {
                         return hresf();
                     }
 
-                    const UINT RTVDescriptorSize = menuData.dx12.d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+                    const UINT RTVDescriptorSize =
+                        menuData.dx12.d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
                     D3D12_CPU_DESCRIPTOR_HANDLE rtv = menuData.dx12.descBuffers->GetCPUDescriptorHandleForHeapStart();
 
                     for (UINT i = 0; i < sd.BufferCount; i++) {
@@ -437,8 +439,7 @@ namespace cw {
                     menuData.init = true;
                     InitImGui();
                     LOG_DEBUG("ImGui init (D3D12)");
-                }
-                else {
+                } else {
                     static std::once_flag of{};
                     std::call_once(of, [] { LOG_ERROR("Can't get device imgui, unknown adapter?"); });
                     return hresf(); // Can't init imgui
@@ -451,8 +452,12 @@ namespace cw {
 
             ImGui_ImplWin32_NewFrame();
             switch (menuData.d3dType) {
-            case MDT_D11: ImGui_ImplDX11_NewFrame(); break;
-            case MDT_D12: ImGui_ImplDX12_NewFrame(); break;
+            case MDT_D11:
+                ImGui_ImplDX11_NewFrame();
+                break;
+            case MDT_D12:
+                ImGui_ImplDX12_NewFrame();
+                break;
             }
             ImGui::NewFrame();
 
@@ -472,10 +477,10 @@ namespace cw {
                 ImGui::Render();
                 menuData.dx11.d3dContext->OMSetRenderTargets(1, &menuData.dx11.render, NULL);
                 ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-            }
-                break;
+            } break;
             case MDT_D12: {
-                auto& ctx = menuData.dx12.frames[reinterpret_cast<IDXGISwapChain3*>(chain)->GetCurrentBackBufferIndex()];
+                auto& ctx =
+                    menuData.dx12.frames[reinterpret_cast<IDXGISwapChain3*>(chain)->GetCurrentBackBufferIndex()];
                 ctx.allocator->Reset();
 
                 D3D12_RESOURCE_BARRIER barrier;
@@ -498,16 +503,16 @@ namespace cw {
                 barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
                 menuData.dx12.commandList->ResourceBarrier(1, &barrier);
                 menuData.dx12.commandList->Close();
-                menuData.dx12.queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(&menuData.dx12.commandList));
+                menuData.dx12.queue->ExecuteCommandLists(
+                    1, reinterpret_cast<ID3D12CommandList* const*>(&menuData.dx12.commandList));
+            } break;
             }
-                break;
-            }
-
 
             return hresf();
         }
 
-        HRESULT CreateSwapChainStub(IDXGIFactory* factory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain) {
+        HRESULT CreateSwapChainStub(IDXGIFactory* factory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc,
+                                    IDXGISwapChain** ppSwapChain) {
             HRESULT res = CreateSwapChainDetour.Call<HRESULT>(factory, pDevice, pDesc, ppSwapChain);
 
             if (SUCCEEDED(res)) {
@@ -516,8 +521,7 @@ namespace cw {
                     LOG_DEBUG("Create swap chain {}", PresentFunc);
                     PresentDetour.Create(PresentFunc, PresentStub);
                 }
-            }
-            else {
+            } else {
                 LOG_WARNING("Can't create swap chain {:x}", res);
             }
 
@@ -532,8 +536,7 @@ namespace cw {
                     LOG_DEBUG("Create DXGI with res {}/{} {}", type, (int)res, CreateSwapChainFunc);
                     CreateSwapChainDetour.Create(CreateSwapChainFunc, CreateSwapChainStub);
                 }
-            }
-            else {
+            } else {
                 LOG_WARNING("Can't create dxgi {:x}", res);
             }
 
@@ -549,7 +552,8 @@ namespace cw {
         }
 
         HRESULT __stdcall CreateDXGIFactory2Stub(UINT Flags, const IID* const riid, void** ppFactory) {
-            return CreateDXGI("CreateDXGIFactory2", CreateDXGIFactory2Detour.Call<HRESULT>(Flags, riid, ppFactory), ppFactory);
+            return CreateDXGI("CreateDXGIFactory2", CreateDXGIFactory2Detour.Call<HRESULT>(Flags, riid, ppFactory),
+                              ppFactory);
         }
 #pragma endregion
 
@@ -573,10 +577,10 @@ namespace cw {
                 hook::error::InstallErrorHooks(true);
 
                 // clear error
-                std::filesystem::path exepath{ main.GetPath()};
+                std::filesystem::path exepath{ main.GetPath() };
                 std::filesystem::remove(exepath.replace_extension(".start"));
                 // patch tls
-                
+
                 auto& tlsDir = platform::PImageOptHeader(*main)->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS];
 
                 if (tlsDir.VirtualAddress && tlsDir.Size) {
@@ -612,22 +616,21 @@ namespace cw {
                 }
 
                 GetSystemMetricsDetour.Create(user32["GetSystemMetrics"], GetSystemMetricsStub);
-                //ExitProcessDetour.Create(kernel32["ExitProcess"], ExitProcessStub);
-                //GetThreadContextDetour.Create(kernel32["GetThreadContext"], GetThreadContextStub);
-                //SetThreadContextDetour.Create(kernel32["SetThreadContext"], SetThreadContextStub);
+                // ExitProcessDetour.Create(kernel32["ExitProcess"], ExitProcessStub);
+                // GetThreadContextDetour.Create(kernel32["GetThreadContext"], GetThreadContextStub);
+                // SetThreadContextDetour.Create(kernel32["SetThreadContext"], SetThreadContextStub);
 
                 hook::library::InitScanContainer("acts");
 
                 core::system::Init();
-            }
-            catch (std::exception& e) {
+            } catch (std::exception& e) {
                 LOG_ERROR("Error at ACTS DLL startup {}", e.what());
                 MessageBoxA(NULL, utils::va("%s", e.what()), "Error at ACTS DLL startup", MB_ICONERROR);
                 *reinterpret_cast<byte*>(0x123456789) = 2;
             }
         }
-    }
-}
+    } // namespace
+} // namespace cw
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
@@ -642,16 +645,16 @@ EXPORT void DLL_DecryptMTBuffer(size_t count) {
     LOG_INFO("Done");
 }
 
-EXPORT void DLL_DecryptGSCScripts() {
-    cw::DecryptGSCScripts();
-}
+EXPORT void DLL_DecryptGSCScripts() { cw::DecryptGSCScripts(); }
 
 // hook powrprof.dll for auto injection
-EXPORT NTSTATUS CallNtPowerInformation(POWER_INFORMATION_LEVEL InformationLevel, PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength) {
+EXPORT NTSTATUS CallNtPowerInformation(POWER_INFORMATION_LEVEL InformationLevel, PVOID InputBuffer,
+                                       ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength) {
     static auto func = [] {
         hook::library::Library powrprof{ "powrprof.dll", true };
 
-        if (!powrprof) throw std::runtime_error(utils::va("can't find system powrprof.dll"));
+        if (!powrprof)
+            throw std::runtime_error(utils::va("can't find system powrprof.dll"));
 
         return reinterpret_cast<decltype(&CallNtPowerInformation)>(powrprof["CallNtPowerInformation"]);
     }();

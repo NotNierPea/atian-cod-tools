@@ -48,7 +48,6 @@ namespace {
         PlayerSlideType types[3];
     };
 
-
     struct PlayerRoleTemplate {
         XHash name;
         XHash unk10;
@@ -95,7 +94,6 @@ namespace {
     };
     static_assert(sizeof(PlayerRoleTemplate) == 0x1b8);
 
-
     class ImplWorker : public Worker {
         using Worker::Worker;
 
@@ -105,7 +103,8 @@ namespace {
 
             BO4JsonWriter json{};
 
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "player" / "role" / "category" / std::format("{}.json", hashutils::ExtractTmp("file", asset->name))};
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "player" / "role" / "category" /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", asset->name)) };
             std::filesystem::create_directories(outFile.parent_path());
             LOG_OPT_INFO("Dump player role category {}", outFile.string());
 
@@ -119,7 +118,6 @@ namespace {
 
             json.EndObject();
 
-
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());
             }
@@ -132,7 +130,9 @@ namespace {
 
             PlayerRoleCategoryTable* asset{ (PlayerRoleCategoryTable*)ptr };
 
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "player" / "role" / "category" / "table" / std::format("{}.csv", hashutils::ExtractTmp("file", asset->name))};
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "player" / "role" / "category" /
+                                           "table" /
+                                           std::format("{}.csv", hashutils::ExtractTmp("file", asset->name)) };
             std::filesystem::create_directories(outFile.parent_path());
             LOG_OPT_INFO("Dump player role category table {}", outFile.string());
 
@@ -144,8 +144,7 @@ namespace {
                 os << "\n" << std::dec << i << ",";
                 if (asset->playerRoleCategories[i]) {
                     os << "#" << hashutils::ExtractTmp("hash", asset->playerRoleCategories[i]->name);
-                }
-                else {
+                } else {
                     os << "null";
                 }
             }
@@ -161,7 +160,8 @@ namespace {
 
             BO4JsonWriter json{};
 
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "player" / "role" / "template" / std::format("{}.json", hashutils::ExtractTmp("file", asset->name))};
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "player" / "role" / "template" /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", asset->name)) };
             std::filesystem::create_directories(outFile.parent_path());
             LOG_OPT_INFO("Dump player role template {}", outFile.string());
 
@@ -169,16 +169,22 @@ namespace {
             json.WriteFieldValueXHash("name", asset->name);
             json.WriteFieldValueXHash("unk10", asset->unk10);
             json.WriteFieldValueXHash(0x4fa4ad655ced495, asset->unk4fa4ad655ced495);
-            json.WriteFieldValueXAsset("bodyType", games::bo4::pool::XAssetType::ASSET_TYPE_CHARACTER_BODY_TYPE, asset->bodyType);
-            json.WriteFieldValueXAsset("category", games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY, asset->category);
-            json.WriteFieldValueXAsset("playerMovementTunables", games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_MOVEMENT_TUNABLES, asset->playerMovementTunables);
-            json.WriteFieldValueXAsset("playerTalentTemplate", games::bo4::pool::XAssetType::ASSET_TYPE_PLAYERTALENTTEMPLATE, asset->playerTalentTemplate);
-            json.WriteFieldValueXAssetArray("bundleLists", games::bo4::pool::XAssetType::ASSET_TYPE_SCRIPTBUNDLE, ACTS_ARRAYSIZE(*asset->bundleLists), asset->bundleLists);
+            json.WriteFieldValueXAsset("bodyType", games::bo4::pool::XAssetType::ASSET_TYPE_CHARACTER_BODY_TYPE,
+                                       asset->bodyType);
+            json.WriteFieldValueXAsset("category", games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY,
+                                       asset->category);
+            json.WriteFieldValueXAsset("playerMovementTunables",
+                                       games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_MOVEMENT_TUNABLES,
+                                       asset->playerMovementTunables);
+            json.WriteFieldValueXAsset("playerTalentTemplate",
+                                       games::bo4::pool::XAssetType::ASSET_TYPE_PLAYERTALENTTEMPLATE,
+                                       asset->playerTalentTemplate);
+            json.WriteFieldValueXAssetArray("bundleLists", games::bo4::pool::XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                                            ACTS_ARRAYSIZE(*asset->bundleLists), asset->bundleLists);
             json.WriteFieldValueXHash("specialistEquipment", asset->specialistEquipment);
             json.WriteFieldValueXHash("specialistWeapon", asset->specialistWeapon);
             json.WriteFieldValueXHash("ultimateWeapon", asset->ultimateWeapon);
             json.WriteFieldValueNumber("classIndex", asset->classIndex);
-
 
             if (opt.testDump) {
                 json.WriteFieldValueUnknown("unka8", asset->unka8);
@@ -205,17 +211,15 @@ namespace {
                 json.WriteFieldValueUnknown("unk190", asset->unk190);
                 json.WriteFieldValueUnknown("unk198", asset->unk198);
                 json.WriteFieldValueUnknown("unk1a0", asset->unk1a0);
-                //PlayerSlide slide;
-                //PlayerArmorInfo armorInfo;
-                //int playerTunableInts[1];
-                //bool playerTunableBools[3];
+                // PlayerSlide slide;
+                // PlayerArmorInfo armorInfo;
+                // int playerTunableInts[1];
+                // bool playerTunableBools[3];
             }
-
 
             scriptbundle::WriteObject(json, "bundle", asset->bundle);
 
             json.EndObject();
-
 
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());
@@ -223,7 +227,13 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, games::bo4::pool::XAssetType, Worker> impl{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY };
-    utils::MapAdder<ImplTableWorker, games::bo4::pool::XAssetType, Worker> impltb{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY_TABLE };
-    utils::MapAdder<ImplTemplateWorker, games::bo4::pool::XAssetType, Worker> impltp{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_TEMPLATE };
-}
+    utils::MapAdder<ImplWorker, games::bo4::pool::XAssetType, Worker> impl{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY
+    };
+    utils::MapAdder<ImplTableWorker, games::bo4::pool::XAssetType, Worker> impltb{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY_TABLE
+    };
+    utils::MapAdder<ImplTemplateWorker, games::bo4::pool::XAssetType, Worker> impltp{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_TEMPLATE
+    };
+} // namespace

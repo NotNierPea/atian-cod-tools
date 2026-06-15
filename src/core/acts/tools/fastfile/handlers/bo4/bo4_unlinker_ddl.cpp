@@ -2,7 +2,7 @@
 #include <tools/fastfile/handlers/handler_game_bo4.hpp>
 
 namespace {
-	using namespace fastfile::handlers::bo4;
+    using namespace fastfile::handlers::bo4;
 
     struct DDLStruct;
     struct DDLEnum;
@@ -54,7 +54,7 @@ namespace {
         XHash name;
         uint32_t bitSize;
         uint32_t memberCount;
-        DDLMember* members; 
+        DDLMember* members;
         DDLHashTable hashTableLower;
         DDLHashTable hashTableUpper;
     };
@@ -89,32 +89,44 @@ namespace {
         DDLDef* ddlDef;
     };
 
-
     const char* DDLTypeName(const DDLMember& member) {
         switch (member.type) {
-        case DDL_BYTE_TYPE: return "byte";
-        case DDL_SHORT_TYPE: return "short";
+        case DDL_BYTE_TYPE:
+            return "byte";
+        case DDL_SHORT_TYPE:
+            return "short";
         case DDL_UINT_TYPE: {
-            if (member.intSize == 1) return "bool";
-            if (member.intSize == 32) return "uint";
+            if (member.intSize == 1)
+                return "bool";
+            if (member.intSize == 32)
+                return "uint";
             return utils::va("uint:%lld", member.intSize);
         }
         case DDL_INT_TYPE: {
-            if (member.intSize == 32) return "int";
+            if (member.intSize == 32)
+                return "int";
             return utils::va("int:%lld", member.intSize);
         }
-        case DDL_UINT64_TYPE: return "uint64";
-        case DDL_FLOAT_TYPE: return "float";
+        case DDL_UINT64_TYPE:
+            return "uint64";
+        case DDL_FLOAT_TYPE:
+            return "float";
         case DDL_FIXEDPOINT_TYPE: {
             return utils::va("fixed<%lld,%lld>", member.intSize, member.maxIntValue);
         }
-        case DDL_HASH_TYPE: return "xhash";
-        case DDL_STRING_TYPE: return utils::va("string(%lld)", (member.bitSize / (member.isArray ? member.arraySize : 1)) / 8);
-        case DDL_STRUCT_TYPE: return "struct";
-        case DDL_ENUM_TYPE: return "enum";
-        case DDL_PAD_TYPE: return "uint:1";
+        case DDL_HASH_TYPE:
+            return "xhash";
+        case DDL_STRING_TYPE:
+            return utils::va("string(%lld)", (member.bitSize / (member.isArray ? member.arraySize : 1)) / 8);
+        case DDL_STRUCT_TYPE:
+            return "struct";
+        case DDL_ENUM_TYPE:
+            return "enum";
+        case DDL_PAD_TYPE:
+            return "uint:1";
         case DDL_INVALID_TYPE:
-        default: return "<invalid>";
+        default:
+            return "<invalid>";
         }
     }
 
@@ -124,13 +136,13 @@ namespace {
         int depthFields = isRoot ? 1 : 2;
 
         // sort members because they don't match the internal structure (they match the hashmap)
-        std::sort(&stct.members[0], &stct.members[stct.memberCount], [](const DDLMember& e1, const DDLMember& e2) {
-            return e1.offset < e2.offset;
-            });
+        std::sort(&stct.members[0], &stct.members[stct.memberCount],
+                  [](const DDLMember& e1, const DDLMember& e2) { return e1.offset < e2.offset; });
 
-        utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << stct.memberCount << " size 0x" << std::hex << stct.bitSize;
-        if (!isRoot) utils::Padding(defout << "\n", depth) << "struct " << hashutils::ExtractTmp("hash", stct.name) << " {";
-
+        utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << stct.memberCount << " size 0x"
+                                  << std::hex << stct.bitSize;
+        if (!isRoot)
+            utils::Padding(defout << "\n", depth) << "struct " << hashutils::ExtractTmp("hash", stct.name) << " {";
 
         int64_t currentShift = 0;
         for (size_t i = 0; i < stct.memberCount; i++) {
@@ -144,25 +156,23 @@ namespace {
                 int64_t delta = (currentShift - (int64_t)mbm.offset);
                 if (delta >= 0) {
                     defout << "0x" << std::hex << delta;
-                }
-                else {
+                } else {
                     defout << "-0x" << std::hex << (-delta);
                 }
                 defout << " bits\n";
                 utils::Padding(defout, depthFields);
             }
 
-            utils::Padding(defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n", depthFields);
+            utils::Padding(defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n",
+                           depthFields);
             currentShift = mbm.offset + mbm.bitSize;
 
             bool addSize = false;
             if (mbm.type == DDL_STRUCT_TYPE) {
                 defout << hashutils::ExtractTmp("hash", def.structList[mbm.externalIndex].name);
-            }
-            else if (mbm.type == DDL_ENUM_TYPE) {
+            } else if (mbm.type == DDL_ENUM_TYPE) {
                 defout << hashutils::ExtractTmp("hash", def.enumList[mbm.externalIndex].name);
-            }
-            else {
+            } else {
                 defout << DDLTypeName(mbm);
             }
 
@@ -171,8 +181,7 @@ namespace {
             if (mbm.isArray) {
                 if (mbm.externalEnumType >= 0 && mbm.externalEnumType < def.enumCount) {
                     defout << "[" << hashutils::ExtractTmp("hash", def.enumList[mbm.externalEnumType].name) << "]";
-                }
-                else {
+                } else {
                     defout << "[" << std::dec << mbm.arraySize << "]";
                 }
             }
@@ -185,9 +194,9 @@ namespace {
         }
         defout << "\n";
 
-        if (!isRoot)utils::Padding(defout, depth) << "};\n\n";
+        if (!isRoot)
+            utils::Padding(defout, depth) << "};\n\n";
     }
-
 
     void ReadDDLEnum(std::ostream& defout, DDLEnum& enumst, size_t idx) {
         utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << enumst.memberCount << "\n";
@@ -195,7 +204,8 @@ namespace {
 
         for (size_t i = 0; i < enumst.memberCount; i++) {
             XHash& mbm = enumst.members[i];
-            if (i) defout << ",";
+            if (i)
+                defout << ",";
             defout << "\n";
 
             const char* ext{ hashutils::ExtractTmp("hash", mbm.name) };
@@ -210,13 +220,11 @@ namespace {
                 ext2++;
             }
 
-
             utils::Padding(defout, 2);
 
             if (containBad) {
                 utils::PrintFormattedString(defout << "\"", ext) << "\"";
-            }
-            else {
+            } else {
                 defout << ext;
             }
 
@@ -228,16 +236,12 @@ namespace {
     }
 
     void ReadDDLDefEntry(std::ostream& defout, DDLDef& def) {
-        defout
-            << "// " << hashutils::ExtractTmp("hash", def.name.name) << "\n"
-            << "// metatable \"" << hashutils::ExtractTmp("hash", def.metatable) << "\"\n"
-            << "\n"
-            ;
+        defout << "// " << hashutils::ExtractTmp("hash", def.name.name) << "\n"
+               << "// metatable \"" << hashutils::ExtractTmp("hash", def.metatable) << "\"\n"
+               << "\n";
 
         if (def.structCount) {
-            defout
-                << "version " << std::dec << def.version << " {\n"
-                ;
+            defout << "version " << std::dec << def.version << " {\n";
             for (size_t i = 1; i < def.structCount; i++) {
                 ReadDDLStruct(defout, def, def.structList[i], i);
             }
@@ -249,8 +253,7 @@ namespace {
 
             ReadDDLStruct(defout, def, def.structList[0], 0);
             defout << "}\n\n";
-        }
-        else {
+        } else {
             defout << "version " << std::dec << def.version << "{}\n";
         }
 
@@ -260,32 +263,34 @@ namespace {
         }
     }
 
-	class ScriptParseTreeWorker : public Worker {
-		void Unlink(fastfile::FastFileOption& opt, void* ptr) {
-			DDL* asset{ (DDL*)ptr };
+    class ScriptParseTreeWorker : public Worker {
+        void Unlink(fastfile::FastFileOption& opt, void* ptr) {
+            DDL* asset{ (DDL*)ptr };
 
-			const char* n{ hashutils::ExtractPtr(asset->name.name) };
+            const char* n{ hashutils::ExtractPtr(asset->name.name) };
 
-			if (!n) {
-				n = utils::va("hashed/ddl/file_%llx.ddl", asset->name.name);
-			}
+            if (!n) {
+                n = utils::va("hashed/ddl/file_%llx.ddl", asset->name.name);
+            }
 
-			std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / n };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / n };
 
-			std::filesystem::create_directories(outFile.parent_path());
-			LOG_OPT_INFO("Dump {}", outFile.string());
+            std::filesystem::create_directories(outFile.parent_path());
+            LOG_OPT_INFO("Dump {}", outFile.string());
 
-			utils::OutFileCE os{ outFile };
+            utils::OutFileCE os{ outFile };
 
-			if (!os) {
-				LOG_ERROR("Can't dump {}", outFile.string());
-				return;
-			}
+            if (!os) {
+                LOG_ERROR("Can't dump {}", outFile.string());
+                return;
+            }
             if (asset->ddlDef) {
                 ReadDDLDefEntry(os, *asset->ddlDef);
             }
-		}
-	};
+        }
+    };
 
-	utils::MapAdder<ScriptParseTreeWorker, games::bo4::pool::XAssetType, Worker> impl{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_DDL };
-}
+    utils::MapAdder<ScriptParseTreeWorker, games::bo4::pool::XAssetType, Worker> impl{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_DDL
+    };
+} // namespace

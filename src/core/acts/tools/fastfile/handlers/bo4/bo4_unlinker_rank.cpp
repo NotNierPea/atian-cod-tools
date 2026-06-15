@@ -32,9 +32,7 @@ namespace fastfile::handlers::bo4::map {
         ORIGIN_TITLE_T8 = 4,
     };
 
-    const char* PrestigeTypeOfOriginNames[]{
-        "t4", "t5", "t6", "t7", "t8"
-    };
+    const char* PrestigeTypeOfOriginNames[]{ "t4", "t5", "t6", "t7", "t8" };
 
     struct PrestigeInfo {
         XHash name;
@@ -63,7 +61,8 @@ namespace fastfile::handlers::bo4::map {
         void Unlink(fastfile::FastFileOption& opt, void* ptr) {
             RankInfo* asset{ (RankInfo*)ptr };
 
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "rank" / std::format("{}.json", hashutils::ExtractTmp("file", asset->name)) };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "rank" /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", asset->name)) };
 
             std::filesystem::create_directories(outFile.parent_path());
             LOG_OPT_INFO("Dump rankinfo{}", outFile.string());
@@ -92,7 +91,6 @@ namespace fastfile::handlers::bo4::map {
             }
             json.EndObject();
 
-
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());
             }
@@ -103,7 +101,8 @@ namespace fastfile::handlers::bo4::map {
         void Unlink(fastfile::FastFileOption& opt, void* ptr) {
             RankTable* asset{ (RankTable*)ptr };
 
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "rank" / "table" / std::format("{}.csv", hashutils::ExtractTmp("file", asset->name)) };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "rank" / "table" /
+                                           std::format("{}.csv", hashutils::ExtractTmp("file", asset->name)) };
 
             std::filesystem::create_directories(outFile.parent_path());
             LOG_OPT_INFO("Dump ranktable {}", outFile.string());
@@ -116,20 +115,19 @@ namespace fastfile::handlers::bo4::map {
                 os << "\n" << std::dec << i << ",";
                 if (asset->ranks[i]) {
                     os << "#" << hashutils::ExtractTmp("hash", asset->ranks[i]->name);
-                }
-                else {
+                } else {
                     os << "null";
                 }
             }
         }
     };
 
-
     class PrestigeInfoWorker : public Worker {
         void Unlink(fastfile::FastFileOption& opt, void* ptr) {
             PrestigeInfo* asset{ (PrestigeInfo*)ptr };
 
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "prestige" / std::format("{}.json", hashutils::ExtractTmp("file", asset->name)) };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "prestige" /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", asset->name)) };
 
             std::filesystem::create_directories(outFile.parent_path());
             LOG_OPT_INFO("Dump rankinfo{}", outFile.string());
@@ -139,13 +137,16 @@ namespace fastfile::handlers::bo4::map {
             json.WriteFieldValueXHash("name", asset->name);
             json.WriteFieldValueXHash("displayName", asset->displayName);
             json.WriteFieldValueXAsset("iconName", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE, asset->iconName);
-            json.WriteFieldValueXAsset("iconNameLarge", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE, asset->iconNameLarge);
+            json.WriteFieldValueXAsset("iconNameLarge", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
+                                       asset->iconNameLarge);
             json.WriteFieldValueNumber("unlockLevel", asset->unlockLevel);
             json.WriteFieldValueNumber("winsRequired", asset->winsRequired);
-            json.WriteFieldValueString("titleOfOrigin", asset->titleOfOrigin >= ACTS_ARRAYSIZE(PrestigeTypeOfOriginNames) ? utils::va("unknown:%d", asset->titleOfOrigin) : PrestigeTypeOfOriginNames[asset->titleOfOrigin]);
+            json.WriteFieldValueString("titleOfOrigin",
+                                       asset->titleOfOrigin >= ACTS_ARRAYSIZE(PrestigeTypeOfOriginNames)
+                                           ? utils::va("unknown:%d", asset->titleOfOrigin)
+                                           : PrestigeTypeOfOriginNames[asset->titleOfOrigin]);
             json.WriteFieldValueUnknown("unk2c", asset->unk2c);
             json.EndObject();
-
 
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());
@@ -157,7 +158,8 @@ namespace fastfile::handlers::bo4::map {
         void Unlink(fastfile::FastFileOption& opt, void* ptr) {
             PrestigeTable* asset{ (PrestigeTable*)ptr };
 
-            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "prestige" / "table" / std::format("{}.csv", hashutils::ExtractTmp("file", asset->name)) };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / "prestige" / "table" /
+                                           std::format("{}.csv", hashutils::ExtractTmp("file", asset->name)) };
 
             std::filesystem::create_directories(outFile.parent_path());
             LOG_OPT_INFO("Dump prestigetable {}", outFile.string());
@@ -170,16 +172,23 @@ namespace fastfile::handlers::bo4::map {
                 os << "\n" << std::dec << i << ",";
                 if (asset->prestiges[i]) {
                     os << "#" << hashutils::ExtractTmp("hash", asset->prestiges[i]->name);
-                }
-                else {
+                } else {
                     os << "null";
                 }
             }
         }
     };
 
-    utils::MapAdder<RankInfoWorker, games::bo4::pool::XAssetType, Worker> implr{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_RANK };
-    utils::MapAdder<RankTableWorker, games::bo4::pool::XAssetType, Worker> implrt{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_RANKTABLE };
-    utils::MapAdder<PrestigeInfoWorker, games::bo4::pool::XAssetType, Worker> implp{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PRESTIGE };
-    utils::MapAdder<PrestigeTableWorker, games::bo4::pool::XAssetType, Worker> implpt{ GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PRESTIGETABLE };
-}
+    utils::MapAdder<RankInfoWorker, games::bo4::pool::XAssetType, Worker> implr{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_RANK
+    };
+    utils::MapAdder<RankTableWorker, games::bo4::pool::XAssetType, Worker> implrt{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_RANKTABLE
+    };
+    utils::MapAdder<PrestigeInfoWorker, games::bo4::pool::XAssetType, Worker> implp{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PRESTIGE
+    };
+    utils::MapAdder<PrestigeTableWorker, games::bo4::pool::XAssetType, Worker> implpt{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_PRESTIGETABLE
+    };
+} // namespace fastfile::handlers::bo4::map

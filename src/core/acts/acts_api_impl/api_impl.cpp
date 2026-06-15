@@ -7,74 +7,53 @@
 #include <core/actsinfo.hpp>
 #include <core/eventhandler.hpp>
 
-
 namespace {
-	thread_local char actsApiLastMessageBuffer[0x400]{};
-	core::memory_allocator::MemoryAllocator allocator;
-}
+    thread_local char actsApiLastMessageBuffer[0x400]{};
+    core::memory_allocator::MemoryAllocator allocator;
+} // namespace
 
-core::memory_allocator::MemoryAllocator& ActsAPIImpl_GetAllocator() {
-	return allocator;
-}
+core::memory_allocator::MemoryAllocator& ActsAPIImpl_GetAllocator() { return allocator; }
 
-unsigned int ActsAPIVersion_GetBuildVersion() {
-	return core::actsinfo::BUILD_VERSION_ID;
-}
-const char* ActsAPIVersion_GetVersion() {
-	return core::actsinfo::VERSION;
-}
-unsigned int ActsAPIVersion_GetVersionId() {
-	return core::actsinfo::VERSION_ID;
-}
-const char* ActsGetAPILastMessage() {
-	return actsApiLastMessageBuffer;
-}
+unsigned int ActsAPIVersion_GetBuildVersion() { return core::actsinfo::BUILD_VERSION_ID; }
+const char* ActsAPIVersion_GetVersion() { return core::actsinfo::VERSION; }
+unsigned int ActsAPIVersion_GetVersionId() { return core::actsinfo::VERSION_ID; }
+const char* ActsGetAPILastMessage() { return actsApiLastMessageBuffer; }
 
 void ActsAPISetLastMessage(const char* fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-	vsnprintf(actsApiLastMessageBuffer, sizeof(actsApiLastMessageBuffer), fmt, args);
-	va_end(args);
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(actsApiLastMessageBuffer, sizeof(actsApiLastMessageBuffer), fmt, args);
+    va_end(args);
 }
 
 void ActsAPICloseHandle(ActsHandle handle) {
-	if (IS_ACTS_HANDLE_VALID(handle)) {
-		allocator.Free(handle);
-	}
+    if (IS_ACTS_HANDLE_VALID(handle)) {
+        allocator.Free(handle);
+    }
 }
 
 ActsStatus ActsAPIVersion_ValidateVersion2(uint32_t buildVersion) {
-	if (ACTS_API_BUILD_VERSION_ID == buildVersion) {
-		return ACTS_STATUS_OK;
-	}
-	ActsAPISetLastMessage("Unmatching build 0x%x != 0x%x", ACTS_API_BUILD_VERSION_ID, buildVersion);
-	return  ACTS_STATUS_ERROR;
+    if (ACTS_API_BUILD_VERSION_ID == buildVersion) {
+        return ACTS_STATUS_OK;
+    }
+    ActsAPISetLastMessage("Unmatching build 0x%x != 0x%x", ACTS_API_BUILD_VERSION_ID, buildVersion);
+    return ACTS_STATUS_ERROR;
 }
 
 void ActsAPIEvent_RegisterCallback(ActsAPIEvent_Type type, ActsAPIEvent_Callback callback) {
-	core::eventhandler::RegisterEventCallback(type, callback);
+    core::eventhandler::RegisterEventCallback(type, callback);
 }
 
-void ActsAPIEvent_TriggerEvent(ActsAPIEvent_Type type, void* data) {
-	core::eventhandler::RunEvent(type, data);
-}
+void ActsAPIEvent_TriggerEvent(ActsAPIEvent_Type type, void* data) { core::eventhandler::RunEvent(type, data); }
 
-ActsHandle ActsAPIStructs_VectorData() {
-	return ActsAPIImpl_New<std::vector<byte>>();
-}
+ActsHandle ActsAPIStructs_VectorData() { return ActsAPIImpl_New<std::vector<byte>>(); }
 
-uint8_t* ActsAPIStructs_VectorData_GetData(ActsHandle handle) {
-	return ActsAPIImpl_VectorData(handle).data();
-}
+uint8_t* ActsAPIStructs_VectorData_GetData(ActsHandle handle) { return ActsAPIImpl_VectorData(handle).data(); }
 
-size_t ActsAPIStructs_VectorData_Size(ActsHandle handle) {
-	return ActsAPIImpl_VectorData(handle).size();
-}
+size_t ActsAPIStructs_VectorData_Size(ActsHandle handle) { return ActsAPIImpl_VectorData(handle).size(); }
 
-void ActsAPIStructs_VectorData_Resize(ActsHandle handle, size_t len) {
-	ActsAPIImpl_VectorData(handle).resize(len);
-}
+void ActsAPIStructs_VectorData_Resize(ActsHandle handle, size_t len) { ActsAPIImpl_VectorData(handle).resize(len); }
 
 void ActsAPIStructs_VectorData_AddData(ActsHandle handle, void* data, size_t len) {
-	utils::WriteValue(ActsAPIImpl_VectorData(handle), data, len);
+    utils::WriteValue(ActsAPIImpl_VectorData(handle), data, len);
 }

@@ -14,9 +14,9 @@ core::memory_allocator::MemoryAllocator& ActsAPIImpl_GetAllocator();
  */
 template<typename T = void, typename... Args>
 inline T* ActsAPIImpl_New(Args... args) {
-	return ActsAPIImpl_GetAllocator().New<T, Args...>(args...);
+    return ActsAPIImpl_GetAllocator().New<T, Args...>(args...);
 }
 
 inline std::vector<byte>& ActsAPIImpl_VectorData(ActsHandle handle) {
-	return *reinterpret_cast<std::vector<byte>*>(handle);
+    return *reinterpret_cast<std::vector<byte>*>(handle);
 }

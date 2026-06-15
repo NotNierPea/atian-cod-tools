@@ -25,9 +25,7 @@ namespace tool::gsc {
         uint8_t animtree_count;
         uint8_t flags;
 
-        inline const char* GetName() const {
-            return reinterpret_cast<const char*>(&magic[name_offset]);
-        }
+        inline const char* GetName() const { return reinterpret_cast<const char*>(&magic[name_offset]); }
     };
 
     struct T7GscAnimTree {
@@ -45,4 +43,4 @@ namespace tool::gsc {
         uint16_t padding;
     };
 
-}
+} // namespace tool::gsc

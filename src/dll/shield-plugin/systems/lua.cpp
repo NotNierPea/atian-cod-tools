@@ -9,166 +9,167 @@
 #include <systems/mods.hpp>
 
 namespace systems::lua {
-	namespace {
-		hook::library::Detour hksl_loadfile_Hook;
-		hook::library::Detour hksi_hks_error_Hook;
-		hook::library::Detour hksi_lua_getclosureinfo_Hook;
+    namespace {
+        hook::library::Detour hksl_loadfile_Hook;
+        hook::library::Detour hksi_hks_error_Hook;
+        hook::library::Detour hksi_lua_getclosureinfo_Hook;
 
-		struct LuaHook {
-			const char* filename;
-			uint64_t hash;
-		};
+        struct LuaHook {
+            const char* filename;
+            uint64_t hash;
+        };
 
-		std::unordered_map<uint64_t, std::vector<LuaHook>> luaHooks{};
+        std::unordered_map<uint64_t, std::vector<LuaHook>> luaHooks{};
 
-		uint64_t LuaHash(const char* filename) {
-			std::string_view v{ filename };
-			if (!v.rfind("x64:", 0)) {
-				if (v.length() <= 0x18 && v.ends_with(".lua")) {
-					char tmp[0x17]{};
+        uint64_t LuaHash(const char* filename) {
+            std::string_view v{ filename };
+            if (!v.rfind("x64:", 0)) {
+                if (v.length() <= 0x18 && v.ends_with(".lua")) {
+                    char tmp[0x17]{};
 
-					memcpy(tmp, &filename[4], v.size() - 8);
+                    memcpy(tmp, &filename[4], v.size() - 8);
 
-					return hash::Hash64(".lua", std::strtoull(&filename[4], nullptr, 16));
-				}
+                    return hash::Hash64(".lua", std::strtoull(&filename[4], nullptr, 16));
+                }
 
-				return std::strtoull(&filename[4], nullptr, 16) & hash::MASK63;
-			}
-			return hash::Hash64(filename);
-		}
+                return std::strtoull(&filename[4], nullptr, 16) & hash::MASK63;
+            }
+            return hash::Hash64(filename);
+        }
 
-		int hksl_loadfile_Stub(bo4::lua_State* state, const char* filename) {
-			int l{ hksl_loadfile_Hook.Call<int>(state, filename) };
+        int hksl_loadfile_Stub(bo4::lua_State* state, const char* filename) {
+            int l{ hksl_loadfile_Hook.Call<int>(state, filename) };
 
-			if (!luaHooks.empty()) {
-				uint64_t hash{ LuaHash(filename) };
+            if (!luaHooks.empty()) {
+                uint64_t hash{ LuaHash(filename) };
 
-				auto it{ luaHooks.find(hash) };
-				if (it != luaHooks.end()) {
-					for (LuaHook& h : it->second) {
-						const char* str{ utils::va("x64:%llx.lua", h.hash) };
-						LOG_TRACE("hook luafile {} -> {}/({})", filename, h.filename, str);
-						if (!bo4::Lua_CoD_LoadLuaFile(state, str)) {
-							LOG_ERROR("Error when hooking {}->{}", filename, h.filename);
-						}
-					}
-				}
-			}
-			return l;
-		}
+                auto it{ luaHooks.find(hash) };
+                if (it != luaHooks.end()) {
+                    for (LuaHook& h : it->second) {
+                        const char* str{ utils::va("x64:%llx.lua", h.hash) };
+                        LOG_TRACE("hook luafile {} -> {}/({})", filename, h.filename, str);
+                        if (!bo4::Lua_CoD_LoadLuaFile(state, str)) {
+                            LOG_ERROR("Error when hooking {}->{}", filename, h.filename);
+                        }
+                    }
+                }
+            }
+            return l;
+        }
 
-		void LoadLuaCfg(const char* modid, core::memory_allocator::MemoryAllocator& alloc, core::config::Config& cfg) {
-			auto itHooks{ cfg.main.FindMember("lua_hook") };
+        void LoadLuaCfg(const char* modid, core::memory_allocator::MemoryAllocator& alloc, core::config::Config& cfg) {
+            auto itHooks{ cfg.main.FindMember("lua_hook") };
 
-			if (itHooks != cfg.main.MemberEnd() && itHooks->value.IsArray()) {
-				for (rapidjson::Value& hook : itHooks->value.GetArray()) {
-					if (!hook.IsObject()) {
-						LOG_WARNING("Found invalid luafile hook: not an object");
-						continue;
-					}
+            if (itHooks != cfg.main.MemberEnd() && itHooks->value.IsArray()) {
+                for (rapidjson::Value& hook : itHooks->value.GetArray()) {
+                    if (!hook.IsObject()) {
+                        LOG_WARNING("Found invalid luafile hook: not an object");
+                        continue;
+                    }
 
-					auto obj{ hook.GetObj() };
+                    auto obj{ hook.GetObj() };
 
-					auto nameIt{ obj.FindMember("name") };
-					auto hookIt{ obj.FindMember("hook") };
+                    auto nameIt{ obj.FindMember("name") };
+                    auto hookIt{ obj.FindMember("hook") };
 
-					if (nameIt == obj.MemberEnd()) {
-						LOG_WARNING("Found invalid luafile hook: missing name");
-						continue;
-					}
+                    if (nameIt == obj.MemberEnd()) {
+                        LOG_WARNING("Found invalid luafile hook: missing name");
+                        continue;
+                    }
 
-					const char* luaName{ nameIt->value.GetString() };
-					if (hookIt == obj.MemberEnd()) {
-						LOG_WARNING("Found invalid luafile hook: missing hook for {}", luaName);
-						continue;
-					}
-					const char* hook{ hookIt->value.GetString() };
+                    const char* luaName{ nameIt->value.GetString() };
+                    if (hookIt == obj.MemberEnd()) {
+                        LOG_WARNING("Found invalid luafile hook: missing hook for {}", luaName);
+                        continue;
+                    }
+                    const char* hook{ hookIt->value.GetString() };
 
-					uint64_t luaHash{ hash::Hash64Pattern(luaName) };
-					uint64_t hookHash{ hash::Hash64Pattern(hook) };
+                    uint64_t luaHash{ hash::Hash64Pattern(luaName) };
+                    uint64_t hookHash{ hash::Hash64Pattern(hook) };
 
-					if (!luaHash || !hookHash) {
-						LOG_ERROR("Can't hash '{}' or '{}'", luaName, hook);
-						continue;
-					}
-					uint64_t lookupHash{ core::hashes::lookup::LookupFNV1A64(".lua", luaHash) };
+                    if (!luaHash || !hookHash) {
+                        LOG_ERROR("Can't hash '{}' or '{}'", luaName, hook);
+                        continue;
+                    }
+                    uint64_t lookupHash{ core::hashes::lookup::LookupFNV1A64(".lua", luaHash) };
 
-					if (!lookupHash) {
-						LOG_ERROR("Can't find filename for '{}'", luaName);
-						continue;
-					}
+                    if (!lookupHash) {
+                        LOG_ERROR("Can't find filename for '{}'", luaName);
+                        continue;
+                    }
 
-					luaHooks[hookHash & hash::MASK63].emplace_back(alloc.CloneStr(luaName), lookupHash);
+                    luaHooks[hookHash & hash::MASK63].emplace_back(alloc.CloneStr(luaName), lookupHash);
 
-					LOG_INFO("Loaded luafile hook {}({:x})->{}({:x}/{:x}.lua)", hook, hookHash, luaName, luaHash, lookupHash);
-				}
-			}
+                    LOG_INFO("Loaded luafile hook {}({:x})->{}({:x}/{:x}.lua)", hook, hookHash, luaName, luaHash,
+                             lookupHash);
+                }
+            }
+        }
 
-		}
+        bo4::LuaFile* GetLuaFile(const void* ptr) {
+            bo4::XAssetPool* pool{ &bo4::s_assetPools[bo4::XAssetType::ASSET_TYPE_LUAFILE] };
 
-		bo4::LuaFile* GetLuaFile(const void* ptr) {
-			bo4::XAssetPool* pool{ &bo4::s_assetPools[bo4::XAssetType::ASSET_TYPE_LUAFILE] };
+            // fixme: use better iteration
+            bo4::LuaFile* data{ (bo4::LuaFile*)pool->pool };
+            for (size_t i = 0; i < pool->itemAllocCount; i++) {
+                bo4::LuaFile* lf{ data + i };
+                if (ptr >= lf->buffer && ptr < &lf->buffer[lf->len]) {
+                    return lf;
+                }
+            }
 
-			// fixme: use better iteration
-			bo4::LuaFile* data{ (bo4::LuaFile*)pool->pool };
-			for (size_t i = 0; i < pool->itemAllocCount; i++) {
-				bo4::LuaFile* lf{ data + i };
-				if (ptr >= lf->buffer && ptr < &lf->buffer[lf->len]) {
-					return lf;
-				}
-			}
+            return nullptr;
+        }
 
-			return nullptr;
-		}
+        bool hksi_lua_getclosureinfo_Stub(bo4::lua_State* s, bo4::HksClosure* closure, bo4::lua_Debug* ar,
+                                          const char* what) {
+            if (!hksi_lua_getclosureinfo_Hook.Call<bool>(s, closure, ar, what)) {
+                return false;
+            }
 
-		bool hksi_lua_getclosureinfo_Stub(bo4::lua_State* s, bo4::HksClosure* closure, bo4::lua_Debug* ar, const char* what) {
-			if (!hksi_lua_getclosureinfo_Hook.Call<bool>(s, closure, ar, what)) {
-				return false;
-			}
+            for (const char* cc = what; *cc; cc++) {
+                switch (*cc) {
+                case 'S': {
+                    if (closure->m_method->m_debug) {
+                        break; // ignore, already done
+                    }
 
-			for (const char* cc = what; *cc; cc++) {
-				switch (*cc) {
-				case 'S': {
-					if (closure->m_method->m_debug) {
-						break; // ignore, already done
-					}
+                    bo4::LuaFile* origin{ GetLuaFile(closure->m_method->instructions.data) };
 
-					bo4::LuaFile* origin{ GetLuaFile(closure->m_method->instructions.data) };
+                    if (origin) {
+                        core::hashes::Extract("hash", origin->name, ar->short_src, sizeof(ar->short_src));
+                        ar->source = ar->short_src;
+                    }
 
-					if (origin) {
-						core::hashes::Extract("hash", origin->name, ar->short_src, sizeof(ar->short_src));
-						ar->source = ar->short_src;
-					}
+                    break;
+                }
+                default:
+                    // ignore
+                    break;
+                }
+            }
 
-					break;
-				}
-				default:
-					// ignore
-					break;
-				}
-			}
+            return true;
+        }
 
-			return true;
-		}
+        int hksi_hks_error_Stub(bo4::lua_State* s, bo4::HksError errorCode) {
+            bo4::HksObject* base{ s->m_apistack.base };
+            bo4::HksObject* top{ s->m_apistack.top - 1 };
+            if (top > base) {
+                const char* info{ bo4::hks_obj_tolstring(s, top, nullptr) };
+                LOG_ERROR("[Lua] {}", info);
+            }
 
-		int hksi_hks_error_Stub(bo4::lua_State* s, bo4::HksError errorCode) {
-			bo4::HksObject* base{ s->m_apistack.base };
-			bo4::HksObject* top{ s->m_apistack.top - 1 };
-			if (top > base) {
-				const char* info{ bo4::hks_obj_tolstring(s, top, nullptr) };
-				LOG_ERROR("[Lua] {}", info);
-			}
+            return hksi_hks_error_Hook.Call<int>(s, errorCode);
+        }
 
-			return hksi_hks_error_Hook.Call<int>(s, errorCode);
-		}
+        void PostInit(uint64_t uid) {
+            hksl_loadfile_Hook.Create(0x375D6A0_a, hksl_loadfile_Stub);
+            hksi_hks_error_Hook.Create(0x3756490_a, hksi_hks_error_Stub);
+            hksi_lua_getclosureinfo_Hook.Create(0x375DE20_a, hksi_lua_getclosureinfo_Stub);
+        }
 
-		void PostInit(uint64_t uid) {
-			hksl_loadfile_Hook.Create(0x375D6A0_a, hksl_loadfile_Stub);
-			hksi_hks_error_Hook.Create(0x3756490_a, hksi_hks_error_Stub);
-			hksi_lua_getclosureinfo_Hook.Create(0x375DE20_a, hksi_lua_getclosureinfo_Stub);
-		}
-
-		utils::ArrayAdder<systems::mods::ModLoadingHook> cfgHook{ systems::mods::GetModLoadingHooks(), LoadLuaCfg};
-		REGISTER_SYSTEM(lua, nullptr, PostInit);
-	}
-}
+        utils::ArrayAdder<systems::mods::ModLoadingHook> cfgHook{ systems::mods::GetModLoadingHooks(), LoadLuaCfg };
+        REGISTER_SYSTEM(lua, nullptr, PostInit);
+    } // namespace
+} // namespace systems::lua

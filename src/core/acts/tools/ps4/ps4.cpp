@@ -4,11 +4,11 @@
 #include <core/config.hpp>
 
 namespace {
-	void ps4_tools() {
-		tool::nui::NuiUseDefaultWindow win{};
+    void ps4_tools() {
+        tool::nui::NuiUseDefaultWindow win{};
 
         static struct {
-            std::unique_ptr<libdebug::PS4DBG> ps4{ nullptr }; 
+            std::unique_ptr<libdebug::PS4DBG> ps4{ nullptr };
             std::vector<std::shared_ptr<libdebug::Process>> processes;
             int32_t pid;
             libdebug::ProcessInfo pinfo;
@@ -36,9 +36,6 @@ namespace {
             c = true;
         });
 
-
-
-
         ImGui::SeparatorText("PlayStation 4 Debug");
         ImGui::Text("(The ps4debug payload should be loaded)");
 
@@ -48,8 +45,6 @@ namespace {
             core::config::SetString("ui.ps4.ipd", data.ps4In);
             c = true;
         }
-
-
 
         if (ImGui::Button(data.ps4 ? "Reload console" : "Load console")) {
             try {
@@ -61,8 +56,7 @@ namespace {
                 data.processes = lst.processes;
                 data.pid = 0;
                 data.notif = "Console loaded";
-            }
-            catch (std::runtime_error& err) {
+            } catch (std::runtime_error& err) {
                 data.notif = std::format("Can't load console: {}", err.what());
                 data.ps4 = nullptr;
             }
@@ -71,7 +65,6 @@ namespace {
         if (!data.ps4) {
             return;
         }
-
 
         if (ImGui::InputText("Text", data.msgIn, sizeof(data.msgIn))) {
             core::config::SetString("ui.ps4.msg", data.msgIn);
@@ -84,18 +77,17 @@ namespace {
             }
         }
 
-
         if (ImGui::BeginListBox("Processes")) {
             for (auto& proc : data.processes) {
-                
+
                 if (ImGui::Button(proc->name.data())) {
                     data.pid = proc->pid;
 
                     try {
                         data.pinfo = data.ps4->GetProcessInfo(data.pid);
-                    }
-                    catch (std::runtime_error& err) {
-                        data.notif = std::format("Get process info for {}[pid:{}]: {}", proc->name, proc->pid, err.what());
+                    } catch (std::runtime_error& err) {
+                        data.notif =
+                            std::format("Get process info for {}[pid:{}]: {}", proc->name, proc->pid, err.what());
                         data.pid = 0;
                     }
                 }
@@ -111,7 +103,6 @@ namespace {
         ImGui::Text("path: %s", data.pinfo.path);
         ImGui::Text("contentid: %s", data.pinfo.contentid);
         ImGui::Text("titleid: %s", data.pinfo.titleid);
-
-	}
-	ADD_TOOL_NUI(ps4_tools, "PlayStation 4 Debug", ps4_tools);
-}
+    }
+    ADD_TOOL_NUI(ps4_tools, "PlayStation 4 Debug", ps4_tools);
+} // namespace

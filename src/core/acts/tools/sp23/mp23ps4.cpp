@@ -257,9 +257,7 @@ namespace {
         "downloadgroupset",
     };
 
-    const char* GetAssetName(size_t type) {
-        return type < ACTS_ARRAYSIZE(assetNames) ? assetNames[type] : "invalid";
-    }
+    const char* GetAssetName(size_t type) { return type < ACTS_ARRAYSIZE(assetNames) ? assetNames[type] : "invalid"; }
 
     struct DB_AssetPool {
         uintptr_t m_entries;
@@ -297,14 +295,13 @@ namespace {
         ps4.Notify(std::format("cbuf {}", cmd));
     }
 
-	int mp23ps4test(int argc, const char* argv[]) {
+    int mp23ps4test(int argc, const char* argv[]) {
         if (tool::NotEnoughParam(argc, 1)) {
             return tool::BAD_USAGE;
         }
 
         const char* ipd{ argv[2] };
         utils::ps4::PS4Process ps4{ ipd, "cod23-cod.elf" };
-
 
         constexpr size_t poolscount = ACTS_ARRAYSIZE(assetNames);
         ps4.Notify("Hi");
@@ -326,7 +323,6 @@ namespace {
             }
         }
         //*/
-
 
         std::unique_ptr<DB_AssetPool[]> pools{ ps4.ReadArray<DB_AssetPool>(ps4[0x8A18120], poolscount) };
 
@@ -353,13 +349,13 @@ namespace {
         }
         //*/
 
-
         /*
         std::filesystem::path outDir{ "output_mwiii/ps4gsc" };
         std::filesystem::create_directories(outDir);
         DB_AssetPool* gscobjPool{ &pools[sp23::ASSET_GSCOBJ] };
 
-        std::unique_ptr<GscObjEntry[]> gscObjPoolEntries{ ps4.ReadArray<GscObjEntry>(gscobjPool->m_entries, gscobjPool->m_loadedPoolSize) };
+        std::unique_ptr<GscObjEntry[]> gscObjPoolEntries{ ps4.ReadArray<GscObjEntry>(gscobjPool->m_entries,
+        gscobjPool->m_loadedPoolSize) };
 
         for (size_t i = 0; i < gscobjPool->m_loadedPoolSize; i++) {
             GscObjEntry* entry{ &gscObjPoolEntries[i] };
@@ -381,10 +377,8 @@ namespace {
 
         //*/
 
-        
-
-		return tool::OK;
-	}
+        return tool::OK;
+    }
 
     ADD_TOOL(mp23ps4test, "mwiii", " [ps4]", "mp23 ps4 test", mp23ps4test);
-}
+} // namespace
