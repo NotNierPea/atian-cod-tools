@@ -1,6 +1,11 @@
-find_program(CLANG_FORMAT
-    NAMES clang-format clang-format.exe
-)
+if(DEFINED CLANG_FORMAT_PATH)
+    set(CLANG_FORMAT "${CLANG_FORMAT_PATH}")
+else()
+    find_program(CLANG_FORMAT
+        NAMES clang-format clang-format.exe
+    )
+endif()
+
 message(STATUS "CLANG_FORMAT= ${CLANG_FORMAT}")
 
 file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
