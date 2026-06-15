@@ -75,7 +75,7 @@ jobs:
         run: cmake --build build --target check-format
       - name: Build project
         shell: pwsh
-        run: msbuild build/AtianCodTools.sln /p:Configuration=Release /p:Platform=x64
+        run: msbuild build/AtianCodTools.slnx /p:Configuration=Release /p:Platform=x64
       - name: Run tests
         run: build/bin/Release/acts.exe --noUpdater -l p -d -t utest
       - name: Package project
