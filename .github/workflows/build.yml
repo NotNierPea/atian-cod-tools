@@ -34,6 +34,10 @@ jobs:
         run: "\"version=$(scripts/getversion.ps1)\" | Out-File $env:GITHUB_OUTPUT"
       - name: Version
         run: "\"version: ${{ steps.get_version.outputs.version }}\""
+      - name: Install LLVM Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "21.1.8"
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         # only install qt in shared context
