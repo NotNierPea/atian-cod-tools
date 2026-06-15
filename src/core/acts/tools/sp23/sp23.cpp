@@ -7,17 +7,26 @@
 
 namespace {
     enum StringTableCellType : byte {
-        STT_UNK_1_64 = 1,   // string
-        STT_UNK_9_64 = 9,   // string2??
-        STT_UNK_A_64 = 0xA, // string3??
+        // string
+        STT_UNK_1_64 = 1,
+        // string2??
+        STT_UNK_9_64 = 9,
+        // string3??
+        STT_UNK_A_64 = 0xA,
 
-        STT_UNK_2_64 = 2, // int??
-        STT_UNK_5_64 = 5, // hash (0xCBF29CE484222325/0x100000001B3)
-        STT_UNK_6_64 = 6, // hash (0x47F5817A5EF961BA/0x100000001B3)
-        STT_UNK_7_64 = 7, // ?
+        // int??
+        STT_UNK_2_64 = 2,
+        // hash (0xCBF29CE484222325/0x100000001B3)
+        STT_UNK_5_64 = 5,
+        // hash (0x47F5817A5EF961BA/0x100000001B3)
+        STT_UNK_6_64 = 6,
+        // ?
+        STT_UNK_7_64 = 7,
 
-        STT_UNK_3_32 = 3, // float??
-        STT_UNK_8_32 = 8, // ?
+        // float??
+        STT_UNK_3_32 = 3,
+        // ?
+        STT_UNK_8_32 = 8,
 
         STT_BYTE = 4,
     };
@@ -104,25 +113,25 @@ namespace {
                 switch (columns.type) {
                     /*
 
-	STT_UNK_1_64 = 1, // string
-	STT_UNK_9_64 = 9, // string2??
-	STT_UNK_A_64 = 0xA, //
+        STT_UNK_1_64 = 1, // string
+        STT_UNK_9_64 = 9, // string2??
+        STT_UNK_A_64 = 0xA, //
                      * string3??
 
-	STT_UNK_2_64 = 2, // int??
-	STT_UNK_5_64 = 5, // hash
+        STT_UNK_2_64 = 2, // int??
+        STT_UNK_5_64 = 5, // hash
                      * (0xCBF29CE484222325/0x100000001B3)
-	STT_UNK_6_64 = 6, // hash
+        STT_UNK_6_64 = 6, // hash
                      * (0x47F5817A5EF961BA/0x100000001B3)
-	STT_UNK_7_64 = 7, // ?
+        STT_UNK_7_64 = 7, // ?
 
-	STT_UNK_3_32 = 3, //
+        STT_UNK_3_32 = 3, //
                      * float??
  STT_UNK_8_32 = 8, // ?
 
-	STT_BYTE = 4,
+        STT_BYTE = 4,
 
-					*/
+                                        */
                 case STT_UNK_1_64:
                 case STT_UNK_9_64:
                 case STT_UNK_A_64:
