@@ -67,13 +67,11 @@ jobs:
       - name: Create project
         shell: pwsh
         run: |
-          scripts/setupdater.ps1 -versionEndpoint "https://github.com/${{ github.repository }}/releases/latest/download/version" -zipEndpoint "https://github.com/${{ github.repository }}/releases/latest/download/acts.zip" -projectUrl "https://github.com/${{ github.repository }}" -project "${{ github.repository }}" 
-          scripts/setup.ps1 -ci
-      - name: Validate project format
-        shell: pwsh
-        run: |
           . "$env:LLVM_PATH/bin/clang-format.exe" --version
-          cmake --build build --target check-format -DCLANG_FORMAT_PATH="$env:LLVM_PATH/bin/clang-format.exe"
+          scripts/setupdater.ps1 -versionEndpoint "https://github.com/${{ github.repository }}/releases/latest/download/version" -zipEndpoint "https://github.com/${{ github.repository }}/releases/latest/download/acts.zip" -projectUrl "https://github.com/${{ github.repository }}" -project "${{ github.repository }}" 
+          scripts/setup.ps1 -ci -clangFormatPath "$env:LLVM_PATH/bin/clang-format.exe"
+      - name: Validate project format
+        run: cmake --build build --target check-format
       - name: Build project
         shell: pwsh
         run: msbuild build/AtianCodTools.sln /p:Configuration=Release /p:Platform=x64

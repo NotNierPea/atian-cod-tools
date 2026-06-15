@@ -14,7 +14,8 @@ param(
     [switch]
     $allPlatform,
     $build = "Visual Studio 18 2026",
-    $msvc = "v143"
+    $msvc = "v143",
+    $clangFormatPath = $null
 )
 
 
@@ -58,6 +59,10 @@ try {
 
     if ($fresh) {
         $params += @( "--fresh" )
+    }
+
+    if ($null -ne $clangFormatPath) {
+        $params += @( "-DCLANG_FORMAT_PATH=$clangFormatPath" )
     }
 
     cmake -S . -B build -G $build -A x64 -T $msvc @params

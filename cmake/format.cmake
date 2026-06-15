@@ -6,7 +6,7 @@ else()
     )
 endif()
 
-message(STATUS "CLANG_FORMAT= ${CLANG_FORMAT}")
+message(STATUS "CLANG_FORMAT=${CLANG_FORMAT}")
 
 file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
     "src/*.cpp"
