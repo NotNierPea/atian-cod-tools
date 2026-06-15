@@ -35,9 +35,10 @@ jobs:
       - name: Version
         run: "\"version: ${{ steps.get_version.outputs.version }}\""
       - name: Install LLVM Clang
-        uses: KyleMayes/install-llvm-action@v2
+        uses: KyleMayes/install-llvm-action@v2.0.9
         with:
-          version: "21.1.8"
+          version: "22.1.7"
+          force-url: "https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.7/LLVM-22.1.7-win64.exe"
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         # only install qt in shared context
