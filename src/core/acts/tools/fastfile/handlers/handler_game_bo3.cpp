@@ -258,7 +258,7 @@ namespace {
             *gcx.osassets << assType << "," << n << "\n";
         }
 
-        fastfile::AddAssetHeader(n, header, assetType, 0);
+        fastfile::AddAssetHeader(n, &header, assetType, 0); // TODO: add asset size
 
         if (gcx.opt->noAssetDump || (!gcx.handleList.Empty() && !gcx.handleList[assetType])) {
             return header; // ignore

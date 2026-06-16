@@ -297,6 +297,7 @@ ACTS_COMMON_API uint8_t* ActsAPIFastFile_AllocateZoneMemory(size_t len);
  * @param header header pointer
  * @param type asset type
  * @param size asset type
+ * @deprecated use ActsAPIFastFile_AddAssetHeaderStringRef
  */
 ACTS_COMMON_API void ActsAPIFastFile_AddAssetHeaderString(const char* name, void* header, uint32_t type, size_t size);
 /*
@@ -305,8 +306,26 @@ ACTS_COMMON_API void ActsAPIFastFile_AddAssetHeaderString(const char* name, void
  * @param header header pointer
  * @param type asset type
  * @param size asset type
+ * @deprecated use ActsAPIFastFile_AddAssetHeaderHashedRef
  */
 ACTS_COMMON_API void ActsAPIFastFile_AddAssetHeaderHashed(uint64_t name, void* header, uint32_t type, size_t size);
+/*
+ * Add an asset header to the current context
+ * @param name asset name
+ * @param header header pointer
+ * @param type asset type
+ * @param size asset type
+ */
+ACTS_COMMON_API void ActsAPIFastFile_AddAssetHeaderStringRef(const char* name, void** header, uint32_t type,
+                                                             size_t size);
+/*
+ * Add an asset header to the current context ref
+ * @param name asset name
+ * @param header header pointer
+ * @param type asset type
+ * @param size asset type
+ */
+ACTS_COMMON_API void ActsAPIFastFile_AddAssetHeaderHashedRef(uint64_t name, void** header, uint32_t type, size_t size);
 /*
  * Get a scr string
  * @param id scr string id

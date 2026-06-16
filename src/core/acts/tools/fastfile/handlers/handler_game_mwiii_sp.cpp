@@ -252,7 +252,7 @@ namespace fastfile::handlers::mwiiisp {
             }
 
             size_t itemSize{ gcx.poolInfo[type].itemSize };
-            fastfile::AddAssetHeader(hash, handle ? *handle : nullptr, type, itemSize);
+            fastfile::AddAssetHeader(hash, handle, type, itemSize);
 
             if (handle &&
                 !(gcx.opt->noAssetDump || !gcx.assetNames.ShouldHandle(type) || !gcx.namesStore.Contains(hash, true))) {

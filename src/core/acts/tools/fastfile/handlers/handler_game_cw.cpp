@@ -213,7 +213,7 @@ namespace fastfile::handlers::cw {
             LOG_DEBUG("Loading asset {}/{} -> {}/{}", (int)type, hashutils::ExtractTmp("hash", hash), header,
                       XBlockLocPtr(baseHeader));
 
-            fastfile::AddAssetHeader(hash, header, type, 0);
+            fastfile::AddAssetHeader(hash, &header, type, (size_t)assetSize);
 
             if (gcx.opt->noAssetDump || (!gcx.handleList.Empty() && !gcx.handleList[type]))
                 return ref; // ignore

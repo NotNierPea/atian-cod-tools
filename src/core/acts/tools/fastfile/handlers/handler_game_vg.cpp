@@ -189,7 +189,7 @@ namespace fastfile::handlers::vg {
             if (gcx.opt->workflow == FFW_READER)
                 *(gcx.outAsset) << "\n" << poolName << ",#" << name;
 
-            fastfile::AddAssetHeader(name, handle ? *handle : nullptr, type, assetSize);
+            fastfile::AddAssetHeader(name, handle, type, assetSize);
 
             if (!(gcx.opt->noAssetDump || !gcx.assetNames.ShouldHandle(type) ||
                   !gcx.namesStore.Contains(hash::HashIWAsset(name), true))) {

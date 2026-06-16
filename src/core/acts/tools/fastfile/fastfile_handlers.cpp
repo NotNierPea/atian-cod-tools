@@ -729,6 +729,7 @@ namespace fastfile {
         core::memory_allocator::MemoryAllocator allocator{};
         CordycepGame game{};
         std::vector<XAssetPool64Mem> pools{};
+        std::vector<std::unordered_map<uint64_t, XAsset64Mem*>> assets{};
         size_t numAssets{};
         std::vector<char> poolStrings{};
         std::unordered_map<uint64_t, uint32_t> poolStringsOffset{};
@@ -736,7 +737,8 @@ namespace fastfile {
 
         AssetPool(FastFileOption& opt) : opt(opt) {
             // alloc some pools
-            GetAssetPool(512);
+            pools.resize(512);
+            assets.resize(512);
             poolStrings.resize(2);
         }
 
@@ -781,27 +783,68 @@ namespace fastfile {
             return &poolStrings[id];
         }
 
-        void AddAssetHeader(uint64_t name, void* header, uint32_t type, size_t size) {
-            XAssetPool64Mem* pool{ GetAssetPool(type) };
-
-            XAsset64Mem* entry{ allocator.Alloc<XAsset64Mem>() };
-            entry->id = name;
-            entry->type = type;
-            entry->headerSize = size;
-            entry->header = header;
-            entry->temp = false;
-            entry->previous = pool->end;
-            entry->next = nullptr;
-
-            // link the asset in the pool
-            if (!pool->root) {
-                pool->root = entry;
+        XAsset64Mem* FindEntry(uint64_t name, uint32_t type) {
+            if (assets.size() >= type) {
+                return nullptr; // the type doesn't exist
             }
-            if (pool->end) {
-                pool->end->next = entry;
+            auto it{ assets[type].find(name & ~fastfile::DEFAULT_MEMBER) };
+            if (it == assets[type].end()) {
+                return nullptr; // not allocated
             }
-            pool->end = entry;
-            numAssets++;
+
+            return it->second;
+        }
+
+        void AddAssetHeader(uint64_t name, void** header, uint32_t type, size_t size) {
+            XAsset64Mem* entry{ FindEntry(name, type) };
+            if (entry) {
+                if (name & fastfile::DEFAULT_MEMBER) {
+                    // this is a default entry, we only need to link it
+                    if (header) {
+                        *header = entry->header;
+                    }
+                    return;
+                }
+            } else {
+                // no pool entry, we allocate it
+                XAssetPool64Mem* pool{ GetAssetPool(type) };
+                entry = allocator.Alloc<XAsset64Mem>();
+
+                if (assets.size() <= type) {
+                    assets.resize((size_t)type * 3 / 2);
+                }
+
+                entry->id = name & ~fastfile::DEFAULT_MEMBER;
+                entry->type = type;
+                entry->headerSize = size;
+                entry->temp = false;
+                entry->previous = pool->end;
+                entry->next = nullptr;
+
+                if (size) {
+                    entry->header = allocator.Alloc(size);
+                }
+
+                assets[type][name & ~fastfile::DEFAULT_MEMBER] = entry;
+
+                // link the asset in the pool
+                if (!pool->root) {
+                    pool->root = entry;
+                }
+                if (pool->end) {
+                    pool->end->next = entry;
+                }
+                pool->end = entry;
+                numAssets++;
+            }
+            
+            if (header && size) {
+                // the asset is new or we apply the entry data
+                if (*header) {
+                    std::memcpy(entry->header, *header, size);            
+                }
+                *header = entry->header;
+            }
         }
 
         void WriteCsiFile() const {
@@ -851,7 +894,7 @@ namespace fastfile {
     struct FFReplCmd {
         const char* usage;
         const char* description;
-        std::function<void(int argc, const char* argv[])> func{};
+        std::function<void(int argc, const char* argv[])> func;
     };
 
     class FFLoadContext {
@@ -867,26 +910,31 @@ namespace fastfile {
         bool runRepl{};
 
         FFLoadContext(FastFileOption& opt) : opt(opt), assetPool(opt) {
-            cmds["exit"] = { "", "exit the process", [this](int argc, const char* argv[]) { runRepl = false; } };
-            cmds["help"] = { "", "show help", [this](int argc, const char* argv[]) {
+            cmds["exit"] = { .usage = "",
+                             .description = "exit the process",
+                             .func = [this](int argc, const char* argv[]) { runRepl = false; } };
+            cmds["help"] = { .usage = "", .description = "show help", .func = [this](int argc, const char* argv[]) {
                                 LOG_INFO("commands:");
                                 for (auto& [name, data] : cmds) {
                                     LOG_INFO("{}{}: {}", name, data.usage, data.description);
                                 }
                             } };
-            cmds["load"] = { " [filename]", "load fastfile", [this](int argc, const char* argv[]) {
-                                if (tool::NotEnoughParam(argc, 1)) {
-                                    LOG_ERROR("not enough param");
-                                }
-                                for (size_t i = 2; i < argc; i++) {
-                                    if (!LoadFastFile(argv[i])) {
-                                        LOG_ERROR("Nothing loaded for {}", argv[i]);
-                                    }
-                                }
-                                WriteIndex();
-                            } };
-            cmds["loadre"] = { " [wildcard] (ignorewc)", "load fastfile using regex",
-                               [this](int argc, const char* argv[]) {
+            cmds["load"] = { .usage = " [filename]",
+                             .description = "load fastfile",
+                             .func = [this](int argc, const char* argv[]) {
+                                 if (tool::NotEnoughParam(argc, 1)) {
+                                     LOG_ERROR("not enough param");
+                                 }
+                                 for (size_t i = 2; i < argc; i++) {
+                                     if (!LoadFastFile(argv[i])) {
+                                         LOG_ERROR("Nothing loaded for {}", argv[i]);
+                                     }
+                                 }
+                                 WriteIndex();
+                             } };
+            cmds["loadre"] = { .usage = " [wildcard] (ignorewc)",
+                               .description = "load fastfile using regex",
+                               .func = [this](int argc, const char* argv[]) {
                                    if (tool::NotEnoughParam(argc, 1)) {
                                        LOG_ERROR("not enough param");
                                        return;
@@ -896,18 +944,20 @@ namespace fastfile {
                                    }
                                    WriteIndex();
                                } };
-            cmds["loadcommonfiles"] = { "", "load common fastfiles", [this](int argc, const char* argv[]) {
-                                           if (!this->opt.handler || this->opt.handler->commonFiles.empty()) {
-                                               LOG_ERROR("no common files registered for this game");
-                                               return;
-                                           }
-                                           for (std::string& cf : this->opt.handler->commonFiles) {
-                                               if (!LoadFastFile(cf.data())) {
-                                                   LOG_ERROR("Nothing loaded for {}", argv[2]);
-                                               }
-                                           }
-                                           WriteIndex();
-                                       } };
+            cmds["loadcommonfiles"] = { .usage = "",
+                                        .description = "load common fastfiles",
+                                        .func = [this](int argc, const char* argv[]) {
+                                            if (!this->opt.handler || this->opt.handler->commonFiles.empty()) {
+                                                LOG_ERROR("no common files registered for this game");
+                                                return;
+                                            }
+                                            for (std::string& cf : this->opt.handler->commonFiles) {
+                                                if (!LoadFastFile(cf.data())) {
+                                                    LOG_ERROR("Nothing loaded for {}", cf.data());
+                                                }
+                                            }
+                                            WriteIndex();
+                                        } };
         }
 
         ~FFLoadContext() {
@@ -1108,11 +1158,17 @@ namespace fastfile {
         }
     };
 
-    void AddAssetHeader(const char* name, void* header, uint32_t type, size_t size) {
-        AddAssetHeader(hash::Hash64A(name), header, type, size);
+    void AddAssetHeader(const char* name, void** header, uint32_t type, size_t size) {
+        uint64_t h{};
+        if (name && name[0] == ',') {
+            name++;
+            h = DEFAULT_MEMBER;
+        }
+        h |= hash::Hash64(name);
+        AddAssetHeader(h, header, type, size);
     }
-    void AddAssetHeader(uint64_t name, void* header, uint32_t type, size_t size) {
-        if (header && currentAssetPool) {
+    void AddAssetHeader(uint64_t name, void** header, uint32_t type, size_t size) {
+        if (header && *header && currentAssetPool) {
             currentAssetPool->AddAssetHeader(name, header, type, size);
         }
     }
@@ -1415,10 +1471,18 @@ uint8_t* ActsAPIFastFile_AllocateZoneMemory(size_t len) {
 }
 
 void ActsAPIFastFile_AddAssetHeaderString(const char* name, void* header, uint32_t type, size_t size) {
-    fastfile::AddAssetHeader(name, header, type, size);
+    ActsAPIFastFile_AddAssetHeaderStringRef(name, &header, type, size);
 }
 
 void ActsAPIFastFile_AddAssetHeaderHashed(uint64_t name, void* header, uint32_t type, size_t size) {
+    ActsAPIFastFile_AddAssetHeaderHashedRef(name, &header, type, size);
+}
+
+void ActsAPIFastFile_AddAssetHeaderStringRef(const char* name, void** header, uint32_t type, size_t size) {
+    fastfile::AddAssetHeader(name, header, type, size);
+}
+
+void ActsAPIFastFile_AddAssetHeaderHashedRef(uint64_t name, void** header, uint32_t type, size_t size) {
     fastfile::AddAssetHeader(name, header, type, size);
 }
 

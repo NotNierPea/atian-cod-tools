@@ -23,6 +23,8 @@ namespace fastfile {
     // data after, expect to allocate a virtual alias
     constexpr uintptr_t ALLOC_REF_PTR = static_cast<uintptr_t>(-2);
 
+    const uint64_t DEFAULT_MEMBER = 1ull << 63;
+
     enum FastFilePlatform : byte {
         XFILE_PC = 0x0,
         XFILE_XBOX = 0x1,
@@ -281,8 +283,8 @@ namespace fastfile {
     FFLinker* FindLinker(const char* name);
     fastfile::FastFileContext& GetCurrentContext();
     fastfile::FastFileOption& GetCurrentOptions();
-    void AddAssetHeader(const char* name, void* header, uint32_t type, size_t size);
-    void AddAssetHeader(uint64_t name, void* header, uint32_t type, size_t size);
+    void AddAssetHeader(const char* name, void** header, uint32_t type, size_t size);
+    void AddAssetHeader(uint64_t name, void** header, uint32_t type, size_t size);
     const char* GetScrString(uint32_t id);
     uint32_t RegisterScrString(const char* str, uint32_t prevId);
 } // namespace fastfile

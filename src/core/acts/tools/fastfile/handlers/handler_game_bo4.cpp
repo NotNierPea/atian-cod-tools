@@ -443,7 +443,7 @@ namespace fastfile::handlers::bo4 {
                       hashutils::ExtractTmp("hash", hash->name), hash->name, xasset->header, XBlockLocPtr(baseHeader));
         }
 
-        fastfile::AddAssetHeader(name, xasset->header, xasset->type, 0);
+        fastfile::AddAssetHeader(name, &xasset->header, xasset->type, assetSize);
 
         if (gcx.opt->noAssetDump || (!gcx.handleList.Empty() && !gcx.handleList[xasset->type]))
             return xasset; // ignore

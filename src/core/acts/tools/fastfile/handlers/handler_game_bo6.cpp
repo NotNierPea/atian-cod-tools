@@ -367,7 +367,7 @@ namespace fastfile::handlers::bo6 {
                 gcx.linkedAssets[hashType][hash] = *handle;
             }
 
-            fastfile::AddAssetHeader(hash, handle ? *handle : nullptr, type, itemSize);
+            fastfile::AddAssetHeader(hash, handle, type, itemSize);
 
             if (handle &&
                 !(gcx.opt->noAssetDump || !gcx.assetNames.ShouldHandle(type) || !gcx.namesStore.Contains(hash, true))) {
