@@ -837,11 +837,11 @@ namespace fastfile {
                 pool->end = entry;
                 numAssets++;
             }
-            
+
             if (header && size) {
                 // the asset is new or we apply the entry data
                 if (*header) {
-                    std::memcpy(entry->header, *header, size);            
+                    std::memcpy(entry->header, *header, size);
                 }
                 *header = entry->header;
             }
