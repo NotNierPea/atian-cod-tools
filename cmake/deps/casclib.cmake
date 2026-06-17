@@ -3,8 +3,6 @@ file(GLOB_RECURSE CASCLIB_SOURCES
     "${CMAKE_SOURCE_DIR}/deps/casclib/src/*.cpp"
     "${CMAKE_SOURCE_DIR}/deps/casclib/src/*.h"
     "${CMAKE_SOURCE_DIR}/deps/casclib/src/*.c"
-    "${CMAKE_SOURCE_DIR}/deps/casclib/src/*.def"
-    "${CMAKE_SOURCE_DIR}/deps/casclib/src/*.rc"
 )
 list(REMOVE_ITEM CASCLIB_SOURCES
     "${CMAKE_SOURCE_DIR}/deps/casclib/src/overwatch/cmf-key.cpp"
