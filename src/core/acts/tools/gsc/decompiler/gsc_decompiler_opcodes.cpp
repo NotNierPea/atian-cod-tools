@@ -4831,7 +4831,7 @@ namespace tool::gsc::opcode {
             // control
             const OPCodeInfoCount opEndOnCallback{
                 OPCODE_EndOnCallback, "EndOnCallback", "endoncallback", false
-            };                                                                      // count = params + self
+            }; // count = params + self
             const OPCodeInfoCount opEndOn{ OPCODE_EndOn, "EndOn", "endon", false }; // count = params + self
             // ret control
             const OPCodeInfoCountWaittill opWaitTill{ OPCODE_WaitTill,

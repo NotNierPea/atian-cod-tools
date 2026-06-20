@@ -5,6 +5,7 @@
 #include <TlHelp32.h>
 #include <DbgHelp.h>
 #pragma comment(lib, "imagehlp.lib")
+#pragma comment(lib, "dbghelp.lib")
 #if __has_include(<detours.h>)
 #define __ACTS_PLATFORM_HAS_DETOURS
 #include <detours.h>
@@ -795,6 +796,26 @@ namespace platform {
 
     } // namespace
 
+    static bool ResolveFileLine(uintptr_t address, const char** file, DWORD* line) {
+        static std::once_flag of;
+        std::call_once(of, [] {
+            SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+            SymInitialize(GetCurrentProcess(), NULL, TRUE);
+        });
+
+        DWORD displacement{};
+        IMAGEHLP_LINE64 info{};
+        info.SizeOfStruct = sizeof(info);
+
+        if (SymGetLineFromAddr64(GetCurrentProcess(), address, &displacement, &info)) {
+            *file = info.FileName;
+            *line = info.LineNumber;
+            return true;
+        }
+
+        return false;
+    }
+
     void DumpStackTraceFrom(core::logs::loglevel level, const void* location) {
         if (!HAS_LOG_LEVEL(level))
             return; // useless
@@ -815,7 +836,13 @@ namespace platform {
         }
         for (; i < capture; i++) {
             if (hook::error::GetLocInfo(locs[i], relativeLocation, moduleName)) {
-                LOG_LVLF(level, "- {} 0x{:x} ({})", moduleName, relativeLocation, locs[i]);
+                const char* file;
+                DWORD line;
+                if (ResolveFileLine((uintptr_t)locs[i], &file, &line)) {
+                    LOG_LVLF(level, "- {} 0x{:x} ({}) {}:{}", moduleName, relativeLocation, locs[i], file, line);
+                } else {
+                    LOG_LVLF(level, "- {} 0x{:x} ({})", moduleName, relativeLocation, locs[i]);
+                }
             } else {
                 LOG_LVLF(level, "- {}", locs[i]);
             }

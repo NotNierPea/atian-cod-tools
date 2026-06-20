@@ -160,6 +160,7 @@ static const struct { uint32_t code; const char* msg; } ERRORS[] {
     { 2253722136, "CamAnimScripted can only be called on a player." }, // Union 958 Mad Retreat
     { 2255127213, "Parameter must be an array" }, // Cast 245 Classic Retreat
     { 2258850890, "No clientfield named found in set." }, // Adam 614 Steel Retreat
+    { 2262814876, "Out of script global var memory." }, // Sierra 229 Dazed Retreat
     { 2269096660, "vector scale expecting vector" }, // Echo 782 Shellshocked Artillery
     { 2274889209, "Invalid type passed in from array into waittill parameter list" }, // Delta 796 Nightshade Artillery
     { 2279633554, "SV_SetConfigstring: bad index" }, // South 263 Confused Artillery
@@ -436,6 +437,7 @@ static const struct { uint32_t code; const char* msg; } ERRORS[] {
     { 467754466, "Error registering client field.  bCallbacksFor0WhenNew (CF_CALLBACK_ZERO_ON_NEW_ENT) is disallowed for CF_SCRIPTMOVERFIELDS." }, // Ida 635 Rightful Elephant
     { 475330046, "Invalid dvar type" }, // November 268 Wild Greyhound
     { 476151073, "invalid session mode" }, // Hotel 621 Dry Greyhound
+    { 483405794, "Unexpected string type in stringtable" }, // Ida 526 Binary Greyhound
     { 484463798, "invalid dlcname or session for maptable" }, // North 298 Confused Greyhound
     { 48546501, "not a function pointer" }, // Summer 490 Defiant Eel
     { 487917415, "Invalid mission name" }, // King 537 Ghost Hound
