@@ -35,6 +35,8 @@ EXPORT void PBO4_PreStart() {
     hook::error::EnableHeavyDump();
     hook::error::InstallErrorHooks(true);
 
+    srand(time(NULL));
+
     hook::library::Library main{};
     LOG_INFO(
         "init acts {}(0x{:x}) dll pid={} name={}",

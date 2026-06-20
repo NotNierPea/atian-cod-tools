@@ -8,8 +8,9 @@
 
 namespace systems::gsc::op {
     namespace {
-        void VM_OP_LazyLink(bo4::scriptInstance_t inst, bo4::function_stack_t* stack, bo4::ScrVmContext_t* ctx,
-                            bool* terminate) {
+        void VM_OP_LazyLink(
+            bo4::scriptInstance_t inst, bo4::function_stack_t* stack, bo4::ScrVmContext_t* ctx, bool* terminate
+        ) {
             byte* base{ utils::Aligned<uint32_t>(stack->pos) };
             stack->pos = base + 0x10;
 
@@ -58,10 +59,20 @@ namespace systems::gsc::op {
                 top->type = bo4::TYPE_UNDEFINED;
             }
         }
+        void VM_OP_DevblockBeginLinked(
+            bo4::scriptInstance_t inst, bo4::function_stack_t* stack, bo4::ScrVmContext_t* ctx, bool* terminate
+        ) {
+            byte* base{ utils::Aligned<uint16_t>(stack->pos) };
+            stack->pos = base + 2;
+            // by default, it does that, but we linked it to be that way:
+            // int16_t delta{ *(int16_t*)base };
+            // stack->pos += delta;
+        }
 
         void PostInit(uint64_t uid) {
             bo4::gVmOpJumpTable[OP_LazyLink] = VM_OP_LazyLink;
             bo4::gVmOpJumpTableModTool[OPMT_LazyLink] = VM_OP_LazyLink;
+            bo4::gVmOpJumpTableModTool[OPMT_DevblockBeginLinked] = VM_OP_DevblockBeginLinked;
         }
 
         REGISTER_SYSTEM(gsc_op, nullptr, PostInit);

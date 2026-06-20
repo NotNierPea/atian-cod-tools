@@ -105,6 +105,14 @@ function private __pre_init__()
     */
     //hud destroy();
     ActsLog( "post hud destroy" );
+
+    test = 0;
+    /# test = 42; #/
+    ActsLog( "test dev blocks", test );
+    test = undefined;
+    /# test = &on_player_connect; #/
+    ActsLog( "test linking dev blocks", test );
+    /# ActsLog( "str blocks" ); #/
 }
 
 function private on_player_connect()

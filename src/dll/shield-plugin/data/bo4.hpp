@@ -62,6 +62,13 @@ namespace bo4 {
         uint8_t flags;
     };
 
+    struct GSC_STRINGTABLE_ITEM {
+        uint32_t string;
+        uint8_t num_address;
+        uint8_t type;
+        uint8_t pad[2];
+    };
+
     struct GSC_OBJ {
         byte magic[8];
         int32_t crc;
@@ -95,6 +102,7 @@ namespace bo4 {
     typedef vec_t vec2_t[2];
     typedef vec_t vec3_t[3];
     typedef vec_t vec4_t[4];
+    typedef uint32_t ScrString_t;
 
     typedef void (*BuiltinFunction)(scriptInstance_t);
 
@@ -313,6 +321,14 @@ namespace bo4 {
         ScrVarIndex_t objectId;
         byte* lastGoodPos;
         ScrVarValue_t* lastGoodTop;
+    };
+
+    enum ScrStringType : uint32_t {
+        MT_TYPE_EMPTY = 0x0,
+        MT_TYPE_GENERIC = 0x1,
+        MT_TYPE_DB = 0x9,
+        MT_TYPE_VM = 0x1A,
+        MT_TYPE_SCRIPT_PARSE = 0x1B,
     };
 
     typedef void (*VM_OP_FUNC)(scriptInstance_t, function_stack_t*, ScrVmContext_t*, bool*);

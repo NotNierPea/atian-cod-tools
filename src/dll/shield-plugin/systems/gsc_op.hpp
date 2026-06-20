@@ -9,5 +9,6 @@ namespace systems::gsc::op {
 
     enum OP_CODE_MOD_TOOL : uint16_t {
         OPMT_LazyLink = 0x18,
+        OPMT_DevblockBeginLinked = 0x1b,
     };
 } // namespace systems::gsc::op

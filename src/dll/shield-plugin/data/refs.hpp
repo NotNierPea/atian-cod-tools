@@ -67,10 +67,14 @@ namespace bo4 {
     S_ANY Ref<void(scriptInstance_t inst, MessageString* string, signed int startIndex, int endIndex)>
         Scr_ConstructMessageString{ 0x3F09D0_a };
 
-    S_ANY Ref<void(scriptInstance_t inst, byte* codepos, const char** scriptname, int32_t* sloc, int32_t* crc,
-                   int32_t* vm)>
+    S_ANY Ref<
+        void(scriptInstance_t inst, byte* codepos, const char** scriptname, int32_t* sloc, int32_t* crc, int32_t* vm)>
         Scr_GetGscExportInfo{ 0x2748550_a };
     S_ANY Ref<void(uint64_t code, scriptInstance_t inst, char* unused, bool terminal)> ScrVm_Error{ 0x2770330_a };
+    S_ANY Ref<ScrString_t(const char* str, unsigned int user, ScrStringType type, bool decrypt)> SL_GetStringOfSize{
+        0x2758610_a
+    };
+    S_ANY Ref<void(ScrString_t stringValue, unsigned int user)> SL_TransferRefToUser{ 0x27597A0_a };
 
     // gsc structs
     S_ANY Ref<BO4_scrVarPub> scrVarPub{ 0x8307880_a };
@@ -136,11 +140,14 @@ namespace bo4 {
     S_ANY Ref<void(const void* emblemLayer)> R_AddCmdDrawEmblemLayer{ 0x3616580_a };
     S_ANY Ref<void(const vec_t* verts, const vec_t* color, Material* material)> R_AddCmdDrawQuadPic{ 0x3616640_a };
     S_ANY Ref<void> R_AddCmdDrawQuadPicW{ 0x36166E0_a };
-    S_ANY Ref<void(float x, float y, float w, float h, float s0, float t0, float s1, float t1, float* color,
-                   Material* material)>
+    S_ANY Ref<void(
+        float x, float y, float w, float h, float s0, float t0, float s1, float t1, float* color, Material* material
+    )>
         R_AddCmdDrawStretchPic{ 0x3616790_a };
-    S_ANY Ref<void(const char* text, Font* font, const vec_t* org, const vec_t* xPixelStep, const vec_t* color,
-                   const vec_t* yPixelStep)>
+    S_ANY Ref<void(
+        const char* text, Font* font, const vec_t* org, const vec_t* xPixelStep, const vec_t* color,
+        const vec_t* yPixelStep
+    )>
         R_AddCmdDrawTextInSpace{ 0x3616A00_a };
     S_ANY Ref<void> R_AddCmdDrawUIQuads{ 0x3616CE0_a };
     S_ANY Ref<void> R_AddCmdDrawUIQuadsReplaceImage{ 0x3616E10_a };
@@ -152,8 +159,10 @@ namespace bo4 {
     S_ANY Ref<void(bool enabled, int x, int y, int width, int height)> R_AddCmdSetScissorValues{ 0x3617100_a };
     S_ANY Ref<void(bool forceBlack)> R_AddCmdSetUITextureSources{ 0x3617170_a };
     S_ANY Ref<void(int x, int y, int width, int height)> R_AddCmdSetViewportValues{ 0x36171A0_a };
-    S_ANY Ref<void(const char* text, int maxChars, Font* font, float x, float y, float xScale, float yScale,
-                   float rotation, const vec_t* color, int style, int cursorPos, char cursor, float padding)>
+    S_ANY Ref<void(
+        const char* text, int maxChars, Font* font, float x, float y, float xScale, float yScale, float rotation,
+        const vec_t* color, int style, int cursorPos, char cursor, float padding
+    )>
         AddBaseDrawTextCmd{ 0x3616B60_a };
 
     S_ANY Ref<uint32_t(Font* font)> R_TextHeight{ 0x35B2350_a };
@@ -165,14 +174,17 @@ namespace bo4 {
         UI_TextWidth{ 0x3CD65B0_a };
     S_ANY Ref<const ScreenPlacement*(const LocalClientNum_t localClientNum)> ScrPlace_GetView{ 0x2876E70_a };
 
-    inline void R_AddCmdDrawText(const char* text, int maxChars, Font* font, float x, float y, float xScale,
-                                 float yScale, float rotation, const vec_t* color, int style) {
+    inline void R_AddCmdDrawText(
+        const char* text, int maxChars, Font* font, float x, float y, float xScale, float yScale, float rotation,
+        const vec_t* color, int style
+    ) {
         AddBaseDrawTextCmd(text, maxChars, font, x, y, xScale, yScale, rotation, color, style, -1, 0, 0);
     }
 
-    inline void R_AddCmdDrawTextWithCursor(const char* text, int maxChars, Font* font, float x, float y, float xScale,
-                                           float yScale, float rotation, const vec_t* color, int style, int cursorPos,
-                                           char cursor) {
+    inline void R_AddCmdDrawTextWithCursor(
+        const char* text, int maxChars, Font* font, float x, float y, float xScale, float yScale, float rotation,
+        const vec_t* color, int style, int cursorPos, char cursor
+    ) {
         AddBaseDrawTextCmd(text, maxChars, font, x, y, xScale, yScale, rotation, color, style, cursorPos, cursor, 0);
     }
 
