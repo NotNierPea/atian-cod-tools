@@ -17,8 +17,12 @@ BO6PS4Widget::BO6PS4Widget(QWidget* parent) : QWidget(parent) {
     cfgUiBo6Cbuf.Bind(ui.cbuffEdit);
 
     connect(ui.openPathButton, &QPushButton::clicked, this, [this]() {
-        QString path = QFileDialog::getOpenFileName(this, tr("Compiled GSC File"), QString(),
-                                                    tr("Compiled GSC file (*.gscc);;All Files (*.*)"));
+        QString path = QFileDialog::getOpenFileName(
+            this,
+            tr("Compiled GSC File"),
+            QString(),
+            tr("Compiled GSC file (*.gscc);;All Files (*.*)")
+        );
         if (!path.isEmpty()) {
             ui.gscPathEdit->setText(path);
         }

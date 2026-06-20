@@ -22,8 +22,12 @@ namespace deps::idc_builder {
     }
 
     void IdcBuilder::AddAddressEx(size_t rva, const char* name, const char* flags, const char* type) {
-        addresses.emplace_back(rva, alloc.CloneStr(name), type ? alloc.CloneStr(type) : nullptr,
-                               flags ? alloc.CloneStr(flags) : nullptr);
+        addresses.emplace_back(
+            rva,
+            alloc.CloneStr(name),
+            type ? alloc.CloneStr(type) : nullptr,
+            flags ? alloc.CloneStr(flags) : nullptr
+        );
     }
 
     void IdcBuilder::AddCDecl(const char* decl, const char* flags) { cdecls.emplace_back(decl, flags); }

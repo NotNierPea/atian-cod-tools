@@ -60,8 +60,11 @@ static int ps4reader(Process& _, int argc, const char* argv[]) {
         return tool::BASIC_ERROR;
     }
 
-    auto bytes = ps4.ReadMemory(pid, base + 0x4A303C0 + sizeof(XAssetPoolEntry) * pool::ASSET_TYPE_SCRIPTPARSETREE,
-                                sizeof(XAssetPoolEntry));
+    auto bytes = ps4.ReadMemory(
+        pid,
+        base + 0x4A303C0 + sizeof(XAssetPoolEntry) * pool::ASSET_TYPE_SCRIPTPARSETREE,
+        sizeof(XAssetPoolEntry)
+    );
 
     auto* pool = reinterpret_cast<XAssetPoolEntry*>(&bytes[0]);
 

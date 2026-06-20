@@ -44,8 +44,8 @@ namespace tool::hash::text_expand {
         }
     }
 
-    void GetDynamicAsyncPtr(size_t max, void (*func)(const char* str, void* data), void* data, const char* dict,
-                            size_t n) {
+    void
+    GetDynamicAsyncPtr(size_t max, void (*func)(const char* str, void* data), void* data, const char* dict, size_t n) {
         BS::thread_pool pool{};
 
         size_t threads = pool.get_thread_count();
@@ -71,8 +71,9 @@ namespace tool::hash::text_expand {
         pool.wait();
     }
 
-    void GetDynamicAsyncDictPtr(size_t max, void (*func)(const char** str, void* data), const char** dict, void* data,
-                                AsyncStop* stop) {
+    void GetDynamicAsyncDictPtr(
+        size_t max, void (*func)(const char** str, void* data), const char** dict, void* data, AsyncStop* stop
+    ) {
         BS::thread_pool pool{};
         GetDynamicAsyncDictPtr(max, func, dict, &pool, data, stop);
         pool.wait();
@@ -92,8 +93,10 @@ namespace tool::hash::text_expand {
         buffer[off] = 0;
     }
 
-    void GetDynamicAsyncDictPtr(size_t max, void (*func)(const char** str, void* data), const char** dict,
-                                BS::thread_pool* pool, void* data, AsyncStop* stop) {
+    void GetDynamicAsyncDictPtr(
+        size_t max, void (*func)(const char** str, void* data), const char** dict, BS::thread_pool* pool, void* data,
+        AsyncStop* stop
+    ) {
         if (!dict || !*dict)
             throw std::runtime_error("Empty dictionary");
 
@@ -175,7 +178,10 @@ namespace tool::hash::text_expand {
 
                     it->second.tests++;
                 },
-                &map, dict, dictSize);
+                &map,
+                dict,
+                dictSize
+            );
 
             for (auto& [k, v] : map) {
                 LOG_TRACE("check val {}", v.str);
@@ -229,7 +235,10 @@ namespace tool::hash::text_expand {
 
                     it->second.tests++;
                 },
-                &map, dict, dictSize);
+                &map,
+                dict,
+                dictSize
+            );
 
             for (auto& [k, v] : map.map) {
                 LOG_TRACE("check val {}", v.str);
@@ -297,7 +306,11 @@ namespace tool::hash::text_expand {
 
                     it->second.tests++;
                 },
-                dict, &pool, &map, &as);
+                dict,
+                &pool,
+                &map,
+                &as
+            );
 
             pool.wait();
             as.running = false;

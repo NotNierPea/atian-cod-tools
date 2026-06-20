@@ -240,9 +240,10 @@ namespace {
                     uintptr_t freeHead;
                 };
 
-                auto pe{ bo4.ReadMemoryObjectEx<XAssetPoolEntry>(bo4[games::bo4::offset::assetPool] +
-                                                                 games::bo4::pool::ASSET_TYPE_STRINGTABLE *
-                                                                     sizeof(XAssetPoolEntry)) };
+                auto pe{ bo4.ReadMemoryObjectEx<XAssetPoolEntry>(
+                    bo4[games::bo4::offset::assetPool] +
+                    games::bo4::pool::ASSET_TYPE_STRINGTABLE * sizeof(XAssetPoolEntry)
+                ) };
 
                 if (pe->itemSize != sizeof(entry)) {
                     throw std::runtime_error("INVALID POOL SIZE");

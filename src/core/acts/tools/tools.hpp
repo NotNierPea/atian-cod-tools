@@ -22,10 +22,14 @@ namespace tool {
         tool::toolfunction m_func;
         std::string filename;
         size_t line;
-        toolfunctiondata(const char* name, const char* filename, size_t line, const char* category, const char* usage,
-                         const char* description, const wchar_t* game, tool::toolfunction func);
-        toolfunctiondata(const char* name, const char* filename, size_t line, const char* category, const char* usage,
-                         const char* description, tool::toolfunctionnf func);
+        toolfunctiondata(
+            const char* name, const char* filename, size_t line, const char* category, const char* usage,
+            const char* description, const wchar_t* game, tool::toolfunction func
+        );
+        toolfunctiondata(
+            const char* name, const char* filename, size_t line, const char* category, const char* usage,
+            const char* description, tool::toolfunctionnf func
+        );
 
         bool operator!() const;
         bool operatorbool() const;

@@ -16,7 +16,8 @@ namespace hook::module_mapper {
         std::string p{ ap.string() };
         int t = platform::LSF_SEARCH_DEFAULT_DIRS | platform::LSF_DONT_RESOLVE_REFERENCES;
         lib.SetModule(
-            platform::LoadShared(p.c_str(), platform::LSF_SEARCH_DEFAULT_DIRS | platform::LSF_DONT_RESOLVE_REFERENCES));
+            platform::LoadShared(p.c_str(), platform::LSF_SEARCH_DEFAULT_DIRS | platform::LSF_DONT_RESOLVE_REFERENCES)
+        );
         scanContainer.Load(lib);
         scanContainer.logger = &logger;
         logger.Clean();

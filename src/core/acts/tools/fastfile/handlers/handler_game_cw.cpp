@@ -38,8 +38,9 @@ namespace fastfile::handlers::cw {
             void (*DB_PopStreamPos)(){};
             bool (*Load_Stream)(bool atStreamStart, void* ptr, size_t size){};
             void (*DB_ConvertOffsetToPointer)(void** data){};
-            void (*DB_AllocXBlocks)(size_t* blockSize, const char* filename, const char* filename2, XBlock* blocks,
-                                    int side, int* loaded);
+            void (*DB_AllocXBlocks)(
+                size_t* blockSize, const char* filename, const char* filename2, XBlock* blocks, int side, int* loaded
+            );
             void (*DB_InitStreams)(XBlock* blocks);
             XBlock loadBlocks[XFileBlock::XFILE_BLOCK_COUNT];
             utils::OutFileCE* outAsset{};
@@ -112,8 +113,12 @@ namespace fastfile::handlers::cw {
             for (size_t i = 0; i < XFILE_BLOCK_COUNT; i++) {
                 if (p >= gcx.ctx->blockSizes[i].data && p < gcx.ctx->blockSizes[i].data + gcx.ctx->blockSizes[i].size) {
                     size_t rloc{ (size_t)(p - gcx.ctx->blockSizes[i].data) };
-                    return utils::va("%s+0x%llx/0x%llx", XFileBlockName((XFileBlock)i), rloc,
-                                     gcx.ctx->blockSizes[i].size);
+                    return utils::va(
+                        "%s+0x%llx/0x%llx",
+                        XFileBlockName((XFileBlock)i),
+                        rloc,
+                        gcx.ctx->blockSizes[i].size
+                    );
                 }
             }
             return utils::va("%p", ptr);
@@ -125,9 +130,16 @@ namespace fastfile::handlers::cw {
                     size_t rloc{ (size_t)(p - gcx.ctx->blockSizes[i].data) };
                     if (rloc + len > gcx.ctx->blockSizes[i].size) {
                         hook::error::DumpStackTraceFrom();
-                        throw std::runtime_error(std::format(
-                            "AssertCanWrite: Can't read 0x{:x}, remaining 0x{:x} at {} ({} rloc:0x{:x})", len,
-                            gcx.ctx->blockSizes[i].size - rloc, ptr, XFileBlockName((XFileBlock)i), rloc));
+                        throw std::runtime_error(
+                            std::format(
+                                "AssertCanWrite: Can't read 0x{:x}, remaining 0x{:x} at {} ({} rloc:0x{:x})",
+                                len,
+                                gcx.ctx->blockSizes[i].size - rloc,
+                                ptr,
+                                XFileBlockName((XFileBlock)i),
+                                rloc
+                            )
+                        );
                     }
                     break;
                 }
@@ -140,8 +152,12 @@ namespace fastfile::handlers::cw {
         }
 
         void DB_LoadXFileData(void* pos, size_t size) {
-            LOG_TRACE("{} DB_LoadXFileData({}, 0x{:x})", hook::library::CodePointer{ _ReturnAddress() },
-                      XBlockLocPtr(pos), size);
+            LOG_TRACE(
+                "{} DB_LoadXFileData({}, 0x{:x})",
+                hook::library::CodePointer{ _ReturnAddress() },
+                XBlockLocPtr(pos),
+                size
+            );
             if (!gcx.reader->CanRead(size)) {
                 hook::error::DumpStackTraceFrom();
             }
@@ -210,8 +226,13 @@ namespace fastfile::handlers::cw {
             //
             //	gcx.linkedAssets[xasset->type][hash->name] = xasset->header;
             // }
-            LOG_DEBUG("Loading asset {}/{} -> {}/{}", (int)type, hashutils::ExtractTmp("hash", hash), header,
-                      XBlockLocPtr(baseHeader));
+            LOG_DEBUG(
+                "Loading asset {}/{} -> {}/{}",
+                (int)type,
+                hashutils::ExtractTmp("hash", hash),
+                header,
+                XBlockLocPtr(baseHeader)
+            );
 
             fastfile::AddAssetHeader(hash, &header, type, (size_t)assetSize);
 
@@ -242,8 +263,12 @@ namespace fastfile::handlers::cw {
                 return it->second;
             }
 
-            LOG_WARNING("{} MISSING XASSET {} : {}", hook::library::CodePointer{ _ReturnAddress() }, PoolName(type),
-                        hashutils::ExtractTmp("hash", name));
+            LOG_WARNING(
+                "{} MISSING XASSET {} : {}",
+                hook::library::CodePointer{ _ReturnAddress() },
+                PoolName(type),
+                hashutils::ExtractTmp("hash", name)
+            );
 
             return nullptr;
         }
@@ -256,7 +281,8 @@ namespace fastfile::handlers::cw {
         void ErrorStub() {
             hook::error::DumpStackTraceFrom();
             throw std::runtime_error(
-                std::format("{} ErrorStub<0x{:x}>", hook::library::CodePointer{ _ReturnAddress() }, offset));
+                std::format("{} ErrorStub<0x{:x}>", hook::library::CodePointer{ _ReturnAddress() }, offset)
+            );
         }
 
         int Return3Stub() { return 3; }
@@ -279,8 +305,9 @@ namespace fastfile::handlers::cw {
         class BOCWFFHandler : public fastfile::FFHandler {
           public:
             BOCWFFHandler()
-                : fastfile::FFHandler("cw", "Black Ops Cold War",
-                                      compatibility::scobalula::csi::CordycepGame::CG_BOCW) {
+                : fastfile::FFHandler(
+                      "cw", "Black Ops Cold War", compatibility::scobalula::csi::CordycepGame::CG_BOCW
+                  ) {
                 gcx.handler = this;
             }
 
@@ -336,8 +363,9 @@ namespace fastfile::handlers::cw {
                 }
             }
 
-            void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                        fastfile::FastFileContext& ctx) override {
+            void Handle(
+                fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+            ) override {
                 gcx.ctx = &ctx;
                 gcx.reader = &reader;
                 std::filesystem::path out{ opt.m_output / "cw" / "data" };
@@ -376,8 +404,12 @@ namespace fastfile::handlers::cw {
                 if (assetList.strings) {
                     assetList.strings = AllocStreamPos<char*>();
 
-                    LOG_TRACE("Load {} (0x{:x})  strings... {}", assetList.stringsCount, assetList.stringsCount,
-                              (void*)assetList.strings);
+                    LOG_TRACE(
+                        "Load {} (0x{:x})  strings... {}",
+                        assetList.stringsCount,
+                        assetList.stringsCount,
+                        (void*)assetList.strings
+                    );
                     std::filesystem::path outStrings{ gcx.opt->m_output / "cw" / "source" / "tables" / "data" /
                                                       "strings" / std::format("{}.txt", ctx.ffname) };
                     std::filesystem::create_directories(outStrings.parent_path());
@@ -395,8 +427,12 @@ namespace fastfile::handlers::cw {
                                     LOG_TRACE("- {}/{} \"{}\"", i, assetList.stringsCount, assetList.strings[i]);
                                 } else {
                                     gcx.DB_ConvertOffsetToPointer((void**)&assetList.strings[i]);
-                                    LOG_TRACE("- {}/{} \"{}\" (offset)", i, assetList.stringsCount,
-                                              assetList.strings[i]);
+                                    LOG_TRACE(
+                                        "- {}/{} \"{}\" (offset)",
+                                        i,
+                                        assetList.stringsCount,
+                                        assetList.strings[i]
+                                    );
                                 }
 
                                 char* scrstr{ assetList.strings[i] };
@@ -404,8 +440,12 @@ namespace fastfile::handlers::cw {
                                 os << scrstr << "\n";
                             }
                         }
-                        LOG_OPT_INFO("Dump {} (0x{:x}) strings into {}", assetList.stringsCount, assetList.stringsCount,
-                                     outStrings.string());
+                        LOG_OPT_INFO(
+                            "Dump {} (0x{:x}) strings into {}",
+                            assetList.stringsCount,
+                            assetList.stringsCount,
+                            outStrings.string()
+                        );
                     }
                 }
 
@@ -437,8 +477,14 @@ namespace fastfile::handlers::cw {
 
                     for (size_t i = 0; i < assetList.assetCount; i++) {
                         const char* assType{ cw::PoolName(assetList.assets[i].type) };
-                        LOG_DEBUG("{}/{} Load asset {} (0x{:x}) {}", i, assetList.assetCount, assType,
-                                  (int)assetList.assets[i].type, assetList.assets[i].header);
+                        LOG_DEBUG(
+                            "{}/{} Load asset {} (0x{:x}) {}",
+                            i,
+                            assetList.assetCount,
+                            assType,
+                            (int)assetList.assets[i].type,
+                            assetList.assets[i].header
+                        );
                         gcx.Load_XAsset(false, &assetList.assets[i]);
                     }
 

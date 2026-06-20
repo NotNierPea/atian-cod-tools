@@ -96,11 +96,13 @@ void GscHighlighter::setupRules() {
 
     // Integer: hex, binary, octal, decimal
     rules.push_back(
-        { QRegularExpression(R"(\b-?(0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]+|[1-9][0-9]*|0)\b)"), numberFormat });
+        { QRegularExpression(R"(\b-?(0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]+|[1-9][0-9]*|0)\b)"), numberFormat }
+    );
 
     // Float
     rules.push_back(
-        { QRegularExpression(R"(\b-?((\d*\.\d+|\d+\.\d*)([eE][+-]?\d+)?|\d+[eE][+-]?\d+)\b)"), numberFormat });
+        { QRegularExpression(R"(\b-?((\d*\.\d+|\d+\.\d*)([eE][+-]?\d+)?|\d+[eE][+-]?\d+)\b)"), numberFormat }
+    );
 
     //
     // --- STRINGS / ISTRING / HASHSTRING ---

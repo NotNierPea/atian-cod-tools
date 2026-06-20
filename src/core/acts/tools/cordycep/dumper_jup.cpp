@@ -231,8 +231,10 @@ namespace {
             uint64_t unk28;
         };
 
-        bool WriteBundleDef(PoolOptionImpl& opt, std::ostringstream& os, Process& proc, ScriptBundle& entry,
-                            ScriptBundleObjectDef& def, int depth) {
+        bool WriteBundleDef(
+            PoolOptionImpl& opt, std::ostringstream& os, Process& proc, ScriptBundle& entry, ScriptBundleObjectDef& def,
+            int depth
+        ) {
             switch (def.type) {
             case SBT_UNDEFINED:
                 os << "undefined";
@@ -283,7 +285,9 @@ namespace {
 
                 if (arrayIndexed.count) {
                     auto [vals, ok] = proc.ReadMemoryArray<ScriptBundleObjectDefValueArrayIndexedVal>(
-                        arrayIndexed.vals, arrayIndexed.count);
+                        arrayIndexed.vals,
+                        arrayIndexed.count
+                    );
 
                     if (!ok) {
                         LOG_ERROR("Can't read vals");
@@ -457,8 +461,10 @@ namespace {
             ScriptBundleObjectData data;
         };
 
-        bool WriteBundleDef(PoolOption& opt, std::ostringstream& os, Process& proc, ScriptBundle& entry,
-                            ScriptBundleObjectDef& def, int depth) {
+        bool WriteBundleDef(
+            PoolOption& opt, std::ostringstream& os, Process& proc, ScriptBundle& entry, ScriptBundleObjectDef& def,
+            int depth
+        ) {
             switch (def.type) {
             case SBT_UNDEFINED:
                 os << "undefined";
@@ -674,8 +680,12 @@ namespace {
 
         size_t total{};
 
-        auto HandlePool = [&opt, &pools, &proc, &total](sp23::AssetType type, const std::filesystem::path& outDir,
-                                                        std::function<bool(const XAsset64& asset, size_t count)> func) {
+        auto HandlePool = [&opt, &pools, &proc, &total](
+                              sp23::AssetType type,
+                              const std::filesystem::path& outDir,
+                              std::function<bool(const XAsset64& asset, size_t count)>
+                                  func
+                          ) {
             if (!opt.m_dump_types[type] && !opt.m_dump_all_available) {
                 return;
             }
@@ -1160,8 +1170,11 @@ namespace {
                     parsedStructs.insert(id);
 
                     if (!proc.ReadMemory(&stct, def.structList + sizeof(stct) * id, sizeof(stct))) {
-                        LOG_ERROR("Can't read DDL struct {} / {}", hashutils::ExtractTmpPath("ddl", entry.name),
-                                  def.structList);
+                        LOG_ERROR(
+                            "Can't read DDL struct {} / {}",
+                            hashutils::ExtractTmpPath("ddl", entry.name),
+                            def.structList
+                        );
                         return false;
                     }
 
@@ -1178,8 +1191,10 @@ namespace {
                         }
 
                         std::sort(
-                            &members[0], &members[stct.memberCount - 1],
-                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; });
+                            &members[0],
+                            &members[stct.memberCount - 1],
+                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; }
+                        );
 
                         for (size_t i = 0; i < stct.memberCount; i++) {
                             DDLMember& member = members[i];
@@ -1243,8 +1258,11 @@ namespace {
 
                                 DDLStruct stct2{};
 
-                                if (!proc.ReadMemory(&stct2, def.structList + sizeof(stct2) * member.externalIndex,
-                                                     sizeof(stct2))) {
+                                if (!proc.ReadMemory(
+                                        &stct2,
+                                        def.structList + sizeof(stct2) * member.externalIndex,
+                                        sizeof(stct2)
+                                    )) {
                                     LOG_ERROR("Can't read DDL {}", hashutils::ExtractTmpPath("ddl", entry.name));
                                     return false;
                                 }
@@ -1258,8 +1276,11 @@ namespace {
 
                                 DDLEnum enum2{};
 
-                                if (!proc.ReadMemory(&enum2, def.enumList + sizeof(enum2) * member.externalIndex,
-                                                     sizeof(enum2))) {
+                                if (!proc.ReadMemory(
+                                        &enum2,
+                                        def.enumList + sizeof(enum2) * member.externalIndex,
+                                        sizeof(enum2)
+                                    )) {
                                     LOG_ERROR("Can't read DDL {}", hashutils::ExtractTmpPath("ddl", entry.name));
                                     return false;
                                 }
@@ -1319,8 +1340,11 @@ namespace {
                         auto [members, ok] = proc.ReadMemoryArray<uint64_t>(enm.members, enm.count);
 
                         if (!ok) {
-                            LOG_ERROR("Can't read DDL enum members {} / {}",
-                                      hashutils::ExtractTmpPath("ddl", entry.name), enm.members);
+                            LOG_ERROR(
+                                "Can't read DDL enum members {} / {}",
+                                hashutils::ExtractTmpPath("ddl", entry.name),
+                                enm.members
+                            );
                             return false;
                         }
 
@@ -1486,7 +1510,7 @@ namespace {
         return tool::OK;
     }
 
-    utils::ArrayAdder<tool::cordycep::dump::CordycepDumper> impl{ tool::cordycep::dump::GetDumpers(),
-                                                                  compatibility::scobalula::csi::CG_MW6, dpcordimpl,
-                                                                  ASSET_COUNT };
+    utils::ArrayAdder<tool::cordycep::dump::CordycepDumper> impl{
+        tool::cordycep::dump::GetDumpers(), compatibility::scobalula::csi::CG_MW6, dpcordimpl, ASSET_COUNT
+    };
 } // namespace

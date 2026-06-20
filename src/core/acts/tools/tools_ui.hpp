@@ -20,8 +20,10 @@ namespace tool::ui {
         WNDPROC m_msg;
         int tabId{};
 
-        tooluifunctiondata(const char* id, const wchar_t* description, toolfunctionui registerFunc, WNDPROC msg,
-                           toolfunctionuiresize resize);
+        tooluifunctiondata(
+            const char* id, const wchar_t* description, toolfunctionui registerFunc, WNDPROC msg,
+            toolfunctionuiresize resize
+        );
 
         bool operator!() const;
         bool operatorbool() const;

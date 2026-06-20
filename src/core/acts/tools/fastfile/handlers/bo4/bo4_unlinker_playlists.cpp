@@ -356,16 +356,31 @@ namespace {
                     json.WriteFieldValueString("lobbyMainMode", GetEModeName(entry->mainMode));
 
                     json.WriteFieldValueXAsset("image", games::bo4::pool::ASSET_TYPE_IMAGE, entry->image);
-                    json.WriteFieldValueXAsset("imageBackground", games::bo4::pool::ASSET_TYPE_IMAGE,
-                                               entry->imageBackground);
-                    json.WriteFieldValueXAsset("imageBackgroundFocus", games::bo4::pool::ASSET_TYPE_IMAGE,
-                                               entry->imageBackgroundFocus);
-                    json.WriteFieldValueXAsset("imageTileLarge", games::bo4::pool::ASSET_TYPE_IMAGE,
-                                               entry->imageTileLarge);
-                    json.WriteFieldValueXAsset("imageTileSmall", games::bo4::pool::ASSET_TYPE_IMAGE,
-                                               entry->imageTileSmall);
-                    json.WriteFieldValueXAsset("imageTileSideInfo", games::bo4::pool::ASSET_TYPE_IMAGE,
-                                               entry->imageTileSideInfo);
+                    json.WriteFieldValueXAsset(
+                        "imageBackground",
+                        games::bo4::pool::ASSET_TYPE_IMAGE,
+                        entry->imageBackground
+                    );
+                    json.WriteFieldValueXAsset(
+                        "imageBackgroundFocus",
+                        games::bo4::pool::ASSET_TYPE_IMAGE,
+                        entry->imageBackgroundFocus
+                    );
+                    json.WriteFieldValueXAsset(
+                        "imageTileLarge",
+                        games::bo4::pool::ASSET_TYPE_IMAGE,
+                        entry->imageTileLarge
+                    );
+                    json.WriteFieldValueXAsset(
+                        "imageTileSmall",
+                        games::bo4::pool::ASSET_TYPE_IMAGE,
+                        entry->imageTileSmall
+                    );
+                    json.WriteFieldValueXAsset(
+                        "imageTileSideInfo",
+                        games::bo4::pool::ASSET_TYPE_IMAGE,
+                        entry->imageTileSideInfo
+                    );
 
                     json.WriteFieldValueNumber("id", entry->id);
                     json.WriteFieldValueNumber("arenaSlot", entry->arenaSlot);

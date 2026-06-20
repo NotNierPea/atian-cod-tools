@@ -32,8 +32,11 @@ namespace bo3 {
 
         proc.WriteLocation(std::cout << "pool: ", poolLoc) << "\n";
 
-        if (!proc.ReadMemory(&sptPool, poolLoc + sizeof(sptPool) * bo3::pool::T7_ASSET_TYPE_SCRIPTPARSETREE,
-                             sizeof(sptPool))) {
+        if (!proc.ReadMemory(
+                &sptPool,
+                poolLoc + sizeof(sptPool) * bo3::pool::T7_ASSET_TYPE_SCRIPTPARSETREE,
+                sizeof(sptPool)
+            )) {
             notify = "Can't read SPT pool";
             return tool::BASIC_ERROR;
         }
@@ -70,8 +73,12 @@ namespace bo3 {
             return tool::BASIC_ERROR;
         }
 
-        LOG_DEBUG("{} -> {:x} ({})", replaced, replacedEntryH->script,
-                  proc.ReadStringTmp(replacedEntryH->name, "<err>"));
+        LOG_DEBUG(
+            "{} -> {:x} ({})",
+            replaced,
+            replacedEntryH->script,
+            proc.ReadStringTmp(replacedEntryH->name, "<err>")
+        );
 
         // fixup crc & name
         tool::gsc::T7GSCOBJ* obj{ (tool::gsc::T7GSCOBJ*)scriptBuffer };

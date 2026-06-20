@@ -169,18 +169,32 @@ namespace {
             json.WriteFieldValueXHash("name", asset->name);
             json.WriteFieldValueXHash("unk10", asset->unk10);
             json.WriteFieldValueXHash(0x4fa4ad655ced495, asset->unk4fa4ad655ced495);
-            json.WriteFieldValueXAsset("bodyType", games::bo4::pool::XAssetType::ASSET_TYPE_CHARACTER_BODY_TYPE,
-                                       asset->bodyType);
-            json.WriteFieldValueXAsset("category", games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY,
-                                       asset->category);
-            json.WriteFieldValueXAsset("playerMovementTunables",
-                                       games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_MOVEMENT_TUNABLES,
-                                       asset->playerMovementTunables);
-            json.WriteFieldValueXAsset("playerTalentTemplate",
-                                       games::bo4::pool::XAssetType::ASSET_TYPE_PLAYERTALENTTEMPLATE,
-                                       asset->playerTalentTemplate);
-            json.WriteFieldValueXAssetArray("bundleLists", games::bo4::pool::XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
-                                            ACTS_ARRAYSIZE(*asset->bundleLists), asset->bundleLists);
+            json.WriteFieldValueXAsset(
+                "bodyType",
+                games::bo4::pool::XAssetType::ASSET_TYPE_CHARACTER_BODY_TYPE,
+                asset->bodyType
+            );
+            json.WriteFieldValueXAsset(
+                "category",
+                games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_ROLE_CATEGORY,
+                asset->category
+            );
+            json.WriteFieldValueXAsset(
+                "playerMovementTunables",
+                games::bo4::pool::XAssetType::ASSET_TYPE_PLAYER_MOVEMENT_TUNABLES,
+                asset->playerMovementTunables
+            );
+            json.WriteFieldValueXAsset(
+                "playerTalentTemplate",
+                games::bo4::pool::XAssetType::ASSET_TYPE_PLAYERTALENTTEMPLATE,
+                asset->playerTalentTemplate
+            );
+            json.WriteFieldValueXAssetArray(
+                "bundleLists",
+                games::bo4::pool::XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                ACTS_ARRAYSIZE(*asset->bundleLists),
+                asset->bundleLists
+            );
             json.WriteFieldValueXHash("specialistEquipment", asset->specialistEquipment);
             json.WriteFieldValueXHash("specialistWeapon", asset->specialistWeapon);
             json.WriteFieldValueXHash("ultimateWeapon", asset->ultimateWeapon);

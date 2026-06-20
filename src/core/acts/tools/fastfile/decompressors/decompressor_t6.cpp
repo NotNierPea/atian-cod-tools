@@ -36,8 +36,10 @@ namespace {
       public:
         T6FFDecompressor() : fastfile::FFDecompressor("Black Ops 2", 0x3030313066664154, fastfile::MASK64) {}
 
-        void LoadFastFile(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                          fastfile::FastFileContext& ctx, std::vector<byte>& ffdata) {
+        void LoadFastFile(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx,
+            std::vector<byte>& ffdata
+        ) {
             struct T6FileHeader {
                 uint8_t magic[8];
                 uint32_t version;

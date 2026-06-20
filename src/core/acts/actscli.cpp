@@ -110,8 +110,11 @@ namespace {
         }
 
         if (header->minversion > ActsPackCurrentVersion) {
-            LOG_ERROR("acts pack file min version too recent, current 0x{:x} < 0x{:x}", ActsPackCurrentVersion,
-                      (int)header->minversion);
+            LOG_ERROR(
+                "acts pack file min version too recent, current 0x{:x} < 0x{:x}",
+                ActsPackCurrentVersion,
+                (int)header->minversion
+            );
             return false;
         }
 
@@ -193,8 +196,13 @@ namespace {
                         return false;
                     }
 
-                    LOG_DEBUG("{} - plt {:x} {} -> {}", name, nvm, tool::gsc::opcode::PlatformName(plt.platform),
-                              plt.opCount);
+                    LOG_DEBUG(
+                        "{} - plt {:x} {} -> {}",
+                        name,
+                        nvm,
+                        tool::gsc::opcode::PlatformName(plt.platform),
+                        plt.opCount
+                    );
                     nfo->AddPlatform(plt.platform);
 
                     auto* ops = reinterpret_cast<ActsPackOpCode*>(pack->header.magic + plt.opOffset);
@@ -249,13 +257,22 @@ namespace {
                     auto& plt = platforms[i];
 
                     if (plt.opCount && plt.opOffset + sizeof(ActsPackOpCode) * plt.opCount > bufferSize) {
-                        LOG_ERROR("Invalid new vm platform opcodes location in acts pack file 0x{:x}[0x{:x}] > 0x{:x}",
-                                  plt.opOffset, plt.opCount, bufferSize);
+                        LOG_ERROR(
+                            "Invalid new vm platform opcodes location in acts pack file 0x{:x}[0x{:x}] > 0x{:x}",
+                            plt.opOffset,
+                            plt.opCount,
+                            bufferSize
+                        );
                         return false;
                     }
 
-                    LOG_DEBUG("{} - plt {:x} {} -> {}", name, vm.vmMagic, tool::gsc::opcode::PlatformName(plt.platform),
-                              plt.opCount);
+                    LOG_DEBUG(
+                        "{} - plt {:x} {} -> {}",
+                        name,
+                        vm.vmMagic,
+                        tool::gsc::opcode::PlatformName(plt.platform),
+                        plt.opCount
+                    );
                     nfo->AddPlatform(plt.platform);
 
                     auto* ops = reinterpret_cast<ActsPackOpCode*>(pack->header.magic + plt.opOffset);
@@ -464,8 +481,14 @@ namespace {
                         pltv.platform = p;
                         pltv.opCount = opIdx;
                         pltv.opOffset = opcodeoff;
-                        LOG_INFO("Dump vm {} / {} / {} (0x{:x}[0x{:x}])", vminfo.name,
-                                 tool::gsc::opcode::PlatformName(p), opcodelen, opcodeoff, opIdx);
+                        LOG_INFO(
+                            "Dump vm {} / {} / {} (0x{:x}[0x{:x}])",
+                            vminfo.name,
+                            tool::gsc::opcode::PlatformName(p),
+                            opcodelen,
+                            opcodeoff,
+                            opIdx
+                        );
                     }
                 }
 

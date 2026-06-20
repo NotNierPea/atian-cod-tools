@@ -152,12 +152,14 @@ namespace {
                 DDLStruct* structList{ def->structList };
                 DDLEnum* enumList{ def->enumList };
 
-                auto DumpDDLStructMembers = [&os, &def, &entry, &opt, &structList, &enumList](DDLStruct& stct,
-                                                                                              int padding) -> bool {
+                auto DumpDDLStructMembers =
+                    [&os, &def, &entry, &opt, &structList, &enumList](DDLStruct& stct, int padding) -> bool {
                     if (stct.memberCount && stct.members) {
                         std::sort(
-                            &stct.members[0], &stct.members[stct.memberCount],
-                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; });
+                            &stct.members[0],
+                            &stct.members[stct.memberCount],
+                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; }
+                        );
 
                         for (size_t i = 0; i < stct.memberCount; i++) {
                             DDLMember& member = stct.members[i];

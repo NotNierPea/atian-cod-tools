@@ -10,8 +10,9 @@ namespace {
 
       public:
         GscXHashFFHandler()
-            : fastfile::FFHandler("gscxhash", "GSC Scripts XHash based",
-                                  compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {}
+            : fastfile::FFHandler(
+                  "gscxhash", "GSC Scripts XHash based", compatibility::scobalula::csi::CordycepGame::CG_NULL, true
+              ) {}
         void Init(fastfile::FastFileOption& opt) override {
             count = 0;
             anyDbg = false;
@@ -24,8 +25,9 @@ namespace {
                 LOG_WARNING("Debug file found");
         }
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx
+        ) override {
 
             // search scriptparsetreedbg
             uint64_t dbgMagic{ 0xA0D42444780 };
@@ -109,8 +111,13 @@ namespace {
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size,
-                              hashutils::ExtractTmpScript(obj->name));
+                    LOG_TRACE(
+                        "gsc: 0x{:x} 0x{:x} 0x{:x}: {}",
+                        smagic,
+                        loc,
+                        size,
+                        hashutils::ExtractTmpScript(obj->name)
+                    );
 
                     if (!buff.CanRead(size)) {
                         loc++;
@@ -162,8 +169,13 @@ namespace {
                     GscObjEntry* entry{ buff.ReadPtr<GscObjEntry>() };
 
                     if (!entry->name) {
-                        LOG_ERROR("0x{:x} INVALID {}/{} for 0x{:x}", smagic, entry->obj,
-                                  hashutils::ExtractTmpScript(entry->name), loc);
+                        LOG_ERROR(
+                            "0x{:x} INVALID {}/{} for 0x{:x}",
+                            smagic,
+                            entry->obj,
+                            hashutils::ExtractTmpScript(entry->name),
+                            loc
+                        );
                         continue;
                     }
 
@@ -173,8 +185,13 @@ namespace {
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, entry->len,
-                              hashutils::ExtractTmpScript(entry->name));
+                    LOG_TRACE(
+                        "gsc: 0x{:x} 0x{:x} 0x{:x}: {}",
+                        smagic,
+                        loc,
+                        entry->len,
+                        hashutils::ExtractTmpScript(entry->name)
+                    );
 
                     byte* obj{ buff.ReadPtr<byte>(entry->len) };
 

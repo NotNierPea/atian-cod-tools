@@ -345,6 +345,7 @@ namespace cw {
     uint64_t* GetAssetName(cw::XAssetType type, void* asset, size_t size = 0);
 
     int InjectScriptCW(Process& proc, const char* script, const char* target, const char* replace, std::string& notify);
-    int InjectScriptCWAlpha(Process& proc, const char* script, const char* target, const char* replaced,
-                            std::string& notify);
+    int InjectScriptCWAlpha(
+        Process& proc, const char* script, const char* target, const char* replaced, std::string& notify
+    );
 } // namespace cw

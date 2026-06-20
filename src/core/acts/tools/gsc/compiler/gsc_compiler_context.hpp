@@ -49,8 +49,9 @@ namespace tool::gsc::compiler {
         std::vector<byte>& data;
         size_t lvars;
 
-        AscmCompilerContext(const VmInfo* vmInfo, Platform plt, size_t lvars, std::vector<byte>& data,
-                            CompilerConfig& cfg)
+        AscmCompilerContext(
+            const VmInfo* vmInfo, Platform plt, size_t lvars, std::vector<byte>& data, CompilerConfig& cfg
+        )
             : vmInfo(vmInfo), plt(plt), data(data), lvars(lvars), cfg(cfg) {}
 
         bool HasAlign() const { return vmInfo->HasFlag(VmFlags::VMF_ALIGN); }

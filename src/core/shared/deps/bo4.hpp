@@ -37,11 +37,12 @@ namespace deps::bo4 {
 
         constexpr operator bool() const { return bo4; }
 
-        bool bdiff(BDiffState* state, byte* (*srcDataCallback)(uint64_t offset, uint64_t size),
-                   byte* (*patchDataCB)(uint64_t offset, uint64_t size, uint64_t* pOffset),
-                   byte* (*destDataCB)(uint64_t size)) {
-            return bo4.Get<bool(void*, void*, void*, void*)>(0x3CDDDE0)(state, srcDataCallback, patchDataCB,
-                                                                        destDataCB);
+        bool bdiff(
+            BDiffState* state, byte* (*srcDataCallback)(uint64_t offset, uint64_t size),
+            byte* (*patchDataCB)(uint64_t offset, uint64_t size, uint64_t* pOffset), byte* (*destDataCB)(uint64_t size)
+        ) {
+            return bo4
+                .Get<bool(void*, void*, void*, void*)>(0x3CDDDE0)(state, srcDataCallback, patchDataCB, destDataCB);
         }
 
         void PatchError(void (*errorCallBack)(uint32_t a1)) {

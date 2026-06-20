@@ -88,18 +88,36 @@ namespace {
             json.WriteFieldValueXHash("behaviorTreeAsset", asset.behaviorTreeAsset);
             json.WriteFieldValueXHash("enemySelectorAsset", asset.enemySelectorAsset);
 
-            json.WriteFieldValueXAsset("footStepsFxTable", T10HashAssetType::T10H_ASSET_FOOTSTEPSFXTABLE,
-                                       asset.footstepsFxTable);
-            json.WriteFieldValueXAsset("foliagesFXTable", T10HashAssetType::T10H_ASSET_FOLIAGESFXTABLE,
-                                       asset.foliagesFxTable);
-            json.WriteFieldValueXAsset("handPlantsFXTable", T10HashAssetType::T10H_ASSET_HANDPLANTSFXTABLE,
-                                       asset.handplantsFxTable);
-            json.WriteFieldValueXAsset("aiImpactVFXTable", T10HashAssetType::T10H_ASSET_AIIMPACTVFXTABLE,
-                                       asset.aiImpactVFXTable);
-            json.WriteFieldValueXAsset("dismemberment", T10HashAssetType::T10H_ASSET_DISMEMBERMENT,
-                                       asset.dismemberment);
-            json.WriteFieldValueXAsset("weaponAccuracy", T10HashAssetType::T10H_ASSET_WEAPONACCURACY,
-                                       asset.weaponAccuracy);
+            json.WriteFieldValueXAsset(
+                "footStepsFxTable",
+                T10HashAssetType::T10H_ASSET_FOOTSTEPSFXTABLE,
+                asset.footstepsFxTable
+            );
+            json.WriteFieldValueXAsset(
+                "foliagesFXTable",
+                T10HashAssetType::T10H_ASSET_FOLIAGESFXTABLE,
+                asset.foliagesFxTable
+            );
+            json.WriteFieldValueXAsset(
+                "handPlantsFXTable",
+                T10HashAssetType::T10H_ASSET_HANDPLANTSFXTABLE,
+                asset.handplantsFxTable
+            );
+            json.WriteFieldValueXAsset(
+                "aiImpactVFXTable",
+                T10HashAssetType::T10H_ASSET_AIIMPACTVFXTABLE,
+                asset.aiImpactVFXTable
+            );
+            json.WriteFieldValueXAsset(
+                "dismemberment",
+                T10HashAssetType::T10H_ASSET_DISMEMBERMENT,
+                asset.dismemberment
+            );
+            json.WriteFieldValueXAsset(
+                "weaponAccuracy",
+                T10HashAssetType::T10H_ASSET_WEAPONACCURACY,
+                asset.weaponAccuracy
+            );
             json.WriteFieldValueXAsset("scriptbundle", T10HashAssetType::T10H_ASSET_SCRIPTBUNDLE, asset.bundle);
             json.WriteFieldValueXHash("characters.unk10", asset.characterTypes.unk10);
             json.WriteFieldValueUnknown("characterTypes:unk18", asset.characterTypes.unk18);
@@ -118,8 +136,11 @@ namespace {
                 for (size_t i = 0; i < asset.characterTypes.charactersCount; i++) {
                     json.BeginObject();
                     if (asset.characterTypes.characters)
-                        json.WriteFieldValueXAsset("character", T10HashAssetType::T10H_ASSET_CHARACTER,
-                                                   asset.characterTypes.characters[i]);
+                        json.WriteFieldValueXAsset(
+                            "character",
+                            T10HashAssetType::T10H_ASSET_CHARACTER,
+                            asset.characterTypes.characters[i]
+                        );
                     if (showOdd)
                         json.WriteFieldValueNumber("odd", asset.characterTypes.odds[i]);
                     json.EndObject();
@@ -167,8 +188,12 @@ namespace {
 
                     json.BeginObject();
                     json.WriteFieldValueXHash("characterListName", list->characterListName);
-                    json.WriteFieldValueXAssetArray("characters", bo6::T10H_ASSET_CHARACTER, list->count,
-                                                    list->characters);
+                    json.WriteFieldValueXAssetArray(
+                        "characters",
+                        bo6::T10H_ASSET_CHARACTER,
+                        list->count,
+                        list->characters
+                    );
                     json.WriteFieldValueUnknown("list:unk18", list->unk18);
                     json.EndObject();
                 }

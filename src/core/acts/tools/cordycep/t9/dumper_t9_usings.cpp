@@ -74,14 +74,19 @@ namespace {
         }
     };
 
-    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> impl{ GetUnlinkers(), cw::ASSET_TYPE_SCRIPT_USING,
+    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> impl{ GetUnlinkers(),
+                                                                  cw::ASSET_TYPE_SCRIPT_USING,
                                                                   "common" };
-    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implcp{ GetUnlinkers(), cw::ASSET_TYPE_SCRIPT_USING_CP,
+    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implcp{ GetUnlinkers(),
+                                                                    cw::ASSET_TYPE_SCRIPT_USING_CP,
                                                                     "cp" };
-    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implmp{ GetUnlinkers(), cw::ASSET_TYPE_SCRIPT_USING_MP,
+    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implmp{ GetUnlinkers(),
+                                                                    cw::ASSET_TYPE_SCRIPT_USING_MP,
                                                                     "mp" };
-    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implwz{ GetUnlinkers(), cw::ASSET_TYPE_SCRIPT_USING_WZ,
+    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implwz{ GetUnlinkers(),
+                                                                    cw::ASSET_TYPE_SCRIPT_USING_WZ,
                                                                     "wz" };
-    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implzm{ GetUnlinkers(), cw::ASSET_TYPE_SCRIPT_USING_ZM,
+    utils::MapAdder<UnlinkerImpl, cw::XAssetType, Unlinker> implzm{ GetUnlinkers(),
+                                                                    cw::ASSET_TYPE_SCRIPT_USING_ZM,
                                                                     "zm" };
 } // namespace

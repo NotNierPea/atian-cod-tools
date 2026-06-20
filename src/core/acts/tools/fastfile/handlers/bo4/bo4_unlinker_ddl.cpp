@@ -136,8 +136,9 @@ namespace {
         int depthFields = isRoot ? 1 : 2;
 
         // sort members because they don't match the internal structure (they match the hashmap)
-        std::sort(&stct.members[0], &stct.members[stct.memberCount],
-                  [](const DDLMember& e1, const DDLMember& e2) { return e1.offset < e2.offset; });
+        std::sort(&stct.members[0], &stct.members[stct.memberCount], [](const DDLMember& e1, const DDLMember& e2) {
+            return e1.offset < e2.offset;
+        });
 
         utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << stct.memberCount << " size 0x"
                                   << std::hex << stct.bitSize;
@@ -163,8 +164,10 @@ namespace {
                 utils::Padding(defout, depthFields);
             }
 
-            utils::Padding(defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n",
-                           depthFields);
+            utils::Padding(
+                defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n",
+                depthFields
+            );
             currentShift = mbm.offset + mbm.bitSize;
 
             bool addSize = false;

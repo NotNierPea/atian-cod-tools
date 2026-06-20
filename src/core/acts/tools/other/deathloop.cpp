@@ -344,8 +344,13 @@ namespace {
                     std::filesystem::create_directories(of.parent_path());
                     if (oodleCompressed) {
                         std::unique_ptr<byte[]> unc{ std::make_unique<byte[]>(rf.decompressedSize) };
-                        if (!utils::compress::Decompress(utils::compress::COMP_OODLE, unc.get(), rf.decompressedSize,
-                                                         data + 12, rf.compressedSize - 12)) {
+                        if (!utils::compress::Decompress(
+                                utils::compress::COMP_OODLE,
+                                unc.get(),
+                                rf.decompressedSize,
+                                data + 12,
+                                rf.compressedSize - 12
+                            )) {
                             LOG_ERROR("Can't decompress {}", rf.path);
                             continue;
                         }
@@ -362,7 +367,9 @@ namespace {
         return tool::OK;
     }
 
-    ADD_TOOL(dtl_idxd, "deathloop", " [type] [in] [out]",
-             "decompress deathloop index file, type=base,master,master_res", dtl_idxd);
+    ADD_TOOL(
+        dtl_idxd, "deathloop", " [type] [in] [out]", "decompress deathloop index file, type=base,master,master_res",
+        dtl_idxd
+    );
     ADD_TOOL(dtl_extract, "deathloop", " [path] [out] [type=all]", "decompress deathloop files", dtl_extract);
 } // namespace

@@ -175,8 +175,9 @@ namespace tool::gsc::opcode {
         bool HasOpCode(Platform plt, OPCode opcode, bool modTool = false);
 
         void RegisterVMGlobalVariable(const char* name, OPCode getOpCode = OPCODE_Undefined);
-        void RegisterVMOperatorFunction(const char* name, const char* usage, OPCode opcode, int flags, int minArgs = 0,
-                                        int maxArgs = 255);
+        void RegisterVMOperatorFunction(
+            const char* name, const char* usage, OPCode opcode, int flags, int minArgs = 0, int maxArgs = 255
+        );
         void RegisterVMHashOPCode(char type, OPCode opCode, int size, std::function<uint64_t(const char*)> hashFunc);
         void RegisterOpCode(Platform platform, OPCode enumValue, uint16_t op);
         void RegisterSameCodePlatform(Platform main, Platform sub);
@@ -225,8 +226,10 @@ namespace tool::gsc::opcode {
         const char* m_name;
 
         OPCodeInfo(OPCode id, const char* name);
-        virtual int Dump(std::ostream& out, uint16_t value, tool::gsc::opcode::ASMContext& context,
-                         tool::gsc::T8GSCOBJContext& objctx) const;
+        virtual int Dump(
+            std::ostream& out, uint16_t value, tool::gsc::opcode::ASMContext& context,
+            tool::gsc::T8GSCOBJContext& objctx
+        ) const;
     };
 
     const std::unordered_map<uint64_t, VmInfo>& GetVMMaps();

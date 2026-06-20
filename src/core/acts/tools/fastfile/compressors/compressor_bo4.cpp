@@ -107,21 +107,27 @@ namespace {
                 size_t idx{};
                 std::vector<byte> compressBuffer{};
                 size_t compressedSize{};
-                LOG_TRACE("start compressing chunk 0x{:x} byte(s) using {} with chunks of size 0x{:x}...",
-                          remainingSize, alg, chunkSize);
+                LOG_TRACE(
+                    "start compressing chunk 0x{:x} byte(s) using {} with chunks of size 0x{:x}...",
+                    remainingSize,
+                    alg,
+                    chunkSize
+                );
                 while (remainingSize > 0) {
                     uint32_t uncompressedSize{ (uint32_t)std::min<size_t>(chunkSize, remainingSize) };
 
                     compressBuffer.clear();
                     if (!utils::compress::CompressBuffer(alg, toCompress, uncompressedSize, compressBuffer)) {
                         throw std::runtime_error(
-                            std::format("Can't compress chunk 0x{:x} of size 0x{:x}", idx - 1, uncompressedSize));
+                            std::format("Can't compress chunk 0x{:x} of size 0x{:x}", idx - 1, uncompressedSize)
+                        );
                     }
                     uint32_t alignedSize{ utils::Aligned<uint32_t>((uint32_t)compressBuffer.size()) };
                     compressedSize += compressBuffer.size();
 
-                    uint32_t blockOffset{ (uint32_t)utils::Allocate(out,
-                                                                    sizeof(fastfile::DBStreamHeader) + alignedSize) };
+                    uint32_t blockOffset{
+                        (uint32_t)utils::Allocate(out, sizeof(fastfile::DBStreamHeader) + alignedSize)
+                    };
 
                     fastfile::DBStreamHeader& h{ *(fastfile::DBStreamHeader*)&out[blockOffset] };
 
@@ -139,12 +145,14 @@ namespace {
                         if ((r = ctr_start(aesCipher, aesVal, aesKey->key, sizeof(aesKey->key), 0, 0, &ctr)) !=
                             CRYPT_OK) {
                             throw std::runtime_error(
-                                std::format("Failed to start ctr {} for ff {}", error_to_string(r), ff.ffname));
+                                std::format("Failed to start ctr {} for ff {}", error_to_string(r), ff.ffname)
+                            );
                         }
 
                         if ((r = ctr_encrypt(compressedData, compressedData, h.compressedSize, &ctr)) != CRYPT_OK) {
                             throw std::runtime_error(
-                                std::format("Can't encrypt block 0x{:x}: {}", idx, error_to_string(r)));
+                                std::format("Can't encrypt block 0x{:x}: {}", idx, error_to_string(r))
+                            );
                         }
                         *((uint64_t*)&aesVal[0]) += h.compressedSize;
                     }
@@ -156,8 +164,13 @@ namespace {
                     toCompress += uncompressedSize;
                     remainingSize -= uncompressedSize;
 
-                    LOG_TRACE("Compressed 0x{:x}->0x{:x} at chunk 0x{:x}, remaining 0x{:x}", uncompressedSize,
-                              h.compressedSize, idx, remainingSize);
+                    LOG_TRACE(
+                        "Compressed 0x{:x}->0x{:x} at chunk 0x{:x}, remaining 0x{:x}",
+                        uncompressedSize,
+                        h.compressedSize,
+                        idx,
+                        remainingSize
+                    );
 
                     idx++;
                 }
@@ -217,9 +230,15 @@ namespace {
                     LOG_WARNING(".fd file generator not implemented");
                 }
 
-                LOG_INFO("Compressed {} into {} [{}]({} -> {} bytes / {}% saved)", ff.ffname, outputFileFF.string(),
-                         alg, ff.linkedData.size(), compressedSize,
-                         (100 - 100 * compressedSize / ff.linkedData.size()));
+                LOG_INFO(
+                    "Compressed {} into {} [{}]({} -> {} bytes / {}% saved)",
+                    ff.ffname,
+                    outputFileFF.string(),
+                    alg,
+                    ff.linkedData.size(),
+                    compressedSize,
+                    (100 - 100 * compressedSize / ff.linkedData.size())
+                );
             }
 
             if (!ctx.storedHashes.empty()) {

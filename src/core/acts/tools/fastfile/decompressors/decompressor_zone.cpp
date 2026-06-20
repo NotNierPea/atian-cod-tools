@@ -12,8 +12,10 @@ namespace {
             return ext.string() == ".zone";
         }
 
-        void LoadFastFile(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                          fastfile::FastFileContext& ctx, std::vector<byte>& ffdata) override {
+        void LoadFastFile(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx,
+            std::vector<byte>& ffdata
+        ) override {
             byte* data{ reader.Ptr() };
             ffdata.insert(ffdata.begin(), data, data + reader.Remaining());
 

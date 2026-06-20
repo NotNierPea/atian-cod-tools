@@ -39,9 +39,10 @@ namespace tool::gsc::vm {
                         if (dbg->crc_offset > ctx.scriptfile->GetFileSize()) {
                             asmout << "INVALID LOC";
                         } else {
-                            utils::PrintFormattedString(asmout << "\"",
-                                                        ctx.scriptfile->Ptr<const char>(dbg->crc_offset))
-                                << "\"";
+                            utils::PrintFormattedString(
+                                asmout << "\"",
+                                ctx.scriptfile->Ptr<const char>(dbg->crc_offset)
+                            ) << "\"";
                         }
                     } else if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC)) {
                         asmout << ctx.GetFLocName(dbg->crc_offset);

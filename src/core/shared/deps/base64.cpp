@@ -140,11 +140,13 @@ std::string base64_encode(unsigned char const* bytes_to_encode, size_t in_len, b
 
         if (pos + 1 < in_len) {
             ret.push_back(
-                base64_chars_[((bytes_to_encode[pos + 0] & 0x03) << 4) + ((bytes_to_encode[pos + 1] & 0xf0) >> 4)]);
+                base64_chars_[((bytes_to_encode[pos + 0] & 0x03) << 4) + ((bytes_to_encode[pos + 1] & 0xf0) >> 4)]
+            );
 
             if (pos + 2 < in_len) {
                 ret.push_back(
-                    base64_chars_[((bytes_to_encode[pos + 1] & 0x0f) << 2) + ((bytes_to_encode[pos + 2] & 0xc0) >> 6)]);
+                    base64_chars_[((bytes_to_encode[pos + 1] & 0x0f) << 2) + ((bytes_to_encode[pos + 2] & 0xc0) >> 6)]
+                );
                 ret.push_back(base64_chars_[bytes_to_encode[pos + 2] & 0x3f]);
             } else {
                 ret.push_back(base64_chars_[(bytes_to_encode[pos + 1] & 0x0f) << 2]);
@@ -214,8 +216,11 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
         //
         // Emit the first output byte that is produced in each chunk:
         //
-        ret.push_back(static_cast<std::string::value_type>(((pos_of_char(encoded_string.at(pos + 0))) << 2) +
-                                                           ((pos_of_char_1 & 0x30) >> 4)));
+        ret.push_back(
+            static_cast<std::string::value_type>(
+                ((pos_of_char(encoded_string.at(pos + 0))) << 2) + ((pos_of_char_1 & 0x30) >> 4)
+            )
+        );
 
         if ((pos + 2 <
              length_of_string) && // Check for data that is not padded with equal signs (which is allowed by RFC 2045)
@@ -227,15 +232,19 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
             //
             unsigned int pos_of_char_2 = pos_of_char(encoded_string.at(pos + 2));
             ret.push_back(
-                static_cast<std::string::value_type>(((pos_of_char_1 & 0x0f) << 4) + ((pos_of_char_2 & 0x3c) >> 2)));
+                static_cast<std::string::value_type>(((pos_of_char_1 & 0x0f) << 4) + ((pos_of_char_2 & 0x3c) >> 2))
+            );
 
             if ((pos + 3 < length_of_string) && encoded_string.at(pos + 3) != '=' &&
                 encoded_string.at(pos + 3) != '.') {
                 //
                 // Emit a chunk's third byte (which might not be produced in the last chunk).
                 //
-                ret.push_back(static_cast<std::string::value_type>(((pos_of_char_2 & 0x03) << 6) +
-                                                                   pos_of_char(encoded_string.at(pos + 3))));
+                ret.push_back(
+                    static_cast<std::string::value_type>(
+                        ((pos_of_char_2 & 0x03) << 6) + pos_of_char(encoded_string.at(pos + 3))
+                    )
+                );
             }
         }
 

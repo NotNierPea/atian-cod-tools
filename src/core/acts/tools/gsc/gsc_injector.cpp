@@ -7,8 +7,8 @@
 namespace tool::gsc::injector {
     namespace {
         class GscInjectors {
-            std::unordered_map<tool::gsc::opcode::VMId,
-                               std::unordered_map<tool::gsc::opcode::Platform, std::shared_ptr<GscInjector>>>
+            std::unordered_map<
+                tool::gsc::opcode::VMId, std::unordered_map<tool::gsc::opcode::Platform, std::shared_ptr<GscInjector>>>
                 injectors{};
 
           public:

@@ -61,17 +61,20 @@ namespace {
             if (data.omnvarsPrefix) {
                 json.WriteFieldNameString("omnvarsPrefix");
                 json.WriteValueString(
-                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.omnvarsPrefix))));
+                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.omnvarsPrefix)))
+                );
             }
             if (data.scriptsGametypesPrefix) {
                 json.WriteFieldNameString("scriptsGametypesPrefix");
                 json.WriteValueString(
-                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.scriptsGametypesPrefix))));
+                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.scriptsGametypesPrefix)))
+                );
             }
             if (data.scriptsMapsPrefix) {
                 json.WriteFieldNameString("scriptsMapsPrefix");
                 json.WriteValueString(
-                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.scriptsMapsPrefix))));
+                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.scriptsMapsPrefix)))
+                );
             }
 
             // json.WriteFieldNameString("unk48"); json.WriteValueHash(data.unk48);

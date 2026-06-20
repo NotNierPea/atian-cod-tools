@@ -54,8 +54,12 @@ namespace tool::exe_dump {
         // search first page
         do {
             current = (uintptr_t)page.BaseAddress + page.RegionSize;
-            VirtualQueryEx(proc.GetHandle(), (LPCVOID)current, reinterpret_cast<PMEMORY_BASIC_INFORMATION>(&page),
-                           sizeof(MEMORY_BASIC_INFORMATION));
+            VirtualQueryEx(
+                proc.GetHandle(),
+                (LPCVOID)current,
+                reinterpret_cast<PMEMORY_BASIC_INFORMATION>(&page),
+                sizeof(MEMORY_BASIC_INFORMATION)
+            );
         } while (page.BaseAddress + page.RegionSize < src);
 
         // equals or before, read first page
@@ -70,8 +74,12 @@ namespace tool::exe_dump {
         byte* destb{ (byte*)dest };
 
         while (current < end) {
-            VirtualQueryEx(proc.GetHandle(), (LPCVOID)current, reinterpret_cast<PMEMORY_BASIC_INFORMATION>(&page),
-                           sizeof(MEMORY_BASIC_INFORMATION));
+            VirtualQueryEx(
+                proc.GetHandle(),
+                (LPCVOID)current,
+                reinterpret_cast<PMEMORY_BASIC_INFORMATION>(&page),
+                sizeof(MEMORY_BASIC_INFORMATION)
+            );
             current = (uintptr_t)page.BaseAddress;
 
             if (page.State != MEM_COMMIT || page.Protect == PAGE_NOACCESS || (page.Protect & PAGE_GUARD)) {
@@ -165,8 +173,13 @@ namespace tool::exe_dump {
             PIMAGE_SECTION_HEADER sec{ &sections[i] };
             if (opt->dumpHeader) {
                 std::memcpy(nameBuff, &sec->Name, sizeof(sec->Name));
-                LOG_INFO("section '{}' va:0x{:x} sr:0x{:x} pr:0x{:x}", nameBuff, sec->VirtualAddress,
-                         sec->SizeOfRawData, sec->PointerToRawData);
+                LOG_INFO(
+                    "section '{}' va:0x{:x} sr:0x{:x} pr:0x{:x}",
+                    nameBuff,
+                    sec->VirtualAddress,
+                    sec->SizeOfRawData,
+                    sec->PointerToRawData
+                );
             }
             // patch address
             sec->PointerToRawData = sec->VirtualAddress;
@@ -236,8 +249,11 @@ namespace tool::exe_dump {
                         auto it{ iatCaches.find(val) };
                         if (it != iatCaches.end()) {
                             if (originalThunk.u1.Ordinal != it->second.u1.Ordinal) {
-                                LOG_TRACE("patched iat 0x{:x} -> 0x{:x}", originalThunk.u1.Ordinal,
-                                          it->second.u1.Ordinal);
+                                LOG_TRACE(
+                                    "patched iat 0x{:x} -> 0x{:x}",
+                                    originalThunk.u1.Ordinal,
+                                    it->second.u1.Ordinal
+                                );
                                 originalThunk = it->second;
                                 patchs++;
                             }
@@ -321,13 +337,19 @@ namespace tool::exe_dump {
             break;
         }
         case CREATE_THREAD_DEBUG_EVENT: {
-            LOG_LVLF(lvl, "CREATE_THREAD_DEBUG_EVENT: {}",
-                     ProcessLocation{ proc, (uintptr_t)ev.u.CreateThread.lpStartAddress });
+            LOG_LVLF(
+                lvl,
+                "CREATE_THREAD_DEBUG_EVENT: {}",
+                ProcessLocation{ proc, (uintptr_t)ev.u.CreateThread.lpStartAddress }
+            );
             break;
         }
         case CREATE_PROCESS_DEBUG_EVENT: {
-            LOG_LVLF(lvl, "CREATE_PROCESS_DEBUG_EVENT: {}",
-                     ProcessLocation{ proc, (uintptr_t)ev.u.CreateProcessInfo.lpStartAddress });
+            LOG_LVLF(
+                lvl,
+                "CREATE_PROCESS_DEBUG_EVENT: {}",
+                ProcessLocation{ proc, (uintptr_t)ev.u.CreateProcessInfo.lpStartAddress }
+            );
             break;
         }
         default:

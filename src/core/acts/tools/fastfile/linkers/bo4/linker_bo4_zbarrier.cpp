@@ -105,8 +105,13 @@ namespace {
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("pCollisionModel"), zbarrier.pCollisionModel,
-                          false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("pCollisionModel"),
+                zbarrier.pCollisionModel,
+                false,
+                &ff
+            );
 
             rapidjson::Value& oboards{ objCfg.GetVal("boards", 0, objCfg.main) };
             if (!oboards.IsNull()) {
@@ -119,8 +124,10 @@ namespace {
                 auto boards{ oboards.GetArray() };
 
                 if (boards.Size() > ACTS_ARRAYSIZE(zbarrier.boards)) {
-                    LOG_ERROR("Invalid zbarrier boards: too many boards, maximum is {}",
-                              ACTS_ARRAYSIZE(zbarrier.boards));
+                    LOG_ERROR(
+                        "Invalid zbarrier boards: too many boards, maximum is {}",
+                        ACTS_ARRAYSIZE(zbarrier.boards)
+                    );
                     ctx.error = true;
                     return;
                 }
@@ -147,16 +154,41 @@ namespace {
                     cboard.Load("repairEffect1Offset", zboard.repairEffect1Offset);
                     cboard.Load("repairEffect2Offset", zboard.repairEffect2Offset);
 
-                    ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, cboard.GetCString("pBoardModel"), zboard.pBoardModel,
-                                  false, &ff);
-                    ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, cboard.GetCString("pAlternateBoardModel"),
-                                  zboard.pAlternateBoardModel, false, &ff);
-                    ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, cboard.GetCString("pUpgradedBoardModel"),
-                                  zboard.pUpgradedBoardModel, false, &ff);
-                    ctx.LinkAsset(XAssetType::ASSET_TYPE_FX, cboard.GetCString("repairEffect1"), zboard.repairEffect1,
-                                  false, &ff);
-                    ctx.LinkAsset(XAssetType::ASSET_TYPE_FX, cboard.GetCString("repairEffect2"), zboard.repairEffect2,
-                                  false, &ff);
+                    ctx.LinkAsset(
+                        XAssetType::ASSET_TYPE_XMODEL,
+                        cboard.GetCString("pBoardModel"),
+                        zboard.pBoardModel,
+                        false,
+                        &ff
+                    );
+                    ctx.LinkAsset(
+                        XAssetType::ASSET_TYPE_XMODEL,
+                        cboard.GetCString("pAlternateBoardModel"),
+                        zboard.pAlternateBoardModel,
+                        false,
+                        &ff
+                    );
+                    ctx.LinkAsset(
+                        XAssetType::ASSET_TYPE_XMODEL,
+                        cboard.GetCString("pUpgradedBoardModel"),
+                        zboard.pUpgradedBoardModel,
+                        false,
+                        &ff
+                    );
+                    ctx.LinkAsset(
+                        XAssetType::ASSET_TYPE_FX,
+                        cboard.GetCString("repairEffect1"),
+                        zboard.repairEffect1,
+                        false,
+                        &ff
+                    );
+                    ctx.LinkAsset(
+                        XAssetType::ASSET_TYPE_FX,
+                        cboard.GetCString("repairEffect2"),
+                        zboard.repairEffect2,
+                        false,
+                        &ff
+                    );
                 }
             }
             ff.data.PopStream();

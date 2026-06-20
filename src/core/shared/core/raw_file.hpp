@@ -105,8 +105,10 @@ namespace core::raw_file {
         const char* (*FindHash)(uint64_t hash, bool escape);
 
       public:
-        RawFileReader(bytebuffer::ByteBuffer& buffer, char* (*DecryptString)(char* str) = nullptr,
-                      const char* (*FindHash)(uint64_t hash, bool escape) = nullptr)
+        RawFileReader(
+            bytebuffer::ByteBuffer& buffer, char* (*DecryptString)(char* str) = nullptr,
+            const char* (*FindHash)(uint64_t hash, bool escape) = nullptr
+        )
             : buffer(buffer), DecryptString(DecryptString), FindHash(FindHash) {
             if (buffer.Read<uint64_t>() != MAGIC) {
                 throw std::runtime_error("Can't read RawFile: bad magic");

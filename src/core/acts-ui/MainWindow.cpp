@@ -76,8 +76,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(ui.actionWiki, &QAction::triggered, this, [this]() {
         QDesktopServices::openUrl(QUrl::fromLocalFile("https://github.com/ate47/atian-cod-tools/wiki"));
     });
-    connect(ui.actionDonate, &QAction::triggered, this,
-            [this]() { QDesktopServices::openUrl(QUrl::fromLocalFile("https://ko-fi.com/ate47")); });
+    connect(ui.actionDonate, &QAction::triggered, this, [this]() {
+        QDesktopServices::openUrl(QUrl::fromLocalFile("https://ko-fi.com/ate47"));
+    });
     connect(ui.actionAbout, &QAction::triggered, this, [this]() { mdiArea->LoadToolUi<InfoWidget>(); });
     setCentralWidget(mdiArea);
 
@@ -105,7 +106,12 @@ MainWindow::~MainWindow() = default;
 void MainWindow::RequiresInitialization(std::function<void()> func) {
     if (hashWatcher->isRunning()) {
         connect(
-            hashWatcher, &QFutureWatcher<void>::finished, this, [this, func]() { func(); }, Qt::SingleShotConnection);
+            hashWatcher,
+            &QFutureWatcher<void>::finished,
+            this,
+            [this, func]() { func(); },
+            Qt::SingleShotConnection
+        );
     } else {
         func();
     }

@@ -35,8 +35,10 @@ namespace inject {
         std::function<void()> preinit;
         std::function<void()> postinit;
 
-        inline InjectedSystem(const char* name, UINT level, std::function<void()> preinit = nullptr,
-                              std::function<void()> postinit = nullptr)
+        inline InjectedSystem(
+            const char* name, UINT level, std::function<void()> preinit = nullptr,
+            std::function<void()> postinit = nullptr
+        )
             : name(name), level(level), preinit(preinit), postinit(postinit) {
             assert(name && "a system name can't be null");
             InjectSystem(this);

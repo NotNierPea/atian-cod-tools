@@ -48,6 +48,7 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_LUAFILE,
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(),
+                                                                SatHashAssetType::SATH_ASSET_LUAFILE,
                                                                 sizeof(LuaFile) };
 } // namespace

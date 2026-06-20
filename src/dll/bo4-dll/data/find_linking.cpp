@@ -31,12 +31,18 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         if (inst) {
             if (!cf) {
                 if (cm) {
-                    sprintf_s(messageBuff, "Can't find %s CSC func, but a CSC method exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s CSC func, but a CSC method exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else if (sf) {
-                    sprintf_s(messageBuff, "Can't find %s CSC func, but a GSC func exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s CSC func, but a GSC func exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else {
                     sprintf_s(messageBuff, "Can't find %s function", hash_lookup::ExtractTmp(inst, name, "function"));
@@ -49,12 +55,18 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         } else {
             if (!sf) {
                 if (sm) {
-                    sprintf_s(messageBuff, "Can't find %s GSC func, but a GSC method exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s GSC func, but a GSC method exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else if (cf) {
-                    sprintf_s(messageBuff, "Can't find %s GSC func, but a CSC func exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s GSC func, but a CSC func exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else {
                     sprintf_s(messageBuff, "Can't find %s function", hash_lookup::ExtractTmp(inst, name, "function"));
@@ -71,12 +83,18 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         if (inst) {
             if (!cm) {
                 if (cf) {
-                    sprintf_s(messageBuff, "Can't find %s CSC method, but a CSC func exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s CSC method, but a CSC func exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else if (sm) {
-                    sprintf_s(messageBuff, "Can't find %s CSC method, but a GSC method exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s CSC method, but a GSC method exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else {
                     sprintf_s(messageBuff, "Can't find %s method", hash_lookup::ExtractTmp(inst, name, "function"));
@@ -89,12 +107,18 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         } else {
             if (!sm) {
                 if (cm) {
-                    sprintf_s(messageBuff, "Can't find %s GSC method, but a GSC func exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s GSC method, but a GSC func exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else if (sf) {
-                    sprintf_s(messageBuff, "Can't find %s GSC method, but a CSC method exists",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s GSC method, but a CSC method exists",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 } else {
                     sprintf_s(messageBuff, "Can't find %s method", hash_lookup::ExtractTmp(inst, name, "function"));
@@ -111,31 +135,49 @@ const char* FindFunc(LinkingInfo& info, scriptinstance::ScriptInstance inst, uin
         if (inst) {
             if (!cf && !cm) {
                 if (sf || sm) {
-                    sprintf_s(messageBuff, "Can't find %s CSC function/method, but a GSC function/method",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s CSC function/method, but a GSC function/method",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 }
-                sprintf_s(messageBuff, "Can't find %s function/method",
-                          hash_lookup::ExtractTmp(inst, name, "function"));
+                sprintf_s(
+                    messageBuff,
+                    "Can't find %s function/method",
+                    hash_lookup::ExtractTmp(inst, name, "function")
+                );
                 return messageBuff;
             } else if ((cf && tcf1 == bo4::BUILTIN_DEV) || (cm && tcm2 == bo4::BUILTIN_DEV)) {
-                sprintf_s(messageBuff, "Call of dev function/method %s",
-                          hash_lookup::ExtractTmp(inst, name, "function"));
+                sprintf_s(
+                    messageBuff,
+                    "Call of dev function/method %s",
+                    hash_lookup::ExtractTmp(inst, name, "function")
+                );
                 return messageBuff;
             }
         } else {
             if (!sf && !sm) {
                 if (cf || cm) {
-                    sprintf_s(messageBuff, "Can't find %s GSC function/method, but a CSC function/method",
-                              hash_lookup::ExtractTmp(inst, name, "function"));
+                    sprintf_s(
+                        messageBuff,
+                        "Can't find %s GSC function/method, but a CSC function/method",
+                        hash_lookup::ExtractTmp(inst, name, "function")
+                    );
                     return messageBuff;
                 }
-                sprintf_s(messageBuff, "Can't find %s function/method",
-                          hash_lookup::ExtractTmp(inst, name, "function"));
+                sprintf_s(
+                    messageBuff,
+                    "Can't find %s function/method",
+                    hash_lookup::ExtractTmp(inst, name, "function")
+                );
                 return messageBuff;
             } else if ((sf && tsf3 == bo4::BUILTIN_DEV) || (sm && tcm4 == bo4::BUILTIN_DEV)) {
-                sprintf_s(messageBuff, "Call of dev function/method %s",
-                          hash_lookup::ExtractTmp(inst, name, "function"));
+                sprintf_s(
+                    messageBuff,
+                    "Call of dev function/method %s",
+                    hash_lookup::ExtractTmp(inst, name, "function")
+                );
                 return messageBuff;
             }
         }

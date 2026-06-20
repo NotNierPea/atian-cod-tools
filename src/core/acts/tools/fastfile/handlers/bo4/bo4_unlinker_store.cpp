@@ -151,8 +151,12 @@ namespace fastfile::handlers::bo4::map {
             json.WriteFieldValueXHash("displayName", asset->displayName);
             json.WriteFieldValueBool("visibility", asset->visibility);
             json.WriteFieldValueXAsset("image", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE, asset->image);
-            json.WriteFieldValueXAssetArray("products", games::bo4::pool::XAssetType::ASSET_TYPE_STOREPRODUCT,
-                                            asset->productsCount, asset->products);
+            json.WriteFieldValueXAssetArray(
+                "products",
+                games::bo4::pool::XAssetType::ASSET_TYPE_STOREPRODUCT,
+                asset->productsCount,
+                asset->products
+            );
 
             json.EndObject();
 
@@ -206,12 +210,21 @@ namespace fastfile::handlers::bo4::map {
             json.WriteFieldValueXHash("entitlementNameXHash", asset->entitlementNameXHash);
             json.WriteFieldValueXHash("productName", asset->productName);
             json.WriteFieldValueXHash("productDesc", asset->productDesc);
-            json.WriteFieldValueXAsset("previewImage", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
-                                       asset->previewImage);
-            json.WriteFieldValueXAsset("productImage", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
-                                       asset->productImage);
-            json.WriteFieldValueXAsset("blackMarketImage", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
-                                       asset->blackMarketImage);
+            json.WriteFieldValueXAsset(
+                "previewImage",
+                games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
+                asset->previewImage
+            );
+            json.WriteFieldValueXAsset(
+                "productImage",
+                games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
+                asset->productImage
+            );
+            json.WriteFieldValueXAsset(
+                "blackMarketImage",
+                games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
+                asset->blackMarketImage
+            );
             json.WriteFieldValueXString("metadata", asset->metadata);
             json.WriteFieldValueXString("videoHighResRef", asset->videoHighResRef);
             json.WriteFieldValueXString("videoLowResRef", asset->videoLowResRef);

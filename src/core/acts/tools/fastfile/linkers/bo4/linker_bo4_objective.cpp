@@ -124,10 +124,15 @@ namespace {
                 { "CENTER", ObjectiveHAlign::OBHA_CENTER },
                 { "RIGHT", ObjectiveHAlign::OBHA_RIGHT },
             };
-            obj.hAlign = objCfg.GetEnumVal<ObjectiveHAlign>("hAlign", obhaCfg, ACTS_ARRAYSIZE(obhaCfg),
-                                                            ObjectiveHAlign::OBHA_LEFT);
-            obj.vAlign = objCfg.GetEnumVal<ObjectiveVAlign>("vAlign", obvaCfg, ACTS_ARRAYSIZE(obvaCfg),
-                                                            ObjectiveVAlign::OBVA_TOP);
+            obj.hAlign = objCfg.GetEnumVal<ObjectiveHAlign>(
+                "hAlign",
+                obhaCfg,
+                ACTS_ARRAYSIZE(obhaCfg),
+                ObjectiveHAlign::OBHA_LEFT
+            );
+            obj.vAlign =
+                objCfg
+                    .GetEnumVal<ObjectiveVAlign>("vAlign", obvaCfg, ACTS_ARRAYSIZE(obvaCfg), ObjectiveVAlign::OBVA_TOP);
 
             std::string rfpathStr{ rfpath.string() };
             std::string assetName{ objCfg.GetString("name", rfpathStr.c_str()) };
@@ -173,12 +178,27 @@ namespace {
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
             // link images
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, objCfg.GetCString("waypointImage"), obj.waypointImage, false,
-                          &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, objCfg.GetCString("objectiveImage"), obj.objectiveImage, false,
-                          &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, objCfg.GetCString("subObjectiveImage"), obj.subObjectiveImage,
-                          false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_IMAGE,
+                objCfg.GetCString("waypointImage"),
+                obj.waypointImage,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_IMAGE,
+                objCfg.GetCString("objectiveImage"),
+                obj.objectiveImage,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_IMAGE,
+                objCfg.GetCString("subObjectiveImage"),
+                obj.subObjectiveImage,
+                false,
+                &ff
+            );
 
             // link bundle
             auto bundle = objCfg.main.FindMember("bundle");

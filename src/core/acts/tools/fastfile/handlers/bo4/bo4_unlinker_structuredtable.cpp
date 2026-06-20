@@ -62,21 +62,27 @@ namespace fastfile::handlers::bo4::scriptbundle {
                 json.WriteFieldValueNumber("rowCount", asset->rowCount);
                 json.WriteFieldValueNumber("columnCount", asset->columnCount);
                 json.WriteFieldValueString(
-                    "cellIndex", utils::data::ArrayAsString(asset->cellIndex, asset->columnCount * asset->rowCount));
-                json.WriteFieldValueString("headerIndex",
-                                           utils::data::ArrayAsString(asset->headerIndex, asset->columnCount));
+                    "cellIndex",
+                    utils::data::ArrayAsString(asset->cellIndex, asset->columnCount * asset->rowCount)
+                );
+                json.WriteFieldValueString(
+                    "headerIndex",
+                    utils::data::ArrayAsString(asset->headerIndex, asset->columnCount)
+                );
                 json.WriteFieldNameString("cellIndexA");
                 json.BeginArray();
                 for (size_t i = 0; i < asset->columnCount * asset->rowCount; i++) {
                     json.WriteValueString(
-                        std::format("{}/{:x}", asset->cellIndex[i], asset->cells[asset->cellIndex[i]].hash));
+                        std::format("{}/{:x}", asset->cellIndex[i], asset->cells[asset->cellIndex[i]].hash)
+                    );
                 }
                 json.EndArray();
                 json.WriteFieldNameString("headerIndexA");
                 json.BeginArray();
                 for (size_t i = 0; i < asset->columnCount; i++) {
                     json.WriteValueString(
-                        std::format("{}/{:x}", asset->headerIndex[i], asset->headers[asset->headerIndex[i]].hash));
+                        std::format("{}/{:x}", asset->headerIndex[i], asset->headers[asset->headerIndex[i]].hash)
+                    );
                 }
                 json.EndArray();
 

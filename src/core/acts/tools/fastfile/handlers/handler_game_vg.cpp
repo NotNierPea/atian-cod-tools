@@ -115,8 +115,13 @@ namespace fastfile::handlers::vg {
 #define ThrowFastFileError(...) ThrowFastFileError_(std::format(__VA_ARGS__))
 
         void LoadXFileData(void* ptr, int64_t len) {
-            LOG_TRACE("LoadXFileData({}, 0x{:x}/0x{:x}) {}", ptr, len, gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadXFileData({}, 0x{:x}/0x{:x}) {}",
+                ptr,
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (!ptr) {
                 ThrowFastFileError("Can't read empty pointer idx:{}", (int)*gcx.streamPosIndex);
             }
@@ -140,8 +145,14 @@ namespace fastfile::handlers::vg {
         void DB_IncStreamPos(size_t len) { *gcx.streamPos += len; }
 
         void LoadStreamTA(bool loadData, void* ptr, int64_t len) {
-            LOG_TRACE("LoadStreamTA({}, {}, 0x{:x}/0x{:x}) {}", loadData, ptr, len, gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadStreamTA({}, {}, 0x{:x}/0x{:x}) {}",
+                loadData,
+                ptr,
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
 
             if (!loadData && len) {
                 if (*gcx.streamPosIndex != XFileBlock::XFILE_BLOCK_MEMMAPPED) {
@@ -198,8 +209,13 @@ namespace fastfile::handlers::vg {
                 auto it{ map.find(hashType) };
                 if (it != map.end()) {
                     if (it->second->assetSize != assetSize) {
-                        LOG_ERROR("Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
-                                  gcx.assetNames.GetTypeName(type), (int)type, it->second->assetSize, assetSize);
+                        LOG_ERROR(
+                            "Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
+                            gcx.assetNames.GetTypeName(type),
+                            (int)type,
+                            it->second->assetSize,
+                            assetSize
+                        );
                     } else {
                         it->second->Unlink(*gcx.opt, *gcx.ctx, *handle);
                     }
@@ -223,16 +239,18 @@ namespace fastfile::handlers::vg {
         class FFHandlerImpl : public fastfile::FFHandler {
           public:
             FFHandlerImpl()
-                : fastfile::FFHandler(handlerId, handlerName,
-                                      compatibility::scobalula::csi::CordycepGame::CG_VANGUARD) {
+                : fastfile::FFHandler(
+                      handlerId, handlerName, compatibility::scobalula::csi::CordycepGame::CG_VANGUARD
+                  ) {
                 forceNumXBlocks = XFILE_BLOCK_COUNT;
             }
 
             void Init(fastfile::FastFileOption& opt) override {
                 acts::game_data::GameData game{ gameDumpId };
                 commonFiles = game.GetCommonFastFiles();
-                hook::module_mapper::Module& mod{ opt.GetGameModule(true, nullptr, false, game.GetModuleName(),
-                                                                    gameDumpId) };
+                hook::module_mapper::Module& mod{
+                    opt.GetGameModule(true, nullptr, false, game.GetModuleName(), gameDumpId)
+                };
                 hook::scan_container::ScanContainer& scan{ mod.GetScanContainer() };
                 game.SetScanContainer(&scan);
                 scan.Sync();
@@ -312,8 +330,12 @@ namespace fastfile::handlers::vg {
                     } else {
                         size_t trueLen{ gcx.DB_GetAssetSize(type) };
                         if (worker->assetSize != trueLen) {
-                            LOG_WARNING("type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
-                                        PoolName(hashType), worker->assetSize, trueLen);
+                            LOG_WARNING(
+                                "type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
+                                PoolName(hashType),
+                                worker->assetSize,
+                                trueLen
+                            );
                         }
                     }
                 }
@@ -327,8 +349,12 @@ namespace fastfile::handlers::vg {
                 std::call_once(of, [] {
                     hook::error::AddErrorDumper([]() {
                         if (gcx.currentAsset != std::string::npos) {
-                            LOG_ERROR("Current asset: {}/{} {}", gcx.currentAsset, gcx.assets.assetsCount,
-                                      gcx.assetNames.GetTypeName(gcx.assets.assets[gcx.currentAsset].type));
+                            LOG_ERROR(
+                                "Current asset: {}/{} {}",
+                                gcx.currentAsset,
+                                gcx.assets.assetsCount,
+                                gcx.assetNames.GetTypeName(gcx.assets.assets[gcx.currentAsset].type)
+                            );
                             if (gcx.reader) {
                                 LOG_ERROR("Offset: 0x{:x} -> 0x{:x}", gcx.reader->Loc(), gcx.reader->Remaining());
                             }
@@ -351,8 +377,9 @@ namespace fastfile::handlers::vg {
                 gcx.blocks = nullptr;
             }
 
-            void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                        fastfile::FastFileContext& ctx) override {
+            void Handle(
+                fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+            ) override {
                 gcx.ctx = &ctx;
                 gcx.reader = &reader;
                 gcx.streamLocations.clear();
@@ -483,8 +510,14 @@ namespace fastfile::handlers::vg {
                                     core::logs::setbasiclog(false);
                             }
                             //*/
-                            LOG_TRACE("load #{} -> {}({}/0x{:x}) {}", assetId, PoolName(GetHashType(asset->type)),
-                                      (int)asset->type, (int)asset->type, asset->handle);
+                            LOG_TRACE(
+                                "load #{} -> {}({}/0x{:x}) {}",
+                                assetId,
+                                PoolName(GetHashType(asset->type)),
+                                (int)asset->type,
+                                (int)asset->type,
+                                asset->handle
+                            );
                             *gcx.loadAsset = asset;
                             gcx.currentAsset = assetId;
                             gcx.Load_Asset(true);

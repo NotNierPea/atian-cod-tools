@@ -59,9 +59,14 @@ namespace {
             GSC_ACTS_DETOUR* detoursend{ dbg->GetDetoursEnd() };
 
             for (; detours != detoursend; detours++) {
-                LOG_INFO("detour {}<{}>::{} -> 0x{:x}:0x{:x}", hashutils::ExtractTmp("namespace", detours->name_space),
-                         hashutils::ExtractTmpScript(detours->script), hashutils::ExtractTmp("function", detours->name),
-                         detours->location, detours->location + detours->size);
+                LOG_INFO(
+                    "detour {}<{}>::{} -> 0x{:x}:0x{:x}",
+                    hashutils::ExtractTmp("namespace", detours->name_space),
+                    hashutils::ExtractTmpScript(detours->script),
+                    hashutils::ExtractTmp("function", detours->name),
+                    detours->location,
+                    detours->location + detours->size
+                );
             }
         }
 

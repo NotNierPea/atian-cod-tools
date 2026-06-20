@@ -99,16 +99,20 @@ namespace {
         uint32_t scriptRLoc;
     };
 
-    bool FindByteCodeLocationInfo(int inst, const Process& proc, ByteCodeLocationInfo& info, uintptr_t loc,
-                                  bool allocScript = false) {
+    bool FindByteCodeLocationInfo(
+        int inst, const Process& proc, ByteCodeLocationInfo& info, uintptr_t loc, bool allocScript = false
+    ) {
         using namespace tool::dump;
         using namespace tool::gsc;
 
         T8ObjFileInfo buffer[650];
         uint32_t bufferCount = proc.ReadMemory<uint32_t>(proc[offset::gObjFileInfoCount] + sizeof(bufferCount) * inst);
 
-        if (!bufferCount || !proc.ReadMemory(&buffer[0], proc[offset::gObjFileInfo] + (inst * (sizeof(*buffer) * 650)),
-                                             sizeof(*buffer) * 650)) {
+        if (!bufferCount || !proc.ReadMemory(
+                                &buffer[0],
+                                proc[offset::gObjFileInfo] + (inst * (sizeof(*buffer) * 650)),
+                                sizeof(*buffer) * 650
+                            )) {
             std::cerr << "Can't read linked data " << bufferCount << "\n";
             return false;
         }
@@ -178,11 +182,15 @@ namespace {
         return true;
     }
 
-    std::ostream& GetScrVarInfo(std::ostream& out, int inst, const Process& proc, ScrVar& var, scrVarGlob& glob,
-                                const VmDebugOption& opt, int deep = 0);
+    std::ostream& GetScrVarInfo(
+        std::ostream& out, int inst, const Process& proc, ScrVar& var, scrVarGlob& glob, const VmDebugOption& opt,
+        int deep = 0
+    );
 
-    std::ostream& GetScrVarInfoPtr(std::ostream& out, int inst, const Process& proc, ScrVar& ptrvar, uint32_t valId,
-                                   scrVarGlob& glob, const VmDebugOption& opt, int deep = 0) {
+    std::ostream& GetScrVarInfoPtr(
+        std::ostream& out, int inst, const Process& proc, ScrVar& ptrvar, uint32_t valId, scrVarGlob& glob,
+        const VmDebugOption& opt, int deep = 0
+    ) {
         switch (ptrvar.type) {
         case TYPE_SHARED_STRUCT:
         case TYPE_ENTITY:
@@ -209,8 +217,11 @@ namespace {
             ScrVarObjectInfo1 info;
             ScrVarRef ref;
             uint32_t refLoc = ptrvar.value.ui;
-            if (!proc.ReadMemory(&info, glob.scriptVariablesObjectInfo1 + sizeof(ScrVarObjectInfo1) * valId,
-                                 sizeof(ScrVarObjectInfo1))) {
+            if (!proc.ReadMemory(
+                    &info,
+                    glob.scriptVariablesObjectInfo1 + sizeof(ScrVarObjectInfo1) * valId,
+                    sizeof(ScrVarObjectInfo1)
+                )) {
                 out << "error_struct1:" << valId;
             } else if (info.ui) { // info.ui = size
                 if ((ptrvar.type == TYPE_ARRAY && deep <= opt.m_deep_array) ||
@@ -245,8 +256,11 @@ namespace {
                             break;
                         }
                         refLoc = ref.nextSibling;
-                        if (!proc.ReadMemory(&ref, glob.scriptVariables + sizeof(ScrVarRef) * refLoc,
-                                             sizeof(ScrVarRef))) {
+                        if (!proc.ReadMemory(
+                                &ref,
+                                glob.scriptVariables + sizeof(ScrVarRef) * refLoc,
+                                sizeof(ScrVarRef)
+                            )) {
                             out << "error_struct4:" << ref.nextSibling << "/" << ptrvar.value.ui;
                             break;
                         }
@@ -269,8 +283,10 @@ namespace {
         return out;
     }
 
-    std::ostream& GetScrVarInfo(std::ostream& out, int inst, const Process& proc, ScrVar& var, scrVarGlob& glob,
-                                const VmDebugOption& opt, int deep) {
+    std::ostream& GetScrVarInfo(
+        std::ostream& out, int inst, const Process& proc, ScrVar& var, scrVarGlob& glob, const VmDebugOption& opt,
+        int deep
+    ) {
         switch (var.type) {
         case TYPE_HASH:
             out << "#\"" << hashutils::ExtractTmp("hash", var.value.ull) << "\"" << std::flush;
@@ -504,8 +520,11 @@ namespace {
                     byte* bytecodeStart = utils::Aligned<uint16_t>(&info.script->magic[info.exp.address]);
 
                     uint16_t opcodeVal = *reinterpret_cast<uint16_t*>(bytecodeStart);
-                    auto opcode = tool::gsc::opcode::LookupOpCode(tool::gsc::opcode::VMI_T8_36,
-                                                                  tool::gsc::opcode::PLATFORM_PC, opcodeVal);
+                    auto opcode = tool::gsc::opcode::LookupOpCode(
+                        tool::gsc::opcode::VMI_T8_36,
+                        tool::gsc::opcode::PLATFORM_PC,
+                        opcodeVal
+                    );
 
                     // dump local variables (if any)
                     if (opt.m_vars && opcode && opcode->m_id == tool::gsc::opcode::OPCODE_SafeCreateLocalVariables) {
@@ -527,16 +546,20 @@ namespace {
                             std::cout << " +- " << hashutils::ExtractTmp("var", varname) << " = " << std::flush;
 
                             // parentID = scrVmPub[inst].localVars[-*localvar_id],
-                            uint32_t id = proc.ReadMemory<uint32_t>(vm.localVars -
-                                                                    sizeof(uint32_t) * (lvars - i - 1 + localvarshift));
+                            uint32_t id = proc.ReadMemory<uint32_t>(
+                                vm.localVars - sizeof(uint32_t) * (lvars - i - 1 + localvarshift)
+                            );
                             if (!id) {
                                 std::cout << "Error reading field id\n";
                                 continue;
                             }
 
                             // v5 = &gScrVarGlob[inst].scriptValues[parentID];
-                            if (!proc.ReadMemory(&localvarvalue, glob.scriptValues + sizeof(ScrVar) * id,
-                                                 sizeof(ScrVar))) {
+                            if (!proc.ReadMemory(
+                                    &localvarvalue,
+                                    glob.scriptValues + sizeof(ScrVar) * id,
+                                    sizeof(ScrVar)
+                                )) {
                                 std::cout << "Error reading value\n";
                                 break;
                             }
@@ -592,8 +615,11 @@ namespace {
                 continue; // not loaded?
             }
 
-            if (!proc.ReadMemory(&buffer[0], proc[offset::gObjFileInfo] + (inst * (sizeof(buffer[0]) * 650)),
-                                 sizeof(buffer[0]) * 650)) {
+            if (!proc.ReadMemory(
+                    &buffer[0],
+                    proc[offset::gObjFileInfo] + (inst * (sizeof(buffer[0]) * 650)),
+                    sizeof(buffer[0]) * 650
+                )) {
                 LOG_ERROR("Can't read linked data {}", bufferCount);
                 return tool::BASIC_ERROR;
             }
@@ -666,8 +692,12 @@ namespace {
                     auto it = scripts[inst].find(usings[i]);
 
                     if (it == scripts[inst].end()) {
-                        LOG_ERROR("[{}] Can't find #using {} in {}", scriptinstance::Name(inst),
-                                  hashutils::ExtractTmpScript(usings[i]), hashutils::ExtractTmpScript(prime_obj->name));
+                        LOG_ERROR(
+                            "[{}] Can't find #using {} in {}",
+                            scriptinstance::Name(inst),
+                            hashutils::ExtractTmpScript(usings[i]),
+                            hashutils::ExtractTmpScript(prime_obj->name)
+                        );
                         continue;
                     }
 
@@ -741,8 +771,11 @@ namespace {
                         imp->import_namespace == 0xC1243180 || imp->import_namespace == 0x222276A9) {
                         func = hashutils::ExtractTmp("function", imp->name);
                     } else {
-                        func = utils::va("%s::%s", hashutils::ExtractTmp("namespace", imp->import_namespace),
-                                         hashutils::ExtractTmp("function", imp->name));
+                        func = utils::va(
+                            "%s::%s",
+                            hashutils::ExtractTmp("namespace", imp->import_namespace),
+                            hashutils::ExtractTmp("function", imp->name)
+                        );
                     }
 
                     const char* prefix;
@@ -769,11 +802,21 @@ namespace {
                     }
 
                     if (findDevCall) {
-                        LOG_ERROR("[{}] Usage of a dev function import {}{} in {}", scriptinstance::Name(inst), prefix,
-                                  func, hashutils::ExtractTmpScript(prime_obj->name));
+                        LOG_ERROR(
+                            "[{}] Usage of a dev function import {}{} in {}",
+                            scriptinstance::Name(inst),
+                            prefix,
+                            func,
+                            hashutils::ExtractTmpScript(prime_obj->name)
+                        );
                     } else {
-                        LOG_ERROR("[{}] Unknown import {}{} in {}", scriptinstance::Name(inst), prefix, func,
-                                  hashutils::ExtractTmpScript(prime_obj->name));
+                        LOG_ERROR(
+                            "[{}] Unknown import {}{} in {}",
+                            scriptinstance::Name(inst),
+                            prefix,
+                            func,
+                            hashutils::ExtractTmpScript(prime_obj->name)
+                        );
                     }
 
                     for (size_t j = 0; j < imp->num_address; j++) {
@@ -794,13 +837,21 @@ namespace {
                         }
 
                         if (!badExport) {
-                            LOG_ERROR("[{}] at {} ERROR::ERROR@{:x}", scriptinstance::Name(inst),
-                                      hashutils::ExtractTmpScript(prime_obj->name), loc);
+                            LOG_ERROR(
+                                "[{}] at {} ERROR::ERROR@{:x}",
+                                scriptinstance::Name(inst),
+                                hashutils::ExtractTmpScript(prime_obj->name),
+                                loc
+                            );
                         } else {
-                            LOG_ERROR("[{}] at {} {}::{}@{:x}", scriptinstance::Name(inst),
-                                      hashutils::ExtractTmpScript(prime_obj->name),
-                                      hashutils::ExtractTmp("namespace", badExport->name_space),
-                                      hashutils::ExtractTmp("function", badExport->name), loc - badExport->address);
+                            LOG_ERROR(
+                                "[{}] at {} {}::{}@{:x}",
+                                scriptinstance::Name(inst),
+                                hashutils::ExtractTmpScript(prime_obj->name),
+                                hashutils::ExtractTmp("namespace", badExport->name_space),
+                                hashutils::ExtractTmp("function", badExport->name),
+                                loc - badExport->address
+                            );
                         }
                     }
                 }

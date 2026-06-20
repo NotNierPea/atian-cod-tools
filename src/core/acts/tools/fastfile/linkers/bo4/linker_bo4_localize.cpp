@@ -64,5 +64,6 @@ namespace {
     };
 
     utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> impl{ GetWorkers(),
-                                                                      XAssetType::ASSET_TYPE_LOCALIZE_LIST, true };
+                                                                      XAssetType::ASSET_TYPE_LOCALIZE_LIST,
+                                                                      true };
 } // namespace

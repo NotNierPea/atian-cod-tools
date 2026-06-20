@@ -43,10 +43,13 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, XAssetType, Worker> impl{ GetWorkers(), XAssetType::ASSET_TYPE_RAWFILE, false,
-                                                          "rawfile", ".raw" };
-    utils::MapAdder<ImplWorker, XAssetType, Worker> implpp{ GetWorkers(), XAssetType::ASSET_TYPE_RAWFILEPREPROC, true,
-                                                            "rawfilepreproc", ".rawpp" };
-    utils::MapAdder<ImplWorker, XAssetType, Worker> impltf{ GetWorkers(), XAssetType::ASSET_TYPE_RAWTEXTFILE, true,
-                                                            "rawtextfile", ".txt" };
+    utils::MapAdder<ImplWorker, XAssetType, Worker> impl{
+        GetWorkers(), XAssetType::ASSET_TYPE_RAWFILE, false, "rawfile", ".raw"
+    };
+    utils::MapAdder<ImplWorker, XAssetType, Worker> implpp{
+        GetWorkers(), XAssetType::ASSET_TYPE_RAWFILEPREPROC, true, "rawfilepreproc", ".rawpp"
+    };
+    utils::MapAdder<ImplWorker, XAssetType, Worker> impltf{
+        GetWorkers(), XAssetType::ASSET_TYPE_RAWTEXTFILE, true, "rawtextfile", ".txt"
+    };
 } // namespace

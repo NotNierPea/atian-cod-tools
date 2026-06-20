@@ -266,14 +266,20 @@ namespace {
         LOG_INFO(" -I --no-iw         : No IW hash (ignored with -N)");
         LOG_INFO("--decrypt-mod [f]   : Use exe dump to decrypt strings");
         LOG_INFO("--decrypt-t8 [v]    : Set the bo4 decryption algorithm, default 0");
-        LOG_INFO(" -s --strings [f]   : Set default hash file, default: '{}' (ignored with -N)",
-                 hashutils::DEFAULT_HASH_FILE);
+        LOG_INFO(
+            " -s --strings [f]   : Set default hash file, default: '{}' (ignored with -N)",
+            hashutils::DEFAULT_HASH_FILE
+        );
         LOG_INFO(" -D --db2-files [f] : Load DB2 files at start, default: '{}'", deps::scobalula::wni::packageIndexDir);
         LOG_INFO(" -w --wni-files [f] : Load WNI files at start, default: '{}'", deps::scobalula::wni::packageIndexDir);
-        LOG_INFO(" --aes-keys [f]     : Set default AES keys file, default: '{}'",
-                 compatibility::acti::crypto_keys::DEFAULT_AES_KEY_FILE);
-        LOG_INFO(" --rsa-keys [f]     : Set default RSA keys file, default: '{}'",
-                 compatibility::acti::crypto_keys::DEFAULT_RSA_KEY_FILE);
+        LOG_INFO(
+            " --aes-keys [f]     : Set default AES keys file, default: '{}'",
+            compatibility::acti::crypto_keys::DEFAULT_AES_KEY_FILE
+        );
+        LOG_INFO(
+            " --rsa-keys [f]     : Set default RSA keys file, default: '{}'",
+            compatibility::acti::crypto_keys::DEFAULT_RSA_KEY_FILE
+        );
         LOG_INFO(" -W --work          : Tell which work to use: repl, cli");
         LOG_INFO(" --noUpdater        : Disable updater");
 
@@ -339,8 +345,11 @@ int InitActsAPI(bool cli, int* argc, const char*** argv, uint32_t version) {
     }
 
     if (version != core::actsinfo::BUILD_VERSION_ID) {
-        LOG_ERROR("Version mismatch: ACTS API version is {:x}, but ACTS common version is {:x}!", version,
-                  core::actsinfo::BUILD_VERSION_ID);
+        LOG_ERROR(
+            "Version mismatch: ACTS API version is {:x}, but ACTS common version is {:x}!",
+            version,
+            core::actsinfo::BUILD_VERSION_ID
+        );
         return -1;
     }
 

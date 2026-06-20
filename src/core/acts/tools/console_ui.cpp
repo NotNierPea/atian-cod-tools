@@ -49,8 +49,13 @@ namespace tool::console_ui {
             ImVec2 winSize = ImGui::GetWindowSize();
 
             ImVec2 size{ winSize.x, winSize.y - ImGui::GetFontSize() * 2 - 20 };
-            ImGui::InputTextMultiline("LogsB", consoleText.data(), consoleText.length(), size,
-                                      ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputTextMultiline(
+                "LogsB",
+                consoleText.data(),
+                consoleText.length(),
+                size,
+                ImGuiInputTextFlags_ReadOnly
+            );
             if (ImGui::InputText("Input", consoleInput, sizeof(consoleInput), run ? ImGuiInputTextFlags_ReadOnly : 0)) {
                 core::config::SetString("nui.console.input", consoleInput);
                 tool::nui::SaveNextConfig();

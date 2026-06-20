@@ -4,7 +4,8 @@
 namespace utils {
     Timestamp GetTimestamp() {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::system_clock::now().time_since_epoch())
+                   std::chrono::system_clock::now().time_since_epoch()
+        )
             .count();
     }
 
@@ -112,8 +113,8 @@ namespace utils {
         return true;
     }
 
-    bool ReadFileAlign(const std::filesystem::path& path, std::string& buffer, void*& bufferAligned,
-                       size_t& sizeAligned) {
+    bool
+    ReadFileAlign(const std::filesystem::path& path, std::string& buffer, void*& bufferAligned, size_t& sizeAligned) {
         std::ifstream in{ path, std::ios::binary };
         if (!in) {
             return false;
@@ -132,8 +133,9 @@ namespace utils {
         return true;
     }
 
-    bool ReadFileAlign(const std::filesystem::path& path, std::vector<byte>& buffer, void*& bufferAligned,
-                       size_t& sizeAligned) {
+    bool ReadFileAlign(
+        const std::filesystem::path& path, std::vector<byte>& buffer, void*& bufferAligned, size_t& sizeAligned
+    ) {
         std::ifstream in{ path, std::ios::binary };
         if (!in) {
             return false;
@@ -187,8 +189,9 @@ namespace utils {
         return true;
     }
 
-    bool ReadFileAlign(const std::filesystem::path& path, void*& buffer, void*& bufferAligned, size_t& size,
-                       size_t& sizeAligned) {
+    bool ReadFileAlign(
+        const std::filesystem::path& path, void*& buffer, void*& bufferAligned, size_t& size, size_t& sizeAligned
+    ) {
         std::ifstream in{ path, std::ios::binary };
         if (!in) {
             return false;
@@ -273,9 +276,10 @@ namespace utils {
         return std::make_pair<>(a, b);
     }
 
-    static void GetFileRecurse0(const std::filesystem::path& dir, std::vector<std::filesystem::path>& files,
-                                std::function<bool(const std::filesystem::path&)> predicate,
-                                const std::filesystem::path& base, bool removeBase) {
+    static void GetFileRecurse0(
+        const std::filesystem::path& dir, std::vector<std::filesystem::path>& files,
+        std::function<bool(const std::filesystem::path&)> predicate, const std::filesystem::path& base, bool removeBase
+    ) {
         if (std::filesystem::is_directory(dir)) {
             for (const auto& sub : std::filesystem::directory_iterator{ dir }) {
                 GetFileRecurse0(sub, files, predicate, base, removeBase);
@@ -291,8 +295,10 @@ namespace utils {
         }
     }
 
-    void GetFileRecurse(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
-                        std::function<bool(const std::filesystem::path&)> predicate, bool removeParent) {
+    void GetFileRecurse(
+        const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
+        std::function<bool(const std::filesystem::path&)> predicate, bool removeParent
+    ) {
         if (!std::filesystem::exists(parent)) {
             return;
         }
@@ -302,10 +308,13 @@ namespace utils {
     void GetFileRecurse(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files) {
         GetFileRecurse(parent, files, [](const auto& ref) { return true; });
     }
-    void GetFileRecurseExt(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
-                           const char* ends, bool removeParent) {
+    void GetFileRecurseExt(
+        const std::filesystem::path& parent, std::vector<std::filesystem::path>& files, const char* ends,
+        bool removeParent
+    ) {
         GetFileRecurse(
-            parent, files,
+            parent,
+            files,
             [ends](const std::filesystem::path& p) -> bool {
                 std::string s{ p.string() };
 
@@ -316,7 +325,8 @@ namespace utils {
 
                 return false;
             },
-            removeParent);
+            removeParent
+        );
     }
 
     std::string WStrToStr(const std::wstring& wstr) { return platform::WStrToStr(wstr); }

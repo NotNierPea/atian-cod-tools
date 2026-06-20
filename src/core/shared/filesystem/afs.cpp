@@ -11,8 +11,13 @@ namespace filesystem::afs {
         }
 
         if (header.fileCount && header.fileTable + (size_t)header.fileCount * header.fileItemSize > len) {
-            throw std::runtime_error(utils::va("File table too big: 0x%llx > 0x%llx",
-                                               header.fileTable + (size_t)header.fileCount * header.fileItemSize, len));
+            throw std::runtime_error(
+                utils::va(
+                    "File table too big: 0x%llx > 0x%llx",
+                    header.fileTable + (size_t)header.fileCount * header.fileItemSize,
+                    len
+                )
+            );
         }
 
         for (size_t i = 0; i < header.fileCount; i++) {
@@ -26,7 +31,8 @@ namespace filesystem::afs {
             uint64_t offset = reinterpret_cast<uint64_t>(file->offset);
             if (offset + file->size > len) {
                 throw std::runtime_error(
-                    utils::va("Invalid file offset for file %lld: 0x%llx(0x%llx)", i, offset, file->size));
+                    utils::va("Invalid file offset for file %lld: 0x%llx(0x%llx)", i, offset, file->size)
+                );
             }
 
             // link file

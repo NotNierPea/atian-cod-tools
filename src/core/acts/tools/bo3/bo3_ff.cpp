@@ -114,13 +114,23 @@ namespace {
 
                             LOG_TRACE("read 0x{:x}", compressedSize);
                         } else if (compression == 8) {
-                            int ret{ oodle.Decompress(reader.Ptr<byte>(), compressedSize, decompressed,
-                                                      decompressedSize, deps::oodle::OODLE_FS_YES) };
+                            int ret{ oodle.Decompress(
+                                reader.Ptr<byte>(),
+                                compressedSize,
+                                decompressed,
+                                decompressedSize,
+                                deps::oodle::OODLE_FS_YES
+                            ) };
 
                             if (ret != decompressedSize) {
-                                throw std::runtime_error(std::format(
-                                    "Can't decompress block, returned size isn't the expected one: 0x{:x} != 0x{:x}",
-                                    ret, decompressedSize));
+                                throw std::runtime_error(
+                                    std::format(
+                                        "Can't decompress block, returned size isn't the expected one: 0x{:x} != "
+                                        "0x{:x}",
+                                        ret,
+                                        decompressedSize
+                                    )
+                                );
                             }
 
                             LOG_TRACE("read 0x{:x}", compressedSize);

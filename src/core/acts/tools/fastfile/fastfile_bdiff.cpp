@@ -384,14 +384,21 @@ namespace fastfile::bdiff {
             }
 
             size_t sourceSegmentStart{ sourceSegmentLocationEx - sourceSegmentLocation };
-            sourceSegment = &sourceDataCB(state->state, sourceSegmentLocation,
-                                          sourceSegmentStart + sourceSegmentOffset)[sourceSegmentStart];
+            sourceSegment = &sourceDataCB(
+                state->state,
+                sourceSegmentLocation,
+                sourceSegmentStart + sourceSegmentOffset
+            )[sourceSegmentStart];
         }
 
         size_t patchDataLen{ ReadULEB128(&bdiffData) };
 
-        byte* patchData{ patchDataCB(state->state, offset + bdiffData - bdiffDataStart,
-                                     patchDataLen + (flags & VCDF_CHECKSUM ? 4 : 0), &offset) };
+        byte* patchData{ patchDataCB(
+            state->state,
+            offset + bdiffData - bdiffDataStart,
+            patchDataLen + (flags & VCDF_CHECKSUM ? 4 : 0),
+            &offset
+        ) };
         byte* patchDataStart{ patchData };
 
         size_t patchDestLen{ ReadULEB128(&patchData) };
@@ -501,8 +508,12 @@ namespace fastfile::bdiff {
                 uint64_t xxh64{ XXH64(patchDestStart, patchDestLen, state->lastChecksum) };
                 uint32_t calculatedChecksum{ (uint32_t)(xxh64 ^ (xxh64 >> 32)) };
                 if (calculatedChecksum != realChecksum) {
-                    state->error = utils::va("Data is corrupt. %x != %x (last=%x)", realChecksum, calculatedChecksum,
-                                             state->lastChecksum);
+                    state->error = utils::va(
+                        "Data is corrupt. %x != %x (last=%x)",
+                        realChecksum,
+                        calculatedChecksum,
+                        state->lastChecksum
+                    );
                     return false;
                 }
                 LOG_TRACE("validated bdiff checksum {:x}", realChecksum);
@@ -532,8 +543,10 @@ namespace fastfile::bdiff {
         std::vector<byte>* destdata{};
 
       public:
-        DiffState(size_t winsize, core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData,
-                  std::vector<byte>* destdata)
+        DiffState(
+            size_t winsize, core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData,
+            std::vector<byte>* destdata
+        )
             : sourceData(sourceData), patchData(patchData), destdata(destdata) {
             outwindow.resize(winsize);
             destWindow = outwindow.data();
@@ -554,7 +567,8 @@ namespace fastfile::bdiff {
             if (!sourceData->CanRead(size)) {
                 hook::error::DumpStackTraceFrom();
                 throw std::runtime_error(
-                    std::format("vcSourceCB_t: read too much at 0x{:x}/0x{:x}", sourceData->Loc(), size));
+                    std::format("vcSourceCB_t: read too much at 0x{:x}/0x{:x}", sourceData->Loc(), size)
+                );
             }
             LOG_TRACE("vcSourceCB_t: read 0x{:x}:0x{:x}", sourceData->Loc(), size);
             return sourceData->ReadPtr<uint8_t>(size);
@@ -581,7 +595,8 @@ namespace fastfile::bdiff {
 
                 hook::error::DumpStackTraceFrom();
                 throw std::runtime_error(
-                    std::format("vcDiffCB_t: read too much at 0x{:x}/0x{:x}", patchData->Loc(), size));
+                    std::format("vcDiffCB_t: read too much at 0x{:x}/0x{:x}", patchData->Loc(), size)
+                );
             }
             LOG_TRACE("vcDiffCB_t: read 0x{:x}:0x{:x}", patchData->Loc(), size);
             return patchData->ReadPtr<uint8_t>(size);
@@ -603,8 +618,10 @@ namespace fastfile::bdiff {
         constexpr size_t GetLastSize() const { return destWindowLastSize; };
     };
 
-    std::vector<byte> bdiff(core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData,
-                            BDiffType type, size_t winsize) {
+    std::vector<byte> bdiff(
+        core::bytebuffer::ByteBuffer* sourceData, core::bytebuffer::ByteBuffer* patchData, BDiffType type,
+        size_t winsize
+    ) {
         std::vector<byte> destdata{};
         DiffState bdiffStates{ winsize, sourceData, patchData, &destdata };
 
@@ -621,7 +638,8 @@ namespace fastfile::bdiff {
                     [](void* state, size_t offset, size_t size, size_t* pOffset) -> uint8_t* {
                         return ((DiffState*)state)->LoadPatchData(offset, size, pOffset);
                     },
-                    [](void* state, size_t size) -> uint8_t* { return ((DiffState*)state)->LoadDestData(size); })) {
+                    [](void* state, size_t size) -> uint8_t* { return ((DiffState*)state)->LoadDestData(size); }
+                )) {
                 throw std::runtime_error(std::format("bdiff error: {}", state.error));
             }
             if (!bdiffStates.GetLastSize()) {
@@ -636,13 +654,17 @@ namespace fastfile::bdiff {
     }
 } // namespace fastfile::bdiff
 
-bool ActsAPIFastFile_bdiff(ActsAPIFastFile_BDiffState* state, ActsAPIFastFile_sourceCallback* sourceDataCB,
-                           ActsAPIFastFile_diffCallback* patchDataCB, ActsAPIFastFile_destCallback* destDataCB) {
+bool ActsAPIFastFile_bdiff(
+    ActsAPIFastFile_BDiffState* state, ActsAPIFastFile_sourceCallback* sourceDataCB,
+    ActsAPIFastFile_diffCallback* patchDataCB, ActsAPIFastFile_destCallback* destDataCB
+) {
     return fastfile::bdiff::bdiff(state, sourceDataCB, patchDataCB, destDataCB);
 }
 
-ActsStatus ActsAPIFastFile_bdiffData(uint8_t* sourceData, size_t sourceDataLen, uint8_t* patchData, size_t patchDataLen,
-                                     ActsHandle outData, ActsAPIFastFile_BDiffType type, size_t winSize) {
+ActsStatus ActsAPIFastFile_bdiffData(
+    uint8_t* sourceData, size_t sourceDataLen, uint8_t* patchData, size_t patchDataLen, ActsHandle outData,
+    ActsAPIFastFile_BDiffType type, size_t winSize
+) {
     ACTS_API_ASSERT(sourceData || !sourceDataLen);
     ACTS_API_ASSERT(patchData || !patchDataLen);
     ACTS_API_ASSERT_VALID_HANDLE(outData);

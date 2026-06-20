@@ -268,7 +268,8 @@ namespace {
                 for (size_t i = 0; i < asset.numPrimaryWeapons; i++) {
                     json.WriteValueHash(
                         games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.primaryWeapons[i])
-                            ->name);
+                            ->name
+                    );
                 }
 
                 json.EndArray();
@@ -279,50 +280,61 @@ namespace {
 
                 for (size_t i = 0; i < asset.numCharacters; i++) {
                     json.WriteValueHash(
-                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_CHARACTER, asset.character[i])
-                            ->name);
+                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_CHARACTER, asset.character[i])->name
+                    );
                 }
 
                 json.EndArray();
             }
-            json.WriteFieldValueXAssetArray("animMappingTables", XAssetType::ASSET_TYPE_ANIMMAPPINGTABLE,
-                                            ACTS_ARRAYSIZE(asset.animMappingTables), asset.animMappingTables);
+            json.WriteFieldValueXAssetArray(
+                "animMappingTables",
+                XAssetType::ASSET_TYPE_ANIMMAPPINGTABLE,
+                ACTS_ARRAYSIZE(asset.animMappingTables),
+                asset.animMappingTables
+            );
             if (asset.secondaryWeapon) {
                 json.WriteFieldNameString("secondaryWeapon");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.secondaryWeapon)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.secondaryWeapon)->name
+                );
             }
             if (asset.sideArm) {
                 json.WriteFieldNameString("sideArm");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.sideArm)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.sideArm)->name
+                );
             }
             if (asset.meleeWeapon) {
                 json.WriteFieldNameString("meleeWeapon");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.meleeWeapon)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.meleeWeapon)->name
+                );
             }
             if (asset.grenadeWeapon) {
                 json.WriteFieldNameString("grenadeWeapon");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.grenadeWeapon)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_WEAPON, asset.grenadeWeapon)->name
+                );
             }
 
             if (asset.aimTable) {
                 json.WriteFieldNameString("aimTable");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_AIMTABLE, asset.aimTable)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_AIMTABLE, asset.aimTable)->name
+                );
             }
             if (asset.shootTable) {
                 json.WriteFieldNameString("shootTable");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SHOOTTABLE, asset.shootTable)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SHOOTTABLE, asset.shootTable)->name
+                );
             }
             if (asset.footstepTable) {
                 json.WriteFieldNameString("footstepTable");
                 json.WriteValueHash(
                     games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_FOOTSTEP_TABLE, asset.footstepTable)
-                        ->name);
+                        ->name
+                );
             }
             json.WriteFieldNameString("footstepScriptCallback");
             json.WriteValueBool(asset.footstepScriptCallback);
@@ -330,31 +342,41 @@ namespace {
                 json.WriteFieldNameString("footstepFXTable1");
                 json.WriteValueHash(
                     games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SURFACEFX_TABLE, asset.footstepFXTable1)
-                        ->name);
+                        ->name
+                );
             }
             if (asset.footstepFXTable2) {
                 json.WriteFieldNameString("footstepFXTable2");
                 json.WriteValueHash(
                     games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SURFACEFX_TABLE, asset.footstepFXTable2)
-                        ->name);
+                        ->name
+                );
             }
             if (asset.behaviorTree) {
                 json.WriteFieldNameString("behaviorTree");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_BEHAVIORTREE, asset.behaviorTree)
-                        ->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_BEHAVIORTREE, asset.behaviorTree)->name
+                );
             }
             if (asset.animStateMachine) {
                 json.WriteFieldNameString("animStateMachine");
-                json.WriteValueHash(games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_ANIMSTATEMACHINE,
-                                                                   asset.animStateMachine)
-                                        ->name);
+                json.WriteValueHash(
+                    games::bo4::pool::GetAssetName(
+                        games::bo4::pool::ASSET_TYPE_ANIMSTATEMACHINE,
+                        asset.animStateMachine
+                    )
+                        ->name
+                );
             }
             if (asset.animSelectorTable) {
                 json.WriteFieldNameString("animSelectorTable");
-                json.WriteValueHash(games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_ANIMSELECTORTABLESET,
-                                                                   asset.animSelectorTable)
-                                        ->name);
+                json.WriteValueHash(
+                    games::bo4::pool::GetAssetName(
+                        games::bo4::pool::ASSET_TYPE_ANIMSELECTORTABLESET,
+                        asset.animSelectorTable
+                    )
+                        ->name
+                );
             }
 
             if (asset.primaryAllowedCamos[0]) {
@@ -374,29 +396,37 @@ namespace {
                 json.WriteFieldNameString("traversalExtents");
                 json.WriteValueHash(
                     games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, asset.traversalExtents)
-                        ->name);
+                        ->name
+                );
             }
             if (asset.randomName) {
                 json.WriteFieldNameString("randomName");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, asset.randomName)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, asset.randomName)->name
+                );
             }
             if (asset.assassinationBundle) {
                 json.WriteFieldNameString("assassinationBundle");
                 json.WriteValueHash(
                     games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, asset.assassinationBundle)
-                        ->name);
+                        ->name
+                );
             }
             if (asset.aiFxBundle) {
                 json.WriteFieldNameString("aiFxBundle");
                 json.WriteValueHash(
-                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, asset.aiFxBundle)->name);
+                    games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, asset.aiFxBundle)->name
+                );
             }
             if (asset.aiNotetrackBoneMappingBundle) {
                 json.WriteFieldNameString("aiNotetrackBoneMappingBundle");
-                json.WriteValueHash(games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                                                   asset.aiNotetrackBoneMappingBundle)
-                                        ->name);
+                json.WriteValueHash(
+                    games::bo4::pool::GetAssetName(
+                        games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                        asset.aiNotetrackBoneMappingBundle
+                    )
+                        ->name
+                );
             }
             if (asset.aivsaiMeleeBundles[0]) {
                 json.WriteFieldNameString("aivsaiMeleeBundles");
@@ -407,7 +437,8 @@ namespace {
                     }
 
                     json.WriteValueHash(
-                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, bundle)->name);
+                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, bundle)->name
+                    );
                 }
                 json.EndArray();
             }
@@ -437,7 +468,8 @@ namespace {
                 json.WriteFieldNameString("aiSettingsBundle");
                 json.WriteValueHash(
                     games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE, asset.aiSettingsBundle)
-                        ->name);
+                        ->name
+                );
             }
 
             json.WriteFieldNameString("ignoresDamageHitLocations");

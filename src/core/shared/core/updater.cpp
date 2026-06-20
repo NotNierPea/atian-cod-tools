@@ -68,8 +68,12 @@ namespace core::updater {
             }
 
             if (latestVersion.v <= core::actsinfo::VERSION_ID) {
-                LOG_LVLF(lvl, "Latest version {} <= {}", GetVersionName(latestVersion.v),
-                         GetVersionName(core::actsinfo::VERSION_ID));
+                LOG_LVLF(
+                    lvl,
+                    "Latest version {} <= {}",
+                    GetVersionName(latestVersion.v),
+                    GetVersionName(core::actsinfo::VERSION_ID)
+                );
                 LOG_DEBUG("0x{:x} <= 0x{:x}", latestVersion.v, core::actsinfo::VERSION_ID);
                 return false; // nothing to update
             }

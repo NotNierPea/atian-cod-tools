@@ -21,8 +21,9 @@ namespace tool::gsc::compiler {
         { OPCODE_GetLongInteger, (-0x7FFFFFFFFFFFFFFFLL - 1LL), 0x7FFFFFFFFFFFFFFF, 8, false, false },
     };
 
-    CompileObject::CompileObject(CompilerConfig& config, GscFileType file, InputInfo& nfo,
-                                 std::shared_ptr<tool::gsc::GSCOBJHandler> gscHandler)
+    CompileObject::CompileObject(
+        CompilerConfig& config, GscFileType file, InputInfo& nfo, std::shared_ptr<tool::gsc::GSCOBJHandler> gscHandler
+    )
         : config(config), type(file), info(nfo), vmInfo(config.GetVm()), gscHandler(gscHandler) {
         fileName = vmInfo->HashPath(config.name);
         const char* fns = config.fileName;
@@ -71,8 +72,11 @@ namespace tool::gsc::compiler {
     TerminalNode* CompileObject::GetUniqueNode(ParseTree* tree, bool error) {
         if (tree->getTreeType() == TREE_ERROR) {
             if (error) {
-                info.PrintLineMessage(core::logs::LVL_ERROR, tree,
-                                      std::format("Tree error for GetUniqueNode: {}", tree->getText()));
+                info.PrintLineMessage(
+                    core::logs::LVL_ERROR,
+                    tree,
+                    std::format("Tree error for GetUniqueNode: {}", tree->getText())
+                );
             }
             return nullptr;
         }
@@ -87,8 +91,11 @@ namespace tool::gsc::compiler {
 
         if (rule->children.size() != 1) {
             if (error) {
-                info.PrintLineMessage(core::logs::LVL_ERROR, tree,
-                                      std::format("Not a valid terminal node: {}", rule->getText()));
+                info.PrintLineMessage(
+                    core::logs::LVL_ERROR,
+                    tree,
+                    std::format("Not a valid terminal node: {}", rule->getText())
+                );
             }
             return nullptr;
         }
@@ -138,8 +145,10 @@ namespace tool::gsc::compiler {
             default:
                 if (error) {
                     info.PrintLineMessage(
-                        core::logs::LVL_ERROR, rule,
-                        std::format("Not a valid const number: {} ({})", rule->getText(), rule->getRuleIndex()));
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Not a valid const number: {} ({})", rule->getText(), rule->getRuleIndex())
+                    );
                 }
                 return NAN;
             }
@@ -147,8 +156,11 @@ namespace tool::gsc::compiler {
 
         if (!number || number->getTreeType() != TREE_TERMINAL) {
             if (error) {
-                info.PrintLineMessage(core::logs::LVL_ERROR, number,
-                                      std::format("Not a valid const number: {}", number->getText()));
+                info.PrintLineMessage(
+                    core::logs::LVL_ERROR,
+                    number,
+                    std::format("Not a valid const number: {}", number->getText())
+                );
             }
             return NAN; // wtf?
         }
@@ -286,8 +298,10 @@ namespace tool::gsc::compiler {
             default:
                 if (error) {
                     info.PrintLineMessage(
-                        core::logs::LVL_ERROR, rule,
-                        std::format("Not a valid const number: {} ({})", rule->getText(), rule->getRuleIndex()));
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Not a valid const number: {} ({})", rule->getText(), rule->getRuleIndex())
+                    );
                 }
                 if (extracted)
                     *extracted = false;
@@ -297,8 +311,11 @@ namespace tool::gsc::compiler {
 
         if (!number || number->getTreeType() != TREE_TERMINAL) {
             if (error) {
-                info.PrintLineMessage(core::logs::LVL_ERROR, number,
-                                      std::format("Not a valid const number: {}", number->getText()));
+                info.PrintLineMessage(
+                    core::logs::LVL_ERROR,
+                    number,
+                    std::format("Not a valid const number: {}", number->getText())
+                );
             }
             if (extracted)
                 *extracted = false;
@@ -338,8 +355,11 @@ namespace tool::gsc::compiler {
 
     AscmNodeOpCode* CompileObject::BuildAscmNodeData(const NumberOpCodesS& opcode, int64_t val) const {
         if (opcode.minValue > val || opcode.maxValue < val) {
-            info.PrintLineMessage(core::logs::LVL_WARNING, nullptr,
-                                  std::format("opcode not big enough to store the value {}", val));
+            info.PrintLineMessage(
+                core::logs::LVL_WARNING,
+                nullptr,
+                std::format("opcode not big enough to store the value {}", val)
+            );
         }
         if (opcode.negat) {
             val = -val;
@@ -407,8 +427,11 @@ namespace tool::gsc::compiler {
             output = ParseString(term);
             return true;
         } else {
-            info.PrintLineMessage(core::logs::LVL_ERROR, hashNode,
-                                  "Not a string expression, only string node available");
+            info.PrintLineMessage(
+                core::logs::LVL_ERROR,
+                hashNode,
+                "Not a string expression, only string node available"
+            );
             return false;
         }
     }
@@ -439,8 +462,11 @@ namespace tool::gsc::compiler {
             auto ith = vmInfo->hashesFunc.find(type);
 
             if (ith == vmInfo->hashesFunc.end()) {
-                info.PrintLineMessage(core::logs::LVL_ERROR, hashNode,
-                                      std::format("Hash type not available for this vm: {}", type));
+                info.PrintLineMessage(
+                    core::logs::LVL_ERROR,
+                    hashNode,
+                    std::format("Hash type not available for this vm: {}", type)
+                );
                 return false;
             }
 
@@ -449,8 +475,11 @@ namespace tool::gsc::compiler {
             if (!hash::TryHashPattern(ss, output)) {
                 output = ith->second.hashFunc(ss);
                 if (!output) {
-                    info.PrintLineMessage(core::logs::LVL_ERROR, hashNode,
-                                          std::format("Can't hash the string '{}' with the type {}", sub, type));
+                    info.PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        hashNode,
+                        std::format("Can't hash the string '{}' with the type {}", sub, type)
+                    );
                     return false;
                 }
                 AddHash(sub);
@@ -465,8 +494,11 @@ namespace tool::gsc::compiler {
             auto ith = vmInfo->hashesFunc.find(type);
 
             if (ith == vmInfo->hashesFunc.end()) {
-                info.PrintLineMessage(core::logs::LVL_ERROR, hashNode,
-                                      std::format("Hash type not available for this vm: {}", type));
+                info.PrintLineMessage(
+                    core::logs::LVL_ERROR,
+                    hashNode,
+                    std::format("Hash type not available for this vm: {}", type)
+                );
                 return false;
             }
 
@@ -475,8 +507,11 @@ namespace tool::gsc::compiler {
             if (!hash::TryHashPattern(ss, output)) {
                 output = ith->second.hashFunc(ss);
                 if (!output) {
-                    info.PrintLineMessage(core::logs::LVL_ERROR, hashNode,
-                                          std::format("Can't hash the string '{}' with the type {}", node, type));
+                    info.PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        hashNode,
+                        std::format("Can't hash the string '{}' with the type {}", node, type)
+                    );
                     return false;
                 }
                 AddHash(key);
@@ -484,8 +519,11 @@ namespace tool::gsc::compiler {
             return true;
         }
         default:
-            info.PrintLineMessage(core::logs::LVL_ERROR, hashNode,
-                                  "Not a hash expression, only string or hash node available");
+            info.PrintLineMessage(
+                core::logs::LVL_ERROR,
+                hashNode,
+                "Not a hash expression, only string or hash node available"
+            );
             return false;
         }
     }
@@ -525,11 +563,14 @@ namespace tool::gsc::compiler {
             f.m_nodes.push_back(new AscmNodeOpCode(OPCODE_CheckClearParams));
             f.m_nodes.push_back(new AscmNodeOpCode(OPCODE_PreScriptCall));
             if (config.checksum < 0) {
-                f.m_nodes.push_back(crcData.opcode = new AscmNodeData<uint32_t>((uint32_t)(-config.checksum),
-                                                                                OPCODE_GetNegUnsignedInteger));
+                f.m_nodes.push_back(
+                    crcData.opcode =
+                        new AscmNodeData<uint32_t>((uint32_t)(-config.checksum), OPCODE_GetNegUnsignedInteger)
+                );
             } else {
-                f.m_nodes.push_back(crcData.opcode = new AscmNodeData<uint32_t>((uint32_t)(config.checksum),
-                                                                                OPCODE_GetUnsignedInteger));
+                f.m_nodes.push_back(
+                    crcData.opcode = new AscmNodeData<uint32_t>((uint32_t)(config.checksum), OPCODE_GetUnsignedInteger)
+                );
             }
 
             auto gvarIt = vmInfo->globalvars.find(vmInfo->HashField("level"));
@@ -602,8 +643,10 @@ namespace tool::gsc::compiler {
             f.m_flags = tool::gsc::CLASS_VTABLE;
             f.m_nodes.push_back(new AscmNodeOpCode(OPCODE_CheckClearParams));
             f.m_nodes.push_back(new AscmNodeOpCode(OPCODE_PreScriptCall));
-            f.m_nodes.push_back(crcData.opcode = new AscmNodeData<uint64_t>(
-                                    hash::Hash64A(utils::va("%d", config.checksum)), OPCODE_GetHash));
+            f.m_nodes.push_back(
+                crcData.opcode =
+                    new AscmNodeData<uint64_t>(hash::Hash64A(utils::va("%d", config.checksum)), OPCODE_GetHash)
+            );
             f.m_nodes.push_back(new AscmNodeOpCode(OPCODE_IW_GetLevel));
             f.m_nodes.push_back(new AscmNodeOpCode(OPCODE_IW_Notify));
             f.m_nodes.push_back(new AscmNodeOpCode(OPCODE_End));
@@ -635,8 +678,10 @@ namespace tool::gsc::compiler {
                         if (!scriptCall) {
                             if (funcType == tool::gsc::FUNCTION_CHILDTHREAD || funcType == tool::gsc::FUNCTION_THREAD ||
                                 funcType == tool::gsc::METHOD_CHILDTHREAD || funcType == tool::gsc::METHOD_THREAD) {
-                                LOG_ERROR("Usage of thread modifier on a builtin call {}",
-                                          hashutils::ExtractTmp("function", idx.name));
+                                LOG_ERROR(
+                                    "Usage of thread modifier on a builtin call {}",
+                                    hashutils::ExtractTmp("function", idx.name)
+                                );
                                 return false;
                             }
                             if (funcType == tool::gsc::METHOD) {
@@ -644,8 +689,11 @@ namespace tool::gsc::compiler {
                             } else if (funcType == tool::gsc::FUNCTION) {
                                 imp.flags = (imp.flags & ~0xF) | tool::gsc::ACTS_CALL_BUILTIN_FUNCTION;
                             } else {
-                                LOG_ERROR("Unknown builtin call {} {}", funcType,
-                                          hashutils::ExtractTmp("function", idx.name));
+                                LOG_ERROR(
+                                    "Unknown builtin call {} {}",
+                                    funcType,
+                                    hashutils::ExtractTmp("function", idx.name)
+                                );
                                 return false;
                             }
                         }
@@ -676,8 +724,9 @@ namespace tool::gsc::compiler {
 
         // sort the autoexecs by ids and write them first
 
-        std::sort(autoexecs.begin(), autoexecs.end(),
-                  [](auto& f1, auto& f2) -> bool { return f1->autoexecOrder < f2->autoexecOrder; });
+        std::sort(autoexecs.begin(), autoexecs.end(), [](auto& f1, auto& f2) -> bool {
+            return f1->autoexecOrder < f2->autoexecOrder;
+        });
 
         if (config.obfuscate) {
             std::shuffle(othersfuncs.begin(), othersfuncs.end(), std::mt19937{ std::random_device{}() });
@@ -932,8 +981,10 @@ namespace tool::gsc::compiler {
                         gscHandler->WriteAnimTreeSingle(&data[buff], anim);
                         animCount++;
                     }
-                    utils::WriteValue<uint32_t>(data,
-                                                atree.animtree[w++]->GetDataFLoc(vmInfo->HasFlag(VmFlags::VMF_ALIGN)));
+                    utils::WriteValue<uint32_t>(
+                        data,
+                        atree.animtree[w++]->GetDataFLoc(vmInfo->HasFlag(VmFlags::VMF_ALIGN))
+                    );
                 }
             }
 
@@ -952,8 +1003,10 @@ namespace tool::gsc::compiler {
                             gscHandler->WriteAnimTreeDouble(&data[buff], anim);
                             animDoubleCount++;
                         }
-                        utils::WriteValue<uint32_t>(data,
-                                                    ref.anim[w++]->GetDataFLoc(vmInfo->HasFlag(VmFlags::VMF_ALIGN)));
+                        utils::WriteValue<uint32_t>(
+                            data,
+                            ref.anim[w++]->GetDataFLoc(vmInfo->HasFlag(VmFlags::VMF_ALIGN))
+                        );
                     }
                 }
             }
@@ -976,8 +1029,10 @@ namespace tool::gsc::compiler {
                         gscHandler->WriteGVar(&data[buff], gv);
                         gvarCount++;
                     }
-                    utils::WriteValue<uint32_t>(data,
-                                                gvobj.nodes[w++]->GetDataFLoc(vmInfo->HasFlag(VmFlags::VMF_ALIGN)));
+                    utils::WriteValue<uint32_t>(
+                        data,
+                        gvobj.nodes[w++]->GetDataFLoc(vmInfo->HasFlag(VmFlags::VMF_ALIGN))
+                    );
                 }
             }
         }
@@ -1016,8 +1071,8 @@ namespace tool::gsc::compiler {
             if (!detourObjs.empty() && config.detourType == DETOUR_ACTS) {
                 LOG_TRACE("Compile {} detour(s)...", detourObjs.size());
                 detoursCount = (uint32_t)detourObjs.size();
-                detoursLoc = (uint32_t)utils::Allocate(data, sizeof(shared::gsc::acts_addons::GSC_ACTS_DETOUR) *
-                                                                 detourObjs.size());
+                detoursLoc = (uint32_t)
+                    utils::Allocate(data, sizeof(shared::gsc::acts_addons::GSC_ACTS_DETOUR) * detourObjs.size());
                 shared::gsc::acts_addons::GSC_ACTS_DETOUR* detours =
                     reinterpret_cast<shared::gsc::acts_addons::GSC_ACTS_DETOUR*>(&data[detoursLoc]);
 
@@ -1080,9 +1135,13 @@ namespace tool::gsc::compiler {
                 auto [ok, op] = GetOpCodeId(vmInfo->vmMagic, config.platform, opcode, config.useModToolOpCodes);
 
                 if (!ok) {
-                    LOG_ERROR("Can't find crc opcode {} ({}) for vm {}/{}",
-                              utils::PtrOrElse(OpCodeName(opcode), "null"), (int)opcode, vmInfo->name,
-                              PlatformName(config.platform));
+                    LOG_ERROR(
+                        "Can't find crc opcode {} ({}) for vm {}/{}",
+                        utils::PtrOrElse(OpCodeName(opcode), "null"),
+                        (int)opcode,
+                        vmInfo->name,
+                        PlatformName(config.platform)
+                    );
                     return false;
                 }
 
@@ -1146,8 +1205,10 @@ namespace tool::gsc::compiler {
 
                     LOG_TRACE("Compile {} lazy link(s)...", lazyimports.size());
                     for (auto& [loc, lz] : lazyimports) {
-                        size_t lzi = utils::Allocate(dbgdata, sizeof(shared::gsc::acts_debug::GSC_ACTS_LAZYLINK) +
-                                                                  sizeof(uint32_t) * lz.size());
+                        size_t lzi = utils::Allocate(
+                            dbgdata,
+                            sizeof(shared::gsc::acts_debug::GSC_ACTS_LAZYLINK) + sizeof(uint32_t) * lz.size()
+                        );
                         lazyLinksIdx++;
 
                         if (!lazyLinksLoc) {
@@ -1210,14 +1271,17 @@ namespace tool::gsc::compiler {
 
                         LOG_TRACE("Compile filenames...");
                         filesLoc = dbgdata.size();
-                        utils::Allocate(dbgdata,
-                                        sizeof(shared::gsc::acts_debug::GSC_ACTS_FILES) * info.container.blocks.size());
+                        utils::Allocate(
+                            dbgdata,
+                            sizeof(shared::gsc::acts_debug::GSC_ACTS_FILES) * info.container.blocks.size()
+                        );
                         for (core::preprocessor::StringData& block : info.container.blocks) {
                             size_t strLoc = dbgdata.size();
                             std::string filename;
                             if (!config.baseDir.empty()) {
-                                std::filesystem::path rfile{ std::filesystem::relative(block.filename,
-                                                                                       config.baseDir) };
+                                std::filesystem::path rfile{
+                                    std::filesystem::relative(block.filename, config.baseDir)
+                                };
                                 filename = rfile.string();
                             } else {
                                 filename = block.filename.string();
@@ -1225,8 +1289,9 @@ namespace tool::gsc::compiler {
                             // baseDir
                             utils::WriteString(dbgdata, filename.c_str());
                             shared::gsc::acts_debug::GSC_ACTS_FILES& f =
-                                reinterpret_cast<shared::gsc::acts_debug::GSC_ACTS_FILES*>(dbgdata.data() +
-                                                                                           filesLoc)[filesIdx++];
+                                reinterpret_cast<shared::gsc::acts_debug::GSC_ACTS_FILES*>(
+                                    dbgdata.data() + filesLoc
+                                )[filesIdx++];
                             f.filename = (uint32_t)strLoc;
                             f.lineStart = block.startLine;
                             f.lineEnd = block.startLine + block.sizeLine;
@@ -1370,8 +1435,9 @@ namespace tool::gsc::compiler {
         return true;
     }
 
-    void CompileObject::AddImport(AscmNodeFunctionCall* funcCall, uint64_t funcNspHash, uint64_t funcHash,
-                                  size_t paramCount, uint8_t importFlags) {
+    void CompileObject::AddImport(
+        AscmNodeFunctionCall* funcCall, uint64_t funcNspHash, uint64_t funcHash, size_t paramCount, uint8_t importFlags
+    ) {
         // link by the game, but we write it for test
         Located located{ funcNspHash, funcHash };
 

@@ -17,8 +17,11 @@ namespace {
 
             const char* n;
             if (asset->unk10) {
-                n = utils::va("%s/%s.atrc", hashutils::ExtractTmp("hash", asset->unk10),
-                              hashutils::ExtractTmp("hash", asset->name));
+                n = utils::va(
+                    "%s/%s.atrc",
+                    hashutils::ExtractTmp("hash", asset->unk10),
+                    hashutils::ExtractTmp("hash", asset->name)
+                );
             } else {
                 n = utils::va("%s.atrc", hashutils::ExtractTmp("hash", asset->name));
             }

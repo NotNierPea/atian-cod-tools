@@ -21,7 +21,8 @@ namespace acts::decryptutils {
     }
 
     static bool LoadDecryptModule0(
-        std::function<std::vector<hook::library::ScanResult>(const char* path, const char* name)> ScanFunc) {
+        std::function<std::vector<hook::library::ScanResult>(const char* path, const char* name)> ScanFunc
+    ) {
         DecryptStringImpl = nullptr;
 
         struct {

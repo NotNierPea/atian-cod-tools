@@ -112,8 +112,9 @@ namespace tool::hash::scanner {
         void ReadFuncs(const char* n) { funcs = ReadVmHashes(n); }
     };
 
-    void ScanHashes(const std::vector<std::filesystem::path>& files, std::unordered_set<uint64_t>& hashes,
-                    uint64_t mask = ~0ull);
+    void ScanHashes(
+        const std::vector<std::filesystem::path>& files, std::unordered_set<uint64_t>& hashes, uint64_t mask = ~0ull
+    );
     std::vector<const char*> ReadDict(std::filesystem::path file, std::string& store);
     std::vector<std::filesystem::path> GetHashFiles(const std::filesystem::path& path);
 

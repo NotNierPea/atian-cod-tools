@@ -258,8 +258,14 @@ namespace {
             writer.WriteFieldNameString("itemAllocCount");
             writer.WriteValueString(std::format("0x{:x}", po.itemAllocCount));
 
-            LOG_INFO("Pool {} 0x{:x} 0x{:x} 0x{:x} 0x{:x}", poolNames[i], po.pool, po.itemSize, po.itemCount,
-                     po.itemAllocCount);
+            LOG_INFO(
+                "Pool {} 0x{:x} 0x{:x} 0x{:x} 0x{:x}",
+                poolNames[i],
+                po.pool,
+                po.itemSize,
+                po.itemCount,
+                po.itemAllocCount
+            );
             if (po.itemAllocCount) {
                 writer.WriteFieldNameString("firsts");
 
@@ -298,11 +304,17 @@ namespace {
 
         uintptr_t poolsPtr{ cw::ScanPool(proc) };
 
-        auto pool{ proc.ReadMemoryObjectEx<XAssetPool>(cw::ScanPool(proc) +
-                                                       sizeof(XAssetPool) * cw::alpha::ASSET_TYPE_SCRIPTPARSETREE) };
+        auto pool{ proc.ReadMemoryObjectEx<XAssetPool>(
+            cw::ScanPool(proc) + sizeof(XAssetPool) * cw::alpha::ASSET_TYPE_SCRIPTPARSETREE
+        ) };
 
-        LOG_INFO("Find pool scriptparsetree -> 0x{:x} (0x{:x} * 0x{:x}/0x{:x} element(s)", pool->pool, pool->itemSize,
-                 pool->itemAllocCount, pool->itemCount);
+        LOG_INFO(
+            "Find pool scriptparsetree -> 0x{:x} (0x{:x} * 0x{:x}/0x{:x} element(s)",
+            pool->pool,
+            pool->itemSize,
+            pool->itemAllocCount,
+            pool->itemCount
+        );
 
         if (pool->itemSize != sizeof(ScriptParseTree)) {
             LOG_ERROR("Invalid item size 0x{:x}", pool->itemSize);
@@ -337,6 +349,7 @@ namespace {
     }
 
     ADD_TOOL(pdcod2020, "cw", "", "", L"CoD2020.exe", pdcod2020);
-    ADD_TOOL(wpscod2020, "cw", " [output=scriptparsetree_cod2020]", "write pooled scripts (cwa)", L"CoD2020.exe",
-             wpscod2020);
+    ADD_TOOL(
+        wpscod2020, "cw", " [output=scriptparsetree_cod2020]", "write pooled scripts (cwa)", L"CoD2020.exe", wpscod2020
+    );
 } // namespace

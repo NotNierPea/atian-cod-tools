@@ -112,9 +112,8 @@ namespace {
 
             if (def.nameStr) {
                 const char* nameStr{ proc.ReadStringTmp(reinterpret_cast<uintptr_t>(def.nameStr)) };
-                if (opt.ignoreArchiveDDL &&
-                    std::string_view{ hashutils::CleanPath(utils::CloneString(nameStr)) }.starts_with(
-                        "ddl\\cer\\archive")) {
+                if (opt.ignoreArchiveDDL && std::string_view{ hashutils::CleanPath(utils::CloneString(nameStr)) }
+                                                .starts_with("ddl\\cer\\archive")) {
                     LOG_INFO("Ignore archive {}", nameStr);
                     return true;
                 }
@@ -162,17 +161,22 @@ namespace {
                     return false;
                 }
 
-                auto structList{ proc.ReadMemoryArrayEx<DDLStruct>(reinterpret_cast<uintptr_t>(def.structList),
-                                                                   def.structsCount) };
-                auto enumList{ def.enumsCount ? proc.ReadMemoryArrayEx<DDLEnum>(
-                                                    reinterpret_cast<uintptr_t>(def.enumList), def.enumsCount)
-                                              : std::make_unique<DDLEnum[]>(1) };
+                auto structList{
+                    proc.ReadMemoryArrayEx<DDLStruct>(reinterpret_cast<uintptr_t>(def.structList), def.structsCount)
+                };
+                auto enumList{
+                    def.enumsCount
+                        ? proc.ReadMemoryArrayEx<DDLEnum>(reinterpret_cast<uintptr_t>(def.enumList), def.enumsCount)
+                        : std::make_unique<DDLEnum[]>(1)
+                };
 
-                auto DumpDDLStructMembers = [&os, &proc, &def, &entry, &opt, &structList,
-                                             &enumList](DDLStruct& stct, int padding) -> bool {
+                auto DumpDDLStructMembers =
+                    [&os, &proc, &def, &entry, &opt, &structList, &enumList](DDLStruct& stct, int padding) -> bool {
                     if (stct.memberCount && stct.members) {
-                        auto [members, ok] = proc.ReadMemoryArray<DDLMember>(reinterpret_cast<uintptr_t>(stct.members),
-                                                                             stct.memberCount);
+                        auto [members, ok] = proc.ReadMemoryArray<DDLMember>(
+                            reinterpret_cast<uintptr_t>(stct.members),
+                            stct.memberCount
+                        );
 
                         if (!ok) {
                             LOG_ERROR("Can't read DDL members {}", hashutils::ExtractTmpPath("ddl", entry.name));
@@ -180,8 +184,10 @@ namespace {
                         }
 
                         std::sort(
-                            &members[0], &members[stct.memberCount],
-                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; });
+                            &members[0],
+                            &members[stct.memberCount],
+                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; }
+                        );
 
                         for (size_t i = 0; i < stct.memberCount; i++) {
                             DDLMember& member = members[i];
@@ -257,12 +263,14 @@ namespace {
                                 break;
                             case DDL_STRUCT_TYPE: {
                                 os << opt.AddString(proc.ReadStringTmp(
-                                    reinterpret_cast<uintptr_t>(structList[member.externalIndex].name)));
+                                    reinterpret_cast<uintptr_t>(structList[member.externalIndex].name)
+                                ));
                                 break;
                             }
                             case DDL_ENUM_TYPE: {
-                                os << opt.AddString(proc.ReadStringTmp(
-                                    reinterpret_cast<uintptr_t>(enumList[member.externalIndex].name)));
+                                os << opt.AddString(
+                                    proc.ReadStringTmp(reinterpret_cast<uintptr_t>(enumList[member.externalIndex].name))
+                                );
                                 break;
                             }
                             case DDL_PAD_TYPE:
@@ -279,7 +287,8 @@ namespace {
                                 if (member.hashTableIndex >= 0 && member.hashTableIndex < def.enumsCount) {
                                     os << "["
                                        << opt.AddString(proc.ReadStringTmp(
-                                              reinterpret_cast<uintptr_t>(enumList[member.hashTableIndex].name)))
+                                              reinterpret_cast<uintptr_t>(enumList[member.hashTableIndex].name)
+                                          ))
                                        << "]";
                                 } else {
                                     os << "[" << std::dec << (int)member.arraySize << "]";
@@ -327,8 +336,11 @@ namespace {
                             proc.ReadMemoryArray<uint64_t>(reinterpret_cast<uintptr_t>(enm.members), enm.count);
 
                         if (!ok) {
-                            LOG_ERROR("Can't read DDL enum members {} / {}",
-                                      hashutils::ExtractTmpPath("ddl", entry.name), (void*)enm.members);
+                            LOG_ERROR(
+                                "Can't read DDL enum members {} / {}",
+                                hashutils::ExtractTmpPath("ddl", entry.name),
+                                (void*)enm.members
+                            );
                             return false;
                         }
 

@@ -5,9 +5,14 @@ namespace tool::gsc::opcode {
     class OpCodeActsRegistry {
       public:
         static void OpCode() {
-            VmInfo* af1 = RegisterVM(VMI_ACTS_F1, "ACTS VM", "f1", "acts",
-                                     VmFlags::VMF_CALL_NO_PARAMS | VmFlags::VMF_NO_PARAM_FLAGS |
-                                         VmFlags::VMF_HASH_ACTS | VmFlags::VMF_HASH64 | VmFlags::VMF_IW_LIKE);
+            VmInfo* af1 = RegisterVM(
+                VMI_ACTS_F1,
+                "ACTS VM",
+                "f1",
+                "acts",
+                VmFlags::VMF_CALL_NO_PARAMS | VmFlags::VMF_NO_PARAM_FLAGS | VmFlags::VMF_HASH_ACTS |
+                    VmFlags::VMF_HASH64 | VmFlags::VMF_IW_LIKE
+            );
             af1->RegisterVmName("f1");
             af1->AddPlatform(PLATFORM_PC);
             af1->RegisterVMHashOPCode('#', OPCODE_GetHash, 8, [](const char* str) { return hash::Hash64A(str); });
@@ -28,13 +33,19 @@ namespace tool::gsc::opcode {
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_GetResolveFunction, acts::vm::opcodes::OPCODE_GET_FUNCTION);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_GetFunction, acts::vm::opcodes::OPCODE_GET_BUILTIN_FUNCTION);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_ScriptFunctionCall, acts::vm::opcodes::OPCODE_CALL_FUNCTION);
-            af1->RegisterOpCode(PLATFORM_PC, OPCODE_CallBuiltinFunction,
-                                acts::vm::opcodes::OPCODE_CALL_BUILTIN_FUNCTION);
+            af1->RegisterOpCode(
+                PLATFORM_PC,
+                OPCODE_CallBuiltinFunction,
+                acts::vm::opcodes::OPCODE_CALL_BUILTIN_FUNCTION
+            );
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_ScriptMethodCall, acts::vm::opcodes::OPCODE_CALL_METHOD);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_CallBuiltinMethod, acts::vm::opcodes::OPCODE_CALL_BUILTIN_METHOD);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_PreScriptCall, acts::vm::opcodes::OPCODE_PRE_CALL);
-            af1->RegisterOpCode(PLATFORM_PC, OPCODE_IW_RegisterMultipleVariables,
-                                acts::vm::opcodes::OPCODE_REGISTER_VARS);
+            af1->RegisterOpCode(
+                PLATFORM_PC,
+                OPCODE_IW_RegisterMultipleVariables,
+                acts::vm::opcodes::OPCODE_REGISTER_VARS
+            );
 
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_GetFloat, acts::vm::opcodes::OPCODE_GET_FLOAT);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_GetInteger, acts::vm::opcodes::OPCODE_GET_INT);
@@ -67,14 +78,26 @@ namespace tool::gsc::opcode {
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_ShiftRight, acts::vm::opcodes::OPCODE_OP_BIT_SHIFT_RIGHT);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_LessThan, acts::vm::opcodes::OPCODE_OP_LOWER_THAN);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_GreaterThan, acts::vm::opcodes::OPCODE_OP_GREATER_THAN);
-            af1->RegisterOpCode(PLATFORM_PC, OPCODE_LessThanOrEqualTo,
-                                acts::vm::opcodes::OPCODE_OP_LOWER_OR_EQUAL_THAN);
-            af1->RegisterOpCode(PLATFORM_PC, OPCODE_GreaterThanOrEqualTo,
-                                acts::vm::opcodes::OPCODE_OP_GREATER_OR_EQUAL_THAN);
-            af1->RegisterOpCode(PLATFORM_PC, OPCODE_T10_LowerThanOrSuperEqualTo,
-                                acts::vm::opcodes::OPCODE_OP_LOWER_OR_SUPER_EQUAL_THAN);
-            af1->RegisterOpCode(PLATFORM_PC, OPCODE_T10_GreaterThanOrSuperEqualTo,
-                                acts::vm::opcodes::OPCODE_OP_GREATER_OR_SUPER_EQUAL_THAN);
+            af1->RegisterOpCode(
+                PLATFORM_PC,
+                OPCODE_LessThanOrEqualTo,
+                acts::vm::opcodes::OPCODE_OP_LOWER_OR_EQUAL_THAN
+            );
+            af1->RegisterOpCode(
+                PLATFORM_PC,
+                OPCODE_GreaterThanOrEqualTo,
+                acts::vm::opcodes::OPCODE_OP_GREATER_OR_EQUAL_THAN
+            );
+            af1->RegisterOpCode(
+                PLATFORM_PC,
+                OPCODE_T10_LowerThanOrSuperEqualTo,
+                acts::vm::opcodes::OPCODE_OP_LOWER_OR_SUPER_EQUAL_THAN
+            );
+            af1->RegisterOpCode(
+                PLATFORM_PC,
+                OPCODE_T10_GreaterThanOrSuperEqualTo,
+                acts::vm::opcodes::OPCODE_OP_GREATER_OR_SUPER_EQUAL_THAN
+            );
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_Equal, acts::vm::opcodes::OPCODE_OP_EQUAL);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_NotEqual, acts::vm::opcodes::OPCODE_OP_NOT_EQUAL);
             af1->RegisterOpCode(PLATFORM_PC, OPCODE_SuperEqual, acts::vm::opcodes::OPCODE_OP_SUPER_EQUAL);

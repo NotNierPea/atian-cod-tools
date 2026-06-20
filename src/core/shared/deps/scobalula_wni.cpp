@@ -8,8 +8,10 @@
 
 namespace deps::scobalula::wni {
     namespace {
-        void WniRead(core::bytebuffer::FileReader& reader, std::function<void(uint64_t hash, const char* str)>& each,
-                     std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+        void WniRead(
+            core::bytebuffer::FileReader& reader, std::function<void(uint64_t hash, const char* str)>& each,
+            std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex
+        ) {
             if (reader.Read<uint32_t>() != WNI_MAGIC) {
                 throw std::runtime_error("Bad file magic");
             }
@@ -22,8 +24,12 @@ namespace deps::scobalula::wni {
             uint32_t compressedSize = reader.Read<uint32_t>();
             uint32_t decompressedSize = reader.Read<uint32_t>();
 
-            LOG_TRACE("wni: entries: {}, compressedSize: {}, decompressedSize: {}", entries, compressedSize,
-                      decompressedSize);
+            LOG_TRACE(
+                "wni: entries: {}, compressedSize: {}, decompressedSize: {}",
+                entries,
+                compressedSize,
+                decompressedSize
+            );
 
             byte* buff;
             std::unique_ptr<byte[]> compBuffer = std::make_unique<byte[]>(std::max<size_t>(1, compressedSize));
@@ -38,8 +44,13 @@ namespace deps::scobalula::wni {
                 buff = decompBuffer.get();
             }
 
-            if (utils::compress::Decompress2(utils::compress::COMP_LZ4, buff, decompressedSize, compBuffer.get(),
-                                             compressedSize) < 0) {
+            if (utils::compress::Decompress2(
+                    utils::compress::COMP_LZ4,
+                    buff,
+                    decompressedSize,
+                    compBuffer.get(),
+                    compressedSize
+                ) < 0) {
                 throw std::runtime_error("Error with LZ4 decompression, bad file?");
             }
 
@@ -56,8 +67,10 @@ namespace deps::scobalula::wni {
             }
         }
     } // namespace
-    bool ReadWNIFile(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
-                     std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+    bool ReadWNIFile(
+        std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
+        std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex
+    ) {
         std::vector<byte> buff{};
         LOG_DEBUG("Read {}", path.string());
 
@@ -77,8 +90,10 @@ namespace deps::scobalula::wni {
         }
     }
 
-    bool ReadWNIFiles(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
-                      std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+    bool ReadWNIFiles(
+        std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
+        std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex
+    ) {
         std::vector<std::filesystem::path> paths{};
 
         utils::GetFileRecurseExt(path, paths, ".wni\0");
@@ -92,7 +107,9 @@ namespace deps::scobalula::wni {
 
     void LoadHashFile(std::filesystem::path p) {
         ReadWNIFiles(
-            p, [](uint64_t hash, const char* str) { core::hashes::AddPrecomputed(hash, str, false); },
-            core::hashes::AllocHashMemory);
+            p,
+            [](uint64_t hash, const char* str) { core::hashes::AddPrecomputed(hash, str, false); },
+            core::hashes::AllocHashMemory
+        );
     }
 } // namespace deps::scobalula::wni

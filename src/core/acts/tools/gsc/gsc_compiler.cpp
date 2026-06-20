@@ -201,7 +201,8 @@ namespace tool::gsc::compiler {
             LOG_INFO("-c --csc               : Build client script with csc files");
             LOG_INFO("-f --file              : Compile each file inside an independant one");
             LOG_INFO(
-                "--detour [t]           : Set the detour compilation type ('none' / 'acts' / 'gsic') default: 'none'");
+                "--detour [t]           : Set the detour compilation type ('none' / 'acts' / 'gsic') default: 'none'"
+            );
             LOG_INFO("--crc [c]              : Set the crc for the server script");
             LOG_INFO("--crc-client [c]       : Set the crc for the client script");
             LOG_INFO("--name [n]             : Set the name for the server script");
@@ -430,8 +431,10 @@ namespace tool::gsc::compiler {
       public:
         ACTSErrorListener(InputInfo& info) : m_info(info) {}
 
-        void syntaxError(Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
-                         const std::string& msg, std::exception_ptr e) override {
+        void syntaxError(
+            Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
+            const std::string& msg, std::exception_ptr e
+        ) override {
             m_info.container.PrintLineMessage(core::logs::LVL_ERROR, line, charPositionInLine, msg);
         }
     };
@@ -451,8 +454,9 @@ namespace tool::gsc::compiler {
             popt.AddDefine("_SUPPORTS_DETOURS");
         }
         popt.AddDefine(utils::UpperCase(utils::va("_%s", vmInfo->codeName)));
-        popt.AddDefine(utils::MapString(utils::va("_%s", PlatformName(config.platform)),
-                                        [](char c) -> char { return isspace(c) ? '_' : std::toupper(c); }));
+        popt.AddDefine(utils::MapString(utils::va("_%s", PlatformName(config.platform)), [](char c) -> char {
+            return isspace(c) ? '_' : std::toupper(c);
+        }));
 
         if (tool::gsc::opcode::HasOpCode(config.vm, config.platform, OPCODE_T8C_GetLazyFunction)) {
             popt.AddDefine("_SUPPORTS_LAZYLINK");
@@ -464,10 +468,12 @@ namespace tool::gsc::compiler {
             popt.AddDefine("_GSC");
         }
 
-        if (!popt.ApplyPreProcessor(info.container.data,
-                                    [&info](core::logs::loglevel lvl, size_t line, const std::string& message) {
-                                        info.container.PrintLineMessage(lvl, line, 0, message);
-                                    })) {
+        if (!popt.ApplyPreProcessor(
+                info.container.data,
+                [&info](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                    info.container.PrintLineMessage(lvl, line, 0, message);
+                }
+            )) {
             throw std::runtime_error("Error when applying preprocessor on data");
         }
 
@@ -530,9 +536,10 @@ namespace {
     };
 } // namespace
 
-ActsHandle ActsAPIGscCompiler_CreateCompilerContext(ActsAPIGsc_VmMagic vm, ActsAPIGsc_Platform platform,
-                                                    const char* name, bool clientScript,
-                                                    ActsAPIGscCompiler_OptionalConfig* optCfg) {
+ActsHandle ActsAPIGscCompiler_CreateCompilerContext(
+    ActsAPIGsc_VmMagic vm, ActsAPIGsc_Platform platform, const char* name, bool clientScript,
+    ActsAPIGscCompiler_OptionalConfig* optCfg
+) {
     CompilerContext* ctx{ ActsAPIImpl_New<CompilerContext>() };
     ctx->config.platform = (tool::gsc::opcode::Platform)platform;
     ctx->config.vm = (tool::gsc::opcode::VMId)vm;
@@ -562,8 +569,9 @@ void ActsAPIGscCompiler_AddInput(ActsHandle context, const char* file, bool recu
         ctx.input.emplace_back(file);
     }
 }
-ActsStatus ActsAPIGscCompiler_Compile(ActsHandle context,
-                                      void (*writerCallback)(void* ud, const uint8_t* data, size_t len), void* ud) {
+ActsStatus ActsAPIGscCompiler_Compile(
+    ActsHandle context, void (*writerCallback)(void* ud, const uint8_t* data, size_t len), void* ud
+) {
     CompilerContext& ctx{ *(CompilerContext*)context };
     std::vector<byte> data{};
     try {

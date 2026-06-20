@@ -17,8 +17,8 @@
 
 namespace tool::hash::scanner {
 
-    void ScanHashes(const std::vector<std::filesystem::path>& files, std::unordered_set<uint64_t>& hashes,
-                    uint64_t mask) {
+    void
+    ScanHashes(const std::vector<std::filesystem::path>& files, std::unordered_set<uint64_t>& hashes, uint64_t mask) {
         static std::regex pattern{
             "(hash|file|var|function|namespace|event|script|class|_id|x64)[:_]([0-9a-fA-F]{1,16})"
         };
@@ -381,20 +381,34 @@ namespace tool::hash::scanner {
                 if (UseFunc(HASH_SCR_T10))
                     TestHash(::hash::HashT10Scr(suffix, ::hash::HashT10Scr(str, ::hash::HashT10Scr(prefix))), str);
                 if (UseFunc(HASH_SCR_T10_SP))
-                    TestHash(::hash::HashT10ScrSPPost(::hash::HashT10ScrSPPre(
-                                 suffix, ::hash::HashT10ScrSPPre(str, ::hash::HashT10ScrSPPre(prefix)))),
-                             str);
+                    TestHash(
+                        ::hash::HashT10ScrSPPost(
+                            ::hash::HashT10ScrSPPre(
+                                suffix,
+                                ::hash::HashT10ScrSPPre(str, ::hash::HashT10ScrSPPre(prefix))
+                            )
+                        ),
+                        str
+                    );
                 if (UseFunc(HASH_OMNVAR))
-                    TestHash(::hash::HashT10OmnVar(suffix, ::hash::HashT10OmnVar(str, ::hash::HashT10OmnVar(prefix))),
-                             str);
+                    TestHash(
+                        ::hash::HashT10OmnVar(suffix, ::hash::HashT10OmnVar(str, ::hash::HashT10OmnVar(prefix))),
+                        str
+                    );
                 if (UseFunc(HASH_SCR_T89))
-                    TestHash(::hash::HashT89ScrPost(::hash::HashT89ScrPre(
-                                 suffix, ::hash::HashT89ScrPre(str, ::hash::HashT89ScrPre(prefix)))),
-                             str);
+                    TestHash(
+                        ::hash::HashT89ScrPost(
+                            ::hash::HashT89ScrPre(suffix, ::hash::HashT89ScrPre(str, ::hash::HashT89ScrPre(prefix)))
+                        ),
+                        str
+                    );
                 if (UseFunc(HASH_T7))
-                    TestHash(::hash::HashT7Post(
-                                 ::hash::HashT7Pre(suffix, ::hash::HashT7Pre(str, ::hash::HashT7Pre(prefix)))),
-                             str);
+                    TestHash(
+                        ::hash::HashT7Post(
+                            ::hash::HashT7Pre(suffix, ::hash::HashT7Pre(str, ::hash::HashT7Pre(prefix)))
+                        ),
+                        str
+                    );
                 if (UseFunc(HASH_SCR_JUP))
                     TestHash(::hash::HashJupScr(suffix, ::hash::HashJupScr(str, ::hash::HashJupScr(prefix))), str);
                 if (UseFunc(HASH_RES))
@@ -414,8 +428,10 @@ namespace tool::hash::scanner {
                 if (UseFunc(HASH_SCR_T10))
                     TestHash(::hash::HashT10Scr(str, ::hash::HashT10Scr(prefix)), str);
                 if (UseFunc(HASH_SCR_T10_SP))
-                    TestHash(::hash::HashT10ScrSPPost(::hash::HashT10ScrSPPre(str, ::hash::HashT10ScrSPPre(prefix))),
-                             str);
+                    TestHash(
+                        ::hash::HashT10ScrSPPost(::hash::HashT10ScrSPPre(str, ::hash::HashT10ScrSPPre(prefix))),
+                        str
+                    );
                 if (UseFunc(HASH_OMNVAR))
                     TestHash(::hash::HashT10OmnVar(str, ::hash::HashT10OmnVar(prefix)), str);
                 if (UseFunc(HASH_SCR_T89))
@@ -441,8 +457,10 @@ namespace tool::hash::scanner {
                 if (UseFunc(HASH_SCR_T10))
                     TestHash(::hash::HashT10Scr(suffix, ::hash::HashT10Scr(str)), str);
                 if (UseFunc(HASH_SCR_T10_SP))
-                    TestHash(::hash::HashT10ScrSPPost(::hash::HashT10ScrSPPre(suffix, ::hash::HashT10ScrSPPre(str))),
-                             str);
+                    TestHash(
+                        ::hash::HashT10ScrSPPost(::hash::HashT10ScrSPPre(suffix, ::hash::HashT10ScrSPPre(str))),
+                        str
+                    );
                 if (UseFunc(HASH_OMNVAR))
                     TestHash(::hash::HashT10OmnVar(suffix, ::hash::HashT10OmnVar(str)), str);
                 if (UseFunc(HASH_SCR_T89))
@@ -492,25 +510,41 @@ namespace tool::hash::scanner {
             LOG_INFO("Find {} hash(es)", data.hashes.size());
             if (!data.prefix && !data.suffix) {
                 tool::hash::text_expand::GetDynamicAsync<HashData>(
-                    ~0, [](const char* str, HashData* data) { data->TestHashes(str); }, &data, data.dict,
-                    data.dictSize);
+                    ~0,
+                    [](const char* str, HashData* data) { data->TestHashes(str); },
+                    &data,
+                    data.dict,
+                    data.dictSize
+                );
             } else if (data.prefix) {
                 if (data.suffix) {
                     // prefix + suffix
                     tool::hash::text_expand::GetDynamicAsync<HashData>(
-                        ~0, [](const char* str, HashData* data) { data->TestHashes(str, data->prefix, data->suffix); },
-                        &data, data.dict, data.dictSize);
+                        ~0,
+                        [](const char* str, HashData* data) { data->TestHashes(str, data->prefix, data->suffix); },
+                        &data,
+                        data.dict,
+                        data.dictSize
+                    );
                 } else {
                     // prefix only
                     tool::hash::text_expand::GetDynamicAsync<HashData>(
-                        ~0, [](const char* str, HashData* data) { data->TestHashesPref(str, data->prefix); }, &data,
-                        data.dict, data.dictSize);
+                        ~0,
+                        [](const char* str, HashData* data) { data->TestHashesPref(str, data->prefix); },
+                        &data,
+                        data.dict,
+                        data.dictSize
+                    );
                 }
             } else {
                 // suffix only
                 tool::hash::text_expand::GetDynamicAsync<HashData>(
-                    ~0, [](const char* str, HashData* data) { data->TestHashesSuff(str, data->suffix); }, &data,
-                    data.dict, data.dictSize);
+                    ~0,
+                    [](const char* str, HashData* data) { data->TestHashesSuff(str, data->suffix); },
+                    &data,
+                    data.dict,
+                    data.dictSize
+                );
             }
 
             return tool::OK;
@@ -669,48 +703,65 @@ namespace tool::hash::scanner {
                         tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
                             maxLen,
                             [](const char** str, HashDataDict* data) { data->TestHashes<true, true, true>(str); },
-                            dictVec.data(), &data);
+                            dictVec.data(),
+                            &data
+                        );
                     } else {
                         tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
                             maxLen,
                             [](const char** str, HashDataDict* data) { data->TestHashes<true, true, false>(str); },
-                            dictVec.data(), &data);
+                            dictVec.data(),
+                            &data
+                        );
                     }
                 } else if (data.suffix) {
                     if (*data.mid) {
                         tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
                             maxLen,
                             [](const char** str, HashDataDict* data) { data->TestHashes<false, true, true>(str); },
-                            dictVec.data(), &data);
+                            dictVec.data(),
+                            &data
+                        );
                     } else {
                         tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
                             maxLen,
                             [](const char** str, HashDataDict* data) { data->TestHashes<false, true, false>(str); },
-                            dictVec.data(), &data);
+                            dictVec.data(),
+                            &data
+                        );
                     }
                 } else {
                     if (*data.mid) {
                         tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
                             maxLen,
                             [](const char** str, HashDataDict* data) { data->TestHashes<true, false, true>(str); },
-                            dictVec.data(), &data);
+                            dictVec.data(),
+                            &data
+                        );
                     } else {
                         tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
                             maxLen,
                             [](const char** str, HashDataDict* data) { data->TestHashes<true, false, false>(str); },
-                            dictVec.data(), &data);
+                            dictVec.data(),
+                            &data
+                        );
                     }
                 }
             } else {
                 if (*data.mid) {
                     tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
-                        maxLen, [](const char** str, HashDataDict* data) { data->TestHashes<false, false, true>(str); },
-                        dictVec.data(), &data);
+                        maxLen,
+                        [](const char** str, HashDataDict* data) { data->TestHashes<false, false, true>(str); },
+                        dictVec.data(),
+                        &data
+                    );
                 } else {
                     tool::hash::text_expand::GetDynamicAsyncDict<HashDataDict>(
                         maxLen,
                         [](const char** str, HashDataDict* data) { data->TestHashes<false, false, false>(str); },
-                        dictVec.data(), &data);
+                        dictVec.data(),
+                        &data
+                    );
                 }
             }
 
@@ -764,8 +815,13 @@ namespace tool::hash::scanner {
                 c = true;
             }
             if (ImGui::Button("Open output file...")) {
-                if (tool::nui::OpenFile(L"Output file", L"Csv file (.csv)\0*.csv\0All\0*.*\0", outPath, sizeof(outPath),
-                                        OFN_PATHMUSTEXIST)) {
+                if (tool::nui::OpenFile(
+                        L"Output file",
+                        L"Csv file (.csv)\0*.csv\0All\0*.*\0",
+                        outPath,
+                        sizeof(outPath),
+                        OFN_PATHMUSTEXIST
+                    )) {
                     core::config::SetString("hash.scanner.output", outPath);
                     c = true;
                 }
@@ -776,8 +832,13 @@ namespace tool::hash::scanner {
                 c = true;
             }
             if (ImGui::Button("Open dictionary file...")) {
-                if (tool::nui::OpenFile(L"Dictionary file", L"Text file (.txt)\0*.txt\0All\0*.*\0", dictPath,
-                                        sizeof(dictPath), OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST)) {
+                if (tool::nui::OpenFile(
+                        L"Dictionary file",
+                        L"Text file (.txt)\0*.txt\0All\0*.*\0",
+                        dictPath,
+                        sizeof(dictPath),
+                        OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST
+                    )) {
                     core::config::SetString("hash.scanner.dict", dictPath);
                     c = true;
                 }
@@ -862,7 +923,9 @@ namespace tool::hash::scanner {
                                     // todo: check h
                                 }
                             },
-                            dictVec.data(), nullptr);
+                            dictVec.data(),
+                            nullptr
+                        );
                     }
                 }
 
@@ -909,11 +972,15 @@ namespace tool::hash::scanner {
 
             // read known files (todo: add acef option)
             if (!deps::scobalula::wni::ReadWNIFiles(
-                    database, [&strings](uint64_t hash, const char* str) { strings[hash] = str; },
-                    [&memory](size_t len) -> void* { return memory.Alloc(len); }) ||
+                    database,
+                    [&strings](uint64_t hash, const char* str) { strings[hash] = str; },
+                    [&memory](size_t len) -> void* { return memory.Alloc(len); }
+                ) ||
                 !deps::dzporter::cdb::ReadCDBFiles(
-                    database, [&strings](uint64_t hash, const char* str) { strings[hash] = str; },
-                    [&memory](size_t len) -> void* { return memory.Alloc(len); })) {
+                    database,
+                    [&strings](uint64_t hash, const char* str) { strings[hash] = str; },
+                    [&memory](size_t len) -> void* { return memory.Alloc(len); }
+                )) {
                 LOG_ERROR("Error reading database {}", database.string());
                 return tool::BASIC_ERROR;
             }
@@ -1017,13 +1084,17 @@ namespace tool::hash::scanner {
 
         ADD_TOOL(hashscan, "hash", " [dir] [output]", "scan hashes in a directory", hashscan);
         ADD_TOOL(scanlookup, "hash", " [dir] [output]", "scan hashes in a directory with lookup", scanlookup);
-        ADD_TOOL(hashbrute, "hash", " [dir] [output] (prefix) (suffix)", "brute search hashes in a directory",
-                 hashbrute);
-        ADD_TOOL(hashbrutedict, "hash",
-                 " [dir] [output] [algorithm] [dict] (prefix=) (suffix=) (middle=_) (count=infinity)",
-                 "brute search hashes in a directory with dictionary", hashbrutedict);
-        ADD_TOOL(hashbrutedb, "hash", " [dir] [output] (type) (database)",
-                 "brute search hashes in a directory with database", hashbrutedb);
+        ADD_TOOL(
+            hashbrute, "hash", " [dir] [output] (prefix) (suffix)", "brute search hashes in a directory", hashbrute
+        );
+        ADD_TOOL(
+            hashbrutedict, "hash", " [dir] [output] [algorithm] [dict] (prefix=) (suffix=) (middle=_) (count=infinity)",
+            "brute search hashes in a directory with dictionary", hashbrutedict
+        );
+        ADD_TOOL(
+            hashbrutedb, "hash", " [dir] [output] (type) (database)",
+            "brute search hashes in a directory with database", hashbrutedb
+        );
         ADD_TOOL(strscan, "hash", " [dir] [output]", "brute search hashes in a directory with dictionary", strscan);
         ADD_TOOL(strmerge, "hash", " [files]+ [output]", "merge string files", strmerge);
         ADD_TOOL(kvphashscan, "hash", " [files]+ [output]", "kvphashscan", kvphashscan);

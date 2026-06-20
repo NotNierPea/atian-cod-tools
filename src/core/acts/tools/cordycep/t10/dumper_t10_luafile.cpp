@@ -64,8 +64,13 @@ namespace {
                         continue; // can't read buffer data
                     }
 
-                    int r{ utils::compress::Decompress(utils::compress::COMP_ZLIB, luaFileDecompressed,
-                                                       luaFileCompressed.data(), len, 1.5F) };
+                    int r{ utils::compress::Decompress(
+                        utils::compress::COMP_ZLIB,
+                        luaFileDecompressed,
+                        luaFileCompressed.data(),
+                        len,
+                        1.5F
+                    ) };
                     if (r >= 0) {
                         if (!utils::WriteFile(loc, luaFileDecompressed)) {
                             LOG_ERROR("Can't write file {}", loc.string());
@@ -107,8 +112,10 @@ namespace {
             static_assert(sizeof(LuaFile) == 0x60);
 
             if (asset.HeaderSize != sizeof(LuaFile)) {
-                LOG_ERROR("INVALID LUAFILE HEADER SIZE: 0x{:x}, use --guessHeader to switch the header guesser",
-                          asset.HeaderSize);
+                LOG_ERROR(
+                    "INVALID LUAFILE HEADER SIZE: 0x{:x}, use --guessHeader to switch the header guesser",
+                    asset.HeaderSize
+                );
                 return false;
             }
 
@@ -134,15 +141,17 @@ namespace {
             if (opt.header) {
                 LOG_INFO("header buff {}", (void*)header.buffer);
                 if (header.unk10_count) {
-                    auto arr{ proc.ReadMemoryArrayEx<uint64_t>(reinterpret_cast<uintptr_t>(header.unk10),
-                                                               header.unk10_count) };
+                    auto arr{
+                        proc.ReadMemoryArrayEx<uint64_t>(reinterpret_cast<uintptr_t>(header.unk10), header.unk10_count)
+                    };
                     for (size_t i = 0; i < header.unk10_count; i++) {
                         LOG_INFO("unk10[{}] = {}", i, hashutils::ExtractTmp("hash", arr[i]));
                     }
                 }
                 if (header.unk28_count) {
-                    auto arr{ proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(header.unk28),
-                                                                header.unk28_count) };
+                    auto arr{
+                        proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(header.unk28), header.unk28_count)
+                    };
                     LuaFile dep;
                     for (size_t i = 0; i < header.unk28_count; i++) {
                         if (!proc.ReadMemory(&dep, arr[i], sizeof(dep))) {

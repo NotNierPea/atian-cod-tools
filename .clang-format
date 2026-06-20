@@ -71,7 +71,7 @@ AlignTrailingComments:
   AlignPPAndNotPP: true
   Kind:            Always
   OverEmptyLines:  0
-AllowAllArgumentsOnNextLine: true
+AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowBreakBeforeNoexceptSpecifier: Never
 AllowBreakBeforeQtProperty: false
@@ -89,8 +89,8 @@ AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
 AttributeMacros:
   - __capability
-BinPackArguments: true
-BinPackLongBracedList: true
+BinPackArguments: false
+BinPackLongBracedList: false
 BinPackParameters: BinPack
 BitFieldColonSpacing: Both
 BracedInitializerIndentWidth: -1
@@ -117,7 +117,7 @@ BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Leave
 BreakAfterJavaFieldAnnotations: false
 BreakAfterOpenBracketBracedList: false
-BreakAfterOpenBracketFunction: false
+BreakAfterOpenBracketFunction: true
 BreakAfterOpenBracketIf: false
 BreakAfterOpenBracketLoop: false
 BreakAfterOpenBracketSwitch: false
@@ -125,7 +125,7 @@ BreakAfterReturnType: None
 BreakArrays:     true
 BreakBeforeBinaryOperators: None
 BreakBeforeCloseBracketBracedList: false
-BreakBeforeCloseBracketFunction: false
+BreakBeforeCloseBracketFunction: true
 BreakBeforeCloseBracketIf: false
 BreakBeforeCloseBracketLoop: false
 BreakBeforeCloseBracketSwitch: false

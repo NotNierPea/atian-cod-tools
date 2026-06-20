@@ -37,8 +37,11 @@ namespace platform {
 
     void* GetModuleOfAddress(const void* address) {
         HMODULE handle{};
-        GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                           reinterpret_cast<LPCSTR>(address), &handle);
+        GetModuleHandleExA(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCSTR>(address),
+            &handle
+        );
         return handle;
     }
 
@@ -73,7 +76,8 @@ namespace platform {
 
         auto* base = BasePtr();
         PIMAGE_IMPORT_DESCRIPTOR desc{ reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(
-            base + PImageOptHeader()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress) };
+            base + PImageOptHeader()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress
+        ) };
 
         for (; desc->Name; desc++) {
             if (_strcmpi((const char*)&base[desc->Name], lib) != 0) {
@@ -172,7 +176,8 @@ namespace platform {
 
             DWORD offset{};
             for (auto *sect = IMAGE_FIRST_SECTION(ntHeader), *end = sect + ntHeader->FileHeader.NumberOfSections;
-                 sect < end; sect++) {
+                 sect < end;
+                 sect++) {
                 if (debugDirectory.VirtualAddress >= sect->VirtualAddress &&
                     debugDirectory.VirtualAddress < sect->VirtualAddress + sect->Misc.VirtualSize) {
                     offset = debugDirectory.VirtualAddress - (sect->VirtualAddress - sect->PointerToRawData);
@@ -238,8 +243,9 @@ namespace platform {
             "oo2core_8_win64.dll",
             "ntdll.dll",
         };
-        return std::find_if(std::begin(safeLibs), std::end(safeLibs),
-                            [name](const char* lib) { return !_strcmpi(lib, name); }) != std::end(safeLibs);
+        return std::find_if(std::begin(safeLibs), std::end(safeLibs), [name](const char* lib) {
+                   return !_strcmpi(lib, name);
+               }) != std::end(safeLibs);
     }
 
     void PatchIAT(hook::library::Library& lib) {
@@ -337,8 +343,14 @@ namespace platform {
 
             void* Allocate(size_t size) {
                 if (!CanAllocate(size)) {
-                    throw std::exception(utils::va(
-                        actssec("Can't allocate into this container 0x%llx + 0x%llx > 0x%llx"), used, size, capacity));
+                    throw std::exception(
+                        utils::va(
+                            actssec("Can't allocate into this container 0x%llx + 0x%llx > 0x%llx"),
+                            used,
+                            size,
+                            capacity
+                        )
+                    );
                 }
 
                 void* ptr = (byte*)container + used;
@@ -440,8 +452,14 @@ namespace platform {
         }
         DWORD pageSize = GetSysInfo().dwPageSize;
         if (pageSize < size) {
-            throw std::exception(utils::va(actssec("Can't allocate near %p of size 0x%llx: too big (0x%llx max)"),
-                                           location, size, GetSysInfo().dwPageSize));
+            throw std::exception(
+                utils::va(
+                    actssec("Can't allocate near %p of size 0x%llx: too big (0x%llx max)"),
+                    location,
+                    size,
+                    GetSysInfo().dwPageSize
+                )
+            );
         }
 
         void* pool = AllocateNearPage(location);
@@ -611,13 +629,24 @@ namespace platform {
             uintptr_t relativeLocation;
             const char* moduleName;
 
-            if (!hook::error::GetLocInfo(ExceptionInfo->ExceptionRecord->ExceptionAddress, relativeLocation,
-                                         moduleName)) {
-                LOG_ERROR("Error code: 0x{:x} at {}", ExceptionInfo->ExceptionRecord->ExceptionCode,
-                          ExceptionInfo->ExceptionRecord->ExceptionAddress);
+            if (!hook::error::GetLocInfo(
+                    ExceptionInfo->ExceptionRecord->ExceptionAddress,
+                    relativeLocation,
+                    moduleName
+                )) {
+                LOG_ERROR(
+                    "Error code: 0x{:x} at {}",
+                    ExceptionInfo->ExceptionRecord->ExceptionCode,
+                    ExceptionInfo->ExceptionRecord->ExceptionAddress
+                );
             } else {
-                LOG_ERROR("Error code: 0x{:x} at {} ({} 0x{:x})", ExceptionInfo->ExceptionRecord->ExceptionCode,
-                          ExceptionInfo->ExceptionRecord->ExceptionAddress, moduleName, relativeLocation);
+                LOG_ERROR(
+                    "Error code: 0x{:x} at {} ({} 0x{:x})",
+                    ExceptionInfo->ExceptionRecord->ExceptionCode,
+                    ExceptionInfo->ExceptionRecord->ExceptionAddress,
+                    moduleName,
+                    relativeLocation
+                );
             }
             LOG_ERROR("Error type: {}", ExceptionName(ExceptionInfo->ExceptionRecord->ExceptionCode));
             DWORD threadId = GetCurrentThreadId();
@@ -626,16 +655,20 @@ namespace platform {
             // error info
             switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {
             case EXCEPTION_ACCESS_VIOLATION: {
-                LOG_ERROR("Error info: invalid {} at 0x{:x}",
-                          !ExceptionInfo->ExceptionRecord->ExceptionInformation[0] ? "read" : "write",
-                          ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
+                LOG_ERROR(
+                    "Error info: invalid {} at 0x{:x}",
+                    !ExceptionInfo->ExceptionRecord->ExceptionInformation[0] ? "read" : "write",
+                    ExceptionInfo->ExceptionRecord->ExceptionInformation[1]
+                );
                 break;
             }
             case EXCEPTION_IN_PAGE_ERROR: {
-                LOG_ERROR("Error info: invalid {} at 0x{:x} status: 0x{:x}",
-                          !ExceptionInfo->ExceptionRecord->ExceptionInformation[0] ? "read" : "write",
-                          ExceptionInfo->ExceptionRecord->ExceptionInformation[1],
-                          ExceptionInfo->ExceptionRecord->ExceptionInformation[2]);
+                LOG_ERROR(
+                    "Error info: invalid {} at 0x{:x} status: 0x{:x}",
+                    !ExceptionInfo->ExceptionRecord->ExceptionInformation[0] ? "read" : "write",
+                    ExceptionInfo->ExceptionRecord->ExceptionInformation[1],
+                    ExceptionInfo->ExceptionRecord->ExceptionInformation[2]
+                );
                 break;
             }
             default: {
@@ -702,10 +735,15 @@ namespace platform {
                     PrintRegister(utils::va("%s-low", name), val.Low);
                 };
 
-                LOG_ERROR("DebugRegisters: 0:0x{:x} 1:0x{:x} 2:0x{:x} 3:0x{:x} 6:0x{:x} 7:0x{:x}",
-                          ExceptionInfo->ContextRecord->Dr0, ExceptionInfo->ContextRecord->Dr1,
-                          ExceptionInfo->ContextRecord->Dr2, ExceptionInfo->ContextRecord->Dr3,
-                          ExceptionInfo->ContextRecord->Dr6, ExceptionInfo->ContextRecord->Dr7);
+                LOG_ERROR(
+                    "DebugRegisters: 0:0x{:x} 1:0x{:x} 2:0x{:x} 3:0x{:x} 6:0x{:x} 7:0x{:x}",
+                    ExceptionInfo->ContextRecord->Dr0,
+                    ExceptionInfo->ContextRecord->Dr1,
+                    ExceptionInfo->ContextRecord->Dr2,
+                    ExceptionInfo->ContextRecord->Dr3,
+                    ExceptionInfo->ContextRecord->Dr6,
+                    ExceptionInfo->ContextRecord->Dr7
+                );
                 PrintRegister("rax", ExceptionInfo->ContextRecord->Rax);
                 PrintRegister("rbx", ExceptionInfo->ContextRecord->Rbx);
                 PrintRegister("rcx", ExceptionInfo->ContextRecord->Rcx);
@@ -747,8 +785,11 @@ namespace platform {
                 return;
             }
 
-            LOG_TRACE("Tried to insert hook from {} / {}", PtrInfo(lpTopLevelExceptionFilter),
-                      PtrInfo(_ReturnAddress()));
+            LOG_TRACE(
+                "Tried to insert hook from {} / {}",
+                PtrInfo(lpTopLevelExceptionFilter),
+                PtrInfo(_ReturnAddress())
+            );
             hook::error::DumpStackTraceFrom(core::logs::LVL_TRACE);
         }
 

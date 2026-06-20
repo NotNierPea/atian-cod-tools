@@ -20,8 +20,9 @@ void ActsAPIConfig_SetInteger(const char* path, int64_t value) { core::config::S
 void ActsAPIConfig_SetDouble(const char* path, double value) { core::config::SetDouble(path, value); }
 void ActsAPIConfig_SetString(const char* path, const char* value) { core::config::SetString(path, value); }
 void ActsAPIConfig_SetBool(const char* path, bool value) { core::config::SetBool(path, value); }
-int64_t ActsAPIConfig_GetEnum(const char* path, ActsAPIConfig_ConfigEnumData* data, size_t dataCount,
-                              int64_t defaultEnumValue) {
+int64_t ActsAPIConfig_GetEnum(
+    const char* path, ActsAPIConfig_ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue
+) {
     return core::config::GetEnum(path, (core::config::ConfigEnumData*)data, dataCount, defaultEnumValue);
 }
 void ActsAPIConfig_SetEnum(const char* path, int64_t enumValue, ActsAPIConfig_ConfigEnumData* data, size_t dataCount) {

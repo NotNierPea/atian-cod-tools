@@ -40,9 +40,14 @@ namespace core::plugins {
 
             if (minPluginVersion > core::actsinfo::BUILD_VERSION_ID ||
                 maxPluginVersion < core::actsinfo::BUILD_VERSION_ID) {
-                LOG_ERROR("Version mismatch in plugin {}: plugin version is 0x{:x}-0x{:x}, but ACTS common version is "
-                          "0x{:x}!",
-                          plugin.string(), minPluginVersion, maxPluginVersion, core::actsinfo::BUILD_VERSION_ID);
+                LOG_ERROR(
+                    "Version mismatch in plugin {}: plugin version is 0x{:x}-0x{:x}, but ACTS common version is "
+                    "0x{:x}!",
+                    plugin.string(),
+                    minPluginVersion,
+                    maxPluginVersion,
+                    core::actsinfo::BUILD_VERSION_ID
+                );
                 lib.Free();
                 continue;
             }
@@ -51,9 +56,13 @@ namespace core::plugins {
             // if the plugin wants to use ABI unsafe functions, check for MSVC version mismatch
             GetActsVersion pGetActsMSVCVersion{ lib.GetProc<GetActsVersion>("GetActsMSVCVersion") };
             if (pGetActsMSVCVersion && pGetActsMSVCVersion() != _MSC_VER) {
-                LOG_ERROR("MSVC version mismatch in plugin {}: plugin MSVC version is 0x{:x}, but ACTS common MSVC "
-                          "version is 0x{:x}!",
-                          plugin.string(), pGetActsMSVCVersion(), _MSC_VER);
+                LOG_ERROR(
+                    "MSVC version mismatch in plugin {}: plugin MSVC version is 0x{:x}, but ACTS common MSVC "
+                    "version is 0x{:x}!",
+                    plugin.string(),
+                    pGetActsMSVCVersion(),
+                    _MSC_VER
+                );
                 lib.Free();
                 continue;
             }

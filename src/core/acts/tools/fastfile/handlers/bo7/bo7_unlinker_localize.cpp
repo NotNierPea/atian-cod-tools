@@ -122,7 +122,8 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_LOCALIZE,
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(),
+                                                                SatHashAssetType::SATH_ASSET_LOCALIZE,
                                                                 sizeof(Localize) };
     utils::MapAdder<ImplWorkerDev, SatHashAssetType, Worker> impldev{
         GetWorkers(), SatHashAssetType::SATH_ASSET_LOCALIZEASSETENTRYDEV, sizeof(Localize)

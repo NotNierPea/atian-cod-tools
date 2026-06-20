@@ -124,8 +124,13 @@ namespace fastfile::handlers::bo4::weapon {
 
                         json.BeginArray();
                         for (size_t j = 0; j < count; j++) {
-                            json.WriteValueString(std::format("{} {}", asset->accuracyGraphKnots[i][j][0],
-                                                              asset->accuracyGraphKnots[i][j][1]));
+                            json.WriteValueString(
+                                std::format(
+                                    "{} {}",
+                                    asset->accuracyGraphKnots[i][j][0],
+                                    asset->accuracyGraphKnots[i][j][1]
+                                )
+                            );
                         }
                         json.EndArray();
                     }
@@ -267,20 +272,37 @@ namespace fastfile::handlers::bo4::weapon {
                 json.WriteFieldValueXAsset("cacWeaponXCam", ASSET_TYPE_XCAM, asset->cacWeaponXCam);
                 json.WriteFieldValueXAsset("cacAttachmentsXCam", ASSET_TYPE_XCAM, asset->cacAttachmentsXCam);
                 json.WriteFieldValueXAsset("weaponIconXCam", ASSET_TYPE_XCAM, asset->weaponIconXCam);
-                json.WriteFieldValueXAssetArray("attachments", ASSET_TYPE_ATTACHMENT,
-                                                ACTS_ARRAYSIZE(*asset->attachments), asset->attachments);
-                json.WriteFieldValueXAssetArray("attachmentUniques", ASSET_TYPE_ATTACHMENT_UNIQUE,
-                                                ACTS_ARRAYSIZE(*asset->attachmentUniques), asset->attachmentUniques);
+                json.WriteFieldValueXAssetArray(
+                    "attachments",
+                    ASSET_TYPE_ATTACHMENT,
+                    ACTS_ARRAYSIZE(*asset->attachments),
+                    asset->attachments
+                );
+                json.WriteFieldValueXAssetArray(
+                    "attachmentUniques",
+                    ASSET_TYPE_ATTACHMENT_UNIQUE,
+                    ACTS_ARRAYSIZE(*asset->attachmentUniques),
+                    asset->attachmentUniques
+                );
                 json.WriteFieldValueXAsset("xanim_a68", ASSET_TYPE_XANIM, asset->unka68);
-                json.WriteFieldValueXAsset("sharedWeaponSounds", ASSET_TYPE_SHAREDWEAPONSOUNDS,
-                                           asset->sharedWeaponSounds);
+                json.WriteFieldValueXAsset(
+                    "sharedWeaponSounds",
+                    ASSET_TYPE_SHAREDWEAPONSOUNDS,
+                    asset->sharedWeaponSounds
+                );
                 json.WriteFieldValueXAsset("ballisticDesc", ASSET_TYPE_BALLISTICDESC, asset->ballisticDesc);
                 json.WriteFieldValueXAsset("weaponHeadObjective", ASSET_TYPE_OBJECTIVE, asset->weaponHeadObjective);
                 json.WriteFieldValueXAsset("crateObjective", ASSET_TYPE_OBJECTIVE, asset->crateObjective);
-                json.WriteFieldValueXAsset("flameTableFirstPerson", ASSET_TYPE_FLAMETABLE,
-                                           asset->flameTableFirstPerson);
-                json.WriteFieldValueXAsset("flameTableThirdPerson", ASSET_TYPE_FLAMETABLE,
-                                           asset->flameTableThirdPerson);
+                json.WriteFieldValueXAsset(
+                    "flameTableFirstPerson",
+                    ASSET_TYPE_FLAMETABLE,
+                    asset->flameTableFirstPerson
+                );
+                json.WriteFieldValueXAsset(
+                    "flameTableThirdPerson",
+                    ASSET_TYPE_FLAMETABLE,
+                    asset->flameTableThirdPerson
+                );
 
                 if (asset->gestureTables && **asset->gestureTables) {
                     json.WriteFieldNameString("gestureTables");
@@ -336,13 +358,25 @@ namespace fastfile::handlers::bo4::weapon {
                 json.WriteFieldValueXAsset("projectileModelEnemy", ASSET_TYPE_XMODEL, asset->projectileModelEnemy);
                 json.WriteFieldValueXAsset(0x4bcd08b0, ASSET_TYPE_XMODEL, asset->var_4bcd08b0);
                 json.WriteFieldValueXAssetArray("viewmodel", ASSET_TYPE_XMODEL, asset->var_5b73038c, asset->viewmodel);
-                json.WriteFieldValueXAssetArray("frontendmodel", ASSET_TYPE_XMODEL, asset->var_5b73038c,
-                                                asset->frontendmodel);
-                json.WriteFieldValueXAssetArray("worldModel", ASSET_TYPE_XMODEL, asset->var_5b73038c,
-                                                asset->worldModel);
+                json.WriteFieldValueXAssetArray(
+                    "frontendmodel",
+                    ASSET_TYPE_XMODEL,
+                    asset->var_5b73038c,
+                    asset->frontendmodel
+                );
+                json.WriteFieldValueXAssetArray(
+                    "worldModel",
+                    ASSET_TYPE_XMODEL,
+                    asset->var_5b73038c,
+                    asset->worldModel
+                );
                 json.WriteFieldValueXAssetArray("models_cd0", ASSET_TYPE_XMODEL, asset->var_5b73038c, asset->unkcd0);
-                json.WriteFieldValueXAssetArray("stowedmodel", ASSET_TYPE_XMODEL, asset->var_5b73038c,
-                                                asset->stowedmodel);
+                json.WriteFieldValueXAssetArray(
+                    "stowedmodel",
+                    ASSET_TYPE_XMODEL,
+                    asset->var_5b73038c,
+                    asset->stowedmodel
+                );
                 json.WriteFieldValueXAssetArray("clipmodel", ASSET_TYPE_XMODEL, asset->var_5b73038c, asset->clipmodel);
 
                 json.WriteFieldValueXAsset("gadgetIconAvailable", ASSET_TYPE_IMAGE, asset->gadgetIconAvailable);
@@ -427,9 +461,12 @@ namespace fastfile::handlers::bo4::weapon {
                 json.WriteFieldValueXAsset("fx_f08", ASSET_TYPE_FX, asset->unkf08);
                 json.WriteFieldValueXAsset("fx_f10", ASSET_TYPE_FX, asset->unkf10);
                 json.WriteFieldValueXAsset("fx_f18", ASSET_TYPE_FX, asset->unkf18);
-                json.WriteFieldValueXAssetArray("underwaterExplosionSurfaceFX", ASSET_TYPE_FX,
-                                                ACTS_ARRAYSIZE(asset->underwaterExplosionSurfaceFX),
-                                                asset->underwaterExplosionSurfaceFX);
+                json.WriteFieldValueXAssetArray(
+                    "underwaterExplosionSurfaceFX",
+                    ASSET_TYPE_FX,
+                    ACTS_ARRAYSIZE(asset->underwaterExplosionSurfaceFX),
+                    asset->underwaterExplosionSurfaceFX
+                );
                 json.WriteFieldValueXAsset("fx_f38", ASSET_TYPE_FX, asset->unkf38);
                 json.WriteFieldValueXAsset("fx_f40", ASSET_TYPE_FX, asset->unkf40);
                 json.WriteFieldValueXAsset("fx_f48", ASSET_TYPE_FX, asset->unkf48);
@@ -444,14 +481,25 @@ namespace fastfile::handlers::bo4::weapon {
                 json.WriteFieldValueXAsset("fx_fa0", ASSET_TYPE_FX, asset->unkfa0);
 
                 json.WriteFieldValueXAsset("viewPersistentEffectSet", ASSET_TYPE_TAGFX, asset->viewPersistentEffectSet);
-                json.WriteFieldValueXAsset("worldPersistentEffectSet", ASSET_TYPE_TAGFX,
-                                           asset->worldPersistentEffectSet);
+                json.WriteFieldValueXAsset(
+                    "worldPersistentEffectSet",
+                    ASSET_TYPE_TAGFX,
+                    asset->worldPersistentEffectSet
+                );
                 json.WriteFieldValueXAsset("enemyDeathFxSet", ASSET_TYPE_TAGFX, asset->enemyDeathFxSet);
                 json.WriteFieldValueXAsset("tagFXSet930", ASSET_TYPE_TAGFX, asset->tagFXSet930);
-                json.WriteFieldValueXAssetArray("tagFXSetFirstPerson", ASSET_TYPE_TAGFX,
-                                                ACTS_ARRAYSIZE(asset->tagFXSetFirstPerson), asset->tagFXSetFirstPerson);
-                json.WriteFieldValueXAssetArray("tagFXSetThirdPerson", ASSET_TYPE_TAGFX,
-                                                ACTS_ARRAYSIZE(asset->tagFXSetThirdPerson), asset->tagFXSetThirdPerson);
+                json.WriteFieldValueXAssetArray(
+                    "tagFXSetFirstPerson",
+                    ASSET_TYPE_TAGFX,
+                    ACTS_ARRAYSIZE(asset->tagFXSetFirstPerson),
+                    asset->tagFXSetFirstPerson
+                );
+                json.WriteFieldValueXAssetArray(
+                    "tagFXSetThirdPerson",
+                    ASSET_TYPE_TAGFX,
+                    ACTS_ARRAYSIZE(asset->tagFXSetThirdPerson),
+                    asset->tagFXSetThirdPerson
+                );
                 json.WriteFieldValueXAsset(0x96850284, ASSET_TYPE_TAGFX, asset->var_96850284);
                 json.WriteFieldValueXAsset(0x26f68e75, ASSET_TYPE_TAGFX, asset->var_26f68e75);
 

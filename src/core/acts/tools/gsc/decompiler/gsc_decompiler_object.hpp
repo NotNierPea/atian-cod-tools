@@ -175,13 +175,18 @@ namespace tool::gsc {
         class ASMContext;
     } // namespace opcode
 
-    void DumpFunctionHeader(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx,
-                            tool::gsc::opcode::ASMContext& asmctx, int padding, const char* forceName,
-                            const char** currentAnimTree);
-    int DumpAsm(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx,
-                tool::gsc::opcode::ASMContext& asmctx);
-    DumpVTableAnswer DumpVTable(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile,
-                                T8GSCOBJContext& objctx, opcode::ASMContext& ctx, opcode::DecompContext& dctxt);
+    void DumpFunctionHeader(
+        GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx,
+        tool::gsc::opcode::ASMContext& asmctx, int padding, const char* forceName, const char** currentAnimTree
+    );
+    int DumpAsm(
+        GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& ctx,
+        tool::gsc::opcode::ASMContext& asmctx
+    );
+    DumpVTableAnswer DumpVTable(
+        GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx,
+        opcode::ASMContext& ctx, opcode::DecompContext& dctxt
+    );
 
     enum GscObjHandlerBuildFlags : uint64_t {
         GOHF_GLOBAL = 0x1,

@@ -4,18 +4,28 @@ namespace tool::gsc::opcode {
     class OpCodeT601Registry {
       public:
         static void OpCode() {
-            VmInfo* vt = RegisterVM(VMI_T6_01, "Call of Duty: Black ops 2 (01)", "t6", "bo2_01",
-                                    VmFlags::VMF_CLIENT_VM | VmFlags::VMF_NO_FILE_NAMESPACE | VmFlags::VMF_ALIGN |
-                                        VmFlags::VMF_ANIMTREE_T7 | VmFlags::VMF_HASH_T7 | VmFlags::VMF_ISTRING |
-                                        VmFlags::VMF_UNIQUE_HASH); // | VmFlags::VMF_CALL_NO_PARAMS
+            VmInfo* vt = RegisterVM(
+                VMI_T6_01,
+                "Call of Duty: Black ops 2 (01)",
+                "t6",
+                "bo2_01",
+                VmFlags::VMF_CLIENT_VM | VmFlags::VMF_NO_FILE_NAMESPACE | VmFlags::VMF_ALIGN |
+                    VmFlags::VMF_ANIMTREE_T7 | VmFlags::VMF_HASH_T7 | VmFlags::VMF_ISTRING | VmFlags::VMF_UNIQUE_HASH
+            ); // | VmFlags::VMF_CALL_NO_PARAMS
             vt->RegisterVmName("t6_01", "blackops2_01");
             vt->AddPlatform(PLATFORM_XBOX);
             vt->SetPlatformBigEndian(PLATFORM_XBOX);
             vt->RegisterVMGlobalVariable("level", OPCODE_IW_GetLevel);
             vt->RegisterVMGlobalVariable("game", OPCODE_IW_GetGame);
             vt->RegisterVMGlobalVariable("anim", OPCODE_IW_GetAnim);
-            vt->RegisterVMOperatorFunction("isdefined", "isdefined(object) -> bool", OPCODE_IsDefined,
-                                           VPFD_RETURN_VALUE, 1, 1);
+            vt->RegisterVMOperatorFunction(
+                "isdefined",
+                "isdefined(object) -> bool",
+                OPCODE_IsDefined,
+                VPFD_RETURN_VALUE,
+                1,
+                1
+            );
             // vt->RegisterVMOperatorFunction("notify", "<caller> notify(event, param*)", OPCODE_Notify, VPFD_SELF_PARAM
             // | VPFD_USE_PRE_SCRIPT_CALL, 1); vt->RegisterVMOperatorFunction("endon", "<caller> endon(event)",
             // OPCODE_IW_SingleEndon, VPFD_SELF_PARAM, 1, 1); vt->RegisterVMOperatorFunction("vectorscale",

@@ -11,10 +11,11 @@ namespace tool::gsc {
     class T1116GSCOBJHandler : public GSCOBJHandler {
       public:
         T1116GSCOBJHandler(byte* file, size_t fileSize)
-            : GSCOBJHandler(file, fileSize,
-                            GOHF_ANIMTREE | GOHF_ANIMTREE_DOUBLE | GOHF_FOREACH_TYPE_JUP | GOHF_NOTIFY_CRC_XHASH |
-                                GOHF_SUPPORT_EV_HANDLER | GOHF_SUPPORT_VAR_VA | GOHF_VAR_VA_COUNT |
-                                GOHF_SWITCH_TYPE_IW) {}
+            : GSCOBJHandler(
+                  file, fileSize,
+                  GOHF_ANIMTREE | GOHF_ANIMTREE_DOUBLE | GOHF_FOREACH_TYPE_JUP | GOHF_NOTIFY_CRC_XHASH |
+                      GOHF_SUPPORT_EV_HANDLER | GOHF_SUPPORT_VAR_VA | GOHF_VAR_VA_COUNT | GOHF_SWITCH_TYPE_IW
+              ) {}
 
         void DumpHeaderInternal(std::ostream& asmout, const GscInfoOption& opt) override {
             GscObj24* data = Ptr<GscObj24>();

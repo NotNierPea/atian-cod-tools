@@ -157,8 +157,13 @@ namespace {
 
         auto bufferDecomp{ std::make_unique<byte[]>(header->len) };
 
-        int r{ utils::compress::Decompress2(utils::compress::COMP_ZLIB, bufferDecomp.get(), header->len, bufferComp,
-                                            header->compressedLen) };
+        int r{ utils::compress::Decompress2(
+            utils::compress::COMP_ZLIB,
+            bufferDecomp.get(),
+            header->len,
+            bufferComp,
+            header->compressedLen
+        ) };
 
         if (r <= 0) {
             LOG_ERROR("Can't decompress data {}", utils::compress::DecompressResultName(r));
@@ -193,13 +198,20 @@ namespace {
             utils::WriteValue(os, header->GetByteCode(), header->bytecodeLen);
         }
 
-        LOG_INFO("done in {} {}B -> {}B ({}% saved)", out.string(), header->compressedLen, comp,
-                 100 - (int64_t)(100 * comp / header->compressedLen));
+        LOG_INFO(
+            "done in {} {}B -> {}B ({}% saved)",
+            out.string(),
+            header->compressedLen,
+            comp,
+            100 - (int64_t)(100 * comp / header->compressedLen)
+        );
 
         return tool::OK;
     }
 
-    ADD_TOOL(acef_gscopaque, "gsc", " [vm] [strings] [output] [type] (compress=zstd)",
-             "compile gscbin strings tsv file to acef file", acef_gscopaque);
+    ADD_TOOL(
+        acef_gscopaque, "gsc", " [vm] [strings] [output] [type] (compress=zstd)",
+        "compile gscbin strings tsv file to acef file", acef_gscopaque
+    );
     ADD_TOOL(gscbin_recompress, "gsc", " [in] [out]", "recompress gscbin files", gscbin_recompress);
 } // namespace

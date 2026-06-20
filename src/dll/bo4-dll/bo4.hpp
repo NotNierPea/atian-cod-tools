@@ -182,71 +182,94 @@ namespace bo4 {
     typedef ObjFileInfo ObjFileInfoTable[650];
 
     const auto ScrVm_AddBool = reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst, int value)>(
-        Relativise(OFFSET_ScrVm_AddBool));
+        Relativise(OFFSET_ScrVm_AddBool)
+    );
     const auto ScrVm_AddFloat = reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst, float value)>(
-        Relativise(OFFSET_ScrVm_AddFloat));
+        Relativise(OFFSET_ScrVm_AddFloat)
+    );
     const auto ScrVm_AddHash = reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst, XHash* value)>(
-        Relativise(OFFSET_ScrVm_AddHash));
+        Relativise(OFFSET_ScrVm_AddHash)
+    );
     const auto ScrVm_AddInt = reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst, int64_t value)>(
-        Relativise(OFFSET_ScrVm_AddInt));
+        Relativise(OFFSET_ScrVm_AddInt)
+    );
     const auto ScrVm_AddString =
         reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst, const char* value)>(
-            Relativise(OFFSET_ScrVm_AddString));
+            Relativise(OFFSET_ScrVm_AddString)
+        );
     const auto ScrVm_AddUndefined =
         reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst)>(Relativise(OFFSET_ScrVm_AddUndefined));
     const auto ScrVm_AddConstString =
         reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst, int32_t value)>(
-            Relativise(OFFSET_ScrVm_AddConstString));
+            Relativise(OFFSET_ScrVm_AddConstString)
+        );
 
     const auto ScrVm_GetBool =
         reinterpret_cast<bool(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetBool));
+            Relativise(OFFSET_ScrVm_GetBool)
+        );
     const auto ScrVm_GetFloat =
         reinterpret_cast<float(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetFloat));
+            Relativise(OFFSET_ScrVm_GetFloat)
+        );
     const auto ScrVm_GetHash =
         reinterpret_cast<XHash*(__fastcall*)(XHash * hash, scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetHash));
+            Relativise(OFFSET_ScrVm_GetHash)
+        );
     const auto ScrVm_GetInt =
         reinterpret_cast<int64_t(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetInt));
+            Relativise(OFFSET_ScrVm_GetInt)
+        );
     const auto ScrVm_GetString =
         reinterpret_cast<const char*(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetString));
+            Relativise(OFFSET_ScrVm_GetString)
+        );
     const auto ScrVm_GetVector =
         reinterpret_cast<void(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index, Vec3* vector)>(
-            Relativise(OFFSET_ScrVm_GetVector));
+            Relativise(OFFSET_ScrVm_GetVector)
+        );
     const auto ScrVm_GetConstString =
         reinterpret_cast<int32_t(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetConstString));
+            Relativise(OFFSET_ScrVm_GetConstString)
+        );
 
     const auto ScrVm_GetNumParam = reinterpret_cast<uint32_t(__fastcall*)(scriptinstance::ScriptInstance inst)>(
-        Relativise(OFFSET_ScrVm_GetNumParam));
+        Relativise(OFFSET_ScrVm_GetNumParam)
+    );
     const auto ScrVm_GetPointerType =
         reinterpret_cast<t8internal::ScrVarType(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetPointerType));
+            Relativise(OFFSET_ScrVm_GetPointerType)
+        );
     const auto ScrVm_GetType =
         reinterpret_cast<t8internal::ScrVarType(__fastcall*)(scriptinstance::ScriptInstance inst, unsigned int index)>(
-            Relativise(OFFSET_ScrVm_GetType));
-    const auto Internal_ScrVm_Error = reinterpret_cast<void(__fastcall*)(
-        uint64_t code, scriptinstance::ScriptInstance inst, char* unk, bool terminal)>(Relativise(OFFSET_ScrVm_Error));
+            Relativise(OFFSET_ScrVm_GetType)
+        );
+    const auto Internal_ScrVm_Error = reinterpret_cast<
+        void(__fastcall*)(uint64_t code, scriptinstance::ScriptInstance inst, char* unk, bool terminal)>(
+        Relativise(OFFSET_ScrVm_Error)
+    );
 
     const auto Scr_GetFunction =
         reinterpret_cast<BuiltinFunction(__fastcall*)(uint32_t name, BuiltinType* type, int* min_args, int* max_args)>(
-            Relativise(OFFSET_Scr_GetFunction));
+            Relativise(OFFSET_Scr_GetFunction)
+        );
     const auto CScr_GetFunction =
         reinterpret_cast<BuiltinFunction(__fastcall*)(uint32_t name, BuiltinType* type, int* min_args, int* max_args)>(
-            Relativise(OFFSET_CScr_GetFunction));
+            Relativise(OFFSET_CScr_GetFunction)
+        );
     const auto Scr_GetMethod =
         reinterpret_cast<BuiltinFunction(__fastcall*)(uint32_t name, BuiltinType* type, int* min_args, int* max_args)>(
-            Relativise(OFFSET_Scr_GetMethod));
+            Relativise(OFFSET_Scr_GetMethod)
+        );
     const auto CScr_GetMethod =
         reinterpret_cast<BuiltinFunction(__fastcall*)(uint32_t name, BuiltinType* type, int* min_args, int* max_args)>(
-            Relativise(OFFSET_CScr_GetMethod));
+            Relativise(OFFSET_CScr_GetMethod)
+        );
 
     const auto Cmd_AddCommandInternal =
         reinterpret_cast<void(__fastcall*)(XHash* cmdName, void (*command)(), CmdFunction* alloc)>(
-            Relativise(OFFSET_Cmd_AddCommandInternal));
+            Relativise(OFFSET_Cmd_AddCommandInternal)
+        );
 
     extern t8internal::scrVmPub* scrVmPub;
     extern t8internal::scrVarPub* scrVarPub;
@@ -254,8 +277,9 @@ namespace bo4 {
     extern int* objFileInfoCount;
 
     void ScrVm_Error(scriptinstance::ScriptInstance inst, const char* format, bool terminal, ...);
-    bool FindGSCFuncLocation(byte* location, scriptinstance::ScriptInstance& inst, GSCOBJ*& obj, GSCExport*& exp,
-                             uint32_t& rloc);
+    bool FindGSCFuncLocation(
+        byte* location, scriptinstance::ScriptInstance& inst, GSCOBJ*& obj, GSCExport*& exp, uint32_t& rloc
+    );
 
 } // namespace bo4
 #define REGISTER_COMMAND(id, name, cmd)                                                                                \

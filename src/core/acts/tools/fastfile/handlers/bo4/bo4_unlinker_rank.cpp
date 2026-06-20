@@ -137,14 +137,19 @@ namespace fastfile::handlers::bo4::map {
             json.WriteFieldValueXHash("name", asset->name);
             json.WriteFieldValueXHash("displayName", asset->displayName);
             json.WriteFieldValueXAsset("iconName", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE, asset->iconName);
-            json.WriteFieldValueXAsset("iconNameLarge", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
-                                       asset->iconNameLarge);
+            json.WriteFieldValueXAsset(
+                "iconNameLarge",
+                games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE,
+                asset->iconNameLarge
+            );
             json.WriteFieldValueNumber("unlockLevel", asset->unlockLevel);
             json.WriteFieldValueNumber("winsRequired", asset->winsRequired);
-            json.WriteFieldValueString("titleOfOrigin",
-                                       asset->titleOfOrigin >= ACTS_ARRAYSIZE(PrestigeTypeOfOriginNames)
-                                           ? utils::va("unknown:%d", asset->titleOfOrigin)
-                                           : PrestigeTypeOfOriginNames[asset->titleOfOrigin]);
+            json.WriteFieldValueString(
+                "titleOfOrigin",
+                asset->titleOfOrigin >= ACTS_ARRAYSIZE(PrestigeTypeOfOriginNames)
+                    ? utils::va("unknown:%d", asset->titleOfOrigin)
+                    : PrestigeTypeOfOriginNames[asset->titleOfOrigin]
+            );
             json.WriteFieldValueUnknown("unk2c", asset->unk2c);
             json.EndObject();
 

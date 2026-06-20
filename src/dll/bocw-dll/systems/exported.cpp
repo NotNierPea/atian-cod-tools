@@ -17,8 +17,10 @@ namespace {
             hook::library::QueryScanContainerSingle("SetMap", "E8 ? ? ? ? 48 8B C7 0F B6 80")
                 .GetRelative<int32_t, decltype(exported::LobbyData_SetGameType)>(1);
         exported::LobbyData_SetMap = hook::library::QueryScanContainerSinglePtr<decltype(exported::LobbyData_SetMap)>(
-            "SetGameType", "48 89 5C 24 10 57 48 83 EC 20 48 8B DA 8B F9 8B D1 33 C9 E8 ? ? ? ? 84 C0 0F 84 B1 00 00 "
-                           "00 8B D7 48 89 74 24 30 33 C9 E8 ? ? ? ? 48 85 C0 75 08 8D 70 78");
+            "SetGameType",
+            "48 89 5C 24 10 57 48 83 EC 20 48 8B DA 8B F9 8B D1 33 C9 E8 ? ? ? ? 84 C0 0F 84 B1 00 00 "
+            "00 8B D7 48 89 74 24 30 33 C9 E8 ? ? ? ? 48 85 C0 75 08 8D 70 78"
+        );
     }
 
 } // namespace

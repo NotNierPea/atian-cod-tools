@@ -119,7 +119,9 @@ namespace {
         }
 
         auto [pools, ok] = proc.ReadMemoryArray<compatibility::scobalula::csi::XAssetPool64>(
-            cordycep.poolsAddress, tool::mw19::IW19_ASSETTYPE_COUNT);
+            cordycep.poolsAddress,
+            tool::mw19::IW19_ASSETTYPE_COUNT
+        );
 
         if (!ok) {
             LOG_ERROR("Can't read pools");
@@ -137,87 +139,92 @@ namespace {
 
         size_t total{};
 
-        auto HandlePool =
-            [&opt, &pools, &proc,
-             &total](tool::mw19::IW19PoolType type, const std::filesystem::path& outDir,
-                     std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)> func) {
-                if (!opt.m_dump_types[type] && !opt.m_dump_all_available) {
-                    return;
-                }
+        auto HandlePool = [&opt, &pools, &proc, &total](
+                              tool::mw19::IW19PoolType type,
+                              const std::filesystem::path& outDir,
+                              std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)>
+                                  func
+                          ) {
+            if (!opt.m_dump_types[type] && !opt.m_dump_all_available) {
+                return;
+            }
 
-                opt.m_dump_types[type] = false;
+            opt.m_dump_types[type] = false;
 
-                std::filesystem::create_directories(outDir);
+            std::filesystem::create_directories(outDir);
 
-                int du = ForEachEntry(proc, pools[type], func);
+            int du = ForEachEntry(proc, pools[type], func);
 
-                if (du < 0) {
-                    LOG_ERROR("Error reading pool: {}", tool::mw19::PoolNameOld(type));
-                } else {
-                    total += du;
-                }
-            };
+            if (du < 0) {
+                LOG_ERROR("Error reading pool: {}", tool::mw19::PoolNameOld(type));
+            } else {
+                total += du;
+            }
+        };
 
         const std::filesystem::path gscDir = outDir / "gsc";
-        HandlePool(tool::mw19::IW19_ASSETTYPE_SCRIPTFILE, gscDir,
-                   [&opt, &proc, gscDir](const compatibility::scobalula::csi::XAsset64& asset, size_t count) -> bool {
-                       ScriptFile entry{};
-                       if (!proc.ReadMemory(&entry, asset.Header, sizeof(entry))) {
-                           LOG_ERROR("Can't read scriptfile entry {:x}", asset.Header);
-                           return false;
-                       }
+        HandlePool(
+            tool::mw19::IW19_ASSETTYPE_SCRIPTFILE,
+            gscDir,
+            [&opt, &proc, gscDir](const compatibility::scobalula::csi::XAsset64& asset, size_t count) -> bool {
+                ScriptFile entry{};
+                if (!proc.ReadMemory(&entry, asset.Header, sizeof(entry))) {
+                    LOG_ERROR("Can't read scriptfile entry {:x}", asset.Header);
+                    return false;
+                }
 
-                       std::vector<byte> dumpFile{};
+                std::vector<byte> dumpFile{};
 
-                       const char* fileNameRead = proc.ReadStringTmp(entry.name);
+                const char* fileNameRead = proc.ReadStringTmp(entry.name);
 
-                       utils::Allocate(dumpFile, sizeof(compatibility::xensik::gscbin::GscBinHeader));
+                utils::Allocate(dumpFile, sizeof(compatibility::xensik::gscbin::GscBinHeader));
 
-                       compatibility::xensik::gscbin::GscBinHeader& header{
-                           *reinterpret_cast<compatibility::xensik::gscbin::GscBinHeader*>(dumpFile.data())
-                       };
+                compatibility::xensik::gscbin::GscBinHeader& header{
+                    *reinterpret_cast<compatibility::xensik::gscbin::GscBinHeader*>(dumpFile.data())
+                };
 
-                       header.Magic() = compatibility::xensik::gscbin::GSCBIN_MAGIC;
-                       header.compressedLen = entry.compressedLen;
-                       header.len = entry.len;
-                       header.bytecodeLen = entry.bytecodeLen;
+                header.Magic() = compatibility::xensik::gscbin::GSCBIN_MAGIC;
+                header.compressedLen = entry.compressedLen;
+                header.len = entry.len;
+                header.bytecodeLen = entry.bytecodeLen;
 
-                       size_t bufferLoc = utils::Allocate(dumpFile, entry.compressedLen);
-                       size_t byteCodeLoc = utils::Allocate(dumpFile, entry.bytecodeLen);
+                size_t bufferLoc = utils::Allocate(dumpFile, entry.compressedLen);
+                size_t byteCodeLoc = utils::Allocate(dumpFile, entry.bytecodeLen);
 
-                       if (entry.compressedLen) {
-                           if (!proc.ReadMemory(&dumpFile[bufferLoc], entry.buffer, entry.compressedLen)) {
-                               LOG_ERROR("Can't read scriptfile buffer {}", fileNameRead);
-                               return false;
-                           }
-                       }
-                       if (entry.bytecodeLen) {
-                           if (!proc.ReadMemory(&dumpFile[byteCodeLoc], entry.bytecode, entry.bytecodeLen)) {
-                               LOG_ERROR("Can't read scriptfile bytecode buffer {}", fileNameRead);
-                               return false;
-                           }
-                       }
+                if (entry.compressedLen) {
+                    if (!proc.ReadMemory(&dumpFile[bufferLoc], entry.buffer, entry.compressedLen)) {
+                        LOG_ERROR("Can't read scriptfile buffer {}", fileNameRead);
+                        return false;
+                    }
+                }
+                if (entry.bytecodeLen) {
+                    if (!proc.ReadMemory(&dumpFile[byteCodeLoc], entry.bytecode, entry.bytecodeLen)) {
+                        LOG_ERROR("Can't read scriptfile bytecode buffer {}", fileNameRead);
+                        return false;
+                    }
+                }
 
-                       char* fileName = utils::CloneString(fileNameRead);
+                char* fileName = utils::CloneString(fileNameRead);
 
-                       std::string_view nameView{ fileName };
+                std::string_view nameView{ fileName };
 
-                       if (nameView.ends_with(".gsc")) {
-                           fileName[nameView.length() - 4] = 0;
-                       }
-                       fileName = utils::va("%s.gscbin", fileName);
+                if (nameView.ends_with(".gsc")) {
+                    fileName[nameView.length() - 4] = 0;
+                }
+                fileName = utils::va("%s.gscbin", fileName);
 
-                       std::filesystem::path out = gscDir / fileName;
-                       std::filesystem::create_directories(out.parent_path());
+                std::filesystem::path out = gscDir / fileName;
+                std::filesystem::create_directories(out.parent_path());
 
-                       if (!utils::WriteFile(out, dumpFile.data(), dumpFile.size())) {
-                           LOG_ERROR("Can't write file {}", out.string());
-                           return false;
-                       }
-                       LOG_INFO("Dumped {} ({})", out.string(), fileNameRead);
+                if (!utils::WriteFile(out, dumpFile.data(), dumpFile.size())) {
+                    LOG_ERROR("Can't write file {}", out.string());
+                    return false;
+                }
+                LOG_INFO("Dumped {} ({})", out.string(), fileNameRead);
 
-                       return true;
-                   });
+                return true;
+            }
+        );
 
         LOG_INFO("Dumped {} files", total);
 
@@ -225,6 +232,7 @@ namespace {
     }
 
     utils::ArrayAdder<tool::cordycep::dump::CordycepDumper> impl{ tool::cordycep::dump::GetDumpers(),
-                                                                  compatibility::scobalula::csi::CG_MW4, dpcordimpl,
+                                                                  compatibility::scobalula::csi::CG_MW4,
+                                                                  dpcordimpl,
                                                                   tool::mw19::IW19_ASSETTYPE_COUNT };
 } // namespace

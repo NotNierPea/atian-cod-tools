@@ -11,8 +11,9 @@ namespace core::config {
     namespace {
         std::filesystem::path mainConfigFile{ MAIN_CONFIG_FILE };
     }
-    int64_t ParseEnumValue(const char* value, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue,
-                           const char* path) {
+    int64_t ParseEnumValue(
+        const char* value, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue, const char* path
+    ) {
         if (!value || !*value) {
             return defaultEnumValue;
         }
@@ -202,8 +203,9 @@ namespace core::config {
         SetVal(path, v, 0, base);
     }
 
-    int64_t ConfigGenericRefs::GetEnum(const char* path, const ConfigEnumData* data, size_t dataCount,
-                                       int64_t defaultEnumValue) {
+    int64_t ConfigGenericRefs::GetEnum(
+        const char* path, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue
+    ) {
         const char* defaultValueStr{ "" };
         for (size_t i = 0; i < dataCount; i++) {
             if (data[i].enumValue == defaultEnumValue) {
@@ -289,8 +291,9 @@ namespace core::config {
     void ConfigGenericRefs::SetString(const char* path, const std::string& defaultValue) {}
 
     void ConfigGenericRefs::SetBool(const char* path, bool defaultValue) {}
-    int64_t ConfigGenericRefs::GetEnum(const char* path, const ConfigEnumData* data, size_t dataCount,
-                                       int64_t defaultEnumValue) {
+    int64_t ConfigGenericRefs::GetEnum(
+        const char* path, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue
+    ) {
         return defaultEnumValue;
     }
 
@@ -311,8 +314,10 @@ namespace core::config {
     Config& GetMainConfig() {
         static Config mainCfg{ mainConfigFile };
 #ifndef __ACTS_COMPRESS_HAS_RAPIDJSON
-        LOG_WARNING("Config support is not available because rapidjson is not supported. Default values will be used "
-                    "for all config entries, and changes to config will not be saved.");
+        LOG_WARNING(
+            "Config support is not available because rapidjson is not supported. Default values will be used "
+            "for all config entries, and changes to config will not be saved."
+        );
 #endif // __ACTS_COMPRESS_HAS_RAPIDJSON
         return mainCfg;
     }

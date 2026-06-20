@@ -134,8 +134,9 @@ namespace acts::game_data {
                 return { (Type)scan.GetLibrary()[data.offset + data.postOffset] };
             }
 
-            std::vector<hook::library::ScanResult> sres{ scan.Scan(data.path.data(),
-                                                                   data.name[0] == '$' ? nullptr : data.name.data()) };
+            std::vector<hook::library::ScanResult> sres{
+                scan.Scan(data.path.data(), data.name[0] == '$' ? nullptr : data.name.data())
+            };
 
             if (data.single && sres.size() > 1) {
                 throw std::runtime_error(std::format("Too many result for scan {}::{}", dirname, id));

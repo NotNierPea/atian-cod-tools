@@ -86,8 +86,9 @@ namespace utils {
      * @param sizeAligned size of the aligned buffer
      * @return if the file was read
      */
-    bool ReadFileAlign(const std::filesystem::path& path, void*& buffer, void*& bufferAligned, size_t& size,
-                       size_t& sizeAligned);
+    bool ReadFileAlign(
+        const std::filesystem::path& path, void*& buffer, void*& bufferAligned, size_t& size, size_t& sizeAligned
+    );
     /*
      * Read a file inside a buffer and align the result at 128 bits
      * @param path file path
@@ -96,8 +97,8 @@ namespace utils {
      * @param sizeAligned size of the aligned buffer
      * @return if the file was read
      */
-    bool ReadFileAlign(const std::filesystem::path& path, std::string& buffer, void*& bufferAligned,
-                       size_t& sizeAligned);
+    bool
+    ReadFileAlign(const std::filesystem::path& path, std::string& buffer, void*& bufferAligned, size_t& sizeAligned);
     /*
      * Read a file inside a buffer and align the result at 128 bits
      * @param path file path
@@ -106,8 +107,9 @@ namespace utils {
      * @param sizeAligned size of the aligned buffer
      * @return if the file was read
      */
-    bool ReadFileAlign(const std::filesystem::path& path, std::vector<byte>& buffer, void*& bufferAligned,
-                       size_t& sizeAligned);
+    bool ReadFileAlign(
+        const std::filesystem::path& path, std::vector<byte>& buffer, void*& bufferAligned, size_t& sizeAligned
+    );
 
     template<typename Type>
     Type ReadFile(const std::filesystem::path& path) {
@@ -419,8 +421,10 @@ namespace utils {
      * @param ends \0 separated ends to check, must end with two \0
      * @param removeParent remove parent
      */
-    void GetFileRecurseExt(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
-                           const char* ends, bool removeParent = false);
+    void GetFileRecurseExt(
+        const std::filesystem::path& parent, std::vector<std::filesystem::path>& files, const char* ends,
+        bool removeParent = false
+    );
 
     /*
      * Get all the files in a directory matching a predicate
@@ -428,8 +432,10 @@ namespace utils {
      * @param files output files
      * @param predicate predicate
      */
-    void GetFileRecurse(const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
-                        std::function<bool(const std::filesystem::path&)> predicate, bool removeParent = false);
+    void GetFileRecurse(
+        const std::filesystem::path& parent, std::vector<std::filesystem::path>& files,
+        std::function<bool(const std::filesystem::path&)> predicate, bool removeParent = false
+    );
 
     std::ostream& PrintFormattedString(std::ostream& out, const char* str, size_t len = 0);
 
@@ -726,8 +732,9 @@ namespace utils {
         constexpr Type* operator->() { return &data; }
     };
 
-    template<typename Type, typename KeyType, typename TypeIn = Type,
-             typename MapType = std::unordered_map<KeyType, TypeIn*>>
+    template<
+        typename Type, typename KeyType, typename TypeIn = Type,
+        typename MapType = std::unordered_map<KeyType, TypeIn*>>
     class MapAdder {
         Type data;
 

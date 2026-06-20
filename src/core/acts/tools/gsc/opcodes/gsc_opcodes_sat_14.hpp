@@ -9,8 +9,9 @@ namespace tool::gsc::opcode {
         static void OpCode() {
             VmInfo* t1014 = GetVm(VMI_T10_14);
             t1014->AddPlatform(PLATFORM_BO7);
-            t1014->RegisterVMHashOPCode('o', OPCODE_SAT_GetOmnVarHash, 8,
-                                        [](const char* str) { return hash::HashT10OmnVar(str); });
+            t1014->RegisterVMHashOPCode('o', OPCODE_SAT_GetOmnVarHash, 8, [](const char* str) {
+                return hash::HashT10OmnVar(str);
+            });
             t1014->RegisterVmName("sat14", "blackops7_14", "bo7_14");
 
             t1014->RegisterOpCode(PLATFORM_BO7, OPCODE_GetZero, 0x8e);

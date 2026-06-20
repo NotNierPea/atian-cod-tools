@@ -114,8 +114,13 @@ namespace fastfile::handlers::mw19 {
 #define ThrowFastFileError(...) ThrowFastFileError_(std::format(__VA_ARGS__))
 
         void LoadXFileData(void* ptr, int64_t len) {
-            LOG_TRACE("LoadXFileData({}, 0x{:x}/0x{:x}) {}", ptr, len, gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadXFileData({}, 0x{:x}/0x{:x}) {}",
+                ptr,
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (!ptr) {
                 ThrowFastFileError("Can't read empty pointer idx:{}", (int)*gcx.streamPosIndex);
             }
@@ -141,8 +146,15 @@ namespace fastfile::handlers::mw19 {
         void DB_IncStreamPos(size_t len) { *gcx.streamPos += len; }
 
         void LoadStreamTA(bool loadData, void* ptr, int64_t len) {
-            LOG_TRACE("LoadStreamTA({}, {}, loc:0x{:x}/len:0x{:x}/rem:0x{:x}) {}", loadData, ptr, gcx.reader->Loc(),
-                      len, gcx.reader->Remaining(), hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadStreamTA({}, {}, loc:0x{:x}/len:0x{:x}/rem:0x{:x}) {}",
+                loadData,
+                ptr,
+                gcx.reader->Loc(),
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
 
             if (!loadData && len) {
                 if (*gcx.streamPosIndex != XFileBlock::XFILE_BLOCK_MEMMAPPED) {
@@ -208,8 +220,13 @@ namespace fastfile::handlers::mw19 {
                 auto it{ map.find(hashType) };
                 if (it != map.end()) {
                     if (it->second->assetSize != assetSize) {
-                        LOG_ERROR("Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
-                                  gcx.assetNames.GetTypeName(type), (int)type, it->second->assetSize, assetSize);
+                        LOG_ERROR(
+                            "Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
+                            gcx.assetNames.GetTypeName(type),
+                            (int)type,
+                            it->second->assetSize,
+                            assetSize
+                        );
                     } else {
                         it->second->Unlink(*gcx.opt, *gcx.ctx, *handle);
                     }
@@ -241,8 +258,9 @@ namespace fastfile::handlers::mw19 {
 
                 acts::game_data::GameData game{ gameDumpId };
                 commonFiles = game.GetCommonFastFiles();
-                hook::module_mapper::Module& mod{ opt.GetGameModule(true, nullptr, false, game.GetModuleName(),
-                                                                    gameDumpId) };
+                hook::module_mapper::Module& mod{
+                    opt.GetGameModule(true, nullptr, false, game.GetModuleName(), gameDumpId)
+                };
                 hook::scan_container::ScanContainer& scan{ mod.GetScanContainer() };
                 game.SetScanContainer(&scan);
 
@@ -294,8 +312,11 @@ namespace fastfile::handlers::mw19 {
                 game.Redirect("DB_AddAsset", DB_AddAsset);
                 game.Redirect("Load_CustomScriptString", Load_CustomScriptString);
                 game.Redirect("LoadXFileData", LoadXFileData);
-                game.Detour("DB_ResolvePackedOffsetAddress", gcx.DB_ResolvePackedOffsetAddress_Detour,
-                            DB_ResolvePackedOffsetAddress);
+                game.Detour(
+                    "DB_ResolvePackedOffsetAddress",
+                    gcx.DB_ResolvePackedOffsetAddress_Detour,
+                    DB_ResolvePackedOffsetAddress
+                );
 
                 game.Redirect("DB_LinkSoundBank", DB_AddAssetCustom<IW8H_ASSET_SOUNDBANK>);
                 game.Redirect("DB_LinkSoundBankTransient", DB_AddAssetCustom<IW8H_ASSET_SOUNDBANKTRANSIENT>);
@@ -326,8 +347,12 @@ namespace fastfile::handlers::mw19 {
                     } else {
                         size_t trueLen{ DB_GetAssetSize(type) };
                         if (worker->assetSize != trueLen) {
-                            LOG_WARNING("type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
-                                        PoolName(hashType), worker->assetSize, trueLen);
+                            LOG_WARNING(
+                                "type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
+                                PoolName(hashType),
+                                worker->assetSize,
+                                trueLen
+                            );
                         }
                     }
                 }
@@ -341,8 +366,12 @@ namespace fastfile::handlers::mw19 {
                 std::call_once(of, [] {
                     hook::error::AddErrorDumper([]() {
                         if (gcx.currentAsset != std::string::npos) {
-                            LOG_ERROR("Current asset: {}/{} {}", gcx.currentAsset, gcx.assets.assetsCount,
-                                      gcx.assetNames.GetTypeName(gcx.assets.assets[gcx.currentAsset].type));
+                            LOG_ERROR(
+                                "Current asset: {}/{} {}",
+                                gcx.currentAsset,
+                                gcx.assets.assetsCount,
+                                gcx.assetNames.GetTypeName(gcx.assets.assets[gcx.currentAsset].type)
+                            );
                             if (gcx.reader) {
                                 LOG_ERROR("Offset: 0x{:x} -> 0x{:x}", gcx.reader->Loc(), gcx.reader->Remaining());
                             }
@@ -369,8 +398,9 @@ namespace fastfile::handlers::mw19 {
                 }
             }
 
-            void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                        fastfile::FastFileContext& ctx) override {
+            void Handle(
+                fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+            ) override {
                 gcx.ctx = &ctx;
                 gcx.reader = &reader;
                 gcx.streamLocations.clear();
@@ -492,8 +522,14 @@ namespace fastfile::handlers::mw19 {
                         for (assetId = 0; assetId < gcx.assets.assetsCount; assetId++) {
                             Asset* asset{ &gcx.assets.assets[assetId] };
 
-                            LOG_TRACE("load #{} -> {}({}/0x{:x}) {}", assetId, PoolName(GetHashType(asset->type)),
-                                      (int)asset->type, (int)asset->type, asset->handle);
+                            LOG_TRACE(
+                                "load #{} -> {}({}/0x{:x}) {}",
+                                assetId,
+                                PoolName(GetHashType(asset->type)),
+                                (int)asset->type,
+                                (int)asset->type,
+                                asset->handle
+                            );
                             *gcx.loadAsset = asset;
                             gcx.currentAsset = assetId;
                             gcx.Load_Asset(true);

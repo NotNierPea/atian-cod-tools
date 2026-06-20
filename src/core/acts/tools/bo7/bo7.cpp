@@ -451,25 +451,31 @@ namespace tool::bo7 {
         // remove lua things if false it creates some useless calls
         hook::memory::RedirectJmp(
             mod->ScanSingle("E8 ?? ?? ?? ?? 48 63 5D ?? 83 F8", "BoLuaUnkReturn").GetRelative<int32_t>(1),
-            ReturnStub<bool, true>); // 88F5390
+            ReturnStub<bool, true>
+        ); // 88F5390
 
         // registry function
         hook::memory::RedirectJmp(
-            mod->ScanSingle("E8 ?? ?? ?? ?? 48 8B 9C 24 ?? ?? ?? ?? 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8B 8D",
-                            "BoLoadLuaPop")
+            mod->ScanSingle(
+                   "E8 ?? ?? ?? ?? 48 8B 9C 24 ?? ?? ?? ?? 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8B 8D",
+                   "BoLoadLuaPop"
+            )
                 .GetRelative<int32_t>(1),
-            BoLoadLuaPop); // 88F5390
+            BoLoadLuaPop
+        ); // 88F5390
         hook::memory::RedirectJmp(
             mod->ScanSingle("E8 ?? ?? ?? ?? BA FE FF FF FF 48 8B CE E8 ?? ?? ?? ?? 48 8B BC 24", "BoLoadLuaPush")
                 .GetRelative<int32_t>(1),
-            BoLoadLuaPush); // 88F5390
+            BoLoadLuaPush
+        ); // 88F5390
 
         void* stub{
             mod->ScanSingle("E8 ?? ?? ?? ?? 48 BA EA C8 1A 47 1B 60 F9 08", "BoLoadLuaFunc").GetRelative<int32_t>(1)
         }; // BoLoadLuaFunc(luastate*, 0xhash, func)
-        void* stubStr{ mod->ScanSingle("E8 ?? ?? ?? ?? 4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 49 8B CD",
-                                       "BoLoadLuaFuncStr")
-                           .GetRelative<int32_t>(1) }; // BoLoadLuaFuncStr(luastate*, "str", func)
+        void* stubStr{
+            mod->ScanSingle("E8 ?? ?? ?? ?? 4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 49 8B CD", "BoLoadLuaFuncStr")
+                .GetRelative<int32_t>(1)
+        }; // BoLoadLuaFuncStr(luastate*, "str", func)
 
         LOG_INFO("redirect hash . {}", hook::library::CodePointer{ stub });
         LOG_INFO("redirect str .. {}", hook::library::CodePointer{ stubStr });
@@ -479,8 +485,10 @@ namespace tool::bo7 {
         hook::memory::RedirectJmp(stubStr, BoLoadLuaFuncStr);
 
         // 71b36f0bb44547d4 / bb69baec8be93d50 ?
-        mod->ScanSingle("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 48 89 4C 24 ?? 57 41 54 41 55 41 56 41 57 48 83 "
-                        "EC ?? 4C 8D 05 ?? ?? ?? ?? BA EE D8 FF FF E8")
+        mod->ScanSingle(
+               "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 48 89 4C 24 ?? 57 41 54 41 55 41 56 41 57 48 83 "
+               "EC ?? 4C 8D 05 ?? ?? ?? ?? BA EE D8 FF FF E8"
+        )
             .GetPtr<void (*)(void*)>()(nullptr); // load_funcs(luastate*)
 
         utils::OutFileCE os{ argv[3], true };
@@ -587,11 +595,14 @@ namespace tool::bo7 {
             LOG_ERROR("Can't load module");
             return tool::BASIC_ERROR;
         }
-        void (*SL_RegisterConstStrings)(){ mod->ScanSingle("E8 ?? ?? ?? ?? 48 B8 94 0A 26 27 C3 45 FA FD",
-                                                           "SL_RegisterConstStrings")
-                                               .GetRelative<int32_t, void (*)()>(1) };
-        if (!hook::library::ScanMatch(SL_RegisterConstStrings,
-                                      "48 83 EC 28 33 D2 48 8D 0D ?? ?? ?? ?? 41 B8 ?? ?? ?? ??")) {
+        void (*SL_RegisterConstStrings)(){
+            mod->ScanSingle("E8 ?? ?? ?? ?? 48 B8 94 0A 26 27 C3 45 FA FD", "SL_RegisterConstStrings")
+                .GetRelative<int32_t, void (*)()>(1)
+        };
+        if (!hook::library::ScanMatch(
+                SL_RegisterConstStrings,
+                "48 83 EC 28 33 D2 48 8D 0D ?? ?? ?? ?? 41 B8 ?? ?? ?? ??"
+            )) {
             throw std::runtime_error("Can't match register info");
         }
         void* SL_GetString{
@@ -602,8 +613,12 @@ namespace tool::bo7 {
         ScrString_t* scrConstStrings{ hook::library::GetRelative<int32_t, ScrString_t*>(SL_RegisterConstStrings, 9) };
         uint32_t count{ *(uint32_t*)((byte*)SL_RegisterConstStrings + 15) / sizeof(ScrString_t) };
 
-        LOG_INFO("stub: {}, ptr: {}, count:{}", hook::library::CodePointer{ SL_RegisterConstStrings },
-                 hook::library::CodePointer{ scrConstStrings }, count);
+        LOG_INFO(
+            "stub: {}, ptr: {}, count:{}",
+            hook::library::CodePointer{ SL_RegisterConstStrings },
+            hook::library::CodePointer{ scrConstStrings },
+            count
+        );
 
         if (count > 10000) {
             throw std::runtime_error("Invalid count");

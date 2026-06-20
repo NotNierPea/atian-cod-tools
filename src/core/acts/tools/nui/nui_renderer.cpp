@@ -96,11 +96,18 @@ namespace tool::nui::renderer {
 
     void LoadColor(uint32_t color) {
         if (color & 0xFF000000) {
-            glColor4f((float)((color >> 16) & 0xFF) / 0xFF, (float)((color >> 8) & 0xFF) / 0xFF,
-                      (float)(color & 0xFF) / 0xFF, (float)((color >> 24) & 0xFF) / 0xFF);
+            glColor4f(
+                (float)((color >> 16) & 0xFF) / 0xFF,
+                (float)((color >> 8) & 0xFF) / 0xFF,
+                (float)(color & 0xFF) / 0xFF,
+                (float)((color >> 24) & 0xFF) / 0xFF
+            );
         } else {
-            glColor3f((float)((color >> 16) & 0xFF) / 0xFF, (float)((color >> 8) & 0xFF) / 0xFF,
-                      (float)(color & 0xFF) / 0xFF);
+            glColor3f(
+                (float)((color >> 16) & 0xFF) / 0xFF,
+                (float)((color >> 8) & 0xFF) / 0xFF,
+                (float)(color & 0xFF) / 0xFF
+            );
         }
     }
 

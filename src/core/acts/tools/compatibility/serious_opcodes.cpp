@@ -176,8 +176,9 @@ namespace {
 
             int64_t opcodeId{ utils::ParseFormatInt(k.c_str()) };
 
-            const tool::gsc::opcode::OPCodeInfo* opnfo{ tool::gsc::opcode::LookupOpCode(nfo->vmMagic, plt,
-                                                                                        (uint16_t)opcodeId) };
+            const tool::gsc::opcode::OPCodeInfo* opnfo{
+                tool::gsc::opcode::LookupOpCode(nfo->vmMagic, plt, (uint16_t)opcodeId)
+            };
 
             dataset[tool::gsc::opcode::OpCodeName(opnfo->m_id)].insert(v);
         }
@@ -205,6 +206,8 @@ namespace {
 
     ADD_TOOL(serious_opcodes_read, "compatibility", " [file] [out]", "Dump opcodes file", serious_opcodes_read);
     ADD_TOOL(serious_opcodes_write, "compatibility", " [out] [vm] [plt]", "Create opcodes file", serious_opcodes_write);
-    ADD_TOOL(serious_opcodes_translate, "compatibility", " [file] [vm] [plt] [output]",
-             "Translate opcode names to acts names", serious_opcodes_translate);
+    ADD_TOOL(
+        serious_opcodes_translate, "compatibility", " [file] [vm] [plt] [output]",
+        "Translate opcode names to acts names", serious_opcodes_translate
+    );
 } // namespace

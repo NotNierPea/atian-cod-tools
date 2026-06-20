@@ -192,8 +192,9 @@ class DDLMember {
             }
         });
 
-        auto it = std::find_if(std::begin(tmp), std::end(tmp),
-                               [typeName](const TmpTypeInfo& nfo) { return nfo.tname == typeName; });
+        auto it = std::find_if(std::begin(tmp), std::end(tmp), [typeName](const TmpTypeInfo& nfo) {
+            return nfo.tname == typeName;
+        });
 
         if (it != std::end(tmp)) {
             type = it->val;
@@ -403,8 +404,10 @@ namespace {
       public:
         ACTSErrorListener(DDLCompilerOption& info) : m_info(info) {}
 
-        void syntaxError(Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
-                         const std::string& msg, std::exception_ptr e) override {
+        void syntaxError(
+            Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
+            const std::string& msg, std::exception_ptr e
+        ) override {
             if (charPositionInLine) {
                 LOG_ERROR("{}:{}#{} : {}", m_info.m_ddl, line, charPositionInLine, msg);
             } else if (line) {
@@ -415,14 +418,17 @@ namespace {
         }
     };
 
-    bool ComputeDDLCheck(DDLCompilerOption& opt, std::string& ddlText, byte* binary, size_t binarySize,
-                         FullDDLCompiled& ddl) {
+    bool ComputeDDLCheck(
+        DDLCompilerOption& opt, std::string& ddlText, byte* binary, size_t binarySize, FullDDLCompiled& ddl
+    ) {
         LOG_INFO("Compiling DDL file...");
 
-        opt.m_processorOpt.ApplyPreProcessor(ddlText,
-                                             [&opt](core::logs::loglevel lvl, size_t line, const std::string& message) {
-                                                 LOG_LVLF(lvl, "{}:{} : {}", opt.m_ddl, line, message);
-                                             });
+        opt.m_processorOpt.ApplyPreProcessor(
+            ddlText,
+            [&opt](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                LOG_LVLF(lvl, "{}:{} : {}", opt.m_ddl, line, message);
+            }
+        );
 
         ANTLRInputStream is{ ddlText.data() };
 

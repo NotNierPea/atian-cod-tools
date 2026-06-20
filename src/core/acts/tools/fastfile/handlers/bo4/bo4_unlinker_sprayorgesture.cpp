@@ -72,12 +72,14 @@ namespace {
                 if (gesture.gesture) {
                     json.WriteFieldNameString("gesture");
                     json.WriteValueHash(
-                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, gesture.gesture)->name);
+                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, gesture.gesture)->name
+                    );
                 }
                 if (gesture.gesture2) {
                     json.WriteFieldNameString("gesture2");
                     json.WriteValueHash(
-                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, gesture.gesture2)->name);
+                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, gesture.gesture2)->name
+                    );
                 }
                 if (gesture.sub_count) {
                     json.WriteFieldNameString("sub");
@@ -89,15 +91,15 @@ namespace {
                         if (sub.gesture) {
                             json.WriteFieldNameString("gesture");
                             json.WriteValueHash(
-                                games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, sub.gesture)
-                                    ->name);
+                                games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, sub.gesture)->name
+                            );
                         }
 
                         if (sub.gesture2) {
                             json.WriteFieldNameString("gesture2");
                             json.WriteValueHash(
-                                games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, sub.gesture2)
-                                    ->name);
+                                games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_GESTURE, sub.gesture2)->name
+                            );
                         }
 
                         if (sub.roles_count) {
@@ -123,7 +125,8 @@ namespace {
                 if (tag.material) {
                     json.WriteFieldNameString("material");
                     json.WriteValueHash(
-                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_MATERIAL, tag.material)->name);
+                        games::bo4::pool::GetAssetName(games::bo4::pool::ASSET_TYPE_MATERIAL, tag.material)->name
+                    );
                 }
                 break;
             }

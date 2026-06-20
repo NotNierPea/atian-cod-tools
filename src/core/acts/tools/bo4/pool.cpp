@@ -743,8 +743,10 @@ void ReadSBName(const Process& proc, const SB_ObjectsArray& arr) {
     }
 }
 
-bool ReadSBObject(const Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr,
-                  std::unordered_set<std::string>& strings) {
+bool ReadSBObject(
+    const Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr,
+    std::unordered_set<std::string>& strings
+) {
 
     if (!arr.sbObjectCount && !arr.sbSubCount) {
         defout << "{}";
@@ -1019,8 +1021,9 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
         return;
     }
     // sort members because they don't match the internal structure (they match the hashmap)
-    std::sort(&members[0], &members[stct.memberCount],
-              [](const DDLMember& e1, const DDLMember& e2) { return e1.offset < e2.offset; });
+    std::sort(&members[0], &members[stct.memberCount], [](const DDLMember& e1, const DDLMember& e2) {
+        return e1.offset < e2.offset;
+    });
 
     utils::Padding(defout, 1) << "// idx " << std::dec << idx << " members " << stct.memberCount << " size 0x"
                               << std::hex << stct.bitSize;
@@ -1046,8 +1049,10 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
             utils::Padding(defout, depthFields);
         }
 
-        utils::Padding(defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n",
-                       depthFields);
+        utils::Padding(
+            defout << "// offset 0x" << std::hex << mbm.offset << ", size 0x" << mbm.bitSize << "\n",
+            depthFields
+        );
         currentShift = mbm.offset + mbm.bitSize;
 
         bool addSize = false;
@@ -1074,8 +1079,11 @@ void ReadDDLStruct(PoolOption& opt, Process& proc, std::ostream& defout, DDLDef&
         if (mbm.isArray) {
             if (mbm.externalEnumType >= 0 && mbm.externalEnumType < def.enumCount) {
                 DDLEnum subenum{};
-                if (!proc.ReadMemory(&subenum, def.enumList + mbm.externalEnumType * sizeof(subenum),
-                                     sizeof(subenum))) {
+                if (!proc.ReadMemory(
+                        &subenum,
+                        def.enumList + mbm.externalEnumType * sizeof(subenum),
+                        sizeof(subenum)
+                    )) {
                     defout << "<error reading sub enum entry>\n";
                     return;
                 }
@@ -1422,8 +1430,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             }
 
             for (size_t i = 0; i < e.rowCount; i++) {
-                if (!proc.ReadMemory(&cell[0], e.values + sizeof(cell[0]) * e.columnCount * i,
-                                     sizeof(cell[0]) * std::min(cellsize, (size_t)e.columnCount))) {
+                if (!proc.ReadMemory(
+                        &cell[0],
+                        e.values + sizeof(cell[0]) * e.columnCount * i,
+                        sizeof(cell[0]) * std::min(cellsize, (size_t)e.columnCount)
+                    )) {
                     std::cerr << "can't read cells for " << dumpbuff << "\n";
                     out.close();
                     continue;
@@ -1434,8 +1445,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                         out << "undefined";
                         break;
                     case STC_TYPE_STRING:
-                        if (proc.ReadString(namebuf, *reinterpret_cast<uintptr_t*>(&cell[j].value[0]),
-                                            sizeof(namebuf)) < 0) {
+                        if (proc.ReadString(
+                                namebuf,
+                                *reinterpret_cast<uintptr_t*>(&cell[j].value[0]),
+                                sizeof(namebuf)
+                            ) < 0) {
                             out << "<bad_str:" << std::hex << *reinterpret_cast<uintptr_t*>(&cell[j].value[0]) << ">";
                         } else {
                             out << namebuf;
@@ -2105,7 +2119,9 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
                     if (htnNode.numConstants) {
                         auto [constants, ok3] = proc.ReadMemoryArray<HierarchicalTaskNetworkNodeConstant>(
-                            htnNode.constants, htnNode.numConstants);
+                            htnNode.constants,
+                            htnNode.numConstants
+                        );
 
                         if (!ok3) {
                             std::cerr << "Can't read childNodeIndexes\n";
@@ -2380,10 +2396,10 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             auto addPtrName2 = [&proc, &addPtrName](const char* title, uintptr_t ptr, size_t offset, size_t offset2) {
                 return addPtrName(title, proc.ReadMemory<uintptr_t>(ptr + offset), offset2);
             };
-            auto addPtrName3 = [&proc, &addPtrName2](const char* title, uintptr_t ptr, size_t offset, size_t offset2,
-                                                     size_t offset3) {
-                return addPtrName2(title, proc.ReadMemory<uintptr_t>(ptr + offset), offset2, offset3);
-            };
+            auto addPtrName3 =
+                [&proc, &addPtrName2](const char* title, uintptr_t ptr, size_t offset, size_t offset2, size_t offset3) {
+                    return addPtrName2(title, proc.ReadMemory<uintptr_t>(ptr + offset), offset2, offset3);
+                };
 
             auto addXHashName = [&proc, &out](const char* title, XHash& val) {
                 if (!val.name) {
@@ -2932,8 +2948,10 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
 
-            auto names = std::make_unique<Hash[]>(std::max(std::max(p.list_campaign.count, p.list_multiplayer.count),
-                                                           std::max(p.list_warzone.count, p.list_zombies.count)));
+            auto names = std::make_unique<Hash[]>(std::max(
+                std::max(p.list_campaign.count, p.list_multiplayer.count),
+                std::max(p.list_warzone.count, p.list_zombies.count)
+            ));
 
             std::ofstream out{ file };
 
@@ -3360,8 +3378,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                             out << "            \"rotationList\": [";
                             if (ple.rotations_count) {
                                 auto rotations = std::make_unique<PlaylistRotation[]>(ple.rotations_count);
-                                if (!proc.ReadMemory(&rotations[0], ple.rotations,
-                                                     sizeof(rotations[0]) * ple.rotations_count)) {
+                                if (!proc.ReadMemory(
+                                        &rotations[0],
+                                        ple.rotations,
+                                        sizeof(rotations[0]) * ple.rotations_count
+                                    )) {
                                     out << "Can't read rotations\n";
                                     out.close();
                                     continue;
@@ -4658,9 +4679,13 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
 
             std::cout << std::dec << i << ": ";
 
-            sprintf_s(dumpbuff, "%s/scriptbundle/%s/%s.json", opt.m_output,
-                      p.bundleType.name ? hashutils::ExtractTmp("hash", p.bundleType.name) : "default",
-                      hashutils::ExtractTmp("hash", p.name.name));
+            sprintf_s(
+                dumpbuff,
+                "%s/scriptbundle/%s/%s.json",
+                opt.m_output,
+                p.bundleType.name ? hashutils::ExtractTmp("hash", p.bundleType.name) : "default",
+                hashutils::ExtractTmp("hash", p.name.name)
+            );
 
             std::filesystem::path file(dumpbuff);
             std::filesystem::create_directories(file.parent_path(), ec);
@@ -5092,8 +5117,11 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             if (p.numPlayerRoleCategories) {
                 auto entries = std::make_unique<uintptr_t[]>(p.numPlayerRoleCategories);
 
-                if (!proc.ReadMemory(&entries[0], p.playerRoleCategories,
-                                     sizeof(uintptr_t) * p.numPlayerRoleCategories)) {
+                if (!proc.ReadMemory(
+                        &entries[0],
+                        p.playerRoleCategories,
+                        sizeof(uintptr_t) * p.numPlayerRoleCategories
+                    )) {
                     std::cerr << "Can't read elements\n";
                     break;
                 }
@@ -5954,8 +5982,13 @@ int tool::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                     continue;
                 }
 
-                tool::pool::WriteHex(defout, entry.pool + entry.itemSize * i, &raw[0] + (entry.itemSize * i),
-                                     entry.itemSize, proc);
+                tool::pool::WriteHex(
+                    defout,
+                    entry.pool + entry.itemSize * i,
+                    &raw[0] + (entry.itemSize * i),
+                    entry.itemSize,
+                    proc
+                );
 
                 defout.close();
             }
@@ -6115,8 +6148,11 @@ int dbgp(Process& proc, int argc, const char* argv[]) {
 
         auto entries = std::make_unique<BGPoolEntry[]>(info[i].allocItems);
 
-        if (!proc.ReadMemory(&entries[0], pool + sizeof(entries[0]) * info[i].startIndex,
-                             sizeof(entries[0]) * info[i].allocItems)) {
+        if (!proc.ReadMemory(
+                &entries[0],
+                pool + sizeof(entries[0]) * info[i].startIndex,
+                sizeof(entries[0]) * info[i].allocItems
+            )) {
             std::cerr << "Can't read cache entries\n";
             break;
         }

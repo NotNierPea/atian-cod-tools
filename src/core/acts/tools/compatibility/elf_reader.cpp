@@ -27,8 +27,9 @@ namespace {
         }
 
         void LoadElf(const std::filesystem::path& path) {
-            elf = utils::ReadFilePtr(path, &elfLen,
-                                     [](size_t len) { return VirtualAlloc(NULL, len, MEM_COMMIT, PAGE_READWRITE); });
+            elf = utils::ReadFilePtr(path, &elfLen, [](size_t len) {
+                return VirtualAlloc(NULL, len, MEM_COMMIT, PAGE_READWRITE);
+            });
 
             if (!elf) {
                 throw std::runtime_error(std::format("Can't read {}", path.string()));

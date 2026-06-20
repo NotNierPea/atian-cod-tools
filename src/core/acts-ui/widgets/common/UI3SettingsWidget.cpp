@@ -9,8 +9,13 @@
 namespace {
     QHBoxLayout* CreateEditor(ui3::config::PropertyEntry& entry) {
         QHBoxLayout* row{ new QHBoxLayout() };
-        QLabel* label{ new QLabel(QString::asprintf(
-            "%s (%s)", entry.description && *entry.description ? entry.description : entry.path, entry.path)) };
+        QLabel* label{ new QLabel(
+            QString::asprintf(
+                "%s (%s)",
+                entry.description && *entry.description ? entry.description : entry.path,
+                entry.path
+            )
+        ) };
         label->setMinimumWidth(300);
         row->addWidget(label);
 

@@ -104,9 +104,8 @@ namespace {
             DDLDef* ndef{ asset->def };
 
             if (ndef->nameStr) {
-                if (!opt.archiveDDL &&
-                    std::string_view{ hashutils::CleanPath(utils::CloneString(ndef->nameStr)) }.starts_with(
-                        "ddl\\cer\\archive")) {
+                if (!opt.archiveDDL && std::string_view{ hashutils::CleanPath(utils::CloneString(ndef->nameStr)) }
+                                           .starts_with("ddl\\cer\\archive")) {
                     LOG_OPT_INFO("Ignore archive {}", ndef->nameStr);
                     return;
                 }
@@ -156,14 +155,16 @@ namespace {
                 DDLStruct* structList{ def.structList };
                 DDLEnum* enumList{ def.enumList };
 
-                auto DumpDDLStructMembers = [&os, &def, &opt, &structList, &enumList](DDLStruct& stct,
-                                                                                      int padding) -> bool {
+                auto DumpDDLStructMembers =
+                    [&os, &def, &opt, &structList, &enumList](DDLStruct& stct, int padding) -> bool {
                     if (stct.memberCount && stct.members) {
                         DDLMember* members{ stct.members };
 
                         std::sort(
-                            &members[0], &members[stct.memberCount],
-                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; });
+                            &members[0],
+                            &members[stct.memberCount],
+                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; }
+                        );
 
                         for (size_t i = 0; i < stct.memberCount; i++) {
                             DDLMember& member = members[i];
@@ -333,6 +334,7 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_DDL,
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(),
+                                                                SatHashAssetType::SATH_ASSET_DDL,
                                                                 sizeof(DDL) };
 } // namespace

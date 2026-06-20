@@ -85,9 +85,12 @@ namespace fastfile::handlers::mwii::scriptbundle {
     static_assert(sizeof(ScriptBundle) == 0x30);
 
     void WriteBundle(core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundle* bundle);
-    void WriteStruct(core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectStruct& data, byte* rawData,
-                     size_t rawDataLen);
+    void WriteStruct(
+        core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectStruct& data, byte* rawData,
+        size_t rawDataLen
+    );
     void WriteData(core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectData& data);
-    void WriteDef(core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectDef& def, byte* rawData,
-                  size_t rawDataLen);
+    void WriteDef(
+        core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectDef& def, byte* rawData, size_t rawDataLen
+    );
 } // namespace fastfile::handlers::mwii::scriptbundle

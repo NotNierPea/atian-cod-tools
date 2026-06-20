@@ -618,7 +618,9 @@ namespace {
 
             constexpr size_t scriptNameSearchHashListLen = 0x80000;
             auto [scriptNameSearchHashList, ok3] = proc.ReadMemoryArray<ScrVarIndex_t>(
-                gScrVarGlob[i].scriptNameSearchHashList, scriptNameSearchHashListLen);
+                gScrVarGlob[i].scriptNameSearchHashList,
+                scriptNameSearchHashListLen
+            );
 
             if (!ok3) {
                 LOG_ERROR("Can't scriptNameSearchHashList for vm {}", i);

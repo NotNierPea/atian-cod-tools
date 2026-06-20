@@ -499,3 +499,5 @@ Zulu 540 Grim Refuge	4221135532	Optional argument must be a string type
 Zulu 636 Conflicted Conflict	1363519084	key is not internally a string
 Zulu 770 Mountain Traffic	2836526124	value out of range (acos)
 Zulu 974 Winning Clover	3671833516	accuracy mod must be nonnegative
+Ida 526 Binary Greyhound	483405794	Unexpected string type in stringtable
+Sierra 229 Dazed Retreat	2262814876	Out of script global var memory.

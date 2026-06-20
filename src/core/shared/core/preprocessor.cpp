@@ -27,8 +27,9 @@ namespace core::preprocessor {
         return blocks[blocks.size() - 1];
     }
 
-    void StringContainer::PrintLineMessage(core::logs::loglevel lvl, size_t line, size_t charPositionInLine,
-                                           const std::string& msg) const {
+    void StringContainer::PrintLineMessage(
+        core::logs::loglevel lvl, size_t line, size_t charPositionInLine, const std::string& msg
+    ) const {
         const StringData& f = FindFile(line);
 
         size_t localLine;
@@ -224,7 +225,8 @@ namespace core::preprocessor {
 
     bool PreProcessorOption::ApplyPreProcessorComments(
         std::string& str,
-        std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler) {
+        std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler
+    ) {
         size_t idx{};
         char* data = str.data();
         char* dataEnd = data + str.length();
@@ -291,7 +293,8 @@ namespace core::preprocessor {
     }
     bool PreProcessorOption::ApplyPreProcessor(
         std::string& str,
-        std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler) {
+        std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler
+    ) {
         if (!ApplyPreProcessorComments(str, errorHandler)) {
             return false;
         }
@@ -409,8 +412,11 @@ namespace core::preprocessor {
                     errorHandler(core::logs::LVL_ERROR, lineIdx, std::string{ line.substr(line.length() > 6 ? 7 : 6) });
                     err = true;
                 } else if (line.starts_with("#warning")) {
-                    errorHandler(core::logs::LVL_WARNING, lineIdx,
-                                 std::string{ line.substr(line.length() > 8 ? 9 : 8) });
+                    errorHandler(
+                        core::logs::LVL_WARNING,
+                        lineIdx,
+                        std::string{ line.substr(line.length() > 8 ? 9 : 8) }
+                    );
                 } else if (line.starts_with("#insert")) {
                     std::string filename{ line.substr(7) };
                     if (filename.length() < 1 || !isspace(filename[0])) {
@@ -433,16 +439,29 @@ namespace core::preprocessor {
                         std::filesystem::path insertPath{ cwd / filename };
 
                         if (!utils::ReadFile(insertPath, insertData)) {
-                            errorHandler(core::logs::LVL_ERROR, lineIdx,
-                                         std::format("can't read insert '{}'", insertPath.string()));
+                            errorHandler(
+                                core::logs::LVL_ERROR,
+                                lineIdx,
+                                std::format("can't read insert '{}'", insertPath.string())
+                            );
                             err = true;
-                        } else if (!ApplyPreProcessor(insertData, [&errorHandler, &filename,
-                                                                   lineIdx](core::logs::loglevel lvl, size_t line,
-                                                                            const std::string& message) {
-                                       errorHandler(lvl, lineIdx, std::format("[{}:{}] {}", filename, line, message));
-                                   })) {
-                            errorHandler(core::logs::LVL_ERROR, lineIdx,
-                                         std::format("can't parse insert '{}'", insertPath.string()));
+                        } else if (!ApplyPreProcessor(
+                                       insertData,
+                                       [&errorHandler,
+                                        &filename,
+                                        lineIdx](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                                           errorHandler(
+                                               lvl,
+                                               lineIdx,
+                                               std::format("[{}:{}] {}", filename, line, message)
+                                           );
+                                       }
+                                   )) {
+                            errorHandler(
+                                core::logs::LVL_ERROR,
+                                lineIdx,
+                                std::format("can't parse insert '{}'", insertPath.string())
+                            );
                             err = true;
                         } else {
                             for (char* pInsertData = insertData.data(); *pInsertData; pInsertData++) {
@@ -481,10 +500,12 @@ namespace core::preprocessor {
 
     bool PreProcessorOption::ApplyPreProcessor(std::string& str, const char* filename) {
         if (filename) {
-            return ApplyPreProcessor(str,
-                                     [filename](core::logs::loglevel lvl, size_t line, const std::string& message) {
-                                         LOG_LVLF(lvl, "[{}:{}] {}", filename, line, message);
-                                     });
+            return ApplyPreProcessor(
+                str,
+                [filename](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                    LOG_LVLF(lvl, "[{}:{}] {}", filename, line, message);
+                }
+            );
         } else {
             return ApplyPreProcessor(str, [](core::logs::loglevel lvl, size_t line, const std::string& message) {
                 LOG_LVLF(lvl, "[line:{}] {}", line, message);

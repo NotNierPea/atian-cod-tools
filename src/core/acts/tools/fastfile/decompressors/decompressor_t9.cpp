@@ -105,10 +105,16 @@ namespace {
         fastfile::flexible::PFPlatformData& trPlatform{ GetTrPlatformData(data) };
         fastfile::flexible::PFFFastFileInfo& trFastfileInfo{ GetTrFastFileInfo(data) };
         fastfile::flexible::PFFBuildData& trBuildData{ GetTrBuildData(data) };
-        LOG_INFO("{}: v{} server:{}, comp:{}, plt:{} enc:{}, bld:{}", trFastfileInfo.fastfileName, trVersion,
-                 trPlatform.server ? "true" : "false", fastfile::GetFastFileCompressionName(trPlatform.compression),
-                 fastfile::GetFastFilePlatformName(trPlatform.platform), trPlatform.server ? "true" : "false",
-                 trBuildData.builderName);
+        LOG_INFO(
+            "{}: v{} server:{}, comp:{}, plt:{} enc:{}, bld:{}",
+            trFastfileInfo.fastfileName,
+            trVersion,
+            trPlatform.server ? "true" : "false",
+            fastfile::GetFastFileCompressionName(trPlatform.compression),
+            fastfile::GetFastFilePlatformName(trPlatform.platform),
+            trPlatform.server ? "true" : "false",
+            trBuildData.builderName
+        );
     }
 
     class T9FFDecompressor : public fastfile::FFDecompressor {
@@ -116,8 +122,10 @@ namespace {
         T9FFDecompressor()
             : fastfile::FFDecompressor("Black Ops Cold War", fastfile::flexible::MAGIC, fastfile::MASK32) {}
 
-        void LoadFastFile(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                          fastfile::FastFileContext& ctx, std::vector<byte>& ffdata) {
+        void LoadFastFile(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx,
+            std::vector<byte>& ffdata
+        ) {
             fastfile::flexible::FlexibleFastFileReader pheader{};
 
             pheader.ReadHeader(reader);
@@ -140,10 +148,13 @@ namespace {
             compatibility::acti::crypto_keys::AesKeyLocal* aeskey{};
 
             if (trPlatform.encrypted) {
-                aeskey = compatibility::acti::crypto_keys::GetKeyByName(trFastfileInfo.fastfileName,
-                                                                        compatibility::acti::crypto_keys::VER_BO4);
-                compatibility::acti::crypto_keys::RsaKeyLocal* rsa{ compatibility::acti::crypto_keys::GetRSAKeyByName(
-                    opt.rsaKey ? opt.rsaKey : "bo4") };
+                aeskey = compatibility::acti::crypto_keys::GetKeyByName(
+                    trFastfileInfo.fastfileName,
+                    compatibility::acti::crypto_keys::VER_BO4
+                );
+                compatibility::acti::crypto_keys::RsaKeyLocal* rsa{
+                    compatibility::acti::crypto_keys::GetRSAKeyByName(opt.rsaKey ? opt.rsaKey : "bo4")
+                };
 
                 if (!aeskey || !rsa) {
                     throw std::runtime_error(std::format("Missing key set for ff {}", trFastfileInfo.fastfileName));
@@ -160,8 +171,13 @@ namespace {
                 int r;
 
                 if ((r = rsa_import(rsa->key, (unsigned long)rsa->len, &rsakey)) != CRYPT_OK) {
-                    throw std::runtime_error(std::format("Failed to import key {} for ff {}", error_to_string(r),
-                                                         trFastfileInfo.fastfileName));
+                    throw std::runtime_error(
+                        std::format(
+                            "Failed to import key {} for ff {}",
+                            error_to_string(r),
+                            trFastfileInfo.fastfileName
+                        )
+                    );
                 }
 
                 uint8_t digest[20]{};
@@ -174,10 +190,24 @@ namespace {
                 // }
 
                 unsigned long digestSize{ sizeof(digest) };
-                if ((r == rsa_decrypt_key(trFastfileInfo.signature, 0x100, digest, &digestSize, nullptr, 0, shaHash,
-                                          &stat, &rsakey)) != CRYPT_OK) {
-                    throw std::runtime_error(std::format("Failed to import decrypt key {} for ff {}",
-                                                         error_to_string(r), trFastfileInfo.fastfileName));
+                if ((r == rsa_decrypt_key(
+                              trFastfileInfo.signature,
+                              0x100,
+                              digest,
+                              &digestSize,
+                              nullptr,
+                              0,
+                              shaHash,
+                              &stat,
+                              &rsakey
+                          )) != CRYPT_OK) {
+                    throw std::runtime_error(
+                        std::format(
+                            "Failed to import decrypt key {} for ff {}",
+                            error_to_string(r),
+                            trFastfileInfo.fastfileName
+                        )
+                    );
                 }
                 rsa_free(&rsakey);
             }
@@ -192,8 +222,9 @@ namespace {
                 ctx.blockSizes[i].size = trBlocks[i];
             }
 
-            utils::compress::CompressionAlgorithm alg{ fastfile::GetFastFileCompressionAlgorithm(
-                trPlatform.compression) };
+            utils::compress::CompressionAlgorithm alg{
+                fastfile::GetFastFileCompressionAlgorithm(trPlatform.compression)
+            };
 
             ctx.hasGSCBin = false;
             switch (trPlatform.platform) {
@@ -240,9 +271,14 @@ namespace {
                 }
 
                 byte* blockBuff{ reader.ReadPtr<byte>(block->alignedSize) };
-                LOG_TRACE("Decompressing block 0x{:x} {}(0x{:x}/0x{:x} -> 0x{:x})", loc,
-                          trPlatform.encrypted ? "encrypted " : "", block->compressedSize, block->alignedSize,
-                          block->uncompressedSize);
+                LOG_TRACE(
+                    "Decompressing block 0x{:x} {}(0x{:x}/0x{:x} -> 0x{:x})",
+                    loc,
+                    trPlatform.encrypted ? "encrypted " : "",
+                    block->compressedSize,
+                    block->alignedSize,
+                    block->uncompressedSize
+                );
 
                 size_t unloc{ utils::Allocate(ffdata, block->uncompressedSize) };
                 byte* decompressed{ &ffdata[unloc] };
@@ -257,19 +293,26 @@ namespace {
 
                     if ((r = ctr_start(aesCipher, aesIV, aeskey->key, sizeof(aeskey->key), 0, 0, &ctr)) != CRYPT_OK) {
                         throw std::runtime_error(
-                            std::format("Failed to start ctr for ff {}/{}", error_to_string(r), ctx.ffname));
+                            std::format("Failed to start ctr for ff {}/{}", error_to_string(r), ctx.ffname)
+                        );
                     }
 
                     if ((r = ctr_decrypt(blockBuff, blockBuff, block->alignedSize, &ctr)) != CRYPT_OK) {
                         throw std::runtime_error(
-                            std::format("Can't decrypt block 0x{:x}: {}", loc, error_to_string(r)));
+                            std::format("Can't decrypt block 0x{:x}: {}", loc, error_to_string(r))
+                        );
                     }
 
                     *((uint64_t*)&aesIV[0]) += block->compressedSize;
                 }
 
-                if (!utils::compress::Decompress(alg, decompressed, block->uncompressedSize, blockBuff,
-                                                 block->compressedSize)) {
+                if (!utils::compress::Decompress(
+                        alg,
+                        decompressed,
+                        block->uncompressedSize,
+                        blockBuff,
+                        block->compressedSize
+                    )) {
                     throw std::runtime_error(std::format("Can't decompress block 0x{:x}", loc));
                 }
             }
@@ -313,14 +356,21 @@ namespace {
                         DumpHeader(baseXFileHdr, "ff header");
                     }
 
-                    if (std::memcmp(&baseXFileHdrFastfileInfo.signature, &trFastfileInfo.signature,
-                                    sizeof(trFastfileInfo.signature))) {
+                    if (std::memcmp(
+                            &baseXFileHdrFastfileInfo.signature,
+                            &trFastfileInfo.signature,
+                            sizeof(trFastfileInfo.signature)
+                        )) {
                         throw std::runtime_error("The patch file is not for this fast file");
                     }
 
                     for (size_t i = 0; i < ctx.blocksCount; i++) {
-                        LOG_DEBUG("New size for block {} 0x{:x} -> 0x{:x}", i, ctx.blockSizes[i].size,
-                                  newXFileHeaderBlocks[i]);
+                        LOG_DEBUG(
+                            "New size for block {} 0x{:x} -> 0x{:x}",
+                            i,
+                            ctx.blockSizes[i].size,
+                            newXFileHeaderBlocks[i]
+                        );
                         ctx.blockSizes[i].size = newXFileHeaderBlocks[i];
                     }
 
@@ -334,9 +384,13 @@ namespace {
                     size_t compressedSize{ fdreader.Remaining() };
                     size_t fdDecompressedSize{ newXFileHeaderSizeData.size };
 
-                    LOG_TRACE("Decompressing patch {} 0x{:x}: 0x{:x} -> 0x{:x}",
-                              fastfile::GetFastFileCompressionName(newXFileHeaderPlatform.compression), fdreader.Loc(),
-                              compressedSize, fdDecompressedSize);
+                    LOG_TRACE(
+                        "Decompressing patch {} 0x{:x}: 0x{:x} -> 0x{:x}",
+                        fastfile::GetFastFileCompressionName(newXFileHeaderPlatform.compression),
+                        fdreader.Loc(),
+                        compressedSize,
+                        fdDecompressedSize
+                    );
                     auto uncompress{ std::make_unique<byte[]>(fdDecompressedSize) };
 
                     utils::compress::CompressionAlgorithm alg{};
@@ -351,15 +405,24 @@ namespace {
                         alg = utils::compress::COMP_LZMA;
                         break;
                     default:
-                        throw std::runtime_error(std::format("No fastfile decompressor for type {}",
-                                                             (int)newXFileHeaderPlatform.compression));
+                        throw std::runtime_error(
+                            std::format("No fastfile decompressor for type {}", (int)newXFileHeaderPlatform.compression)
+                        );
                     }
 
-                    if (!utils::compress::Decompress(alg, uncompress.get(), fdDecompressedSize,
-                                                     fdreader.ReadPtr<byte>(compressedSize), compressedSize)) {
+                    if (!utils::compress::Decompress(
+                            alg,
+                            uncompress.get(),
+                            fdDecompressedSize,
+                            fdreader.ReadPtr<byte>(compressedSize),
+                            compressedSize
+                        )) {
                         throw std::runtime_error(
-                            std::format("Error when decompressing fd data for type {}",
-                                        fastfile::GetFastFileCompressionName(newXFileHeaderPlatform.compression)));
+                            std::format(
+                                "Error when decompressing fd data for type {}",
+                                fastfile::GetFastFileCompressionName(newXFileHeaderPlatform.compression)
+                            )
+                        );
                     }
 
                     LOG_TRACE("Decompressed 0x{:x} byte(s) from patch file", fdDecompressedSize);
@@ -381,9 +444,13 @@ namespace {
                     core::bytebuffer::ByteBuffer ffbb{ ffdata };
                     core::bytebuffer::ByteBuffer fdbb{ uncompress.get(), fdDecompressedSize };
 
-                    ffdata = fastfile::bdiff::bdiff(&ffbb, &fdbb, fastfile::bdiff::BDiffType::BDT_TREYARCH,
-                                                    bdiffHeader->maxDestWindowSize + bdiffHeader->maxSourceWindowSize +
-                                                        2 * (bdiffHeader->maxDiffWindowSize + 0x80000));
+                    ffdata = fastfile::bdiff::bdiff(
+                        &ffbb,
+                        &fdbb,
+                        fastfile::bdiff::BDiffType::BDT_TREYARCH,
+                        bdiffHeader->maxDestWindowSize + bdiffHeader->maxSourceWindowSize +
+                            2 * (bdiffHeader->maxDiffWindowSize + 0x80000)
+                    );
 
                     if (opt.dump_decompressed) {
                         std::filesystem::path of{ ctx.file };

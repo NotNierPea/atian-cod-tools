@@ -87,8 +87,12 @@ namespace tool::gsc {
             uLongf sizef = (uLongf)header.len;
             uLongf sizef2{ header.compressedLen };
             int ret;
-            if (header.len && (ret = uncompress2(decompressedData.get(), &sizef,
-                                                 reinterpret_cast<const Bytef*>(header.GetBuffer()), &sizef2) < 0)) {
+            if (header.len && (ret = uncompress2(
+                                         decompressedData.get(),
+                                         &sizef,
+                                         reinterpret_cast<const Bytef*>(header.GetBuffer()),
+                                         &sizef2
+                                     ) < 0)) {
                 std::string fileName{ originalFile ? originalFile->string() : "<unk>" };
                 throw std::runtime_error(utils::va("Can't decompress file %s: %s", fileName.c_str(), zError(ret)));
             }
@@ -130,7 +134,9 @@ namespace tool::gsc {
                 };
 
                 auto ReadSourceToken = [&ctx, &sourceReader, &tokens, &stringData](
-                                           uint32_t* oid = nullptr, uint32_t* outtokenid = nullptr) -> const char* {
+                                           uint32_t* oid = nullptr,
+                                           uint32_t* outtokenid = nullptr
+                                       ) -> const char* {
                     if (outtokenid)
                         *outtokenid = (uint32_t)tokens.size();
                     GSCBINToken& token{ tokens.emplace_back() };
@@ -703,8 +709,9 @@ namespace tool::gsc {
                             case OPCODE_IW_GetIString:
                             case OPCODE_GetString: {
                                 PreString& ps{ strings.emplace_back() };
-                                const char* ds{ acts::decryptutils::DecryptString(
-                                    utils::CloneString(sourceReader.ReadString())) };
+                                const char* ds{
+                                    acts::decryptutils::DecryptString(utils::CloneString(sourceReader.ReadString()))
+                                };
 
                                 ps.string = (uint32_t)utils::WriteString(stringData, ds);
                                 ps.address = (uint32_t)bytecodeReader.Loc();
@@ -717,18 +724,21 @@ namespace tool::gsc {
                                 break;
                             }
                             case OPCODE_GSCBIN_SKIP_4BC_1STR: {
-                                const char* ds{ acts::decryptutils::DecryptString(
-                                    utils::CloneString(sourceReader.ReadString())) };
+                                const char* ds{
+                                    acts::decryptutils::DecryptString(utils::CloneString(sourceReader.ReadString()))
+                                };
                                 asmout << "\"" << utils::FormattedString(ds) << "\"";
                                 SkipNBytes(4) << "\n";
                                 break;
                             }
                             case OPCODE_IW_GetAnimation: {
                                 GSC_ANIMTREE_ITEM& item{ animTrees.emplace_back() };
-                                const char* an1{ acts::decryptutils::DecryptString(
-                                    utils::CloneString(sourceReader.ReadString())) };
-                                const char* an2{ acts::decryptutils::DecryptString(
-                                    utils::CloneString(sourceReader.ReadString())) };
+                                const char* an1{
+                                    acts::decryptutils::DecryptString(utils::CloneString(sourceReader.ReadString()))
+                                };
+                                const char* an2{
+                                    acts::decryptutils::DecryptString(utils::CloneString(sourceReader.ReadString()))
+                                };
                                 item.address_str1 = (uint32_t)utils::WriteString(stringData, an1);
                                 item.address_str2 = (uint32_t)utils::WriteString(stringData, an2);
                                 item.num_address = (uint32_t)bytecodeReader.Loc();
@@ -739,8 +749,9 @@ namespace tool::gsc {
                             }
                             case OPCODE_IW_GetAnimationTree: {
                                 GSC_USEANIMTREE_ITEM& item{ useAnimTrees.emplace_back() };
-                                const char* an{ acts::decryptutils::DecryptString(
-                                    utils::CloneString(sourceReader.ReadString())) };
+                                const char* an{
+                                    acts::decryptutils::DecryptString(utils::CloneString(sourceReader.ReadString()))
+                                };
                                 item.address = (uint32_t)utils::WriteString(stringData, an);
                                 item.num_address = (uint32_t)bytecodeReader.Loc();
 
@@ -754,8 +765,13 @@ namespace tool::gsc {
                             }
                             case OPCODE_GSCBIN_SKIP_4BC_4SD:
                             default: {
-                                const char* err{ utils::va("Operator not handled 0x%x (%d/%s) for vm %s", opcode,
-                                                           opcode, nfo->m_name, ctx.m_vmInfo->name) };
+                                const char* err{ utils::va(
+                                    "Operator not handled 0x%x (%d/%s) for vm %s",
+                                    opcode,
+                                    opcode,
+                                    nfo->m_name,
+                                    ctx.m_vmInfo->name
+                                ) };
                                 asmout << err << std::endl;
                                 throw std::runtime_error(err);
                             }

@@ -153,8 +153,9 @@ namespace fastfile::handlers::bo6sp::scriptbundle {
                 }
             }
 
-            char* name{ utils::MapString(utils::va("%s.json", ename),
-                                         [](char c) -> char { return c == ':' ? '/' : c; }) };
+            char* name{ utils::MapString(utils::va("%s.json", ename), [](char c) -> char {
+                return c == ':' ? '/' : c;
+            }) };
 
             std::string_view sw{ name };
             size_t catcut{ sw.find('/') };
@@ -190,8 +191,9 @@ namespace fastfile::handlers::bo6sp::scriptbundle {
 
                 HandlerJsonWriter json{};
 
-                std::sort(vec.begin(), vec.end(),
-                          [](ScriptBundle* a, ScriptBundle* b) -> bool { return a->name < b->name; });
+                std::sort(vec.begin(), vec.end(), [](ScriptBundle* a, ScriptBundle* b) -> bool {
+                    return a->name < b->name;
+                });
 
                 LOG_OPT_INFO("Dump {} hashed scriptbundle(s) {}", vec.size(), outFile.string());
 
@@ -200,8 +202,11 @@ namespace fastfile::handlers::bo6sp::scriptbundle {
                 for (ScriptBundle* bundle : vec) {
                     json.WriterFieldNameHash(bundle->name);
                     if (!WriteBundle(json, bundle)) {
-                        LOG_ERROR("Error when dumping {} into {}", hashutils::ExtractTmp("hash", bundle->name),
-                                  outFile.string());
+                        LOG_ERROR(
+                            "Error when dumping {} into {}",
+                            hashutils::ExtractTmp("hash", bundle->name),
+                            outFile.string()
+                        );
                         return;
                     }
                 }

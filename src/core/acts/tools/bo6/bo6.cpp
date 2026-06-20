@@ -252,14 +252,23 @@ namespace {
         bo6LuaData.Cleanup();
 
         // remove lua things if false it creates some useless calls
-        mod->Redirect("40 53 48 83 EC ?? 48 8B 44 24 ?? 48 8B D9 48 8D 0D EB BA", ReturnStub<bool, true>,
-                      "Bo6LuaUnkReturn"); // 88F5390
+        mod->Redirect(
+            "40 53 48 83 EC ?? 48 8B 44 24 ?? 48 8B D9 48 8D 0D EB BA",
+            ReturnStub<bool, true>,
+            "Bo6LuaUnkReturn"
+        ); // 88F5390
 
         // registry function
-        mod->Redirect("40 53 48 83 EC ?? 48 8B 44 24 ?? 48 8B D9 48 8D 0D EB BF", Bo6LoadLuaPop,
-                      "Bo6LoadLuaPop"); // 88F4E80
-        mod->Redirect("48 89 5C 24 ?? 57 48 83 EC ?? 48 8B 44 24 ?? 48 8B D9 48 8D 0D B7", Bo6LoadLuaPush,
-                      "Bo6LoadLuaPush"); // 88F2FA0
+        mod->Redirect(
+            "40 53 48 83 EC ?? 48 8B 44 24 ?? 48 8B D9 48 8D 0D EB BF",
+            Bo6LoadLuaPop,
+            "Bo6LoadLuaPop"
+        ); // 88F4E80
+        mod->Redirect(
+            "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B 44 24 ?? 48 8B D9 48 8D 0D B7",
+            Bo6LoadLuaPush,
+            "Bo6LoadLuaPush"
+        ); // 88F2FA0
 
         void* stub{
             mod->ScanSingle("E8 ?? ?? ?? ?? 48 BA EA C8 1A 47 1B 60 F9 08", "Bo6LoadLuaFunc").GetRelative<int32_t>(1)
@@ -275,8 +284,10 @@ namespace {
         hook::memory::RedirectJmp(stubStr, Bo6LoadLuaFuncStr);
 
         // 71b36f0bb44547d4 / bb69baec8be93d50 ?
-        mod->ScanSingle("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 48 89 4C 24 ?? 57 41 54 41 55 41 56 41 57 48 83 "
-                        "EC ?? 4C 8D 05")
+        mod->ScanSingle(
+               "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 48 89 4C 24 ?? 57 41 54 41 55 41 56 41 57 48 83 "
+               "EC ?? 4C 8D 05"
+        )
             .GetPtr<void (*)(void*)>()(nullptr); // load_funcs(luastate*)
 
         utils::OutFileCE os{ argv[3], true };
@@ -461,9 +472,10 @@ namespace {
             LOG_ERROR("Can't load module");
             return tool::BASIC_ERROR;
         }
-        AssetPoolInfo* poolInfo{ (
-            AssetPoolInfo*)(mod->ScanSingle("40 53 48 63 C9 48 8D 1D ? ? ? ?", "poolInfo").GetRelative<int32_t>(8) -
-                            offsetof(AssetPoolInfo, SetAssetName)) };
+        AssetPoolInfo* poolInfo{
+            (AssetPoolInfo*)(mod->ScanSingle("40 53 48 63 C9 48 8D 1D ? ? ? ?", "poolInfo").GetRelative<int32_t>(8) -
+                             offsetof(AssetPoolInfo, SetAssetName))
+        };
 
         // 0x9689BB0
         // 0x9689bd0
@@ -488,8 +500,13 @@ namespace {
             bo6::T10RAssetType type{ (bo6::T10RAssetType)i };
             AssetPoolInfo* nfo{ &poolInfo[type] };
 
-            LOG_INFO("{} 0x{:x} g:{} s:{}", bo6::PoolNameRelease(type), nfo->itemSize,
-                     hook::library::CodePointer{ nfo->GetAssetName }, hook::library::CodePointer{ nfo->SetAssetName });
+            LOG_INFO(
+                "{} 0x{:x} g:{} s:{}",
+                bo6::PoolNameRelease(type),
+                nfo->itemSize,
+                hook::library::CodePointer{ nfo->GetAssetName },
+                hook::library::CodePointer{ nfo->SetAssetName }
+            );
 
             bool custom{};
             static byte defaultSet[]{ 0x48, 0x89, 0x11, 0xC3 };

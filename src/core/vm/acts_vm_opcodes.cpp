@@ -240,8 +240,10 @@ namespace acts::vm::opcodes {
                 a->type = VT_INTEGER;
                 a->val.i = (a->val.f) ? 0 : 1;
             } else {
-                vm->Error(utils::va("NotHandler: Invalid type, expected float or int, got %s", VmVarTypeName(a->type)),
-                          false);
+                vm->Error(
+                    utils::va("NotHandler: Invalid type, expected float or int, got %s", VmVarTypeName(a->type)),
+                    false
+                );
                 vm->ReleaseVariable(a);
                 a->val.i = 0;
                 a->type = VT_INTEGER;
@@ -254,8 +256,10 @@ namespace acts::vm::opcodes {
             if (a->type == VT_INTEGER) {
                 a->val.i = ~a->val.i;
             } else {
-                vm->Error(utils::va("BitNotHandler: Invalid type, expected int, got %s", VmVarTypeName(a->type)),
-                          false);
+                vm->Error(
+                    utils::va("BitNotHandler: Invalid type, expected int, got %s", VmVarTypeName(a->type)),
+                    false
+                );
                 vm->ReleaseVariable(a);
                 a->val.i = 0;
                 a->type = VT_INTEGER;
@@ -269,9 +273,14 @@ namespace acts::vm::opcodes {
             if (a->type == VT_INTEGER && b->type == VT_INTEGER) {
                 a->val.i = a->val.i ^ b->val.i;
             } else {
-                vm->Error(utils::va("BitXorHandler: Invalid type, expected int, got %s/%s", VmVarTypeName(a->type),
-                                    VmVarTypeName(b->type)),
-                          false);
+                vm->Error(
+                    utils::va(
+                        "BitXorHandler: Invalid type, expected int, got %s/%s",
+                        VmVarTypeName(a->type),
+                        VmVarTypeName(b->type)
+                    ),
+                    false
+                );
                 vm->ReleaseVariable(a);
                 vm->ReleaseVariable(b);
                 a->val.i = 0;
@@ -288,9 +297,14 @@ namespace acts::vm::opcodes {
             if (a->type == VT_INTEGER && b->type == VT_INTEGER) {
                 a->val.i = a->val.i | b->val.i;
             } else {
-                vm->Error(utils::va("BitOrHandler: Invalid type, expected int, got %s/%s", VmVarTypeName(a->type),
-                                    VmVarTypeName(b->type)),
-                          false);
+                vm->Error(
+                    utils::va(
+                        "BitOrHandler: Invalid type, expected int, got %s/%s",
+                        VmVarTypeName(a->type),
+                        VmVarTypeName(b->type)
+                    ),
+                    false
+                );
                 vm->ReleaseVariable(a);
                 vm->ReleaseVariable(b);
                 a->val.i = 0;
@@ -307,9 +321,14 @@ namespace acts::vm::opcodes {
             if (a->type == VT_INTEGER && b->type == VT_INTEGER) {
                 a->val.i = a->val.i & b->val.i;
             } else {
-                vm->Error(utils::va("BitAndHandler: Invalid type, expected int, got %s/%s", VmVarTypeName(a->type),
-                                    VmVarTypeName(b->type)),
-                          false);
+                vm->Error(
+                    utils::va(
+                        "BitAndHandler: Invalid type, expected int, got %s/%s",
+                        VmVarTypeName(a->type),
+                        VmVarTypeName(b->type)
+                    ),
+                    false
+                );
                 vm->ReleaseVariable(a);
                 vm->ReleaseVariable(b);
                 a->val.i = 0;
@@ -326,9 +345,14 @@ namespace acts::vm::opcodes {
             if (a->type == VT_INTEGER && b->type == VT_INTEGER) {
                 a->val.i = a->val.i << b->val.i;
             } else {
-                vm->Error(utils::va("BitShiftLeftHandler: Invalid type, expected int, got %s/%s",
-                                    VmVarTypeName(a->type), VmVarTypeName(b->type)),
-                          false);
+                vm->Error(
+                    utils::va(
+                        "BitShiftLeftHandler: Invalid type, expected int, got %s/%s",
+                        VmVarTypeName(a->type),
+                        VmVarTypeName(b->type)
+                    ),
+                    false
+                );
                 vm->ReleaseVariable(a);
                 vm->ReleaseVariable(b);
                 a->val.i = 0;
@@ -345,9 +369,14 @@ namespace acts::vm::opcodes {
             if (a->type == VT_INTEGER && b->type == VT_INTEGER) {
                 a->val.i = a->val.i >> b->val.i;
             } else {
-                vm->Error(utils::va("BitShiftRightHandler: Invalid type, expected int, got %s/%s",
-                                    VmVarTypeName(a->type), VmVarTypeName(b->type)),
-                          false);
+                vm->Error(
+                    utils::va(
+                        "BitShiftRightHandler: Invalid type, expected int, got %s/%s",
+                        VmVarTypeName(a->type),
+                        VmVarTypeName(b->type)
+                    ),
+                    false
+                );
                 vm->ReleaseVariable(a);
                 vm->ReleaseVariable(b);
                 a->val.i = 0;
@@ -369,9 +398,14 @@ namespace acts::vm::opcodes {
                     vm->Error("ModulusHandler: Divide by 0", false);
                 }
             } else {
-                vm->Error(utils::va("ModulusHandler: Invalid type, expected int, got %s/%s", VmVarTypeName(a->type),
-                                    VmVarTypeName(b->type)),
-                          false);
+                vm->Error(
+                    utils::va(
+                        "ModulusHandler: Invalid type, expected int, got %s/%s",
+                        VmVarTypeName(a->type),
+                        VmVarTypeName(b->type)
+                    ),
+                    false
+                );
             }
             vm->ReleaseVariable(a);
             vm->ReleaseVariable(b);

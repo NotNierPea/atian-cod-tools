@@ -16,7 +16,8 @@ namespace fastfile::linker::memory {
         }
         if (blockStackIndex) {
             throw std::runtime_error(
-                "XBlockLinker::SetMode: Can't set linker mode with non empty chunks, missing PopStream()?");
+                "XBlockLinker::SetMode: Can't set linker mode with non empty chunks, missing PopStream()?"
+            );
         }
         linkerMode = mode;
     }
@@ -144,7 +145,8 @@ namespace fastfile::linker::memory {
     void XBlockLinker::AssertBlock(size_t block) {
         if (block >= numblocks) {
             throw std::runtime_error(
-                std::format("XBlockLinker::AssertBlock: Invalid linker block {}: Too high", block));
+                std::format("XBlockLinker::AssertBlock: Invalid linker block {}: Too high", block)
+            );
         }
     }
 
@@ -240,12 +242,14 @@ namespace fastfile::linker::memory {
             case BLOCKTYPE_UNKNOWN:
                 if (block.data[LM_HEADER] || block.data[LM_DATA]) {
                     throw std::runtime_error(
-                        std::format("XBlockLinker::Link: block 0x{:x} was used, but the type isn't known", i));
+                        std::format("XBlockLinker::Link: block 0x{:x} was used, but the type isn't known", i)
+                    );
                 }
                 break;
             default:
                 throw std::runtime_error(
-                    std::format("XBlockLinker::Link: unimplemented block {} type {}", i, (int)block.type));
+                    std::format("XBlockLinker::Link: unimplemented block {} type {}", i, (int)block.type)
+                );
                 break;
             }
             LOG_TRACE("Block size {}: 0x{:x}", i, block.finalSize);

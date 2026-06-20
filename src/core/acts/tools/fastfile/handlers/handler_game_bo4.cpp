@@ -75,8 +75,11 @@ namespace fastfile::handlers::bo4 {
 
             LOG_ERROR("ERROR WHEN DUMPING DATA");
             if (errorCtx.lastAsset) {
-                LOG_ERROR("last asset: {} / {}", XAssetNameFromId(errorCtx.lastAsset->type),
-                          errorCtx.lastAsset->header);
+                LOG_ERROR(
+                    "last asset: {} / {}",
+                    XAssetNameFromId(errorCtx.lastAsset->type),
+                    errorCtx.lastAsset->header
+                );
                 LOG_ERROR("index: {} / {}", errorCtx.assetIdx, gcx.assetList.assetCount);
                 LOG_ERROR("gcx.g_streamPosStackIdx = {}", gcx.g_streamPosStackIdx);
             }
@@ -96,8 +99,12 @@ namespace fastfile::handlers::bo4 {
             for (size_t i = 0; i < XFILE_BLOCK_COUNT2; i++) {
                 if (p >= gcx.ctx->blockSizes[i].data && p < gcx.ctx->blockSizes[i].data + gcx.ctx->blockSizes[i].size) {
                     size_t rloc{ (size_t)(p - gcx.ctx->blockSizes[i].data) };
-                    return utils::va("%s+0x%llx/0x%llx", XFileBlockName((XFileBlock)i), rloc,
-                                     gcx.ctx->blockSizes[i].size);
+                    return utils::va(
+                        "%s+0x%llx/0x%llx",
+                        XFileBlockName((XFileBlock)i),
+                        rloc,
+                        gcx.ctx->blockSizes[i].size
+                    );
                 }
             }
             return utils::va("%p", ptr);
@@ -167,8 +174,14 @@ namespace fastfile::handlers::bo4 {
             if (p >= loc.buffer && p < loc.buffer + loc.len) {
                 size_t rloc{ (size_t)(p - loc.buffer) };
                 if (rloc + len > loc.len) {
-                    ThrowFastFileError("AssertCanWrite: Can't read {}:0x{:x}+0x{:x}, remaining 0x{:x} at {}", loc.name,
-                                       rloc, len, (int64_t)loc.len - rloc, ptr);
+                    ThrowFastFileError(
+                        "AssertCanWrite: Can't read {}:0x{:x}+0x{:x}, remaining 0x{:x} at {}",
+                        loc.name,
+                        rloc,
+                        len,
+                        (int64_t)loc.len - rloc,
+                        ptr
+                    );
                 }
                 return;
             }
@@ -203,8 +216,13 @@ namespace fastfile::handlers::bo4 {
     void DB_IncStreamPos(size_t size) { gcx.g_streamPos += size; }
 
     bool Load_Stream(bool atStreamStart, void* ptr, size_t size) {
-        LOG_TRACE("Load_Stream({}, {}, {}) {}", atStreamStart ? "true" : "false", ptr, size,
-                  hook::library::CodePointer{ _ReturnAddress() });
+        LOG_TRACE(
+            "Load_Stream({}, {}, {}) {}",
+            atStreamStart ? "true" : "false",
+            ptr,
+            size,
+            hook::library::CodePointer{ _ReturnAddress() }
+        );
         if (!atStreamStart || !size) {
             return true;
         }
@@ -349,8 +367,14 @@ namespace fastfile::handlers::bo4 {
         uint64_t offset{ (ref - 1) & ~0xF000000000000000 };
 
         void* loc{ &gcx.g_streamBlocks[block].data[offset] };
-        LOG_TRACE("DB_GetOffsetData(0x{:x}, {}, 0x{:x}) -> {} {}", ref, XFileBlockName(block), offset, loc,
-                  hook::library::CodePointer{ _ReturnAddress() });
+        LOG_TRACE(
+            "DB_GetOffsetData(0x{:x}, {}, 0x{:x}) -> {} {}",
+            ref,
+            XFileBlockName(block),
+            offset,
+            loc,
+            hook::library::CodePointer{ _ReturnAddress() }
+        );
         return loc;
     }
 
@@ -367,8 +391,14 @@ namespace fastfile::handlers::bo4 {
     void Load_XStringCustom(char** str) {
         size_t size;
         char* ptr{ gcx.reader->ReadString(&size) };
-        LOG_TRACE("{} Load_XStringCustom({}, 0x{:x}) -> 0x{:x} / {}", hook::library::CodePointer{ _ReturnAddress() },
-                  XBlockLocPtr((void*)str), size, gcx.reader->Loc(), acts::decryptutils::DecryptStringT8(ptr));
+        LOG_TRACE(
+            "{} Load_XStringCustom({}, 0x{:x}) -> 0x{:x} / {}",
+            hook::library::CodePointer{ _ReturnAddress() },
+            XBlockLocPtr((void*)str),
+            size,
+            gcx.reader->Loc(),
+            acts::decryptutils::DecryptStringT8(ptr)
+        );
         AssertCanWrite(*str, size + 1);
         std::memcpy(*str, ptr, size + 1);
         const char* ds{ acts::decryptutils::DecryptStringT8(*str) };
@@ -439,8 +469,15 @@ namespace fastfile::handlers::bo4 {
 
             gcx.linkedAssets[xasset->type][hash->name] = xasset->header;
 
-            LOG_DEBUG("Loading asset {}({})/{}({:x}) -> {}/{}", XAssetNameFromId(xasset->type), (int)xasset->type,
-                      hashutils::ExtractTmp("hash", hash->name), hash->name, xasset->header, XBlockLocPtr(baseHeader));
+            LOG_DEBUG(
+                "Loading asset {}({})/{}({:x}) -> {}/{}",
+                XAssetNameFromId(xasset->type),
+                (int)xasset->type,
+                hashutils::ExtractTmp("hash", hash->name),
+                hash->name,
+                xasset->header,
+                XBlockLocPtr(baseHeader)
+            );
         }
 
         fastfile::AddAssetHeader(name, &xasset->header, xasset->type, assetSize);
@@ -456,8 +493,12 @@ namespace fastfile::handlers::bo4 {
                         it->second->Unlink(*gcx.opt, xasset->header);
                     }
                 } catch (std::runtime_error& e) {
-                    LOG_ERROR("Can't dump asset asset {}/{}: {}", XAssetNameFromId(xasset->type), (void*)xasset->header,
-                              e.what());
+                    LOG_ERROR(
+                        "Can't dump asset asset {}/{}: {}",
+                        XAssetNameFromId(xasset->type),
+                        (void*)xasset->header,
+                        e.what()
+                    );
                 }
             }
         }
@@ -522,8 +563,9 @@ namespace fastfile::handlers::bo4 {
 
                 acts::game_data::GameData game{ "bo4" };
                 commonFiles = game.GetCommonFastFiles();
-                hook::module_mapper::Module& mod{ opt.GetGameModule(true, nullptr, false, game.GetModuleName(),
-                                                                    "bo4") };
+                hook::module_mapper::Module& mod{
+                    opt.GetGameModule(true, nullptr, false, game.GetModuleName(), "bo4")
+                };
                 hook::scan_container::ScanContainer& scan{ mod.GetScanContainer() };
                 game.SetScanContainer(&scan);
                 scan.Sync();
@@ -581,8 +623,9 @@ namespace fastfile::handlers::bo4 {
             }
             void Cleanup() override { gcx.isRunning = false; }
 
-            void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                        fastfile::FastFileContext& ctx) override {
+            void Handle(
+                fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+            ) override {
                 gcx.ctx = &ctx;
                 gcx.reader = &reader;
                 gcx.data = reader.Ptr();
@@ -689,8 +732,14 @@ namespace fastfile::handlers::bo4 {
                         errorCtx.lastAsset = ass;
                         errorCtx.assetIdx = i;
                         const char* assType{ XAssetNameFromId(ass->type) };
-                        LOG_DEBUG("{}/{} Load asset {} (0x{:x}) {}", i, assetList.assetCount, assType, (int)ass->type,
-                                  ass->header);
+                        LOG_DEBUG(
+                            "{}/{} Load asset {} (0x{:x}) {}",
+                            i,
+                            assetList.assetCount,
+                            assType,
+                            (int)ass->type,
+                            ass->header
+                        );
                         if (!opt.noAssetDump || opt.testDump || opt.dumpCompiledZone) {
 #ifndef CI_BUILD
                             // if (i >= 110100) core::logs::setlevel(core::logs::LVL_TRACE_PATH);

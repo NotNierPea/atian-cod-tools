@@ -50,20 +50,22 @@ namespace deps::oodle {
         OodleDecompressCallbackRet_Invalid = 2
     };
 
-    typedef int (*POodleLZ_Compress)(OodleCompressor compressor, const void* src, int32_t srcLen, void* dest,
-                                     OodleCompressionLevel level, const void* pOptions, const void* dictionaryBase,
-                                     const void* lrm, void* scratchMem, int32_t scratchSize);
+    typedef int (*POodleLZ_Compress)(
+        OodleCompressor compressor, const void* src, int32_t srcLen, void* dest, OodleCompressionLevel level,
+        const void* pOptions, const void* dictionaryBase, const void* lrm, void* scratchMem, int32_t scratchSize
+    );
 
-    typedef OodleDecompressCallbackRet (*OodleDecompressCallback)(void* userdata, const void* rawBuf, int32_t rawLen,
-                                                                  const void* compBuf, int32_t compBufferSize,
-                                                                  int32_t rawDone, int32_t compUsed);
+    typedef OodleDecompressCallbackRet (*OodleDecompressCallback)(
+        void* userdata, const void* rawBuf, int32_t rawLen, const void* compBuf, int32_t compBufferSize,
+        int32_t rawDone, int32_t compUsed
+    );
 
-    typedef int32_t (*POodleLZ_Decompress)(const void* src, uint32_t srcLen, void* dest, uint32_t destLen,
-                                           OodleFuzeSafe fuzzSafe, OodleCheckCrcValues checkCrc,
-                                           OodleVerbosity verbosity, byte* decBufBase, uint64_t decBufSize,
-                                           OodleDecompressCallback fpCallback, void* callbackUserData,
-                                           byte* decoderMemory, uint64_t decoderMemorySize,
-                                           OodleThreadPhase threadPhase);
+    typedef int32_t (*POodleLZ_Decompress)(
+        const void* src, uint32_t srcLen, void* dest, uint32_t destLen, OodleFuzeSafe fuzzSafe,
+        OodleCheckCrcValues checkCrc, OodleVerbosity verbosity, byte* decBufBase, uint64_t decBufSize,
+        OodleDecompressCallback fpCallback, void* callbackUserData, byte* decoderMemory, uint64_t decoderMemorySize,
+        OodleThreadPhase threadPhase
+    );
     typedef void (*POodle_GetConfigValues)(int32_t* cfg);
 
     typedef int32_t (*POodleLZ_GetCompressedBufferSizeNeededV8)(OodleCompressor compressor, int32_t rawSize);
@@ -102,8 +104,10 @@ namespace deps::oodle {
 
         void GetConfigValues(int32_t* cfg) const;
 
-        int Compress(OodleCompressor compressor, const void* src, int32_t srcLen, void* dest,
-                     OodleCompressionLevel level = OODLE_COMPL_NORMAL) const;
+        int Compress(
+            OodleCompressor compressor, const void* src, int32_t srcLen, void* dest,
+            OodleCompressionLevel level = OODLE_COMPL_NORMAL
+        ) const;
 
         int32_t GetCompressedBufferSizeNeeded(OodleCompressor compressor, int32_t rawSize) const;
 
@@ -111,12 +115,13 @@ namespace deps::oodle {
 
         void SetPrintf(printffunc func) const;
 
-        int Decompress(const void* src, uint32_t srcLen, void* dest, uint32_t destLen,
-                       OodleFuzeSafe fuzeSafe = OODLE_FS_NO, OodleCheckCrcValues checkCrc = OODLE_CRC_NO,
-                       OodleVerbosity verbosity = OODLE_VERB_NONE, OodleThreadPhase threadPhase = OODLE_TP_Unthreaded,
-                       byte* decBufBase = nullptr, uint64_t decBufSize = 0,
-                       OodleDecompressCallback fpCallback = nullptr, void* callbackUserData = nullptr,
-                       byte* decoderMemory = nullptr, uint64_t decoderMemorySize = 0) const;
+        int Decompress(
+            const void* src, uint32_t srcLen, void* dest, uint32_t destLen, OodleFuzeSafe fuzeSafe = OODLE_FS_NO,
+            OodleCheckCrcValues checkCrc = OODLE_CRC_NO, OodleVerbosity verbosity = OODLE_VERB_NONE,
+            OodleThreadPhase threadPhase = OODLE_TP_Unthreaded, byte* decBufBase = nullptr, uint64_t decBufSize = 0,
+            OodleDecompressCallback fpCallback = nullptr, void* callbackUserData = nullptr,
+            byte* decoderMemory = nullptr, uint64_t decoderMemorySize = 0
+        ) const;
     };
 
     Oodle& GetInstance();

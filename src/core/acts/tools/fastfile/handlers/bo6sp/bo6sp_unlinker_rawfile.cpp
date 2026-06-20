@@ -47,15 +47,24 @@ namespace {
             std::filesystem::path outFile{ opt.m_output / "bo6sp" / "source" / n };
 
             std::filesystem::create_directories(outFile.parent_path());
-            LOG_OPT_INFO("Dump raw file {} type: 0x{:x} len: 0x{:x}", outFile.string(), asset->type,
-                         asset->uncompressedLen);
+            LOG_OPT_INFO(
+                "Dump raw file {} type: 0x{:x} len: 0x{:x}",
+                outFile.string(),
+                asset->type,
+                asset->uncompressedLen
+            );
             if (!asset->uncompressedLen && std::filesystem::exists(outFile))
                 return; // ignore empty files
             std::unique_ptr<byte[]> decomp{ std::make_unique<byte[]>(asset->uncompressedLen + 1) };
 
             if (asset->uncompressedLen) {
-                if (utils::compress::Decompress2(utils::compress::COMP_ZLIB, decomp.get(), asset->uncompressedLen,
-                                                 asset->data, asset->compressedLen) < 0) {
+                if (utils::compress::Decompress2(
+                        utils::compress::COMP_ZLIB,
+                        decomp.get(),
+                        asset->uncompressedLen,
+                        asset->data,
+                        asset->compressedLen
+                    ) < 0) {
                     LOG_ERROR("Error when decompresing {}", outFile.string());
                     return;
                 }

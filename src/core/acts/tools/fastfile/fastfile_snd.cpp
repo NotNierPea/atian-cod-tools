@@ -204,24 +204,53 @@ namespace {
                                           std::format("{}{}", name, SndAssetFormatExt(entry.format)) };
 
                 LOG_INFO("dump {} ({})", of.string(), SndAssetFormatName(entry.format));
-                LOG_INFO(" - off:0x{:x}+0x{:x}:0x{:x}"
-                         " fc:0x{:x} or:0x{:x} fri:0x{:x} cc:0x{:x} lp:0x{:x} unk24:0x{:x} unk3c:0x{:x}",
-                         entry.offset, entry.size, entry.offset + entry.size, entry.frameCount, entry.order,
-                         entry.frameRateIndex, entry.channelCount, entry.looping, entry.unk24, entry.unk3c);
-                LOG_INFO(" - checksum f:{} / s:{}",
-                         utils::data::ArrayAsString<byte>(
-                             checksumbuff, header.checksumSize, "", "", "",
-                             [](const byte& b) -> std::string { return std::format("{:02x}", (int)b); }),
-                         utils::data::ArrayAsString<byte>(
-                             srcchecksumbuff, header.checksumSize, "", "", "",
-                             [](const byte& b) -> std::string { return std::format("{:02x}", (int)b); }));
+                LOG_INFO(
+                    " - off:0x{:x}+0x{:x}:0x{:x}"
+                    " fc:0x{:x} or:0x{:x} fri:0x{:x} cc:0x{:x} lp:0x{:x} unk24:0x{:x} unk3c:0x{:x}",
+                    entry.offset,
+                    entry.size,
+                    entry.offset + entry.size,
+                    entry.frameCount,
+                    entry.order,
+                    entry.frameRateIndex,
+                    entry.channelCount,
+                    entry.looping,
+                    entry.unk24,
+                    entry.unk3c
+                );
+                LOG_INFO(
+                    " - checksum f:{} / s:{}",
+                    utils::data::ArrayAsString<byte>(
+                        checksumbuff,
+                        header.checksumSize,
+                        "",
+                        "",
+                        "",
+                        [](const byte& b) -> std::string { return std::format("{:02x}", (int)b); }
+                    ),
+                    utils::data::ArrayAsString<byte>(
+                        srcchecksumbuff,
+                        header.checksumSize,
+                        "",
+                        "",
+                        "",
+                        [](const byte& b) -> std::string { return std::format("{:02x}", (int)b); }
+                    )
+                );
                 if (std::memcmp(&emptyAssetname[8], &assetname[8], sizeof(emptyAssetname) - 8) ||
                     *(uint64_t*)assetname != entry.id) {
-                    LOG_WARNING(" - assetname {} / {}",
-                                utils::data::ArrayAsString<byte>(
-                                    assetname, sizeof(assetname), "", "", "",
-                                    [](const byte& b) -> std::string { return std::format("{:02x}", (int)b); }),
-                                hashutils::ExtractTmp("hash", *(uint64_t*)assetname));
+                    LOG_WARNING(
+                        " - assetname {} / {}",
+                        utils::data::ArrayAsString<byte>(
+                            assetname,
+                            sizeof(assetname),
+                            "",
+                            "",
+                            "",
+                            [](const byte& b) -> std::string { return std::format("{:02x}", (int)b); }
+                        ),
+                        hashutils::ExtractTmp("hash", *(uint64_t*)assetname)
+                    );
                 }
 
                 reader.PushLocation();

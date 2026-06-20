@@ -78,8 +78,8 @@ namespace tool::gsc::compiler {
 
     FunctionVar* FunctionObject::VarEnd() { return &m_vars[m_allocatedVar]; }
 
-    std::pair<const char*, FunctionVar*> FunctionObject::RegisterVar(const std::string& name, bool allowExisting,
-                                                                     byte flags) {
+    std::pair<const char*, FunctionVar*>
+    FunctionObject::RegisterVar(const std::string& name, bool allowExisting, byte flags) {
         static FunctionVar badVar{ "$BAD_VAR", 0, 0 };
         FunctionVar* it = FindVar(name);
         if (it != VarEnd()) {
@@ -90,8 +90,10 @@ namespace tool::gsc::compiler {
         }
 
         if (m_allocatedVar >= ACTS_ARRAYSIZE(m_vars)) {
-            return std::make_pair<>(utils::va("Can't create var '%s': too much variable for function", name.c_str()),
-                                    &badVar);
+            return std::make_pair<>(
+                utils::va("Can't create var '%s': too much variable for function", name.c_str()),
+                &badVar
+            );
         }
 
         FunctionVar& var = m_vars[m_allocatedVar] = { name, m_allocatedVar, flags };
@@ -102,8 +104,9 @@ namespace tool::gsc::compiler {
     }
 
     FunctionVar* FunctionObject::FindVar(const std::string& name) {
-        return std::find_if(std::begin(m_vars), VarEnd(),
-                            [&name](const FunctionVar& var) -> bool { return name == var.name; });
+        return std::find_if(std::begin(m_vars), VarEnd(), [&name](const FunctionVar& var) -> bool {
+            return name == var.name;
+        });
     }
 
     std::pair<const char*, FunctionVar*> FunctionObject::RegisterVarRnd() {

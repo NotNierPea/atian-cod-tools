@@ -131,8 +131,11 @@ namespace {
 
             json.BeginObject();
             json.WriteFieldValueXHash("name", asset->name);
-            json.WriteFieldValueXAsset("techniqueSet", games::bo4::pool::XAssetType::ASSET_TYPE_TECHNIQUE_SET,
-                                       asset->techniqueSet);
+            json.WriteFieldValueXAsset(
+                "techniqueSet",
+                games::bo4::pool::XAssetType::ASSET_TYPE_TECHNIQUE_SET,
+                asset->techniqueSet
+            );
 
             json.WriteFieldNameString("textureTable");
             json.BeginArray();
@@ -148,9 +151,13 @@ namespace {
                 json.WriteFieldValueString("type", h);
                 json.WriteFieldValueString("uvScale", std::format("({}, {})", def->uvScale[0], def->uvScale[1]));
                 json.WriteFieldValueString(
-                    "texSizeShift", std::format("({}, {})", (int)def->texSizeShift[0], (int)def->texSizeShift[1]));
-                json.WriteFieldValueString("uvOffset",
-                                           std::format("({}, {})", (int)def->uvOffset[0], (int)def->uvOffset[1]));
+                    "texSizeShift",
+                    std::format("({}, {})", (int)def->texSizeShift[0], (int)def->texSizeShift[1])
+                );
+                json.WriteFieldValueString(
+                    "uvOffset",
+                    std::format("({}, {})", (int)def->uvOffset[0], (int)def->uvOffset[1])
+                );
                 json.WriteFieldValueNumber("usage", def->usage);
                 json.WriteFieldValueBool("isMatureContent", def->isMatureContent);
                 json.EndObject();

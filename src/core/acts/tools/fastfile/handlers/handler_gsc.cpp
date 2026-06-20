@@ -56,8 +56,9 @@ namespace {
             }
         }
 
-        bool HandleScriptFile(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
-                              fastfile::FastFileContext& ctx) {
+        bool HandleScriptFile(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx
+        ) {
             if (!ctx.hasGSCBin)
                 return false;
             struct ScriptFile {
@@ -144,8 +145,9 @@ namespace {
             return any;
         }
 
-        bool HandleScriptParseTree(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
-                                   fastfile::FastFileContext& ctx) {
+        bool HandleScriptParseTree(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx
+        ) {
             bool any{};
 
             { // spt string search
@@ -373,8 +375,13 @@ namespace {
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size,
-                              hashutils::ExtractTmpScript(obj->name));
+                    LOG_TRACE(
+                        "gsc: 0x{:x} 0x{:x} 0x{:x}: {}",
+                        smagic,
+                        loc,
+                        size,
+                        hashutils::ExtractTmpScript(obj->name)
+                    );
 
                     if (!buff.CanRead(size)) {
                         loc++;
@@ -428,8 +435,13 @@ namespace {
                     GscObjEntry* entry{ buff.ReadPtr<GscObjEntry>() };
 
                     if (!entry->name) {
-                        LOG_ERROR("0x{:x} INVALID {}/{} for 0x{:x}", smagic, entry->obj,
-                                  hashutils::ExtractTmpScript(entry->name), loc);
+                        LOG_ERROR(
+                            "0x{:x} INVALID {}/{} for 0x{:x}",
+                            smagic,
+                            entry->obj,
+                            hashutils::ExtractTmpScript(entry->name),
+                            loc
+                        );
                         continue;
                     }
 
@@ -439,8 +451,13 @@ namespace {
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, entry->len,
-                              hashutils::ExtractTmpScript(entry->name));
+                    LOG_TRACE(
+                        "gsc: 0x{:x} 0x{:x} 0x{:x}: {}",
+                        smagic,
+                        loc,
+                        entry->len,
+                        hashutils::ExtractTmpScript(entry->name)
+                    );
 
                     byte* obj{ buff.ReadPtr<byte>(entry->len) };
 
@@ -463,8 +480,9 @@ namespace {
             return any;
         }
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx
+        ) override {
             if (HandleScriptParseTree(opt, buff, ctx))
                 return;
             if (HandleScriptFile(opt, buff, ctx))

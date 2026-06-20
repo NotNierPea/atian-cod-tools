@@ -31,8 +31,12 @@ namespace {
             // LOG_INFO("{}", utils::data::AsHex(&asset, sizeof(asset)));
 
             if (entry.len <= 0) {
-                LOG_INFO("Invalid size for {} (0x{:x}) 0x{:x}", hashutils::ExtractTmpScript(entry.name), entry.len,
-                         entry.buffer);
+                LOG_INFO(
+                    "Invalid size for {} (0x{:x}) 0x{:x}",
+                    hashutils::ExtractTmpScript(entry.name),
+                    entry.len,
+                    entry.buffer
+                );
                 return false;
             }
 

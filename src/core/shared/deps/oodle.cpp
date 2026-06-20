@@ -83,7 +83,8 @@ namespace deps::oodle {
             }
 
             if ((OodleLZ_GetCompressedBufferSizeNeeded.v8 = oodle.GetProc<POodleLZ_GetCompressedBufferSizeNeededV8>(
-                     "OodleLZ_GetCompressedBufferSizeNeeded")) &&
+                     "OodleLZ_GetCompressedBufferSizeNeeded"
+                 )) &&
                 (OodleLZ_Compress = oodle.GetProc<POodleLZ_Compress>("OodleLZ_Compress"))) {
                 LOG_TRACE("Loaded oodle compress");
 
@@ -126,8 +127,9 @@ namespace deps::oodle {
         Oodle_GetConfigValues(cfg);
     }
 
-    int Oodle::Compress(OodleCompressor compressor, const void* src, int32_t srcLen, void* dest,
-                        OodleCompressionLevel level) const {
+    int Oodle::Compress(
+        OodleCompressor compressor, const void* src, int32_t srcLen, void* dest, OodleCompressionLevel level
+    ) const {
         if (!OodleLZ_Compress) {
             throw std::runtime_error("OodleLZ_Compress not available or oodle not loaded");
         }
@@ -158,16 +160,32 @@ namespace deps::oodle {
         OodleCore_Plugins_SetPrintf(func);
     }
 
-    int Oodle::Decompress(const void* src, uint32_t srcLen, void* dest, uint32_t destLen, OodleFuzeSafe fuzeSafe,
-                          OodleCheckCrcValues checkCrc, OodleVerbosity verbosity, OodleThreadPhase threadPhase,
-                          byte* decBufBase, uint64_t decBufSize, OodleDecompressCallback fpCallback,
-                          void* callbackUserData, byte* decoderMemory, uint64_t decoderMemorySize) const {
+    int Oodle::Decompress(
+        const void* src, uint32_t srcLen, void* dest, uint32_t destLen, OodleFuzeSafe fuzeSafe,
+        OodleCheckCrcValues checkCrc, OodleVerbosity verbosity, OodleThreadPhase threadPhase, byte* decBufBase,
+        uint64_t decBufSize, OodleDecompressCallback fpCallback, void* callbackUserData, byte* decoderMemory,
+        uint64_t decoderMemorySize
+    ) const {
         if (!OodleLZ_Decompress) {
             throw std::runtime_error("Oodle not loaded");
         }
 
-        return OodleLZ_Decompress(src, srcLen, dest, destLen, fuzeSafe, checkCrc, verbosity, decBufBase, decBufSize,
-                                  fpCallback, callbackUserData, decoderMemory, decoderMemorySize, threadPhase);
+        return OodleLZ_Decompress(
+            src,
+            srcLen,
+            dest,
+            destLen,
+            fuzeSafe,
+            checkCrc,
+            verbosity,
+            decBufBase,
+            decBufSize,
+            fpCallback,
+            callbackUserData,
+            decoderMemory,
+            decoderMemorySize,
+            threadPhase
+        );
     }
 
 } // namespace deps::oodle

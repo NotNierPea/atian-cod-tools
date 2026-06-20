@@ -134,8 +134,9 @@ namespace utils::compress {
         }
     }
 
-    int Decompress(CompressionAlgorithm alg, std::vector<byte>& outBuff, const void* src, size_t srcSize,
-                   float increaseFactor) {
+    int Decompress(
+        CompressionAlgorithm alg, std::vector<byte>& outBuff, const void* src, size_t srcSize, float increaseFactor
+    ) {
         if (alg == CompressionAlgorithm::COMP_NONE) {
             size_t len{ srcSize };
             outBuff.resize(len);
@@ -348,8 +349,9 @@ namespace utils::compress {
             byte chunk[chunkSize];
 
             while (true) {
-                int decodedBytes{ LZ4_decompress_safe_continue(&strm, (const char*)src, (char*)chunk, (int)srcSize,
-                                                               chunkSize) };
+                int decodedBytes{
+                    LZ4_decompress_safe_continue(&strm, (const char*)src, (char*)chunk, (int)srcSize, chunkSize)
+                };
 
                 if (decodedBytes < 0) {
                     return DecompressResult::DCOMP_UNKNOWN_ERROR;

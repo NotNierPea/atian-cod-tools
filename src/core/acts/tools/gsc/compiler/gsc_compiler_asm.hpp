@@ -85,8 +85,13 @@ namespace tool::gsc::compiler {
         bool Write(AscmCompilerContext& ctx) override {
             auto [ok, op] = GetOpCodeId(ctx.vmInfo->vmMagic, ctx.plt, opcode, ctx.cfg.useModToolOpCodes);
             if (!ok) {
-                LOG_ERROR("Can't find opcode {} ({}) for vm {}/{}", utils::PtrOrElse(OpCodeName(opcode), "null"),
-                          (int)opcode, ctx.vmInfo->name, PlatformName(ctx.plt));
+                LOG_ERROR(
+                    "Can't find opcode {} ({}) for vm {}/{}",
+                    utils::PtrOrElse(OpCodeName(opcode), "null"),
+                    (int)opcode,
+                    ctx.vmInfo->name,
+                    PlatformName(ctx.plt)
+                );
 
                 return false;
             }
@@ -306,7 +311,8 @@ namespace tool::gsc::compiler {
                 default: {
                     const char* opcodeName{ tool::gsc::opcode::OpCodeName(opcode) };
                     throw std::runtime_error(
-                        utils::va("invalid opcode for func call %s", opcodeName ? opcodeName : "null"));
+                        utils::va("invalid opcode for func call %s", opcodeName ? opcodeName : "null")
+                    );
                 }
                 }
             }
@@ -420,8 +426,9 @@ namespace tool::gsc::compiler {
         uint32_t hashSize;
 
       public:
-        AscmNodeCreateLocalVariables(const FunctionVar* lvars, size_t count, size_t params, const FunctionObject& fobj,
-                                     bool obfuscate);
+        AscmNodeCreateLocalVariables(
+            const FunctionVar* lvars, size_t count, size_t params, const FunctionObject& fobj, bool obfuscate
+        );
 
         uint32_t ShiftSize(uint32_t start, bool aligned) const override {
             static AscmNodeOpCode opCodeUndef{ OPCODE_Undefined };
@@ -501,12 +508,14 @@ namespace tool::gsc::compiler {
 
                         if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                             ctx.Align<uint64_t>();
-                            ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1)
-                                                          : ctx.vmInfo->HashField(var.name.c_str()));
+                            ctx.Write<uint64_t>(
+                                obfuscate ? (uint64_t)(i + 1) : ctx.vmInfo->HashField(var.name.c_str())
+                            );
                         } else {
                             ctx.Align<uint32_t>();
-                            ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1)
-                                                          : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                            ctx.Write<uint32_t>(
+                                obfuscate ? (uint32_t)(i + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str())
+                            );
                         }
                         if (hasFlag) {
                             ctx.Write<byte>(var.flags);
@@ -532,12 +541,14 @@ namespace tool::gsc::compiler {
 
                         if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                             ctx.Align<uint64_t>();
-                            ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1)
-                                                          : ctx.vmInfo->HashField(var.name.c_str()));
+                            ctx.Write<uint64_t>(
+                                obfuscate ? (uint64_t)(i + 1) : ctx.vmInfo->HashField(var.name.c_str())
+                            );
                         } else {
                             ctx.Align<uint32_t>();
-                            ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1)
-                                                          : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                            ctx.Write<uint32_t>(
+                                obfuscate ? (uint32_t)(i + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str())
+                            );
                         }
                         if (hasFlag) {
                             ctx.Write<byte>(var.flags);
@@ -555,12 +566,14 @@ namespace tool::gsc::compiler {
 
                             if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                                 ctx.Align<uint64_t>();
-                                ctx.Write<uint64_t>(obfuscate ? (uint64_t)(i + 1)
-                                                              : ctx.vmInfo->HashField(var.name.c_str()));
+                                ctx.Write<uint64_t>(
+                                    obfuscate ? (uint64_t)(i + 1) : ctx.vmInfo->HashField(var.name.c_str())
+                                );
                             } else {
                                 ctx.Align<uint32_t>();
-                                ctx.Write<uint32_t>(obfuscate ? (uint32_t)(i + 1)
-                                                              : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                                ctx.Write<uint32_t>(
+                                    obfuscate ? (uint32_t)(i + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str())
+                                );
                             }
                         }
                     }
@@ -580,12 +593,14 @@ namespace tool::gsc::compiler {
                 for (FunctionVar& var : vars) {
                     if (ctx.vmInfo->HasFlag(VmFlags::VMF_HASH64)) {
                         ctx.Align<uint64_t>();
-                        ctx.Write<uint64_t>(obfuscate ? (uint64_t)(var.id + 1)
-                                                      : ctx.vmInfo->HashField(var.name.c_str()));
+                        ctx.Write<uint64_t>(
+                            obfuscate ? (uint64_t)(var.id + 1) : ctx.vmInfo->HashField(var.name.c_str())
+                        );
                     } else {
                         ctx.Align<uint32_t>();
-                        ctx.Write<uint32_t>(obfuscate ? (uint32_t)(var.id + 1)
-                                                      : (uint32_t)ctx.vmInfo->HashField(var.name.c_str()));
+                        ctx.Write<uint32_t>(
+                            obfuscate ? (uint32_t)(var.id + 1) : (uint32_t)ctx.vmInfo->HashField(var.name.c_str())
+                        );
                     }
                     if (hasFlag) {
                         ctx.Write<byte>(var.flags);

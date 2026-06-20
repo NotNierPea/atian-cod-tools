@@ -52,8 +52,9 @@ namespace {
             json.WriteFieldNameString("strings");
             json.BeginArray();
             if (data.stringsCount) {
-                auto strings{ proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.strings),
-                                                                data.stringsCount) };
+                auto strings{
+                    proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.strings), data.stringsCount)
+                };
                 for (size_t i = 0; i < data.stringsCount; i++) {
                     json.WriteValueString(opt.AddString(proc.ReadStringTmp(strings[i])));
                 }

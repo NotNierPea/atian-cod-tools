@@ -6,11 +6,13 @@ namespace {
     class DumpFFHandler : public fastfile::FFHandler {
       public:
         DumpFFHandler()
-            : fastfile::FFHandler("Dump", "Dump decompressed files",
-                                  compatibility::scobalula::csi::CordycepGame::CG_NULL) {}
+            : fastfile::FFHandler(
+                  "Dump", "Dump decompressed files", compatibility::scobalula::csi::CordycepGame::CG_NULL
+              ) {}
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+        ) override {
             std::filesystem::path of{ ctx.file };
             std::filesystem::path decfile{ opt.m_output / ctx.ffname };
 

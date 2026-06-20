@@ -10,8 +10,10 @@ namespace cli::options {
         size_t len{};
 
       public:
-        CliOption(const char* longName, const char* smallName, const char* usage, const char* description,
-                  core::logs::loglevel lvl)
+        CliOption(
+            const char* longName, const char* smallName, const char* usage, const char* description,
+            core::logs::loglevel lvl
+        )
             : longName(longName), smallName(smallName), usage(usage), description(description), lvl(lvl) {
             if (longName)
                 len = std::strlen(longName);
@@ -60,8 +62,10 @@ namespace cli::options {
         Type* valPtr;
 
       public:
-        CliOptionVal(Type* valPtr, const char* longName, const char* smallName, const char* usage,
-                     const char* description, core::logs::loglevel lvl)
+        CliOptionVal(
+            Type* valPtr, const char* longName, const char* smallName, const char* usage, const char* description,
+            core::logs::loglevel lvl
+        )
             : valPtr(valPtr), CliOption(longName, smallName, usage, description, lvl) {}
 
         bool ConsumeArg(int& offset, int argc, const char** argv) override {
@@ -100,9 +104,10 @@ namespace cli::options {
         CliOptions() {}
 
         template<typename Type>
-        CliOptions& addOption(Type* ptr, const char* description, const char* longName, const char* usage = "",
-                              const char* smallName = nullptr,
-                              core::logs::loglevel lvl = core::logs::loglevel::LVL_INFO) {
+        CliOptions& addOption(
+            Type* ptr, const char* description, const char* longName, const char* usage = "",
+            const char* smallName = nullptr, core::logs::loglevel lvl = core::logs::loglevel::LVL_INFO
+        ) {
             auto opt{ std::make_unique<CliOptionVal<Type>>(ptr, longName, smallName, usage, description, lvl) };
             longestOption = std::max<size_t>(opt->Length(), longestOption);
             options.push_back(std::move(opt));

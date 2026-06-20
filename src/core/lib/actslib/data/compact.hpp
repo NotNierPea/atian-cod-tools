@@ -26,8 +26,14 @@ namespace actslib::data::compact {
             size_t word = WordOfId(id);
             if (value) {
                 if (word >= datalen) {
-                    throw std::runtime_error(actslib::va(
-                        "Trying to add in a bitmap an element outside the words! %lld (%lld/%lld)", id, word, datalen));
+                    throw std::runtime_error(
+                        actslib::va(
+                            "Trying to add in a bitmap an element outside the words! %lld (%lld/%lld)",
+                            id,
+                            word,
+                            datalen
+                        )
+                    );
                 }
                 data[word] |= (1 << (id & 7));
             } else {
@@ -49,14 +55,17 @@ namespace actslib::data::compact {
 
         Sequence(char* data, size_t datalen, size_t numbits)
             : data(reinterpret_cast<uint64_t*>(data)), datalen(datalen), numbits(numbits),
-              maxValue(numbits == (sizeof(maxValue) << 3) ? ~((decltype(maxValue))0)
-                                                          : (((decltype(maxValue))1 << numbits) - 1)) {
+              maxValue(
+                  numbits == (sizeof(maxValue) << 3) ? ~((decltype(maxValue))0)
+                                                     : (((decltype(maxValue))1 << numbits) - 1)
+              ) {
             if (datalen && numbits && !data) {
                 throw std::runtime_error("empty data");
             }
             if (numbits > WORD_LEN) {
                 throw std::runtime_error(
-                    actslib::va("numbits can't be above %lld: %lld > %lld", WORD_LEN, numbits, WORD_LEN));
+                    actslib::va("numbits can't be above %lld: %lld > %lld", WORD_LEN, numbits, WORD_LEN)
+                );
             }
         }
 
@@ -78,7 +87,8 @@ namespace actslib::data::compact {
         void Set(size_t id, uint64_t value) {
             if (value > maxValue) {
                 throw std::runtime_error(
-                    actslib::va("value is above limit for this structure %lld > %lld", value, maxValue));
+                    actslib::va("value is above limit for this structure %lld > %lld", value, maxValue)
+                );
             }
             size_t offset = id * numbits;
             size_t word = offset / WORD_LEN;

@@ -107,8 +107,9 @@ namespace {
             if (data.unk68_count) {
                 json.WriteFieldNameString("unk68");
                 json.BeginArray();
-                auto unk68{ proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.unk68),
-                                                              data.unk68_count) };
+                auto unk68{
+                    proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.unk68), data.unk68_count)
+                };
                 for (size_t i = 0; i < data.unk68_count; i++) {
                     json.WriteValueString(opt.AddString(proc.ReadStringTmp(unk68[i])));
                 }

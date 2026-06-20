@@ -87,9 +87,11 @@ namespace {
                     json.WriteFieldValueNumber("id", i);
                     json.WriteFieldValueXHash("name", htnNode.name);
                     json.WriteFieldValueNumber("index", htnNode.index);
-                    json.WriteFieldValueString("type", (htnNode.type >= HTN_TYPE_COUNT
-                                                            ? utils::va("<invalid:%d>", htnNode.type)
-                                                            : hierarchicalTaskNetworkNodeTypeNames[htnNode.type]));
+                    json.WriteFieldValueString(
+                        "type",
+                        (htnNode.type >= HTN_TYPE_COUNT ? utils::va("<invalid:%d>", htnNode.type)
+                                                        : hierarchicalTaskNetworkNodeTypeNames[htnNode.type])
+                    );
 
                     if (htnNode.childNodeIndexes) {
                         json.WriteFieldNameString("childindexes");
@@ -106,10 +108,12 @@ namespace {
                             HierarchicalTaskNetworkNodeConstant& constant{ htnNode.constants[j] };
                             json.WriterFieldNameHash(constant.key);
                             json.BeginObject();
-                            json.WriteFieldValueString("type",
-                                                       (constant.type >= HTN_DATA_TYPE_COUNT
-                                                            ? utils::va("<invalid:%d>", constant.type)
-                                                            : hierarchicalTaskNetworkValueTypeNames[constant.type]));
+                            json.WriteFieldValueString(
+                                "type",
+                                (constant.type >= HTN_DATA_TYPE_COUNT
+                                     ? utils::va("<invalid:%d>", constant.type)
+                                     : hierarchicalTaskNetworkValueTypeNames[constant.type])
+                            );
 
                             json.WriteFieldNameString("value");
                             switch (constant.type) {

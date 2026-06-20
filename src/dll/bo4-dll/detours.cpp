@@ -6,8 +6,9 @@ static void* DB_FindXAssetHeader(byte type, uint64_t* name, bool errorIfMissing,
 static void* StringTable_GetAsset(char const* name);
 static void Scr_LogCompilerError(char const* name, ...);
 static void Error(uint32_t code, const char* empty);
-static void ScrVm_RuntimeError(uint32_t errorCode, scriptinstance::ScriptInstance inst, byte* codePos, const char* msg,
-                               bool terminalError);
+static void ScrVm_RuntimeError(
+    uint32_t errorCode, scriptinstance::ScriptInstance inst, byte* codePos, const char* msg, bool terminalError
+);
 
 static bool CScr_GetFunctionReverseLookup(byte* func, uint32_t* hash, bool* isFunction);
 static bool Scr_GetFunctionReverseLookup(byte* func, uint32_t* hash, bool* isFunction);
@@ -26,7 +27,8 @@ static inject::DetourInfo<void*, byte, uint64_t*, bool, int> dDB_FindXAssetHeade
 static inject::DetourInfo<void*, char const*> dStringTable_GetAsset{ "StringTable_GetAsset",
                                                                      bo4::OFFSET_StringTable_GetAsset,
                                                                      StringTable_GetAsset };
-static inject::DetourInfo<void> dScr_LogCompilerError{ "Scr_LogCompilerError", bo4::OFFSET_LogCompilerError,
+static inject::DetourInfo<void> dScr_LogCompilerError{ "Scr_LogCompilerError",
+                                                       bo4::OFFSET_LogCompilerError,
                                                        reinterpret_cast<void (*)()>(Scr_LogCompilerError) };
 static inject::DetourInfo<void, uint32_t, const char*> dError{ "Error", bo4::OFFSET_Error, Error };
 static inject::DetourInfo<void, uint32_t, scriptinstance::ScriptInstance, byte*, const char*, bool> dScrVm_RuntimeError{
@@ -71,8 +73,13 @@ static void ScrVm_Error(uint64_t code, scriptinstance::ScriptInstance inst, char
         bo4::scrVarPub[inst].error_message = errorBuffer[inst];
     } else {
         auto desc = error_handler::FindDesc((uint32_t)code);
-        LOG_ERROR("VM {} Error code={} '{}' terminal={}", scriptinstance::Name(inst), code, unk,
-                  terminal ? "true" : "false");
+        LOG_ERROR(
+            "VM {} Error code={} '{}' terminal={}",
+            scriptinstance::Name(inst),
+            code,
+            unk,
+            terminal ? "true" : "false"
+        );
         if (desc) {
             // update the error info to match the error
             bo4::scrVarPub[inst].error_message = desc;
@@ -95,8 +102,9 @@ static void Scr_LogCompilerError(char const* name, ...) {
 
     LOG_ERROR("LogCompilerError {}", buffer);
 }
-static void ScrVm_RuntimeError(uint32_t errorCode, scriptinstance::ScriptInstance inst, byte* codePos, const char* msg,
-                               bool terminalError) {
+static void ScrVm_RuntimeError(
+    uint32_t errorCode, scriptinstance::ScriptInstance inst, byte* codePos, const char* msg, bool terminalError
+) {
     static char error_buffer[2][0x2000];
     bo4::GSCExport* exp;
     bo4::GSCOBJ* obj;
@@ -119,8 +127,13 @@ static void ScrVm_RuntimeError(uint32_t errorCode, scriptinstance::ScriptInstanc
             w += snprintf(&buff[w], sizeof(buff) - w, "\n%s", hash_lookup::ExtractTmp(inst, obj->name));
             w += snprintf(&buff[w], sizeof(buff) - w, "@%s:%x", hash_lookup::ExtractTmp(inst, exp->name), rloc);
         } else {
-            w += snprintf(&buff[w], sizeof(buff) - w, "%s (Can't find script at %llx)", msg,
-                          reinterpret_cast<uint64_t>(codePos));
+            w += snprintf(
+                &buff[w],
+                sizeof(buff) - w,
+                "%s (Can't find script at %llx)",
+                msg,
+                reinterpret_cast<uint64_t>(codePos)
+            );
         }
     }
 

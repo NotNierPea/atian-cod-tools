@@ -53,8 +53,9 @@ namespace games::cod::asset_names {
          * @param last post last asset type name
          * @param PoolId hash function for asset names, default to hash::HashX32
          */
-        AssetNames(AssetHashed (*PoolId)(const char* id) =
-                       [](const char* id) { return (AssetHashed)hash::HashX32(id); })
+        AssetNames(
+            AssetHashed (*PoolId)(const char* id) = [](const char* id) { return (AssetHashed)hash::HashX32(id); }
+        )
             : PoolId(PoolId), handleList{ [this](const char* type) { return GetExePoolId(type); } } {}
 
         template<typename Type>
@@ -229,8 +230,9 @@ namespace games::cod::asset_names {
                 for (size_t i = 0; i < typeMapsCount; i++) {
                     sortedHashedName[i] = typeNames[i];
                 }
-                std::sort(&sortedHashedName[0], &sortedHashedName[typeMapsCount],
-                          [](const char* a, const char* b) { return strcmpi(a, b) < 0; });
+                std::sort(&sortedHashedName[0], &sortedHashedName[typeMapsCount], [](const char* a, const char* b) {
+                    return strcmpi(a, b) < 0;
+                });
 
                 {
                     utils::OutFileCE os{ f, true };
@@ -341,7 +343,8 @@ namespace games::cod::asset_names {
 
             if (failMissing) {
                 throw std::runtime_error(
-                    std::format("Invalid asset type name {}", core::hashes::ExtractTmp("hash", val)));
+                    std::format("Invalid asset type name {}", core::hashes::ExtractTmp("hash", val))
+                );
             }
 
             return nullptr;

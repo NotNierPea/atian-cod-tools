@@ -6,24 +6,29 @@ namespace fastfile::zone {
 
     void Zone::ParseFile(const std::filesystem::path& path, std::string& file, size_t depth) {
         ParseFile(
-            path, file,
+            path,
+            file,
             [&path](core::logs::loglevel lvl, size_t line, const std::string& message) {
                 LOG_LVLF(lvl, "[{}:{}] {}", path.string(), line, message);
             },
-            depth);
+            depth
+        );
     }
-    void
-    Zone::ParseFile(const std::filesystem::path& path, std::string& file,
-                    std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler,
-                    size_t depth) {
+    void Zone::ParseFile(
+        const std::filesystem::path& path, std::string& file,
+        std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler,
+        size_t depth
+    ) {
         if (depth == 10) {
             throw std::runtime_error(std::format("Can't parse zone file '{}', max depth", path.string()));
         }
         // preproc apply
         if (!preProcOpt.ApplyPreProcessor(
-                file, [&errorHandler](core::logs::loglevel lvl, size_t line, const std::string& message) {
+                file,
+                [&errorHandler](core::logs::loglevel lvl, size_t line, const std::string& message) {
                     errorHandler(lvl, line, message);
-                })) {
+                }
+            )) {
             throw std::runtime_error(std::format("Can't apply preprocessor on '{}'", path.string()));
         }
 
@@ -78,8 +83,11 @@ namespace fastfile::zone {
                 size_t split{ sw.find_first_of(',') };
 
                 if (split == std::string::npos) {
-                    errorHandler(core::logs::LVL_WARNING, lineIdx,
-                                 std::format("Invalid asset item: missing ',' for {}", sw));
+                    errorHandler(
+                        core::logs::LVL_WARNING,
+                        lineIdx,
+                        std::format("Invalid asset item: missing ',' for {}", sw)
+                    );
                     continue;
                 }
 
@@ -92,19 +100,25 @@ namespace fastfile::zone {
                     std::string includeName{ keyStr, keyStr + valLen - 1 };
 
                     std::filesystem::path includePath{ path.parent_path() / includeName };
-                    errorHandler(core::logs::LVL_INFO, lineIdx,
-                                 std::format("Include zone file '{}'", includePath.string()));
+                    errorHandler(
+                        core::logs::LVL_INFO,
+                        lineIdx,
+                        std::format("Include zone file '{}'", includePath.string())
+                    );
 
                     std::string incfileData{ utils::ReadFile<std::string>(includePath) };
 
                     std::string zoneFileName{ includePath.string() };
                     ParseFile(
-                        includePath, incfileData,
-                        [&zoneFileName, &errorHandler, lineIdx](core::logs::loglevel lvl, size_t line,
-                                                                const std::string& message) {
+                        includePath,
+                        incfileData,
+                        [&zoneFileName,
+                         &errorHandler,
+                         lineIdx](core::logs::loglevel lvl, size_t line, const std::string& message) {
                             errorHandler(lvl, lineIdx, std::format("[{}:{}] {}", zoneFileName, line, message));
                         },
-                        depth + 1);
+                        depth + 1
+                    );
                     continue;
                 }
                 keyStr = alloc.ClonePtr<char>(keyStr, valLen);

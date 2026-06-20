@@ -301,8 +301,9 @@ namespace systems::gsc::funcs {
                 return func;
             }
 
-            const bo4::BuiltinFunctionDef* f{ customContainerGsc[bo4::scriptInstance_t::SI_SERVER].FindDef(name,
-                                                                                                           false) };
+            const bo4::BuiltinFunctionDef* f{
+                customContainerGsc[bo4::scriptInstance_t::SI_SERVER].FindDef(name, false)
+            };
 
             if (f) {
                 *type = f->type;
@@ -321,8 +322,9 @@ namespace systems::gsc::funcs {
                 return func;
             }
 
-            const bo4::BuiltinFunctionDef* f{ customContainerGsc[bo4::scriptInstance_t::SI_CLIENT].FindDef(name,
-                                                                                                           false) };
+            const bo4::BuiltinFunctionDef* f{
+                customContainerGsc[bo4::scriptInstance_t::SI_CLIENT].FindDef(name, false)
+            };
 
             if (f) {
                 *type = f->type;
@@ -342,8 +344,9 @@ namespace systems::gsc::funcs {
                 return func;
             }
 
-            const bo4::BuiltinFunctionDef* m{ customContainerGsc[bo4::scriptInstance_t::SI_SERVER].FindDef(name,
-                                                                                                           true) };
+            const bo4::BuiltinFunctionDef* m{
+                customContainerGsc[bo4::scriptInstance_t::SI_SERVER].FindDef(name, true)
+            };
 
             if (m) {
                 *type = m->type;
@@ -363,8 +366,9 @@ namespace systems::gsc::funcs {
                 return func;
             }
 
-            const bo4::BuiltinFunctionDef* m{ customContainerGsc[bo4::scriptInstance_t::SI_CLIENT].FindDef(name,
-                                                                                                           true) };
+            const bo4::BuiltinFunctionDef* m{
+                customContainerGsc[bo4::scriptInstance_t::SI_CLIENT].FindDef(name, true)
+            };
 
             if (m) {
                 *type = m->type;
@@ -402,8 +406,9 @@ namespace systems::gsc::funcs {
         return hash::HashT89Scr(str);
     }
 
-    void ScrVm_RegisterFunctionContainer(bo4::scriptInstance_t inst, bool isMethods, bo4::BuiltinFunctionDef* array,
-                                         size_t len) {
+    void ScrVm_RegisterFunctionContainer(
+        bo4::scriptInstance_t inst, bool isMethods, bo4::BuiltinFunctionDef* array, size_t len
+    ) {
         if (!len) {
             return; // empty container, useless
         }

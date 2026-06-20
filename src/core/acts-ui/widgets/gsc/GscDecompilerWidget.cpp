@@ -56,8 +56,9 @@ GscDecompilerWidget::GscDecompilerWidget(QWidget* parent) : QWidget(parent) {
     ui.textEdit->setFont(font);
 
     connect(openAction, &QAction::triggered, this, [this]() {
-        QString path{ QFileDialog::getOpenFileName(this, tr("Gsc File"), QString(),
-                                                   tr("Gsc File (*.gscc *.cscc *.gscbin)")) };
+        QString path{
+            QFileDialog::getOpenFileName(this, tr("Gsc File"), QString(), tr("Gsc File (*.gscc *.cscc *.gscbin)"))
+        };
         if (!path.isEmpty()) {
             LoadFile(path);
         }

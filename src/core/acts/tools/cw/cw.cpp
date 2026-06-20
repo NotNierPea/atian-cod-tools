@@ -503,8 +503,9 @@ uintptr_t cw::ScanPool(Process& proc) {
     }
     return curr + 7 + delta;
 }
-int cw::InjectScriptCW(Process& proc, const char* script, const char* target, const char* replaced,
-                       std::string& notify) {
+int cw::InjectScriptCW(
+    Process& proc, const char* script, const char* target, const char* replaced, std::string& notify
+) {
 
     uint64_t targetHash = hash::Hash64Pattern(target);
     uint64_t replacedHash = hash::Hash64Pattern(replaced);
@@ -601,16 +602,22 @@ int cw::InjectScriptCW(Process& proc, const char* script, const char* target, co
         // need to add the include
 
         // insert the new include
-        if (!proc.WriteMemory(includesOffset + sizeof(uint64_t) * scriptHeader.includes_count, &replacedHash,
-                              sizeof(replacedHash))) {
+        if (!proc.WriteMemory(
+                includesOffset + sizeof(uint64_t) * scriptHeader.includes_count,
+                &replacedHash,
+                sizeof(replacedHash)
+            )) {
             notify = "Error when patching includes";
             return tool::BASIC_ERROR;
         }
 
         // correct the include count
         uint16_t newIncludeCount = scriptHeader.includes_count + 1;
-        if (!proc.WriteMemory(targetEntry->buffer + offsetof(tool::gsc::T9GSCOBJ, includes_count), &newIncludeCount,
-                              sizeof(newIncludeCount))) {
+        if (!proc.WriteMemory(
+                targetEntry->buffer + offsetof(tool::gsc::T9GSCOBJ, includes_count),
+                &newIncludeCount,
+                sizeof(newIncludeCount)
+            )) {
             notify = "Error when patching includes count";
             return tool::BASIC_ERROR;
         }
@@ -652,8 +659,9 @@ int cw::InjectScriptCW(Process& proc, const char* script, const char* target, co
     notify = std::format("{} injected at {:x}", script, locAligned);
     return tool::OK;
 }
-int cw::InjectScriptCWAlpha(Process& proc, const char* script, const char* target, const char* replaced,
-                            std::string& notify) {
+int cw::InjectScriptCWAlpha(
+    Process& proc, const char* script, const char* target, const char* replaced, std::string& notify
+) {
     uint64_t targetHash = hash::Hash64Pattern(target);
     uint64_t replacedHash = hash::Hash64Pattern(replaced);
 
@@ -683,8 +691,11 @@ int cw::InjectScriptCWAlpha(Process& proc, const char* script, const char* targe
 
     proc.WriteLocation(std::cout << "pool: ", poolLoc) << "\n";
 
-    if (!proc.ReadMemory(&sptPool, poolLoc + sizeof(sptPool) * cw::alpha::ASSET_TYPE_SCRIPTPARSETREE,
-                         sizeof(sptPool))) {
+    if (!proc.ReadMemory(
+            &sptPool,
+            poolLoc + sizeof(sptPool) * cw::alpha::ASSET_TYPE_SCRIPTPARSETREE,
+            sizeof(sptPool)
+        )) {
         notify = "Can't read SPT pool";
         return tool::BASIC_ERROR;
     }
@@ -750,16 +761,22 @@ int cw::InjectScriptCWAlpha(Process& proc, const char* script, const char* targe
         // need to add the include
 
         // insert the new include
-        if (!proc.WriteMemory(includesOffset + sizeof(uint64_t) * scriptHeader.includes_count, &replacedHash,
-                              sizeof(replacedHash))) {
+        if (!proc.WriteMemory(
+                includesOffset + sizeof(uint64_t) * scriptHeader.includes_count,
+                &replacedHash,
+                sizeof(replacedHash)
+            )) {
             notify = "Error when patching includes";
             return tool::BASIC_ERROR;
         }
 
         // correct the include count
         uint16_t newIncludeCount = scriptHeader.includes_count + 1;
-        if (!proc.WriteMemory(targetEntry->buffer + offsetof(tool::gsc::T937GSCOBJ, includes_count), &newIncludeCount,
-                              sizeof(newIncludeCount))) {
+        if (!proc.WriteMemory(
+                targetEntry->buffer + offsetof(tool::gsc::T937GSCOBJ, includes_count),
+                &newIncludeCount,
+                sizeof(newIncludeCount)
+            )) {
             notify = "Error when patching includes count";
             return tool::BASIC_ERROR;
         }

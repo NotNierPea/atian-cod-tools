@@ -100,8 +100,14 @@ namespace systems::lua {
 
                     luaHooks[hookHash & hash::MASK63].emplace_back(alloc.CloneStr(luaName), lookupHash);
 
-                    LOG_INFO("Loaded luafile hook {}({:x})->{}({:x}/{:x}.lua)", hook, hookHash, luaName, luaHash,
-                             lookupHash);
+                    LOG_INFO(
+                        "Loaded luafile hook {}({:x})->{}({:x}/{:x}.lua)",
+                        hook,
+                        hookHash,
+                        luaName,
+                        luaHash,
+                        lookupHash
+                    );
                 }
             }
         }
@@ -121,8 +127,9 @@ namespace systems::lua {
             return nullptr;
         }
 
-        bool hksi_lua_getclosureinfo_Stub(bo4::lua_State* s, bo4::HksClosure* closure, bo4::lua_Debug* ar,
-                                          const char* what) {
+        bool hksi_lua_getclosureinfo_Stub(
+            bo4::lua_State* s, bo4::HksClosure* closure, bo4::lua_Debug* ar, const char* what
+        ) {
             if (!hksi_lua_getclosureinfo_Hook.Call<bool>(s, closure, ar, what)) {
                 return false;
             }

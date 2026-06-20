@@ -237,8 +237,9 @@ namespace fastfile::handlers::bo4::scriptbundle {
                         json.WriteValueString(std::format("<unk{}>:{}", (int)obj.type, GetScrString(obj.stringRef)));
                     } else {
                         // hash?
-                        json.WriteValueString(std::format("<unk{}>:#{}", (int)obj.type,
-                                                          hashutils::ExtractTmp("hash", obj.hashValue.name)));
+                        json.WriteValueString(
+                            std::format("<unk{}>:#{}", (int)obj.type, hashutils::ExtractTmp("hash", obj.hashValue.name))
+                        );
                     }
                     break;
                 }
@@ -309,9 +310,13 @@ namespace fastfile::handlers::bo4::scriptbundle {
             json.BeginArray();
             for (size_t i = 0; i < asset->assetCount; i++) {
                 if (asset->assets[i]->bundleType) {
-                    json.WriteValueString(std::format("#{}/#{}",
-                                                      hashutils::ExtractTmp("hash", asset->assets[i]->bundleType),
-                                                      hashutils::ExtractTmp("hash", asset->assets[i]->name)));
+                    json.WriteValueString(
+                        std::format(
+                            "#{}/#{}",
+                            hashutils::ExtractTmp("hash", asset->assets[i]->bundleType),
+                            hashutils::ExtractTmp("hash", asset->assets[i]->name)
+                        )
+                    );
                 } else {
                     json.WriteValueHash(asset->assets[i]->name);
                 }

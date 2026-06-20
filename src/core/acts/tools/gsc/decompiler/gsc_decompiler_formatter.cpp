@@ -46,8 +46,11 @@ namespace tool::gsc::formatter {
 
                         if (flag->mask && (flag->mask & flags)) {
                             const char* nameOther{ FlagName((FormatterFlags)(flag->mask & flags)) };
-                            LOG_ERROR("Can't use format {}, not compatible with {}", flag->name,
-                                      nameOther ? nameOther : "<error>");
+                            LOG_ERROR(
+                                "Can't use format {}, not compatible with {}",
+                                flag->name,
+                                nameOther ? nameOther : "<error>"
+                            );
                             anyError = true;
                             continue;
                         }
@@ -64,51 +67,71 @@ namespace tool::gsc::formatter {
 
         CustomFormatterInfo customFormatter{ "custom" };
         FormatterInfo actsOldFormatter{ "acts_old", FFL_DEFAULT };
-        FormatterInfo seriousFormatter{ "serious", FFL_NEWLINE_AFTER_BLOCK_START | FFL_NO_SPACE_AFTER_CONTROL |
-                                                       FFL_ONE_LINE_HEADER_COMMENTS | FFL_NOERROR_STR |
-                                                       FFL_SWITCH_PAD_CASES | FFL_SWITCH_FORCE_BLOCKS |
-                                                       FFL_FUNC_HEADER_FORMAT_SERIOUS };
-        FormatterInfo xenFormatter{ "xen", FFL_NEWLINE_AFTER_BLOCK_START | FFL_SPACE_BEFOREAFTER_PARAMS |
-                                               FFL_NOERROR_STR | FFL_NO_FUNCTION_TITLE | FFL_BLOCK_INLINE |
-                                               FFL_NEWLINES_BETWEEN_BLOCKS | FFL_LINE_AFTER_COPYRIGHT |
-                                               FFL_NO_BOOL_ANALYSIS | FFL_SWITCH_PAD_CASES |
-                                               FFL_FUNC_HEADER_FORMAT_NONE };
-        FormatterInfo treyarchFormatter{ "treyarch", FFL_NEWLINE_AFTER_BLOCK_START | FFL_SPACE_BEFOREAFTER_PARAMS |
-                                                         FFL_NEWLINES_BETWEEN_BLOCKS | FFL_LINE_AFTER_COPYRIGHT |
-                                                         FFL_SWITCH_PAD_CASES | FFL_ANIM_REAL };
-        FormatterInfo iwFormatter{ "iw", FFL_NEWLINE_AFTER_BLOCK_START | FFL_SPACE_BEFOREAFTER_PARAMS |
-                                             FFL_NO_FUNCTION_TITLE | FFL_NEWLINES_BETWEEN_BLOCKS |
-                                             FFL_LINE_AFTER_COPYRIGHT | FFL_SWITCH_PAD_CASES };
+        FormatterInfo seriousFormatter{ "serious",
+                                        FFL_NEWLINE_AFTER_BLOCK_START | FFL_NO_SPACE_AFTER_CONTROL |
+                                            FFL_ONE_LINE_HEADER_COMMENTS | FFL_NOERROR_STR | FFL_SWITCH_PAD_CASES |
+                                            FFL_SWITCH_FORCE_BLOCKS | FFL_FUNC_HEADER_FORMAT_SERIOUS };
+        FormatterInfo xenFormatter{ "xen",
+                                    FFL_NEWLINE_AFTER_BLOCK_START | FFL_SPACE_BEFOREAFTER_PARAMS | FFL_NOERROR_STR |
+                                        FFL_NO_FUNCTION_TITLE | FFL_BLOCK_INLINE | FFL_NEWLINES_BETWEEN_BLOCKS |
+                                        FFL_LINE_AFTER_COPYRIGHT | FFL_NO_BOOL_ANALYSIS | FFL_SWITCH_PAD_CASES |
+                                        FFL_FUNC_HEADER_FORMAT_NONE };
+        FormatterInfo treyarchFormatter{ "treyarch",
+                                         FFL_NEWLINE_AFTER_BLOCK_START | FFL_SPACE_BEFOREAFTER_PARAMS |
+                                             FFL_NEWLINES_BETWEEN_BLOCKS | FFL_LINE_AFTER_COPYRIGHT |
+                                             FFL_SWITCH_PAD_CASES | FFL_ANIM_REAL };
+        FormatterInfo iwFormatter{ "iw",
+                                   FFL_NEWLINE_AFTER_BLOCK_START | FFL_SPACE_BEFOREAFTER_PARAMS |
+                                       FFL_NO_FUNCTION_TITLE | FFL_NEWLINES_BETWEEN_BLOCKS | FFL_LINE_AFTER_COPYRIGHT |
+                                       FFL_SWITCH_PAD_CASES };
 
         std::vector<FormatterInfo*> formatters{
             &treyarchFormatter, &seriousFormatter, &xenFormatter, &iwFormatter, &actsOldFormatter, &customFormatter,
         };
 
         FormatterFlagInfo flagInfo[]{
-            { "NO_SPACE_AFTER_CONTROL", FFL_NO_SPACE_AFTER_CONTROL, FFL_EMPTY_MASK,
+            { "NO_SPACE_AFTER_CONTROL",
+              FFL_NO_SPACE_AFTER_CONTROL,
+              FFL_EMPTY_MASK,
               "no space after controls (if, for, etc.)" },
-            { "NEWLINE_AFTER_BLOCK_START", FFL_NEWLINE_AFTER_BLOCK_START, FFL_EMPTY_MASK,
+            { "NEWLINE_AFTER_BLOCK_START",
+              FFL_NEWLINE_AFTER_BLOCK_START,
+              FFL_EMPTY_MASK,
               "new line after block start" },
             { "SPACE_BEFOREAFTER_PARAMS", FFL_SPACE_BEFOREAFTER_PARAMS, FFL_EMPTY_MASK, "use space between params" },
-            { "ONE_LINE_HEADER_COMMENTS", FFL_ONE_LINE_HEADER_COMMENTS, FFL_EMPTY_MASK,
+            { "ONE_LINE_HEADER_COMMENTS",
+              FFL_ONE_LINE_HEADER_COMMENTS,
+              FFL_EMPTY_MASK,
               "use /**/ instead of // for decompiler comments" },
             { "NOERROR_STR", FFL_NOERROR_STR, FFL_EMPTY_MASK, "use \"\" in missing strings (error/dev)" },
-            { "NO_FUNCTION_TITLE", FFL_NO_FUNCTION_TITLE, FFL_EMPTY_MASK,
+            { "NO_FUNCTION_TITLE",
+              FFL_NO_FUNCTION_TITLE,
+              FFL_EMPTY_MASK,
               "do not add the \"function\" prefix for function definition" },
             { "BLOCK_INLINE", FFL_BLOCK_INLINE, FFL_EMPTY_MASK, "inline block when too small" },
-            { "NEWLINES_BETWEEN_BLOCKS", FFL_NEWLINES_BETWEEN_BLOCKS, FFL_EMPTY_MASK,
+            { "NEWLINES_BETWEEN_BLOCKS",
+              FFL_NEWLINES_BETWEEN_BLOCKS,
+              FFL_EMPTY_MASK,
               "add empty line between instruction blocks and controls" },
-            { "LINE_AFTER_COPYRIGHT", FFL_LINE_AFTER_COPYRIGHT, FFL_EMPTY_MASK,
+            { "LINE_AFTER_COPYRIGHT",
+              FFL_LINE_AFTER_COPYRIGHT,
+              FFL_EMPTY_MASK,
               "add empty line between copyright and the script" },
             { "NO_BOOL_ANALYSIS", FFL_NO_BOOL_ANALYSIS, FFL_EMPTY_MASK, "disable boolean analysis" },
             { "SWITCH_PAD_CASES", FFL_SWITCH_PAD_CASES, FFL_EMPTY_MASK, "add padding in switch cases" },
             { "SWITCH_FORCE_BLOCKS", FFL_SWITCH_FORCE_BLOCKS, FFL_EMPTY_MASK, "use block for switch cases" },
-            { "FUNC_HEADER_FORMAT_SERIOUS", FFL_FUNC_HEADER_FORMAT_SERIOUS, FFL_FUNC_HEADER_FORMAT_MASK,
+            { "FUNC_HEADER_FORMAT_SERIOUS",
+              FFL_FUNC_HEADER_FORMAT_SERIOUS,
+              FFL_FUNC_HEADER_FORMAT_MASK,
               "use serious function header format" },
-            { "FUNC_HEADER_FORMAT_NONE", FFL_FUNC_HEADER_FORMAT_NONE, FFL_FUNC_HEADER_FORMAT_MASK,
+            { "FUNC_HEADER_FORMAT_NONE",
+              FFL_FUNC_HEADER_FORMAT_NONE,
+              FFL_FUNC_HEADER_FORMAT_MASK,
               "remove function header" },
             // { "FUNC_HEADER_FORMAT_TYPE_4", FFL_FUNC_HEADER_FORMAT_TYPE_4, "unused" },
-            { "SWITCH_FORCE_BLOCKS_PADDING", FFL_SWITCH_FORCE_BLOCKS_PADDING, FFL_EMPTY_MASK,
+            { "SWITCH_FORCE_BLOCKS_PADDING",
+              FFL_SWITCH_FORCE_BLOCKS_PADDING,
+              FFL_EMPTY_MASK,
               "add new line between switch blocks" },
             { "ANIM_REAL", FFL_ANIM_REAL, FFL_EMPTY_MASK, "render #animtree and %anim instead of %animtree::anim" },
         };

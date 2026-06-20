@@ -33,7 +33,8 @@ namespace hash {
         { "omnvar", "XHashOmnvar", [](const char* text) -> uint64_t { return hash::HashT10OmnVar(text); } },
         { "xxh32", "XXH32", [](const char* text) -> uint64_t { return XXH32(text, std::strlen(text), 0); } },
         { "xxh64", "XXH64", [](const char* text) -> uint64_t { return XXH64(text, std::strlen(text), 0); } },
-        { "xxh64iv", "XXH64 (IV)",
+        { "xxh64iv",
+          "XXH64 (IV)",
           [](const char* text) -> uint64_t { return XXH64(text, std::strlen(text), hash::IV_DEFAULT); } },
         { "djb2", "DJB2", [](const char* text) -> uint64_t { return HashDJB2(text) & ::hash::MASK32; } },
         { "kvp", "KVP", [](const char* text) -> uint64_t { return hash::HashKVP(text); } },
@@ -69,8 +70,9 @@ namespace hash {
 
             size_t c = std::stoull(argv[2]);
 
-            tool::hash::text_expand::GetDynamicPtr(
-                c, [](const char* str, void* d) { LOG_INFO("{:x},{}", hash::Hash64(str), str); });
+            tool::hash::text_expand::GetDynamicPtr(c, [](const char* str, void* d) {
+                LOG_INFO("{:x},{}", hash::Hash64(str), str);
+            });
             return tool::OK;
         }
 
@@ -330,8 +332,12 @@ namespace hash {
                 }
             }
 
-            ImGui::InputText("Reverse (Start)", reverseOutputBuffer, sizeof(reverseOutputBuffer),
-                             ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputText(
+                "Reverse (Start)",
+                reverseOutputBuffer,
+                sizeof(reverseOutputBuffer),
+                ImGuiInputTextFlags_ReadOnly
+            );
             ImGui::InputText("Custom", reverseCustomBuffer, sizeof(reverseCustomBuffer), ImGuiInputTextFlags_ReadOnly);
 
             ImGui::SeparatorText("Lookup");
@@ -356,8 +362,12 @@ namespace hash {
                         snprintf(lookupOutputBuffer, sizeof(lookupOutputBuffer), "%s", e.what());
                     }
                 }
-                ImGui::InputText("Unhashed", lookupOutputBuffer, sizeof(lookupOutputBuffer),
-                                 ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputText(
+                    "Unhashed",
+                    lookupOutputBuffer,
+                    sizeof(lookupOutputBuffer),
+                    ImGuiInputTextFlags_ReadOnly
+                );
             } else {
                 ImGui::Text("No hashes available");
             }
@@ -465,8 +475,13 @@ namespace hash {
                 }
             }
 
-            ImGui::InputTextMultiline("Output", guessOut.data(), guessOut.length(), ImVec2(0, 200),
-                                      ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputTextMultiline(
+                "Output",
+                guessOut.data(),
+                guessOut.length(),
+                ImVec2(0, 200),
+                ImGuiInputTextFlags_ReadOnly
+            );
 
             if (c)
                 tool::nui::SaveNextConfig();
@@ -478,105 +493,433 @@ namespace hash {
             std::wstring ivw = utils::StrToWStr(info.iv);
             std::wstring lookupw = utils::StrToWStr(info.lookup);
 
-            info.titleLabel = CreateWindowExW(0, L"STATIC", L"Hash", SS_CENTER | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                              window, NULL, hInstance, NULL);
+            info.titleLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"Hash",
+                SS_CENTER | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hashEdit =
-                CreateWindowExW(0, L"EDIT", hashw.c_str(), WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-                                0, 0, 0, 0, window, NULL, hInstance, NULL);
+            info.hashEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                hashw.c_str(),
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hashEditLabel = CreateWindowExW(0, L"STATIC", L"String : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0,
-                                                 0, window, NULL, hInstance, NULL);
+            info.hashEditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"String : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64Edit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hash64Edit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64EditLabel = CreateWindowExW(0, L"STATIC", L"FNV1A : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0,
-                                                   0, window, NULL, hInstance, NULL);
+            info.hash64EditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"FNV1A : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash32Edit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hash32Edit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash32EditLabel = CreateWindowExW(0, L"STATIC", L"T7/8/9 Canon : ", SS_RIGHT | WS_CHILD | WS_VISIBLE,
-                                                   0, 0, 0, 0, window, NULL, hInstance, NULL);
+            info.hash32EditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"T7/8/9 Canon : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IW2Edit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hash64IW2Edit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IW2EditLabel = CreateWindowExW(0, L"STATIC", L"IW Resource : ", SS_RIGHT | WS_CHILD | WS_VISIBLE,
-                                                      0, 0, 0, 0, window, NULL, hInstance, NULL);
+            info.hash64IW2EditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"IW Resource : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IW3Edit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hash64IW3Edit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IW3EditLabel =
-                CreateWindowExW(0, L"STATIC", L"MWII/III Canon : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                window, NULL, hInstance, NULL);
+            info.hash64IW3EditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"MWII/III Canon : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash32IW4Edit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hash32IW4Edit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash32IW4EditLabel = CreateWindowExW(0, L"STATIC", L"IW Tag : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0,
-                                                      0, 0, 0, window, NULL, hInstance, NULL);
+            info.hash32IW4EditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"IW Tag : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hashT7Edit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hashT7Edit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hashT7EditLabel = CreateWindowExW(0, L"STATIC", L"T7 FNV1A : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0,
-                                                   0, 0, window, NULL, hInstance, NULL);
+            info.hashT7EditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"T7 FNV1A : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IWDVEdit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hash64IWDVEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IWDVEditLabel = CreateWindowExW(0, L"STATIC", L"IW DVar : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0,
-                                                       0, 0, 0, window, NULL, hInstance, NULL);
+            info.hash64IWDVEditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"IW DVar : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IWCerFieldEdit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hash64IWCerFieldEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hash64IWCerFieldEditLabel =
-                CreateWindowExW(0, L"STATIC", L"BO6 Canon : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, window,
-                                NULL, hInstance, NULL);
+            info.hash64IWCerFieldEditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"BO6 Canon : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hashFNV1AReverseValEdit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
+            info.hashFNV1AReverseValEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hashFNV1AReverseIVEdit =
-                CreateWindowExW(0, L"EDIT", ivw.c_str(), WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-                                0, 0, 0, 0, window, NULL, hInstance, NULL);
-            info.hashFNV1AReverseValLabel =
-                CreateWindowExW(0, L"STATIC", L"Reverse (Val/IV) : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                window, NULL, hInstance, NULL);
-            info.hashFNV1AReverseStartEdit =
-                CreateWindowExW(0, L"EDIT", valw.c_str(), WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
-                                0, 0, 0, 0, window, NULL, hInstance, NULL);
-            info.hashFNV1AReverseStartEditLabel =
-                CreateWindowExW(0, L"STATIC", L"Reverse (Start) : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                window, NULL, hInstance, NULL);
-            info.hashFNV1ACustomEdit =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
-            info.hashFNV1ACustomEditLabel =
-                CreateWindowExW(0, L"STATIC", L"Custom : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, window, NULL,
-                                hInstance, NULL);
+            info.hashFNV1AReverseIVEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                ivw.c_str(),
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
+            info.hashFNV1AReverseValLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"Reverse (Val/IV) : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
+            info.hashFNV1AReverseStartEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                valw.c_str(),
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
+            info.hashFNV1AReverseStartEditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"Reverse (Start) : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
+            info.hashFNV1ACustomEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
+            info.hashFNV1ACustomEditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"Custom : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
-            info.hashLookupEdit = CreateWindowExW(0, L"EDIT", lookupw.c_str(),
-                                                  WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                                  0, window, NULL, hInstance, NULL);
-            info.hashLookupEditRet =
-                CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                                0, window, NULL, hInstance, NULL);
-            info.hashLookupEditLabel = CreateWindowExW(0, L"STATIC", L"Lookup : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0,
-                                                       0, 0, 0, window, NULL, hInstance, NULL);
+            info.hashLookupEdit = CreateWindowExW(
+                0,
+                L"EDIT",
+                lookupw.c_str(),
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
+            info.hashLookupEditRet = CreateWindowExW(
+                0,
+                L"EDIT",
+                L"",
+                WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
+            info.hashLookupEditLabel = CreateWindowExW(
+                0,
+                L"STATIC",
+                L"Lookup : ",
+                SS_RIGHT | WS_CHILD | WS_VISIBLE,
+                0,
+                0,
+                0,
+                0,
+                window,
+                NULL,
+                hInstance,
+                NULL
+            );
 
             if (info.hashEdit == NULL || info.hashEditLabel == NULL || info.hash64Edit == NULL ||
                 info.hash64EditLabel == NULL || info.hash32Edit == NULL || info.hash32EditLabel == NULL ||
@@ -725,13 +1068,18 @@ namespace hash {
 
             std::cout << std::hex << "" << "\n";
             std::cout << std::hex
-                      << hash::Hash64("system", hash::Hash64("zt@f3yp(d[kkd=_@", 0x1C2F2E3C8A257D07, 0x10000000233LL),
-                                      0x10000000233LL)
+                      << hash::Hash64(
+                             "system",
+                             hash::Hash64("zt@f3yp(d[kkd=_@", 0x1C2F2E3C8A257D07, 0x10000000233LL),
+                             0x10000000233LL
+                         )
                       << "\n";
             std::cout << std::hex
-                      << hash::Hash64("abilities_active",
-                                      hash::Hash64("zt@f3yp(d[kkd=_@", 0x1C2F2E3C8A257D07, 0x10000000233LL),
-                                      0x10000000233LL)
+                      << hash::Hash64(
+                             "abilities_active",
+                             hash::Hash64("zt@f3yp(d[kkd=_@", 0x1C2F2E3C8A257D07, 0x10000000233LL),
+                             0x10000000233LL
+                         )
                       << "\n";
 
             std::cout << std::hex << ((0x70f9c84fce473ef9ull / 0x10000000233LL) ^ 'i') << "\n";
@@ -866,8 +1214,8 @@ namespace hash {
             return true;
         }
 
-        uint64_t CrackFnv1a(const std::vector<HashEntry>& entries, uint64_t iv, uint64_t find, size_t depth,
-                            uint64_t mask) {
+        uint64_t
+        CrackFnv1a(const std::vector<HashEntry>& entries, uint64_t iv, uint64_t find, size_t depth, uint64_t mask) {
             uint64_t k;
             for (k = 0; k < 0x10000; k++) {
                 uint64_t v = (k << depth) | find;
@@ -1102,9 +1450,11 @@ namespace hash {
                             LOG_INFO("UnFnv1a(0x{:x},\"{}\") = 0x{:x}", ctx->h1, ctx->s1, lu2);
                             LOG_INFO("UnFnv1a(0x{:x},\"{}\") = 0x{:x}", ctx->h2, s2, lu2);
                         },
-                        ctx);
+                        ctx
+                    );
                 },
-                &ctx);
+                &ctx
+            );
 
             return tool::OK;
         }
@@ -1152,12 +1502,18 @@ namespace hash {
                 std::vector<byte> buff{ utils::ReadFile<std::vector<byte>>(argv[i]) };
 
                 LOG_INFO("{}", argv[i]);
-                LOG_INFO("32: 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x}",
-                         CRCVal<uint32_t, crc_cpp::crc32>(buff), CRCVal<uint32_t, crc_cpp::crc32_c>(buff),
-                         CRCVal<uint32_t, crc_cpp::crc32_d>(buff), CRCVal<uint32_t, crc_cpp::crc32_posix>(buff),
-                         CRCVal<uint32_t, crc_cpp::crc32_jamcrc>(buff), CRCVal<uint32_t, crc_cpp::crc32_bzip2>(buff),
-                         CRCVal<uint32_t, crc_cpp::crc32_mpeg2>(buff), CRCVal<uint32_t, crc_cpp::crc32_q>(buff),
-                         CRCVal<uint32_t, crc_cpp::crc32_xfer>(buff));
+                LOG_INFO(
+                    "32: 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x} 0x{:x}",
+                    CRCVal<uint32_t, crc_cpp::crc32>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_c>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_d>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_posix>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_jamcrc>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_bzip2>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_mpeg2>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_q>(buff),
+                    CRCVal<uint32_t, crc_cpp::crc32_xfer>(buff)
+                );
                 LOG_INFO("64: 0x{:x}", CRCVal<uint64_t, crc_cpp::crc64_ecma>(buff));
                 SHA1 sha1{};
                 sha1.add(buff.data(), buff.size());
@@ -1211,12 +1567,16 @@ namespace hash {
         ADD_TOOL(httest, "hash", " (string)*", "hash strings", nullptr, httest);
         ADD_TOOL(crctest, "hash", " (file)*", "crc test", crctest);
         ADD_TOOL(dbjb2crack, "hash", " [string] [hash] [iv]", "crack dbjb2 key, base iv: 33", nullptr, dbjb2crack);
-        ADD_TOOL(fnv1acrack, "hash", " [string] [hash] [iv]", "crack fnv1a key, base iv: 100000001b3, 10000000233",
-                 nullptr, fnv1acrack);
+        ADD_TOOL(
+            fnv1acrack, "hash", " [string] [hash] [iv]", "crack fnv1a key, base iv: 100000001b3, 10000000233", nullptr,
+            fnv1acrack
+        );
         ADD_TOOL(fnv1acrack2, "hash", " [csv] [iv]", "crack fnv1a key (one key based)", nullptr, fnv1acrack2);
         ADD_TOOL(fnv1acrack3, "hash", " [csv] [iv]", "crack fnv1a keys (first char based)", nullptr, fnv1acrack3);
-        ADD_TOOL(fnv1acrackcommon, "hash", " [hash1] [hash2] [len]",
-                 "try to find a common prefix and suffix of 2 hashes", fnv1acrackcommon);
+        ADD_TOOL(
+            fnv1acrackcommon, "hash", " [hash1] [hash2] [len]", "try to find a common prefix and suffix of 2 hashes",
+            fnv1acrackcommon
+        );
         ADD_TOOL(testhashxx, "dev", " [hash]", "", testhashxx);
         ADD_TOOL(str, "hash", "", "check collisions in the string file", nullptr, collisiontool);
 #ifndef CI_BUILD

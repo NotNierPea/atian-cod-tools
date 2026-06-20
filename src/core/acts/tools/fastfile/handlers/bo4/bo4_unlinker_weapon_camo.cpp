@@ -85,10 +85,16 @@ namespace {
                         }
 
                         json.BeginObject();
-                        json.WriteFieldValueXAsset("material", games::bo4::pool::ASSET_TYPE_MATERIAL,
-                                                   material->baseMaterials[k]);
-                        json.WriteFieldValueXAsset("mask", games::bo4::pool::ASSET_TYPE_IMAGE,
-                                                   material->baseMaterialMasks[k]);
+                        json.WriteFieldValueXAsset(
+                            "material",
+                            games::bo4::pool::ASSET_TYPE_MATERIAL,
+                            material->baseMaterials[k]
+                        );
+                        json.WriteFieldValueXAsset(
+                            "mask",
+                            games::bo4::pool::ASSET_TYPE_IMAGE,
+                            material->baseMaterialMasks[k]
+                        );
                         json.EndObject();
                     }
                     json.EndArray();
@@ -101,8 +107,11 @@ namespace {
                         CamoMaterialChannel* channel{ material->camoMaterialChannels + k };
 
                         json.BeginObject();
-                        json.WriteFieldValueXAsset("camoMaterial", games::bo4::pool::ASSET_TYPE_MATERIAL,
-                                                   channel->camoMaterial);
+                        json.WriteFieldValueXAsset(
+                            "camoMaterial",
+                            games::bo4::pool::ASSET_TYPE_MATERIAL,
+                            channel->camoMaterial
+                        );
                         json.WriteFieldValueXAsset("detailMap", games::bo4::pool::ASSET_TYPE_IMAGE, channel->detailMap);
                         json.WriteFieldValueNumber("translationX", channel->translationX);
                         json.WriteFieldValueNumber("translationY", channel->translationY);
@@ -113,7 +122,9 @@ namespace {
                         json.WriteFieldValueNumber("glossBlend", channel->glossBlend);
                         json.WriteFieldValueNumber("detailHeight", channel->detailHeight);
                         json.WriteFieldValueString(
-                            "detailScale", std::format("({}, {})", channel->detailScale[0], channel->detailScale[1]));
+                            "detailScale",
+                            std::format("({}, {})", channel->detailScale[0], channel->detailScale[1])
+                        );
                         json.WriteFieldNameString("albedoTint");
                         json.WriteValueNumber(channel->albedoTint.packed);
                         /*

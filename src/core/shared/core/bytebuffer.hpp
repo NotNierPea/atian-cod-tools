@@ -25,7 +25,8 @@ namespace core::bytebuffer {
         void ReadImpl(void* to, size_t size) override {
             if (!CanRead(size)) {
                 throw std::runtime_error(
-                    utils::va(actssec("Reading pointer too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), size, len));
+                    utils::va(actssec("Reading pointer too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), size, len)
+                );
             }
 
             std::memmove(to, &buffer[pointer], size);
@@ -47,8 +48,9 @@ namespace core::bytebuffer {
         template<typename T>
         T* ReadPtr(size_t count = 1) {
             if (!CanRead(sizeof(T) * count)) {
-                throw std::runtime_error(utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(),
-                                                   sizeof(T) * count, End()));
+                throw std::runtime_error(
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T) * count, End())
+                );
             }
             T* t = (T*)&buffer[pointer];
             pointer += sizeof(T) * count;

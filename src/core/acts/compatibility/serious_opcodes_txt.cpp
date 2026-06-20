@@ -139,8 +139,14 @@ namespace compatibility::serious::txt {
                 AddOp("GetTime", OPCODE_GetTime);
                 AddOp("GetUndefined", OPCODE_GetUndefined);
                 AddOp("GetUnsignedInteger", OPCODE_GetUnsignedInteger);
-                AddOp("GetUnsignedShort", OPCODE_GetUnsignedShort, VMI_T7_1C, OPCODE_GetShort, VMI_T7_1B,
-                      OPCODE_GetShort);
+                AddOp(
+                    "GetUnsignedShort",
+                    OPCODE_GetUnsignedShort,
+                    VMI_T7_1C,
+                    OPCODE_GetShort,
+                    VMI_T7_1B,
+                    OPCODE_GetShort
+                );
                 AddOp("GetWorldObject", OPCODE_GetWorldObject);
                 AddOp("GetZero", OPCODE_GetZero);
                 AddOp("GreaterThan", OPCODE_GreaterThan);
@@ -160,8 +166,14 @@ namespace compatibility::serious::txt {
                 AddOp("Minus", OPCODE_Minus);
                 AddOp("Modulus", OPCODE_Modulus);
                 AddOp("Multiply", OPCODE_Multiply);
-                AddOp("NextArrayKey", OPCODE_NextArrayKey, VMI_T9_38, OPCODE_T9_IteratorNext, VMI_T9_37,
-                      OPCODE_T9_IteratorNext);
+                AddOp(
+                    "NextArrayKey",
+                    OPCODE_NextArrayKey,
+                    VMI_T9_38,
+                    OPCODE_T9_IteratorNext,
+                    VMI_T9_37,
+                    OPCODE_T9_IteratorNext
+                );
                 AddOp("NotEqual", OPCODE_NotEqual);
                 AddOp("Notify", OPCODE_IW_Notify);
                 AddOp("Notify", OPCODE_Notify);
@@ -202,8 +214,16 @@ namespace compatibility::serious::txt {
                 AddOp("Wait", OPCODE_Wait);
                 AddOp("WaitFrame", OPCODE_WaitFrame);
                 AddOp("WaitRealTime", OPCODE_Wait2);
-                AddOp("WaitTill", OPCODE_IW_SingleWaitTill, VMI_T8_36, OPCODE_WaitTill, VMI_T9_38, OPCODE_WaitTill,
-                      VMI_T9_37, OPCODE_WaitTill);
+                AddOp(
+                    "WaitTill",
+                    OPCODE_IW_SingleWaitTill,
+                    VMI_T8_36,
+                    OPCODE_WaitTill,
+                    VMI_T9_38,
+                    OPCODE_WaitTill,
+                    VMI_T9_37,
+                    OPCODE_WaitTill
+                );
                 AddOp("WaitTillFrameEnd", OPCODE_WaitTillFrameEnd);
                 AddOp("WaitTillMatch", OPCODE_WaitTillMatch);
                 AddOp("WaitTillMatch", OPCODE_WaitTillMatch2);

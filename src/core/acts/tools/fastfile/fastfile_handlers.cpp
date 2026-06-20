@@ -517,8 +517,9 @@ namespace fastfile {
         LOG_INFO("--gameRevId [g]           : Game rev id (might be required by some handlers)");
     }
 
-    hook::module_mapper::Module& FastFileOption::GetGameModule(bool crashError, bool* init, bool needDecrypt,
-                                                               const char* defaultName, const char* dumperName) {
+    hook::module_mapper::Module& FastFileOption::GetGameModule(
+        bool crashError, bool* init, bool needDecrypt, const char* defaultName, const char* dumperName
+    ) {
         if (init)
             *init = false;
 
@@ -539,8 +540,12 @@ namespace fastfile {
             if (!gameMod.Load(exe)) {
                 if (dumperName && *dumperName) {
                     throw std::runtime_error(
-                        std::format("Can't load {}, you can dump the exe using 'acts game_dump {} path/to/game'",
-                                    exe.string(), dumperName));
+                        std::format(
+                            "Can't load {}, you can dump the exe using 'acts game_dump {} path/to/game'",
+                            exe.string(),
+                            dumperName
+                        )
+                    );
                 } else {
                     throw std::runtime_error(std::format("Can't load {}", exe.string()));
                 }
@@ -681,8 +686,11 @@ namespace fastfile {
 
             main.Parse(json.data());
             if (main.HasParseError()) {
-                LOG_WARNING("Error when loading translation {}: can't parse data: {}", path.string(),
-                            (int)main.GetParseError());
+                LOG_WARNING(
+                    "Error when loading translation {}: can't parse data: {}",
+                    path.string(),
+                    (int)main.GetParseError()
+                );
                 continue;
             }
 
@@ -1206,8 +1214,9 @@ namespace fastfile {
 
             std::vector<FFHandler*>& vec{ GetHandlers() };
 
-            std::sort(vec.begin(), vec.end(),
-                      [](FFHandler* a, FFHandler* b) { return _strcmpi(a->description, b->description) < 0; });
+            std::sort(vec.begin(), vec.end(), [](FFHandler* a, FFHandler* b) {
+                return _strcmpi(a->description, b->description) < 0;
+            });
 
             for (FFHandler* handler : GetHandlers()) {
                 LOG_INFO("{:10} - {}", handler->name, handler->description);
@@ -1218,8 +1227,9 @@ namespace fastfile {
             LOG_INFO("Decompressors:");
             std::vector<FFDecompressor*>& vec{ GetDecompressors() };
 
-            std::sort(vec.begin(), vec.end(),
-                      [](FFDecompressor* a, FFDecompressor* b) { return _strcmpi(a->name, b->name) < 0; });
+            std::sort(vec.begin(), vec.end(), [](FFDecompressor* a, FFDecompressor* b) {
+                return _strcmpi(a->name, b->name) < 0;
+            });
 
             for (FFDecompressor* decompr : GetDecompressors()) {
                 LOG_INFO("{:20}", decompr->name);
@@ -1421,9 +1431,11 @@ namespace fastfile {
             LOG_WARNING("*********************************");
         }
 
-        LOG_WARNING("This tool is a prototype to test Cordycep compatible tools with "
-                    "the Atian Tools fastfile loaders. It might not reflect 100% of "
-                    "Cordycep's abilities.");
+        LOG_WARNING(
+            "This tool is a prototype to test Cordycep compatible tools with "
+            "the Atian Tools fastfile loaders. It might not reflect 100% of "
+            "Cordycep's abilities."
+        );
 
         return FastfileLoader(argc, argv, FFW_ASSET_POOL);
     }

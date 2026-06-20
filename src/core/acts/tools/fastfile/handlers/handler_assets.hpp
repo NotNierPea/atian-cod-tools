@@ -25,8 +25,8 @@ namespace fastfile::handlers::assets {
 
     std::unordered_map<uint64_t, Worker*>& GetWorkers();
 
-    bool UnlinkTypeRef(uint64_t ref, fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                       void** handle);
+    bool
+    UnlinkTypeRef(uint64_t ref, fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, void** handle);
     void UnlinkType(uint64_t ref, fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, void** handle);
     const char* GetScrString(ScrString_t id);
 } // namespace fastfile::handlers::assets

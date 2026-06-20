@@ -253,39 +253,71 @@ namespace acts::compiler::adl {
             }
             LOG_INFO("structs");
             for (auto& [id, strct] : structs) {
-                LOG_INFO("  {} -> {} (alig:0x{:x},size:0x{:x},forcesize:0x{:x})", (ADLDataTypeIdBase)id,
-                         hashutils::ExtractTmp("hash", strct.name), strct.align, strct.size, strct.forcedSize);
+                LOG_INFO(
+                    "  {} -> {} (alig:0x{:x},size:0x{:x},forcesize:0x{:x})",
+                    (ADLDataTypeIdBase)id,
+                    hashutils::ExtractTmp("hash", strct.name),
+                    strct.align,
+                    strct.size,
+                    strct.forcedSize
+                );
 
                 for (auto& field : strct.fields) {
 
-                    LOG_INFO("      {} -> {} (off:0x{:x},len:{},ptr:{},size:0x{:x})",
-                             hashutils::ExtractTmp("hash", field.name), (ADLDataTypeIdBase)field.type, field.offset,
-                             field.arraySize, field.pointer, SizeOf(field.type));
+                    LOG_INFO(
+                        "      {} -> {} (off:0x{:x},len:{},ptr:{},size:0x{:x})",
+                        hashutils::ExtractTmp("hash", field.name),
+                        (ADLDataTypeIdBase)field.type,
+                        field.offset,
+                        field.arraySize,
+                        field.pointer,
+                        SizeOf(field.type)
+                    );
                 }
             }
             LOG_INFO("enums");
             for (auto& [id, enm] : enums) {
-                LOG_INFO("  {} -> {} (type:{})", (ADLDataTypeIdBase)id, hashutils::ExtractTmp("hash", enm.name),
-                         (ADLDataTypeIdBase)enm.typeSize);
+                LOG_INFO(
+                    "  {} -> {} (type:{})",
+                    (ADLDataTypeIdBase)id,
+                    hashutils::ExtractTmp("hash", enm.name),
+                    (ADLDataTypeIdBase)enm.typeSize
+                );
                 for (auto& field : enm.fields) {
-                    LOG_INFO("      {} -> {}0x{:x}", hashutils::ExtractTmp("hash", field.name),
-                             (field.value < 0 ? "-" : ""), (field.value < 0 ? -field.value : field.value));
+                    LOG_INFO(
+                        "      {} -> {}0x{:x}",
+                        hashutils::ExtractTmp("hash", field.name),
+                        (field.value < 0 ? "-" : ""),
+                        (field.value < 0 ? -field.value : field.value)
+                    );
                 }
             }
             LOG_INFO("flags");
             for (auto& [id, flg] : flags) {
-                LOG_INFO("  {} -> {} (type:{})", (ADLDataTypeIdBase)id, hashutils::ExtractTmp("hash", flg.name),
-                         (ADLDataTypeIdBase)flg.typeSize);
+                LOG_INFO(
+                    "  {} -> {} (type:{})",
+                    (ADLDataTypeIdBase)id,
+                    hashutils::ExtractTmp("hash", flg.name),
+                    (ADLDataTypeIdBase)flg.typeSize
+                );
                 for (auto& field : flg.fields) {
-                    LOG_INFO("      {} -> {}0x{:x}", hashutils::ExtractTmp("hash", field.name),
-                             (field.value < 0 ? "-" : ""), (field.value < 0 ? -field.value : field.value));
+                    LOG_INFO(
+                        "      {} -> {}0x{:x}",
+                        hashutils::ExtractTmp("hash", field.name),
+                        (field.value < 0 ? "-" : ""),
+                        (field.value < 0 ? -field.value : field.value)
+                    );
                 }
             }
 
             LOG_INFO("custom types");
             for (auto& [id, s] : customtypes) {
-                LOG_INFO("  {} -> {} (size:0x{:x})", (ADLDataTypeIdBase)id, hashutils::ExtractTmp("hash", s.name),
-                         s.size);
+                LOG_INFO(
+                    "  {} -> {} (size:0x{:x})",
+                    (ADLDataTypeIdBase)id,
+                    hashutils::ExtractTmp("hash", s.name),
+                    s.size
+                );
             }
         }
 
@@ -580,11 +612,19 @@ namespace acts::compiler::adl {
                         const ADLEnumField* efield = en.GetField(hash::Hash64(keyVal));
 
                         if (efield) {
-                            WriteIntVal(builder.GetBlock<byte>(structLoc), field.offset, SizeOf(field.type),
-                                        efield->value, !IsUnsignedType(field.type));
+                            WriteIntVal(
+                                builder.GetBlock<byte>(structLoc),
+                                field.offset,
+                                SizeOf(field.type),
+                                efield->value,
+                                !IsUnsignedType(field.type)
+                            );
                         } else {
-                            LOG_WARNING("undefined enum value '{}' for enum {}", key,
-                                        hashutils::ExtractTmp("hash", en.name));
+                            LOG_WARNING(
+                                "undefined enum value '{}' for enum {}",
+                                key,
+                                hashutils::ExtractTmp("hash", en.name)
+                            );
                         }
 
                     } break;
@@ -626,8 +666,12 @@ namespace acts::compiler::adl {
             ADLDataTypeId rootId{ IdOfName(rootName) };
 
             if (!rootId || (rootId & ADF_MASK) != ADF_STRUCT) {
-                throw std::runtime_error(utils::va("the defined root '%s' doesn't exist or isn't a structure",
-                                                   hashutils::ExtractTmp("hash", rootId)));
+                throw std::runtime_error(
+                    utils::va(
+                        "the defined root '%s' doesn't exist or isn't a structure",
+                        hashutils::ExtractTmp("hash", rootId)
+                    )
+                );
             }
 
             auto it = structs.find(rootId);

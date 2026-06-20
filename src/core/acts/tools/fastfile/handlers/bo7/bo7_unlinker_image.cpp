@@ -105,6 +105,7 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_IMAGE,
-                                                                sizeof(GfxImage), true };
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{
+        GetWorkers(), SatHashAssetType::SATH_ASSET_IMAGE, sizeof(GfxImage), true
+    };
 } // namespace

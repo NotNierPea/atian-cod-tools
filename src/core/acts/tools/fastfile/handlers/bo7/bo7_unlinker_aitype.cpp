@@ -178,8 +178,12 @@ namespace {
             json.BeginObject();
 
             json.WriteFieldValueXHash("name", asset.name);
-            json.WriteFieldValueXAssetArray("bundles", SatHashAssetType::SATH_ASSET_SCRIPTBUNDLE, asset.count,
-                                            asset.bundles);
+            json.WriteFieldValueXAssetArray(
+                "bundles",
+                SatHashAssetType::SATH_ASSET_SCRIPTBUNDLE,
+                asset.count,
+                asset.bundles
+            );
             if (asset.unk14)
                 json.WriteFieldValueNumber("unk14", asset.unk14);
 
@@ -217,25 +221,52 @@ namespace {
             json.WriteFieldValueXHash("animationStateMachineAsset", asset.animationStateMachineAsset);
             json.WriteFieldValueXHash("behaviorTreeAsset", asset.behaviorTreeAsset);
 
-            json.WriteFieldValueXAsset("footStepsFxTable", SatHashAssetType::SATH_ASSET_FOOTSTEPSFXTABLE,
-                                       asset.footStepSFxTable);
-            json.WriteFieldValueXAsset("foliagesFXTable", SatHashAssetType::SATH_ASSET_FOLIAGEIMPACTFXTABLE,
-                                       asset.foliageSFXTable);
-            json.WriteFieldValueXAsset("handPlantsFXTable", SatHashAssetType::SATH_ASSET_HANDPLANTSFXTABLE,
-                                       asset.handPlantSFXTable);
-            json.WriteFieldValueXAsset("aiImpactVFXTable", SatHashAssetType::SATH_ASSET_AIIMPACTVFXTABLE,
-                                       asset.aiImpactVFXTable);
-            json.WriteFieldValueXAsset("dismemberment", SatHashAssetType::SATH_ASSET_DISMEMBERMENT,
-                                       asset.dismemberment);
-            json.WriteFieldValueXAsset("weaponAccuracy", SatHashAssetType::SATH_ASSET_WEAPONACCURACY,
-                                       asset.weaponAccuracy);
+            json.WriteFieldValueXAsset(
+                "footStepsFxTable",
+                SatHashAssetType::SATH_ASSET_FOOTSTEPSFXTABLE,
+                asset.footStepSFxTable
+            );
+            json.WriteFieldValueXAsset(
+                "foliagesFXTable",
+                SatHashAssetType::SATH_ASSET_FOLIAGEIMPACTFXTABLE,
+                asset.foliageSFXTable
+            );
+            json.WriteFieldValueXAsset(
+                "handPlantsFXTable",
+                SatHashAssetType::SATH_ASSET_HANDPLANTSFXTABLE,
+                asset.handPlantSFXTable
+            );
+            json.WriteFieldValueXAsset(
+                "aiImpactVFXTable",
+                SatHashAssetType::SATH_ASSET_AIIMPACTVFXTABLE,
+                asset.aiImpactVFXTable
+            );
+            json.WriteFieldValueXAsset(
+                "dismemberment",
+                SatHashAssetType::SATH_ASSET_DISMEMBERMENT,
+                asset.dismemberment
+            );
+            json.WriteFieldValueXAsset(
+                "weaponAccuracy",
+                SatHashAssetType::SATH_ASSET_WEAPONACCURACY,
+                asset.weaponAccuracy
+            );
             json.WriteFieldValueXAsset("scriptbundle", SatHashAssetType::SATH_ASSET_SCRIPTBUNDLE, asset.bundle);
-            json.WriteFieldValueXAsset("particleSystem1", SatHashAssetType::SATH_ASSET_PARTICLESYSTEM,
-                                       asset.particleSystem1);
-            json.WriteFieldValueXAsset("particleSystem2", SatHashAssetType::SATH_ASSET_PARTICLESYSTEM,
-                                       asset.particleSystem2);
-            json.WriteFieldValueXAsset("calloutMarkerPing", SatHashAssetType::SATH_ASSET_CALLOUTMARKERPING,
-                                       asset.calloutMarkerPing);
+            json.WriteFieldValueXAsset(
+                "particleSystem1",
+                SatHashAssetType::SATH_ASSET_PARTICLESYSTEM,
+                asset.particleSystem1
+            );
+            json.WriteFieldValueXAsset(
+                "particleSystem2",
+                SatHashAssetType::SATH_ASSET_PARTICLESYSTEM,
+                asset.particleSystem2
+            );
+            json.WriteFieldValueXAsset(
+                "calloutMarkerPing",
+                SatHashAssetType::SATH_ASSET_CALLOUTMARKERPING,
+                asset.calloutMarkerPing
+            );
             json.WriteFieldValueXAsset("image168", SatHashAssetType::SATH_ASSET_IMAGE, asset.unk168);
             json.WriteFieldValueXAsset("image170", SatHashAssetType::SATH_ASSET_IMAGE, asset.unk170);
             json.WriteFieldValueString("unitType", AITypeUnitTypeName(asset.unittype));
@@ -257,8 +288,11 @@ namespace {
                 for (size_t i = 0; i < asset.characterTypes.charactersCount; i++) {
                     json.BeginObject();
                     if (asset.characterTypes.characters)
-                        json.WriteFieldValueXAsset("character", SatHashAssetType::SATH_ASSET_CHARACTER,
-                                                   asset.characterTypes.characters[i]);
+                        json.WriteFieldValueXAsset(
+                            "character",
+                            SatHashAssetType::SATH_ASSET_CHARACTER,
+                            asset.characterTypes.characters[i]
+                        );
                     if (showOdd)
                         json.WriteFieldValueNumber("odd", asset.characterTypes.odds[i]);
                     json.EndObject();
@@ -351,12 +385,15 @@ namespace {
         GetWorkers(), SatHashAssetType::SATH_ASSET_AI_TOKEN_TYPES, "ai_token_types", "ai/token/types"
     };
     utils::MapAdder<ImplWorkerBundleList<AiTokenStealingDefinitions>, SatHashAssetType, Worker>
-        implAiTokenStealingDefinitions{ GetWorkers(), SatHashAssetType::SATH_ASSET_AI_TOKEN_STEALING_DEFINITIONS,
-                                        "ai_token_stealing_definitions", "ai/token/stealingdefinitions" };
+        implAiTokenStealingDefinitions{ GetWorkers(),
+                                        SatHashAssetType::SATH_ASSET_AI_TOKEN_STEALING_DEFINITIONS,
+                                        "ai_token_stealing_definitions",
+                                        "ai/token/stealingdefinitions" };
     utils::MapAdder<ImplWorkerBundleList<AiTokenDefinitions>, SatHashAssetType, Worker> implAiTokenDefinitions{
         GetWorkers(), SatHashAssetType::SATH_ASSET_AI_TOKEN_DEFINITIONS, "ai_token_definitions", "ai/token/definitions"
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_AITYPE,
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(),
+                                                                SatHashAssetType::SATH_ASSET_AITYPE,
                                                                 sizeof(AIType) };
 } // namespace

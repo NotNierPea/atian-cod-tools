@@ -105,14 +105,26 @@ namespace {
             json.WriteFieldValueXAsset("dogTagEnemy", ASSET_TYPE_XMODEL, asset->dogTagEnemy);
             json.WriteFieldValueXAsset("tagFxSet", ASSET_TYPE_TAGFX, asset->tagFxSet);
             json.WriteFieldValueXAsset("characterFootsteps", ASSET_TYPE_FOOTSTEP_TABLE, asset->characterFootsteps);
-            json.WriteFieldValueXAsset("characterFootstepsQuiet", ASSET_TYPE_FOOTSTEP_TABLE,
-                                       asset->characterFootstepsQuiet);
-            json.WriteFieldValueXAsset("characterFootstepsNPC", ASSET_TYPE_FOOTSTEP_TABLE,
-                                       asset->characterFootstepsNPC);
-            json.WriteFieldValueXAsset("characterFootstepsNPCLoud", ASSET_TYPE_FOOTSTEP_TABLE,
-                                       asset->characterFootstepsNPCLoud);
-            json.WriteFieldValueXAsset("characterFootstepsNPCQuiet", ASSET_TYPE_FOOTSTEP_TABLE,
-                                       asset->characterFootstepsNPCQuiet);
+            json.WriteFieldValueXAsset(
+                "characterFootstepsQuiet",
+                ASSET_TYPE_FOOTSTEP_TABLE,
+                asset->characterFootstepsQuiet
+            );
+            json.WriteFieldValueXAsset(
+                "characterFootstepsNPC",
+                ASSET_TYPE_FOOTSTEP_TABLE,
+                asset->characterFootstepsNPC
+            );
+            json.WriteFieldValueXAsset(
+                "characterFootstepsNPCLoud",
+                ASSET_TYPE_FOOTSTEP_TABLE,
+                asset->characterFootstepsNPCLoud
+            );
+            json.WriteFieldValueXAsset(
+                "characterFootstepsNPCQuiet",
+                ASSET_TYPE_FOOTSTEP_TABLE,
+                asset->characterFootstepsNPCQuiet
+            );
             json.WriteFieldValueXAssetArray("outfits", ASSET_TYPE_PLAYER_OUTFIT, asset->numOutfits, asset->outfits);
 
             bool error{};

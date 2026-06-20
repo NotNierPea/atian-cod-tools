@@ -18,8 +18,11 @@ namespace {
 
     void* DB_FindXAssetHeader_Stub(bo4::XAssetType type, XHash* name, bool errorIfMissing, int waitTime) {
         if (assetTrace[type]) {
-            LOG_INFO("MATCH asset type {}:{}", games::bo4::pool::XAssetNameFromId(type),
-                     core::hashes::ExtractTmp("hash", *name));
+            LOG_INFO(
+                "MATCH asset type {}:{}",
+                games::bo4::pool::XAssetNameFromId(type),
+                core::hashes::ExtractTmp("hash", *name)
+            );
             hook::error::DumpStackTraceFrom(core::logs::LVL_INFO);
         }
         return DB_FindXAssetHeader_Detour.Call<void*>(type, name, errorIfMissing, waitTime);
@@ -29,8 +32,11 @@ namespace {
         XHash* name{ DB_GetXAssetName_Detour.Call<XHash*>(retstr, asset) };
 
         if (assetTrace[asset->type]) {
-            LOG_INFO("MATCH asset type {}:{}", games::bo4::pool::XAssetNameFromId(asset->type),
-                     core::hashes::ExtractTmp("hash", *name));
+            LOG_INFO(
+                "MATCH asset type {}:{}",
+                games::bo4::pool::XAssetNameFromId(asset->type),
+                core::hashes::ExtractTmp("hash", *name)
+            );
             hook::error::DumpStackTraceFrom(core::logs::LVL_INFO);
         }
 
@@ -51,9 +57,13 @@ namespace {
             return;
         }
         readKPS.insert(hash);
-        LOG_INFO("KeyValuePairs: {}::{} (hash 0x{:x}) at {}",
-                 namespaceKey ? core::hashes::ExtractTmp("hash", *namespaceKey) : "<null>", keyName, hash,
-                 hook::library::CodePointer{ origin });
+        LOG_INFO(
+            "KeyValuePairs: {}::{} (hash 0x{:x}) at {}",
+            namespaceKey ? core::hashes::ExtractTmp("hash", *namespaceKey) : "<null>",
+            keyName,
+            hash,
+            hook::library::CodePointer{ origin }
+        );
     }
 
     bool KeyValuePairs_GetNextValue_Stub(const char* keyName, XHash* namespaceKey, const char** outValue) {

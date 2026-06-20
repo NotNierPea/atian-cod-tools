@@ -48,12 +48,18 @@ namespace {
 
         std::unique_ptr<byte[]> decompressed{ std::make_unique<byte[]>(header.decompressed_size) };
 
-        int r{ utils::compress::Decompress2(utils::compress::COMP_LZ4, decompressed.get(), header.decompressed_size,
-                                            reader.ReadPtr<byte>(header.compressed_size), header.compressed_size) };
+        int r{ utils::compress::Decompress2(
+            utils::compress::COMP_LZ4,
+            decompressed.get(),
+            header.decompressed_size,
+            reader.ReadPtr<byte>(header.compressed_size),
+            header.compressed_size
+        ) };
 
         if (r < 0) {
             throw std::runtime_error(
-                std::format("can't decompress {}: {}", path.string(), utils::compress::DecompressResultName(r)));
+                std::format("can't decompress {}: {}", path.string(), utils::compress::DecompressResultName(r))
+            );
         }
 
         core::bytebuffer::ByteBuffer dreader{ decompressed.get(), header.decompressed_size };
@@ -148,8 +154,9 @@ namespace {
 
             LOG_INFO("computing {}", o.string());
 
-            deps::dzporter::cdb::ReadCDBFile(in / file,
-                                             [&dataMap](uint64_t hash, const char* str) { dataMap[str].insert(hash); });
+            deps::dzporter::cdb::ReadCDBFile(in / file, [&dataMap](uint64_t hash, const char* str) {
+                dataMap[str].insert(hash);
+            });
 
             deps::dzporter::cdb::CompressCDBFile(dataMap, out / file);
         }
@@ -159,6 +166,8 @@ namespace {
 
     ADD_TOOL(dzporter_cdb_read, "compatibility", " [file]", "read cdb file", dzporter_cdb_read);
     ADD_TOOL(dzporter_cdb_recompress, "compatibility", " [in] [out]", "read cdb file", dzporter_cdb_recompress);
-    ADD_TOOL(dzporter_cdb_gen_csv, "compatibility", " [input] (output=input.cbd)", "Gen CDB file from csv",
-             dzporter_cdb_gen_csv);
+    ADD_TOOL(
+        dzporter_cdb_gen_csv, "compatibility", " [input] (output=input.cbd)", "Gen CDB file from csv",
+        dzporter_cdb_gen_csv
+    );
 } // namespace

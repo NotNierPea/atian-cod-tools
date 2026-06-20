@@ -166,8 +166,12 @@ namespace {
         return tool::OK;
     }
 
-    ADD_TOOL(serious_hashmap_read, "compatibility", " [type] [file] [out]", "Dump hashmap file, type = t7/fnv/t8",
-             serious_hashmap_read);
-    ADD_TOOL(serious_hashmap_write, "compatibility", " [type] [file] [out]", "Write hashmap file, type = t7/fnv/t8",
-             serious_hashmap_write);
+    ADD_TOOL(
+        serious_hashmap_read, "compatibility", " [type] [file] [out]", "Dump hashmap file, type = t7/fnv/t8",
+        serious_hashmap_read
+    );
+    ADD_TOOL(
+        serious_hashmap_write, "compatibility", " [type] [file] [out]", "Write hashmap file, type = t7/fnv/t8",
+        serious_hashmap_write
+    );
 } // namespace

@@ -192,10 +192,11 @@ namespace tool::gsc {
             virtual bool IsBoolConvertable(bool strict, ASMContext& ctx);
             virtual bool IsConstNumber() const { return IsIntConst() || m_type == TYPE_FLOAT; };
 
-            virtual void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&,
-                                        ASMContext& ctx);
-            virtual void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                                       SubNodeContext& ctx);
+            virtual void
+            ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&, ASMContext& ctx);
+            virtual void ApplySubNodes(
+                const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+            );
             friend std::ostream& operator<<(std::ostream& os, const ASMContextNode& obj);
         };
 
@@ -234,8 +235,9 @@ namespace tool::gsc {
             ASMContextNodeBlockType m_blockType;
             bool m_disabled;
             bool m_allowInline;
-            ASMContextNodeBlock(ASMContextNodeBlockType blockType = BLOCK_DEFAULT, bool disabled = false,
-                                bool allowInline = true);
+            ASMContextNodeBlock(
+                ASMContextNodeBlockType blockType = BLOCK_DEFAULT, bool disabled = false, bool allowInline = true
+            );
             ~ASMContextNodeBlock();
             void Dump(std::ostream& out, DecompContext& ctx) const override;
             ASMContextNode* Clone0() const override;
@@ -255,10 +257,12 @@ namespace tool::gsc {
 
             ASMContextStatement* FetchFirstForLocation(int64_t rloc);
 
-            void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&,
-                                ASMContext& ctx) override;
-            void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                               SubNodeContext& ctx) override;
+            void ApplySubBlocks(
+                const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&, ASMContext& ctx
+            ) override;
+            void ApplySubNodes(
+                const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+            ) override;
         };
 
         struct ASMContextDevBlock {
@@ -325,8 +329,10 @@ namespace tool::gsc {
             // file platform
             Platform m_platform;
 
-            ASMContext(byte* fonctionStart, GSCOBJHandler& gscReader, T8GSCOBJContext& objctx, const GscInfoOption& opt,
-                       uint64_t nsp, GSCExportReader& exp, void* m_readerHandle, uint64_t vm, Platform platform);
+            ASMContext(
+                byte* fonctionStart, GSCOBJHandler& gscReader, T8GSCOBJContext& objctx, const GscInfoOption& opt,
+                uint64_t nsp, GSCExportReader& exp, void* m_readerHandle, uint64_t vm, Platform platform
+            );
             ~ASMContext();
 
             // @return relative location in the function

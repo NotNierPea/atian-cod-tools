@@ -73,8 +73,11 @@ namespace {
             json.BeginObject();
             json.WriteFieldValueXHash("name", asset->name);
             json.WriteFieldValueXAsset("model", games::bo4::pool::XAssetType::ASSET_TYPE_XMODEL, asset->model);
-            json.WriteFieldValueXAsset("pristineModel", games::bo4::pool::XAssetType::ASSET_TYPE_XMODEL,
-                                       asset->pristineModel);
+            json.WriteFieldValueXAsset(
+                "pristineModel",
+                games::bo4::pool::XAssetType::ASSET_TYPE_XMODEL,
+                asset->pristineModel
+            );
             json.WriteFieldValueXAsset("unk20", games::bo4::pool::XAssetType::ASSET_TYPE_XMODEL, asset->unk20);
             json.WriteFieldValueBool("clientOnly", asset->clientOnly);
             json.WriteFieldValueBool("syncBaseHealthWithEntity", asset->syncBaseHealthWithEntity);
@@ -92,10 +95,16 @@ namespace {
 
                     json.BeginObject();
                     json.WriteFieldValueXHash("name", stage->name);
-                    json.WriteFieldValueXAsset("physPreset", games::bo4::pool::XAssetType::ASSET_TYPE_PHYSPRESET,
-                                               stage->physPreset);
-                    json.WriteFieldValueXAsset("baseEffect", games::bo4::pool::XAssetType::ASSET_TYPE_FX,
-                                               stage->baseEffect);
+                    json.WriteFieldValueXAsset(
+                        "physPreset",
+                        games::bo4::pool::XAssetType::ASSET_TYPE_PHYSPRESET,
+                        stage->physPreset
+                    );
+                    json.WriteFieldValueXAsset(
+                        "baseEffect",
+                        games::bo4::pool::XAssetType::ASSET_TYPE_FX,
+                        stage->baseEffect
+                    );
                     json.WriteFieldValueScrString("unk28", stage->unk28);
                     json.WriteFieldValueScrStringArray("unk2c", ACTS_ARRAYSIZE(stage->unk2c), stage->unk2c);
                     json.WriteFieldValueScrString("unk3c", stage->unk3c);
@@ -112,17 +121,29 @@ namespace {
                 json.WriteFieldValueNumber("meleeDamageScale", piece->meleeDamageScale);
                 json.WriteFieldValueNumber("impactDamageScale", piece->impactDamageScale);
                 json.WriteFieldValueNumber("entityDamageTransfer", piece->entityDamageTransfer);
-                json.WriteFieldValueString("subtargetOffset",
-                                           std::format("({}, {}, {})", piece->subtargetOffset[0],
-                                                       piece->subtargetOffset[1], piece->subtargetOffset[2]));
+                json.WriteFieldValueString(
+                    "subtargetOffset",
+                    std::format(
+                        "({}, {}, {})",
+                        piece->subtargetOffset[0],
+                        piece->subtargetOffset[1],
+                        piece->subtargetOffset[2]
+                    )
+                );
                 json.WriteFieldValueXHash("damageSound", piece->damageSound);
                 json.WriteFieldValueXHash("burnSound", piece->burnSound);
                 json.WriteFieldValueScrString("subtargetBone", piece->subtargetBone);
                 json.WriteFieldValueScrString("enableLabel", piece->enableLabel);
-                json.WriteFieldValueXAsset("burnEffect", games::bo4::pool::XAssetType::ASSET_TYPE_FX,
-                                           piece->burnEffect);
-                json.WriteFieldValueXAsset("physConstraints", games::bo4::pool::XAssetType::ASSET_TYPE_PHYSCONSTRAINTS,
-                                           piece->physConstraints);
+                json.WriteFieldValueXAsset(
+                    "burnEffect",
+                    games::bo4::pool::XAssetType::ASSET_TYPE_FX,
+                    piece->burnEffect
+                );
+                json.WriteFieldValueXAsset(
+                    "physConstraints",
+                    games::bo4::pool::XAssetType::ASSET_TYPE_PHYSCONSTRAINTS,
+                    piece->physConstraints
+                );
                 json.WriteFieldValueNumber("unk268", piece->unk268);
                 json.WriteFieldNameString("hideBones");
                 json.BeginArray();

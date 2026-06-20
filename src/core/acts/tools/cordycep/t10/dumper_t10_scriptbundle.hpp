@@ -85,8 +85,9 @@ namespace tool::cordycep::dump::t10::scriptbundle {
             ScriptBundleObjectData data;
         };
 
-        bool WriteBundleDef(PoolOption& opt, std::ostream& os, Process& proc, ScriptBundle& entry,
-                            ScriptBundleObjectDef& def, int depth);
+        bool WriteBundleDef(
+            PoolOption& opt, std::ostream& os, Process& proc, ScriptBundle& entry, ScriptBundleObjectDef& def, int depth
+        );
     } // namespace sbv1
     namespace sbv2 {
         struct __declspec(align(8)) ScriptBundleObjectDefValueNameId {
@@ -166,10 +167,14 @@ namespace tool::cordycep::dump::t10::scriptbundle {
             ScriptBundleObjectData data;
         };
 
-        bool WriteBundleDef(PoolOption& opt, core::hashes::raw_file_extractor::JsonWriter& json, Process& proc,
-                            ScriptBundleObjectDef& def, std::function<const char*(uint64_t hash)>& GetLocalized);
-        bool WriteBundleData(PoolOption& opt, core::hashes::raw_file_extractor::JsonWriter& json, Process& proc,
-                             ScriptBundleObjectData& data, std::function<const char*(uint64_t hash)>& GetLocalized);
+        bool WriteBundleDef(
+            PoolOption& opt, core::hashes::raw_file_extractor::JsonWriter& json, Process& proc,
+            ScriptBundleObjectDef& def, std::function<const char*(uint64_t hash)>& GetLocalized
+        );
+        bool WriteBundleData(
+            PoolOption& opt, core::hashes::raw_file_extractor::JsonWriter& json, Process& proc,
+            ScriptBundleObjectData& data, std::function<const char*(uint64_t hash)>& GetLocalized
+        );
     } // namespace sbv2
 
 } // namespace tool::cordycep::dump::t10::scriptbundle

@@ -50,8 +50,17 @@ namespace {
                     }
                     continue;
                 }
-                LOG_INFO("{} ({}/{}) gdb:{:x}, lines:{:x}({}), source:{:x}({})", fn, file.active, file.baselineVersion,
-                         file.gdb, file.lineStartAddr, file.lineStartAddrCount, file.source, file.sourceLen);
+                LOG_INFO(
+                    "{} ({}/{}) gdb:{:x}, lines:{:x}({}), source:{:x}({})",
+                    fn,
+                    file.active,
+                    file.baselineVersion,
+                    file.gdb,
+                    file.lineStartAddr,
+                    file.lineStartAddrCount,
+                    file.source,
+                    file.sourceLen
+                );
             }
         }
 

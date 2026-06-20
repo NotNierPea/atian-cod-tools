@@ -84,9 +84,11 @@ namespace {
                 {
                     for (auto& member : main.GetArray()) {
                         if (!member.IsObject()) {
-                            LOG_ERROR("Can't parse {}: Structured table should be defined using a root array containg "
-                                      "objects",
-                                      path.string());
+                            LOG_ERROR(
+                                "Can't parse {}: Structured table should be defined using a root array containg "
+                                "objects",
+                                path.string()
+                            );
                             ctx.error = true;
                             return;
                         }
@@ -187,10 +189,13 @@ namespace {
                         headerIndex[i] = (uint32_t)i;
                     }
 
-                    std::sort(headerIndex, headerIndex + columnCount,
-                              [&headers](uint32_t& idx1, uint32_t& idx2) -> bool {
-                                  return headers[idx1].hash < headers[idx2].hash;
-                              });
+                    std::sort(
+                        headerIndex,
+                        headerIndex + columnCount,
+                        [&headers](uint32_t& idx1, uint32_t& idx2) -> bool {
+                            return headers[idx1].hash < headers[idx2].hash;
+                        }
+                    );
                 }
 
                 ff.data.PopStream();

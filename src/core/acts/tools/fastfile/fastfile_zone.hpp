@@ -17,10 +17,11 @@ namespace fastfile::zone {
         std::unordered_map<std::string, std::vector<AssetData>> assets;
         std::unordered_map<std::string, const char*> cfgs;
 
-        void
-        ParseFile(const std::filesystem::path& path, std::string& file,
-                  std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler,
-                  size_t depth = 0);
+        void ParseFile(
+            const std::filesystem::path& path, std::string& file,
+            std::function<void(core::logs::loglevel lvl, size_t line, const std::string& message)> errorHandler,
+            size_t depth = 0
+        );
 
         void ParseFile(const std::filesystem::path& path, std::string& file, size_t depth = 0);
 

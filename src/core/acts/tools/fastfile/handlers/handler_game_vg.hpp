@@ -112,8 +112,9 @@ namespace fastfile::handlers::vg {
             }
         }
 
-        void WriteFieldValueXAssetArray(const char* name, HandlerHashedAssetType type, size_t count, void* handle,
-                                        bool ignoreEmpty = true) {
+        void WriteFieldValueXAssetArray(
+            const char* name, HandlerHashedAssetType type, size_t count, void* handle, bool ignoreEmpty = true
+        ) {
             void** val{ (void**)handle };
             if (ignoreEmpty && (!count || !*val))
                 return;

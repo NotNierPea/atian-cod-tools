@@ -24,8 +24,9 @@ namespace core::eventhandler {
         template<typename CallbackType>
             requires std::is_same_v<EventData, void>
         inline void Callback(CallbackType&& callback) const {
-            core::eventhandler::RegisterEventCallback(
-                name, [cb = std::forward<CallbackType>(callback)](void* data) { cb(); });
+            core::eventhandler::RegisterEventCallback(name, [cb = std::forward<CallbackType>(callback)](void* data) {
+                cb();
+            });
         }
 
         template<typename CallbackType>

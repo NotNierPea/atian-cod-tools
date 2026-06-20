@@ -109,8 +109,10 @@ namespace {
         // sort fields
         for (size_t i = 0; i < 2; i++) {
             std::sort(
-                fields[i].begin(), fields[i].end(),
-                [](const scr_weapon_field_t& o1, const scr_weapon_field_t& o2) -> bool { return o1.ofs < o2.ofs; });
+                fields[i].begin(),
+                fields[i].end(),
+                [](const scr_weapon_field_t& o1, const scr_weapon_field_t& o2) -> bool { return o1.ofs < o2.ofs; }
+            );
         }
 
         std::ofstream hof{ "wfield.hpp" };

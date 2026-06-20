@@ -311,10 +311,14 @@ namespace cw {
                 ImGui_ImplDX11_CreateDeviceObjects();
                 break;
             case MDT_D12:
-                ImGui_ImplDX12_Init(menuData.dx12.d3dDevice, menuData.dx12.bufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
-                                    menuData.dx12.descHeap,
-                                    menuData.dx12.descHeap->GetCPUDescriptorHandleForHeapStart(),
-                                    menuData.dx12.descHeap->GetGPUDescriptorHandleForHeapStart());
+                ImGui_ImplDX12_Init(
+                    menuData.dx12.d3dDevice,
+                    menuData.dx12.bufferCount,
+                    DXGI_FORMAT_R8G8B8A8_UNORM,
+                    menuData.dx12.descHeap,
+                    menuData.dx12.descHeap->GetCPUDescriptorHandleForHeapStart(),
+                    menuData.dx12.descHeap->GetGPUDescriptorHandleForHeapStart()
+                );
                 ImGui_ImplDX12_CreateDeviceObjects();
                 break;
             }
@@ -363,14 +367,17 @@ namespace cw {
                             queueDesc.NodeMask = 0;
 
                             ID3D12CommandQueue* queueTmp{};
-                            if (menuData.dx12.d3dDevice->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue),
-                                                                            (void**)&queueTmp) < 0) {
+                            if (menuData.dx12.d3dDevice
+                                    ->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void**)&queueTmp) <
+                                0) {
                                 return hresf();
                             }
                             void* D3D12ExecuteCommandListsFunc = reinterpret_cast<void***>(queueTmp)[0][10];
 
-                            D3D12ExecuteCommandListsDetour.Create(D3D12ExecuteCommandListsFunc,
-                                                                  D3D12ExecuteCommandListsStub);
+                            D3D12ExecuteCommandListsDetour.Create(
+                                D3D12ExecuteCommandListsFunc,
+                                D3D12ExecuteCommandListsStub
+                            );
                             queueTmp->Release();
                             LOG_DEBUG("detour ExecuteCommandLists defined");
                         }
@@ -395,8 +402,8 @@ namespace cw {
                         return hresf();
                     }
                     ID3D12CommandAllocator* alloc{};
-                    if (menuData.dx12.d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-                                                                        IID_PPV_ARGS(&alloc)) != S_OK) {
+                    if (menuData.dx12.d3dDevice
+                            ->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)) != S_OK) {
                         return hresf();
                     }
 
@@ -404,8 +411,13 @@ namespace cw {
                         menuData.dx12.frames[i].allocator = alloc;
                     }
 
-                    if (menuData.dx12.d3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, alloc, NULL,
-                                                                   IID_PPV_ARGS(&menuData.dx12.commandList)) != S_OK ||
+                    if (menuData.dx12.d3dDevice->CreateCommandList(
+                            0,
+                            D3D12_COMMAND_LIST_TYPE_DIRECT,
+                            alloc,
+                            NULL,
+                            IID_PPV_ARGS(&menuData.dx12.commandList)
+                        ) != S_OK ||
                         menuData.dx12.commandList->Close() != S_OK) {
                         return hresf();
                     }
@@ -416,8 +428,8 @@ namespace cw {
                     descBuffs.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
                     descBuffs.NodeMask = 1;
 
-                    if (menuData.dx12.d3dDevice->CreateDescriptorHeap(
-                            &descBuffs, IID_PPV_ARGS(&menuData.dx12.descBuffers)) != S_OK) {
+                    if (menuData.dx12.d3dDevice
+                            ->CreateDescriptorHeap(&descBuffs, IID_PPV_ARGS(&menuData.dx12.descBuffers)) != S_OK) {
                         return hresf();
                     }
 
@@ -504,15 +516,18 @@ namespace cw {
                 menuData.dx12.commandList->ResourceBarrier(1, &barrier);
                 menuData.dx12.commandList->Close();
                 menuData.dx12.queue->ExecuteCommandLists(
-                    1, reinterpret_cast<ID3D12CommandList* const*>(&menuData.dx12.commandList));
+                    1,
+                    reinterpret_cast<ID3D12CommandList* const*>(&menuData.dx12.commandList)
+                );
             } break;
             }
 
             return hresf();
         }
 
-        HRESULT CreateSwapChainStub(IDXGIFactory* factory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc,
-                                    IDXGISwapChain** ppSwapChain) {
+        HRESULT CreateSwapChainStub(
+            IDXGIFactory* factory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain
+        ) {
             HRESULT res = CreateSwapChainDetour.Call<HRESULT>(factory, pDevice, pDesc, ppSwapChain);
 
             if (SUCCEEDED(res)) {
@@ -552,8 +567,11 @@ namespace cw {
         }
 
         HRESULT __stdcall CreateDXGIFactory2Stub(UINT Flags, const IID* const riid, void** ppFactory) {
-            return CreateDXGI("CreateDXGIFactory2", CreateDXGIFactory2Detour.Call<HRESULT>(Flags, riid, ppFactory),
-                              ppFactory);
+            return CreateDXGI(
+                "CreateDXGIFactory2",
+                CreateDXGIFactory2Detour.Call<HRESULT>(Flags, riid, ppFactory),
+                ppFactory
+            );
         }
 #pragma endregion
 
@@ -648,8 +666,10 @@ EXPORT void DLL_DecryptMTBuffer(size_t count) {
 EXPORT void DLL_DecryptGSCScripts() { cw::DecryptGSCScripts(); }
 
 // hook powrprof.dll for auto injection
-EXPORT NTSTATUS CallNtPowerInformation(POWER_INFORMATION_LEVEL InformationLevel, PVOID InputBuffer,
-                                       ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength) {
+EXPORT NTSTATUS CallNtPowerInformation(
+    POWER_INFORMATION_LEVEL InformationLevel, PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer,
+    ULONG OutputBufferLength
+) {
     static auto func = [] {
         hook::library::Library powrprof{ "powrprof.dll", true };
 

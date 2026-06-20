@@ -100,8 +100,10 @@ namespace {
                 json.WriteFieldNameString("skins");
                 json.BeginArray();
                 if (data.operatorSkinsCount) {
-                    auto operators{ proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.operatorSkins),
-                                                                      data.operatorSkinsCount) };
+                    auto operators{ proc.ReadMemoryArrayEx<uintptr_t>(
+                        reinterpret_cast<uintptr_t>(data.operatorSkins),
+                        data.operatorSkinsCount
+                    ) };
                     for (size_t i = 0; i < data.operatorSkinsCount; i++) {
                         json.WriteValueHash(proc.ReadMemory<uint64_t>(operators[i]));
                     }
@@ -134,8 +136,13 @@ namespace {
             OperatorSkin data;
 
             if (sizeof(data) != asset.HeaderSize) {
-                LOG_ERROR("Invalid header size for {} 0x{:x} != 0x{:x} for 0x{:x}",
-                          hashutils::ExtractTmp("hash", asset.ID), sizeof(data), asset.HeaderSize, asset.Type);
+                LOG_ERROR(
+                    "Invalid header size for {} 0x{:x} != 0x{:x} for 0x{:x}",
+                    hashutils::ExtractTmp("hash", asset.ID),
+                    sizeof(data),
+                    asset.HeaderSize,
+                    asset.Type
+                );
                 std::cout << "--------------------\n";
                 auto d{ proc.ReadMemoryArrayEx<byte>(asset.Header, asset.HeaderSize) };
                 tool::pool::WriteHex(std::cout, 0, d.get(), asset.HeaderSize, proc);
@@ -228,8 +235,13 @@ namespace {
             OperatorList data;
 
             if (sizeof(data) != asset.HeaderSize) {
-                LOG_ERROR("Invalid header size for {} 0x{:x} != 0x{:x} for 0x{:x}",
-                          hashutils::ExtractTmp("hash", asset.ID), sizeof(data), asset.HeaderSize, asset.Type);
+                LOG_ERROR(
+                    "Invalid header size for {} 0x{:x} != 0x{:x} for 0x{:x}",
+                    hashutils::ExtractTmp("hash", asset.ID),
+                    sizeof(data),
+                    asset.HeaderSize,
+                    asset.Type
+                );
                 std::cout << "--------------------\n";
                 auto d{ proc.ReadMemoryArrayEx<byte>(asset.Header, asset.HeaderSize) };
                 tool::pool::WriteHex(std::cout, 0, d.get(), asset.HeaderSize, proc);

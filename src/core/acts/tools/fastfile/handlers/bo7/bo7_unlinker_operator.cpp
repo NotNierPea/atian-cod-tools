@@ -120,8 +120,12 @@ namespace {
             json.WriteFieldValueXAsset("xboneSet", SATH_ASSET_XBONESET, asset->xboneSet);
             json.WriteFieldValueXAsset("portraitImage", SATH_ASSET_IMAGE, asset->portraitImage);
             json.WriteFieldValueXAsset("iconMinimap", SATH_ASSET_IMAGE, asset->iconMinimap);
-            json.WriteFieldValueXAssetArray("operatorVoicePackages", SATH_ASSET_OPERATORVOICEPACKAGE,
-                                            asset->operatorVoicePackagesCount, asset->operatorVoicePackages);
+            json.WriteFieldValueXAssetArray(
+                "operatorVoicePackages",
+                SATH_ASSET_OPERATORVOICEPACKAGE,
+                asset->operatorVoicePackagesCount,
+                asset->operatorVoicePackages
+            );
             json.WriteFieldValueNumber("lootid", asset->lootid);
             json.WriteFieldValueXString("dialog", asset->dialog);
             json.WriteFieldValueXString("gender", asset->gender);
@@ -299,14 +303,30 @@ namespace {
                     json.EndArray();
                 }
             };
-            DumpArray("reactiveVFXPackage1", SATH_ASSET_REACTIVEVFXPACKAGE, (void**)asset->reactiveVFXPackage1,
-                      asset->reactiveVFXPackage1Count);
-            DumpArray("reactiveVFXPackage2", SATH_ASSET_REACTIVEVFXPACKAGE, (void**)asset->reactiveVFXPackage2,
-                      asset->reactiveVFXPackage2Count);
-            DumpArray("reactiveAudioPackage1", SATH_ASSET_REACTIVEAUDIOPACKAGE, (void**)asset->reactiveAudioPackage1,
-                      asset->reactiveAudioPackage1Count);
-            DumpArray("reactiveAudioPackage2", SATH_ASSET_REACTIVEAUDIOPACKAGE, (void**)asset->reactiveAudioPackage2,
-                      asset->reactiveAudioPackage2Count);
+            DumpArray(
+                "reactiveVFXPackage1",
+                SATH_ASSET_REACTIVEVFXPACKAGE,
+                (void**)asset->reactiveVFXPackage1,
+                asset->reactiveVFXPackage1Count
+            );
+            DumpArray(
+                "reactiveVFXPackage2",
+                SATH_ASSET_REACTIVEVFXPACKAGE,
+                (void**)asset->reactiveVFXPackage2,
+                asset->reactiveVFXPackage2Count
+            );
+            DumpArray(
+                "reactiveAudioPackage1",
+                SATH_ASSET_REACTIVEAUDIOPACKAGE,
+                (void**)asset->reactiveAudioPackage1,
+                asset->reactiveAudioPackage1Count
+            );
+            DumpArray(
+                "reactiveAudioPackage2",
+                SATH_ASSET_REACTIVEAUDIOPACKAGE,
+                (void**)asset->reactiveAudioPackage2,
+                asset->reactiveAudioPackage2Count
+            );
             json.EndObject();
 
             std::filesystem::path outFile{ opt.m_output / gamePath / "source" / "tables" / "operator" / "reactive" /
@@ -320,7 +340,8 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_OPERATOR,
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(),
+                                                                SatHashAssetType::SATH_ASSET_OPERATOR,
                                                                 sizeof(Operator) };
     utils::MapAdder<ImplSkinWorker, SatHashAssetType, Worker> impls{ GetWorkers(),
                                                                      SatHashAssetType::SATH_ASSET_OPERATORSKIN,

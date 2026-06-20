@@ -14,8 +14,10 @@ using namespace antlr4;
 namespace {
 
     struct AdlParserStaticData final {
-        AdlParserStaticData(std::vector<std::string> ruleNames, std::vector<std::string> literalNames,
-                            std::vector<std::string> symbolicNames)
+        AdlParserStaticData(
+            std::vector<std::string> ruleNames, std::vector<std::string> literalNames,
+            std::vector<std::string> symbolicNames
+        )
             : ruleNames(std::move(ruleNames)), literalNames(std::move(literalNames)),
               symbolicNames(std::move(symbolicNames)), vocabulary(this->literalNames, this->symbolicNames) {}
 
@@ -95,7 +97,8 @@ namespace {
                 "",           "",           "",        "",           "",          "",          "",         "",
                 "",           "",           "",        "",           "",          "",          "",         "",
                 "",           "",           "NEWLINE", "WHITESPACE", "INTEGER10", "INTEGER16", "INTEGER8", "INTEGER2",
-                "BOOL_VALUE", "IDENTIFIER", "STRING" });
+                "BOOL_VALUE", "IDENTIFIER", "STRING" }
+        );
         static const int32_t serializedATNSegment[] = {
             4,   1,   42,  251, 2,   0,   7,   0,   2,   1,   7,   1,   2,   2,   7,   2,   2,   3,   7,   3,   2,
             4,   7,   4,   2,   5,   7,   5,   2,   6,   7,   6,   2,   7,   7,   7,   2,   8,   7,   8,   2,   9,
@@ -201,7 +204,9 @@ namespace {
             141, 143, 147, 151, 158, 165, 169, 179, 190, 201, 212, 223, 234, 244
         };
         staticData->serializedATN = antlr4::atn::SerializedATNView(
-            serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
+            serializedATNSegment,
+            sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0])
+        );
 
         antlr4::atn::ATNDeserializer deserializer;
         staticData->atn = deserializer.deserialize(staticData->serializedATN);
@@ -220,8 +225,13 @@ adlParser::adlParser(TokenStream* input) : adlParser(input, antlr4::atn::ParserA
 
 adlParser::adlParser(TokenStream* input, const antlr4::atn::ParserATNSimulatorOptions& options) : Parser(input) {
     adlParser::initialize();
-    _interpreter = new atn::ParserATNSimulator(this, *adlParserStaticData->atn, adlParserStaticData->decisionToDFA,
-                                               adlParserStaticData->sharedContextCache, options);
+    _interpreter = new atn::ParserATNSimulator(
+        this,
+        *adlParserStaticData->atn,
+        adlParserStaticData->decisionToDFA,
+        adlParserStaticData->sharedContextCache,
+        options
+    );
 }
 
 adlParser::~adlParser() { delete _interpreter; }

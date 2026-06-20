@@ -40,8 +40,9 @@ namespace core::bytebuffer {
 
         void ReadImpl(void* to, size_t size) override {
             if (!CanRead(size)) {
-                throw std::runtime_error(utils::va(actssec("Reading pointer too much at 0x%llx + 0x%llx > 0x%llx"),
-                                                   location, size, fileend));
+                throw std::runtime_error(
+                    utils::va(actssec("Reading pointer too much at 0x%llx + 0x%llx > 0x%llx"), location, size, fileend)
+                );
             }
 
             is.read((char*)to, size);

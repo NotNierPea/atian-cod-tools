@@ -19,8 +19,8 @@
  * @param loadDecrypt also load the game module for decryption, if loadGameModule is false, this option will be ignored
  * @return game data handle, INVALID_ACTS_HANDLE_VALUE if it fails with ActsGetAPILastMessage set
  */
-ACTS_COMMON_API ActsHandle ActsAPIData_NewGameData(const char* dirname, bool loadGameModule,
-                                                   const char* customGameModule, bool loadDecrypt);
+ACTS_COMMON_API ActsHandle
+ActsAPIData_NewGameData(const char* dirname, bool loadGameModule, const char* customGameModule, bool loadDecrypt);
 
 /*
  * Set ignore missing scan value for the game data
@@ -80,8 +80,9 @@ ACTS_COMMON_API const char* ActsAPIData_GetConfigCString(ActsHandle gameData, co
  * @param parent scan parent, by default "scans", can be "nullscans" for null scans
  * @return ACTS_STATUS_OK if the null scans are applied, ACTS_STATUS_ERROR otherwise with ActsGetAPILastMessage set
  */
-ACTS_COMMON_API ActsStatus ActsAPIData_Redirect(ActsHandle gameData, const char* id, void* to,
-                                                const char* ACTS_DEFAULT(parent, GAME_DATA_BASE_PARENT));
+ACTS_COMMON_API ActsStatus ActsAPIData_Redirect(
+    ActsHandle gameData, const char* id, void* to, const char* ACTS_DEFAULT(parent, GAME_DATA_BASE_PARENT)
+);
 /*
  * Null a scan or a null scan
  * @param gameData game data handle
@@ -89,8 +90,8 @@ ACTS_COMMON_API ActsStatus ActsAPIData_Redirect(ActsHandle gameData, const char*
  * @param parent scan parent, by default "scans", can be "nullscans" for null scans
  * @return ACTS_STATUS_OK if the null scans are applied, ACTS_STATUS_ERROR otherwise with ActsGetAPILastMessage set
  */
-ACTS_COMMON_API ActsStatus ActsAPIData_Nulled(ActsHandle gameData, const char* id,
-                                              const char* ACTS_DEFAULT(parent, GAME_DATA_BASE_PARENT));
+ACTS_COMMON_API ActsStatus
+ActsAPIData_Nulled(ActsHandle gameData, const char* id, const char* ACTS_DEFAULT(parent, GAME_DATA_BASE_PARENT));
 /*
  * Get a scan value
  * @param gameData game data handle
@@ -99,8 +100,9 @@ ACTS_COMMON_API ActsStatus ActsAPIData_Nulled(ActsHandle gameData, const char* i
  * @param parent scan parent, by default "scans", can be "nullscans" for null scans
  * @return ACTS_STATUS_OK if the null scans are applied, ACTS_STATUS_ERROR otherwise with ActsGetAPILastMessage set
  */
-ACTS_COMMON_API ActsStatus ActsAPIData_Get(ActsHandle gameData, const char* id, void** to,
-                                           const char* ACTS_DEFAULT(parent, GAME_DATA_BASE_PARENT));
+ACTS_COMMON_API ActsStatus ActsAPIData_Get(
+    ActsHandle gameData, const char* id, void** to, const char* ACTS_DEFAULT(parent, GAME_DATA_BASE_PARENT)
+);
 
 // decryption
 

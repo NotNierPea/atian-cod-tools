@@ -81,9 +81,11 @@ int mods::ee::CustomEET8(Process& proc, std::string& notif) {
             while (toRead > 0) {
                 size_t read = std::min(sizeof(exports) / sizeof(exports[0]), toRead);
 
-                if (!proc.ReadMemory(&exports[0],
-                                     buffer[i].buffer + obj.export_table_offset + shift * sizeof(exports[0]),
-                                     read * sizeof(exports[0]))) {
+                if (!proc.ReadMemory(
+                        &exports[0],
+                        buffer[i].buffer + obj.export_table_offset + shift * sizeof(exports[0]),
+                        read * sizeof(exports[0])
+                    )) {
                     std::cerr << "Can't read searched script exports " << std::hex << buffer[i].name << "\n";
                     toRead = 0;
                     continue; // can't read buffer

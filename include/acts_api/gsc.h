@@ -84,8 +84,8 @@ ACTS_COMMON_API uint64_t ActsAPIGsc_HashPath(ActsHandle gscvm, const char* strin
  * @param opcode game opcode
  * @return opcode or OPCODE_Undefined
  */
-ACTS_COMMON_API ActsAPIGsc_OpCode LookupOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform,
-                                               ActsAPIGsc_OpCodeValue opcode);
+ACTS_COMMON_API ActsAPIGsc_OpCode
+LookupOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCodeValue opcode);
 /*
  * Get an opcode value for a gsc vm and platform
  * @param gscvm gsc vm handle
@@ -94,8 +94,10 @@ ACTS_COMMON_API ActsAPIGsc_OpCode LookupOpCode(ActsHandle gscvm, ActsAPIGsc_Plat
  * @param outValue valid pointer to the out value
  * @return OK if the value was found, otherwise ERROR with ActsAPISetLastMessage set to error message
  */
-ACTS_COMMON_API ActsStatus GetOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCode opcode,
-                                     bool modTool, ActsAPIGsc_OpCodeValue* outValue);
+ACTS_COMMON_API ActsStatus GetOpCode(
+    ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCode opcode, bool modTool,
+    ActsAPIGsc_OpCodeValue* outValue
+);
 /*
  * Test if an opcode value exists for a gsc vm and platform
  * @param gscvm gsc vm handle

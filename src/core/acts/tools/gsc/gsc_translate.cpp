@@ -57,8 +57,10 @@ namespace {
 
         RegisterOpCodesMap();
 
-        auto LoadVmMap = [](std::unordered_map<uint64_t, GscData>& map, const char* type,
-                            const std::filesystem::path& origin, VmInfo*& vm) -> void {
+        auto LoadVmMap = [](std::unordered_map<uint64_t, GscData>& map,
+                            const char* type,
+                            const std::filesystem::path& origin,
+                            VmInfo*& vm) -> void {
             LOG_INFO("Loading {} path...", type);
             std::vector<std::filesystem::path> paths{};
             utils::GetFileRecurseExt(origin, paths, ".gscc\0.cscc\0.gscbin\0.cscbin\0");
@@ -78,7 +80,8 @@ namespace {
                     }
                 } else if (magic != vm->vmMagic) {
                     throw std::runtime_error(
-                        std::format("Multiple magic detected 0x{:x} and 0x{:x}", magic, vm->vmMagic));
+                        std::format("Multiple magic detected 0x{:x} and 0x{:x}", magic, vm->vmMagic)
+                    );
                 }
 
                 tool::gsc::vm::GscVm* readerbuilder{ tool::gsc::vm::GetGscReader(magic) };
@@ -212,9 +215,12 @@ namespace {
                 std::vector<GscExportData> newExports{};
 
                 auto LoadExports =
-                    [](GSCOBJHandler& reader, GSCExportReader& exreader, std::vector<GscExportData>& exports,
+                    [](GSCOBJHandler& reader,
+                       GSCExportReader& exreader,
+                       std::vector<GscExportData>& exports,
                        std::unordered_map<NameLocated, GscExportData*, NameLocatedHash, NameLocatedEquals>& map,
-                       VmInfo* vmInfo, bool sameFieldHash) -> void {
+                       VmInfo* vmInfo,
+                       bool sameFieldHash) -> void {
                     uint16_t exportsCount{ reader.GetExportsCount() };
                     for (size_t i = 0; i < exportsCount; i++) {
                         exreader.SetHandle(reader.Ptr(reader.GetExportsOffset() + i * reader.GetExportSize()));
@@ -230,9 +236,11 @@ namespace {
                             const char* mappedName{ hashutils::ExtractPtr(ged.nl.name) };
                             const char* mappedNamespace{ hashutils::ExtractPtr(ged.nl.name_space) };
                             if (!mappedName || !mappedNamespace) {
-                                LOG_WARNING("No hash lookup for name {}::{}, vm with different hashes",
-                                            hashutils::ExtractTmp("namespace", ged.nl.name_space),
-                                            hashutils::ExtractTmp("function", ged.nl.name));
+                                LOG_WARNING(
+                                    "No hash lookup for name {}::{}, vm with different hashes",
+                                    hashutils::ExtractTmp("namespace", ged.nl.name_space),
+                                    hashutils::ExtractTmp("function", ged.nl.name)
+                                );
                                 ged.nl.name = 0;
                                 ged.nl.name_space = 0;
                             } else {
@@ -247,8 +255,9 @@ namespace {
                     exports.emplace_back(NameLocated{ 0, 0 }, reader.GetCSEGOffset() + reader.GetCSEGSize(), 0);
 
                     // sort, shouldn't be required for now, but still good
-                    std::sort(exports.begin(), exports.end(),
-                              [](GscExportData& a, GscExportData& b) -> bool { return a.start < b.start; });
+                    std::sort(exports.begin(), exports.end(), [](GscExportData& a, GscExportData& b) -> bool {
+                        return a.start < b.start;
+                    });
                     for (size_t i = 0; i < exports.size() - 1; i++) {
                         // compute the size using the delta with the next func
                         exports[i].size = exports[i + 1].start - exports[i].start;
@@ -269,18 +278,22 @@ namespace {
                     auto ite{ newExportsMap.find(nl) };
 
                     if (ite == newExportsMap.end()) {
-                        LOG_TRACE("Can't find {}::{} in new dump",
-                                  hashutils::ExtractTmp("namespace", oged->nl.name_space),
-                                  hashutils::ExtractTmp("function", oged->nl.name));
+                        LOG_TRACE(
+                            "Can't find {}::{} in new dump",
+                            hashutils::ExtractTmp("namespace", oged->nl.name_space),
+                            hashutils::ExtractTmp("function", oged->nl.name)
+                        );
                         continue;
                     }
 
                     GscExportData* nged{ ite->second };
 
                     if (oged->size != nged->size) {
-                        LOG_TRACE("Not the same size for {}::{} in new dump",
-                                  hashutils::ExtractTmp("namespace", oged->nl.name_space),
-                                  hashutils::ExtractTmp("function", oged->nl.name));
+                        LOG_TRACE(
+                            "Not the same size for {}::{} in new dump",
+                            hashutils::ExtractTmp("namespace", oged->nl.name_space),
+                            hashutils::ExtractTmp("function", oged->nl.name)
+                        );
                         continue;
                     }
 

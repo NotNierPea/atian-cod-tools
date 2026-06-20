@@ -146,12 +146,18 @@ namespace {
 
                                 json.WriteFieldValueXHash("type", info->type);
                                 json.WriteFieldValueXAsset("soundSubmix", SATH_ASSET_SOUNDSUBMIX, info->soundSubmix);
-                                json.WriteFieldValueXAsset("soundSpeakerMap", SATH_ASSET_SOUNDSPEAKERMAP,
-                                                           info->soundSpeakerMap);
+                                json.WriteFieldValueXAsset(
+                                    "soundSpeakerMap",
+                                    SATH_ASSET_SOUNDSPEAKERMAP,
+                                    info->soundSpeakerMap
+                                );
                                 json.WriteFieldValueXAsset("sndFutz", SATH_ASSET_SNDFUTZ, info->sndFutz);
                                 json.WriteFieldValueXAsset("soundCone", SATH_ASSET_SOUNDCONE, info->soundCone);
-                                json.WriteFieldValueXAsset("sndOcclusionSetting", SATH_ASSET_SNDOCCLUSIONSETTING,
-                                                           info->sndOcclusionSetting);
+                                json.WriteFieldValueXAsset(
+                                    "sndOcclusionSetting",
+                                    SATH_ASSET_SNDOCCLUSIONSETTING,
+                                    info->sndOcclusionSetting
+                                );
                                 json.WriteFieldValueXAsset("sndModifier", SATH_ASSET_SNDMODIFIER, info->sndModifier);
 
                                 if (opt.testDump) {
@@ -160,7 +166,8 @@ namespace {
                                     for (size_t i = 0; i < ACTS_ARRAYSIZE(info->__pad); i++) {
                                         json.WriteFieldValueUnknown(
                                             utils::va("alias.info.unk%02x", i * 8 + offsetof(SndAliasInfo, __pad)),
-                                            info->__pad[i]);
+                                            info->__pad[i]
+                                        );
                                     }
                                 }
                             }
@@ -236,8 +243,10 @@ namespace {
                                 if (alias->text) {
                                     os << "("
                                        << "#" << hashutils::ExtractTmp("hash", alias->name) << "/#"
-                                       << hashutils::ExtractTmp("hash",
-                                                                GetXAssetName(SATH_ASSET_SNDASSET, alias->sndAsset))
+                                       << hashutils::ExtractTmp(
+                                              "hash",
+                                              GetXAssetName(SATH_ASSET_SNDASSET, alias->sndAsset)
+                                          )
                                        << ") " << opt.GetTranslation(alias->text->character) << " : "
                                        << opt.GetTranslation(alias->text->subtitles) << "\n";
                                 }
@@ -250,6 +259,7 @@ namespace {
     };
 
     utils::MapAdder<ImplWorker, HandlerHashedAssetType, Worker> impl{ GetWorkers(), SATH_ASSET_SOUNDBANK, false };
-    utils::MapAdder<ImplWorker, HandlerHashedAssetType, Worker> implt{ GetWorkers(), SATH_ASSET_SOUNDBANKTRANSIENT,
+    utils::MapAdder<ImplWorker, HandlerHashedAssetType, Worker> implt{ GetWorkers(),
+                                                                       SATH_ASSET_SOUNDBANKTRANSIENT,
                                                                        true };
 } // namespace

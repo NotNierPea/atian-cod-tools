@@ -34,8 +34,9 @@ namespace {
 
             for (const char* gamemode : gamemodes) {
                 for (auto& [prefix, suffix] : names) {
-                    const char* str{ utils::va("scripts/%s/maps/%s/%s%s%s.gsc", gamemode, ctx->ffname, prefix,
-                                               ctx->ffname, suffix) };
+                    const char* str{
+                        utils::va("scripts/%s/maps/%s/%s%s%s.gsc", gamemode, ctx->ffname, prefix, ctx->ffname, suffix)
+                    };
                     hashutils::AddPrecomputed(hash::HashIWAsset(str), str, true);
                 }
             }

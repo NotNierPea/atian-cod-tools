@@ -36,8 +36,12 @@ namespace tool::cordycep::dump::t9 {
 
         size_t total{};
 
-        auto HandlePool = [&opt, &pools, &proc, &total](XAssetType type, const std::filesystem::path& outDir,
-                                                        std::function<bool(const XAsset64& asset, size_t count)> func) {
+        auto HandlePool = [&opt, &pools, &proc, &total](
+                              XAssetType type,
+                              const std::filesystem::path& outDir,
+                              std::function<bool(const XAsset64& asset, size_t count)>
+                                  func
+                          ) {
             if (!opt.m_dump_types[type] && !opt.m_dump_all_available) {
                 return;
             }
@@ -63,8 +67,8 @@ namespace tool::cordycep::dump::t9 {
             std::unordered_map<uint64_t, const char*> map{};
         } localized;
 
-        std::function<const char*(uint64_t hash)> GetLocalized = [&opt, &localized, &proc,
-                                                                  &pools](uint64_t hash) -> const char* {
+        std::function<const char*(uint64_t hash)> GetLocalized =
+            [&opt, &localized, &proc, &pools](uint64_t hash) -> const char* {
             if (!opt.m_mapLocalized) {
                 return hashutils::ExtractTmp("hash", hash);
             }
@@ -72,19 +76,22 @@ namespace tool::cordycep::dump::t9 {
 
                 localized.loaded = true;
 
-                ForEachEntry(proc, pools[ASSET_TYPE_LOCALIZEENTRY],
-                             [&proc, &localized](const XAsset64& asset, size_t count) {
-                                 LocalizeEntry entry{};
-                                 if (!proc.ReadMemory(&entry, asset.Header, sizeof(entry))) {
-                                     LOG_ERROR("Can't read LocalizeEntry {:x}", asset.Header);
-                                     return false;
-                                 }
+                ForEachEntry(
+                    proc,
+                    pools[ASSET_TYPE_LOCALIZEENTRY],
+                    [&proc, &localized](const XAsset64& asset, size_t count) {
+                        LocalizeEntry entry{};
+                        if (!proc.ReadMemory(&entry, asset.Header, sizeof(entry))) {
+                            LOG_ERROR("Can't read LocalizeEntry {:x}", asset.Header);
+                            return false;
+                        }
 
-                                 localized.map[entry.hash & hash::MASK60] =
-                                     localized.alloc.CloneStr(proc.ReadStringTmp(entry.value));
+                        localized.map[entry.hash & hash::MASK60] =
+                            localized.alloc.CloneStr(proc.ReadStringTmp(entry.value));
 
-                                 return true;
-                             });
+                        return true;
+                    }
+                );
             }
 
             auto it = localized.map.find(hash & hash::MASK60);
@@ -277,7 +284,7 @@ namespace tool::cordycep::dump::t9 {
         static std::unordered_map<cw::XAssetType, Unlinker*> map{};
         return map;
     }
-    utils::ArrayAdder<tool::cordycep::dump::CordycepDumper> impl{ tool::cordycep::dump::GetDumpers(),
-                                                                  compatibility::scobalula::csi::CG_BOCW, dpcordimpl,
-                                                                  ASSET_TYPE_COUNT };
+    utils::ArrayAdder<tool::cordycep::dump::CordycepDumper> impl{
+        tool::cordycep::dump::GetDumpers(), compatibility::scobalula::csi::CG_BOCW, dpcordimpl, ASSET_TYPE_COUNT
+    };
 } // namespace tool::cordycep::dump::t9

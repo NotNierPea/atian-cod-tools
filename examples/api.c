@@ -3,8 +3,12 @@
 
 void example_api() {
     // get the different version information
-    printf("API Version %s (%x / %x)\n", ActsAPIVersion_GetVersion(), ActsAPIVersion_GetBuildVersion(),
-           ActsAPIVersion_GetVersionId());
+    printf(
+        "API Version %s (%x / %x)\n",
+        ActsAPIVersion_GetVersion(),
+        ActsAPIVersion_GetBuildVersion(),
+        ActsAPIVersion_GetVersionId()
+    );
 
     // this check that the linked dll version is the same as the include version
     // ACTS_NOT_OK check a return status

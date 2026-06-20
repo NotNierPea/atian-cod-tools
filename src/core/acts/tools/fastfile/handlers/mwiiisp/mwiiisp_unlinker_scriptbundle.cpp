@@ -5,8 +5,9 @@
 namespace fastfile::handlers::mwiiisp::scriptbundle {
     using namespace fastfile::handlers::mwiiisp;
 
-    static void WriteString(HandlerJsonWriter& json, const char* prefix, size_t offset, byte* rawData,
-                            size_t rawDataLen, bool localized) {
+    static void WriteString(
+        HandlerJsonWriter& json, const char* prefix, size_t offset, byte* rawData, size_t rawDataLen, bool localized
+    ) {
         if (offset >= rawDataLen) {
             json.WriteValueString(std::format("invalid:0x%llx", offset));
         } else {
@@ -135,8 +136,9 @@ namespace fastfile::handlers::mwiiisp::scriptbundle {
                 return;
             }
 
-            char* name{ utils::MapString(utils::va("%s.json", ename),
-                                         [](char c) -> char { return c == ':' ? '/' : c; }) };
+            char* name{ utils::MapString(utils::va("%s.json", ename), [](char c) -> char {
+                return c == ':' ? '/' : c;
+            }) };
 
             std::string_view sw{ name };
             size_t catcut{ sw.find('/') };
@@ -174,8 +176,9 @@ namespace fastfile::handlers::mwiiisp::scriptbundle {
 
                 HandlerJsonWriter json{};
 
-                std::sort(vec.begin(), vec.end(),
-                          [](ScriptBundle& a, ScriptBundle& b) -> bool { return a.name < b.name; });
+                std::sort(vec.begin(), vec.end(), [](ScriptBundle& a, ScriptBundle& b) -> bool {
+                    return a.name < b.name;
+                });
 
                 LOG_OPT_INFO("Dump {} hashed scriptbundle(s) {}", vec.size(), outFile.string());
 

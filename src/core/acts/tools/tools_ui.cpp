@@ -10,8 +10,9 @@ namespace tool::ui {
         return map;
     }
 
-    tooluifunctiondata::tooluifunctiondata(const char* id, const wchar_t* description, toolfunctionui func, WNDPROC msg,
-                                           toolfunctionuiresize resize)
+    tooluifunctiondata::tooluifunctiondata(
+        const char* id, const wchar_t* description, toolfunctionui func, WNDPROC msg, toolfunctionuiresize resize
+    )
         : m_id(id), m_description(description), m_func(func), m_msg(msg), m_resize(resize) {
         if (id) {
             tools()[id] = this;
@@ -24,31 +25,40 @@ namespace tool::ui {
 
     std::wstring GetActsDesc(bool nui) {
         std::filesystem::path dir = utils::GetProgDir();
-        return std::format(L"-- Atian Tools {} \n\r"
-                           "Version: {} (0x{:x})"
+        return std::format(
+            L"-- Atian Tools {} \n\r"
+            "Version: {} (0x{:x})"
 #ifdef DEBUG
-                           " (DEBUG)"
+            " (DEBUG)"
 #endif
 #ifdef CI_BUILD
-                           " (CI)"
+            " (CI)"
 #else
-                           " (DEV)"
+            " (DEV)"
 #endif
-                           "\n\r"
-                           "UI Tools: {} \n\r"
-                           "NUI Tools: {} \n\r"
-                           "CLI Tools: {} \n\r"
-                           "Hash(es) loaded: {} \n\r"
-                           "Path: {} \n\r"
-                           "\n\r"
-                           "-- Games \n\r"
-                           "Black Ops 4 loaded: {} \n\r"
-                           "Black Ops Cold War loaded: {} \n\r"
-                           "Cordycep loaded: {} \n\r",
-                           nui ? L"NUI" : L"UI", core::actsinfo::VERSIONW, core::actsinfo::VERSION_ID, tools().size(),
-                           tool::nui::tools().size(), tool::tools().size(), hashutils::GetMap().size(),
-                           utils::StrToWStr(dir.string()), !!Process{ L"BlackOps4.exe" },
-                           !!Process{ L"BlackOpsColdWar.exe" }, !!Process{ L"Cordycep.CLI.exe" });
+            "\n\r"
+            "UI Tools: {} \n\r"
+            "NUI Tools: {} \n\r"
+            "CLI Tools: {} \n\r"
+            "Hash(es) loaded: {} \n\r"
+            "Path: {} \n\r"
+            "\n\r"
+            "-- Games \n\r"
+            "Black Ops 4 loaded: {} \n\r"
+            "Black Ops Cold War loaded: {} \n\r"
+            "Cordycep loaded: {} \n\r",
+            nui ? L"NUI" : L"UI",
+            core::actsinfo::VERSIONW,
+            core::actsinfo::VERSION_ID,
+            tools().size(),
+            tool::nui::tools().size(),
+            tool::tools().size(),
+            hashutils::GetMap().size(),
+            utils::StrToWStr(dir.string()),
+            !!Process{ L"BlackOps4.exe" },
+            !!Process{ L"BlackOpsColdWar.exe" },
+            !!Process{ L"Cordycep.CLI.exe" }
+        );
     }
 } // namespace tool::ui
 namespace {
@@ -57,8 +67,20 @@ namespace {
     } toolInfo;
     int RenderActs(HWND window, HINSTANCE hInstance) {
         std::wstring text = tool::ui::GetActsDesc();
-        toolInfo.mainLabel = CreateWindowExW(0, L"STATIC", text.data(), SS_LEFT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                             window, NULL, hInstance, NULL);
+        toolInfo.mainLabel = CreateWindowExW(
+            0,
+            L"STATIC",
+            text.data(),
+            SS_LEFT | WS_CHILD | WS_VISIBLE,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
         return 0;
     }

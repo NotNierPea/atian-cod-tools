@@ -22,13 +22,15 @@ namespace fastfile::linker::data {
         if (blockTypes.empty())
             throw std::runtime_error("Can't pop linker with no stream set");
         chunks[headerMode][GetCurrentStream()].emplace_back(
-            LinkerDataChunk{ .type = LinkerDataChunkType::CHUNKTYPE_POP });
+            LinkerDataChunk{ .type = LinkerDataChunkType::CHUNKTYPE_POP }
+        );
         blockTypes.pop();
     }
 
     void LinkerData::Align(size_t alignment) {
         chunks[headerMode][GetCurrentStream()].emplace_back(
-            LinkerDataChunk{ .type = LinkerDataChunkType::CHUNKTYPE_ALIGN, .align = alignment });
+            LinkerDataChunk{ .type = LinkerDataChunkType::CHUNKTYPE_ALIGN, .align = alignment }
+        );
     }
 
     template<>
@@ -37,19 +39,28 @@ namespace fastfile::linker::data {
     }
 
     size_t LinkerData::AllocData(size_t size) {
-        chunks[headerMode][GetCurrentStream()].emplace_back(LinkerDataChunk{
-            .type = LinkerDataChunkType::CHUNKTYPE_DATA, .start = fileData[headerMode].size(), .size = size });
+        chunks[headerMode][GetCurrentStream()].emplace_back(
+            LinkerDataChunk{ .type = LinkerDataChunkType::CHUNKTYPE_DATA,
+                             .start = fileData[headerMode].size(),
+                             .size = size }
+        );
         return utils::Allocate(fileData[headerMode], size);
     }
 
     void LinkerData::AllocRuntimeData(size_t size) {
-        chunks[headerMode][GetCurrentStream()].emplace_back(LinkerDataChunk{
-            .type = LinkerDataChunkType::CHUNKTYPE_DATA, .start = fileData[headerMode].size(), .size = size });
+        chunks[headerMode][GetCurrentStream()].emplace_back(
+            LinkerDataChunk{ .type = LinkerDataChunkType::CHUNKTYPE_DATA,
+                             .start = fileData[headerMode].size(),
+                             .size = size }
+        );
     }
 
     size_t LinkerData::WriteData(const void* data, size_t size) {
-        chunks[headerMode][GetCurrentStream()].emplace_back(LinkerDataChunk{
-            .type = LinkerDataChunkType::CHUNKTYPE_DATA, .start = fileData[headerMode].size(), .size = size });
+        chunks[headerMode][GetCurrentStream()].emplace_back(
+            LinkerDataChunk{ .type = LinkerDataChunkType::CHUNKTYPE_DATA,
+                             .start = fileData[headerMode].size(),
+                             .size = size }
+        );
         return utils::WriteValue(fileData[headerMode], data, size);
     }
 

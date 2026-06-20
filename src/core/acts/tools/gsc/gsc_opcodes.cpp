@@ -188,8 +188,12 @@ namespace tool::gsc::opcode {
         auto it = g_opcodeMap.find(vm);
         if (it != g_opcodeMap.end() && it->second.vmMagic) {
             if (it->second.flags != flags) {
-                LOG_WARNING("Registering twice the same vm with different flags, {:x} != {:x} for {}", it->second.flags,
-                            flags, name);
+                LOG_WARNING(
+                    "Registering twice the same vm with different flags, {:x} != {:x} for {}",
+                    it->second.flags,
+                    flags,
+                    name
+                );
             }
             return &it->second; // assuming good name
         }
@@ -214,8 +218,9 @@ namespace tool::gsc::opcode {
 
     void VmInfo::RegisterVmName(uint64_t hash) { g_vmMap[hash] = vmMagic; }
 
-    void VmInfo::RegisterVMOperatorFunction(const char* name, const char* usage, OPCode opcode, int flags, int minArgs,
-                                            int maxArgs) {
+    void VmInfo::RegisterVMOperatorFunction(
+        const char* name, const char* usage, OPCode opcode, int flags, int minArgs, int maxArgs
+    ) {
         uint64_t funcHash = HashField(name);
 
         if (opFuncs.find(funcHash) != opFuncs.end()) {
@@ -253,8 +258,8 @@ namespace tool::gsc::opcode {
 
     void VmInfo::SetGDBType(uint64_t gdbMagic) { this->gdbMagic = gdbMagic; }
 
-    void VmInfo::RegisterVMHashOPCode(char type, OPCode opCode, int size,
-                                      std::function<uint64_t(const char*)> hashFunc) {
+    void
+    VmInfo::RegisterVMHashOPCode(char type, OPCode opCode, int size, std::function<uint64_t(const char*)> hashFunc) {
         if (!(size == 8 || size == 4)) {
             LOG_ERROR("Invalid size for hash vm {}: '{}' / {} bytes", name, type, size);
             return;
@@ -314,8 +319,12 @@ namespace tool::gsc::opcode {
         }
 
         if (to == sub) {
-            LOG_ERROR("Trying to register cycling same code platform for vm {} {} -> {}", name, PlatformName(main),
-                      PlatformName(sub));
+            LOG_ERROR(
+                "Trying to register cycling same code platform for vm {} {} -> {}",
+                name,
+                PlatformName(main),
+                PlatformName(sub)
+            );
             return;
         }
 

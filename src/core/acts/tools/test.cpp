@@ -122,7 +122,8 @@ namespace {
         }
 
         auto ptr{ std::make_unique<byte[]>(
-            (size_t)oodle.GetCompressedBufferSizeNeeded(deps::oodle::OODLE_COMP_KRAKEN, sizeof(rawData))) };
+            (size_t)oodle.GetCompressedBufferSizeNeeded(deps::oodle::OODLE_COMP_KRAKEN, sizeof(rawData))
+        ) };
 
         // oodle.Compress(deps::oodle::OODLE_COMP_KRAKEN, &rawData[0], sizeof(rawData));
     }

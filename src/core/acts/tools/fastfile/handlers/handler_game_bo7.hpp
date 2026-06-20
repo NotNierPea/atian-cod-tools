@@ -152,8 +152,9 @@ namespace fastfile::handlers::bo7 {
             }
         }
 
-        void WriteFieldValueXAssetArray(const char* name, HandlerHashedAssetType type, size_t count, void* handle,
-                                        bool ignoreEmpty = true) {
+        void WriteFieldValueXAssetArray(
+            const char* name, HandlerHashedAssetType type, size_t count, void* handle, bool ignoreEmpty = true
+        ) {
             void** val{ (void**)handle };
             if (ignoreEmpty && (!count || !*val))
                 return;
@@ -169,8 +170,9 @@ namespace fastfile::handlers::bo7 {
             JsonWriter::EndArray();
         }
 
-        void WriteFieldValueXAssetArray(uint64_t hash, HandlerHashedAssetType type, size_t count, void* handle,
-                                        bool ignoreEmpty = true) {
+        void WriteFieldValueXAssetArray(
+            uint64_t hash, HandlerHashedAssetType type, size_t count, void* handle, bool ignoreEmpty = true
+        ) {
             void** val{ (void**)handle };
             if (ignoreEmpty && (!count || !*val))
                 return;

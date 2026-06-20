@@ -144,7 +144,8 @@ namespace {
             if (data.scriptsPrefix) {
                 json.WriteFieldNameString("scriptsPrefix");
                 json.WriteValueString(
-                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.scriptsPrefix))));
+                    opt.AddString(proc.ReadStringTmp(reinterpret_cast<uintptr_t>(data.scriptsPrefix)))
+                );
             }
             if (data.unk20) {
                 json.WriteFieldNameString("unk20");
@@ -276,11 +277,14 @@ namespace {
                 os << ",val";
 
             if (data.gametypescount) {
-                auto gametypes{ proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.gametypes),
-                                                                  data.gametypescount) };
-                auto unk20{ data.unk20 ? proc.ReadMemoryArrayEx<uint32_t>(reinterpret_cast<uintptr_t>(data.unk20),
-                                                                          data.gametypescount)
-                                       : std::make_unique<uint32_t[]>(data.gametypescount) };
+                auto gametypes{
+                    proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.gametypes), data.gametypescount)
+                };
+                auto unk20{
+                    data.unk20
+                        ? proc.ReadMemoryArrayEx<uint32_t>(reinterpret_cast<uintptr_t>(data.unk20), data.gametypescount)
+                        : std::make_unique<uint32_t[]>(data.gametypescount)
+                };
                 for (size_t i = 0; i < data.gametypescount; i++) {
                     os << "\n"
                        << std::dec << i << ",#"

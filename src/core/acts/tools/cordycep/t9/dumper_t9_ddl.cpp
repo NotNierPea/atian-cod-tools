@@ -165,17 +165,22 @@ namespace {
                     return false;
                 }
 
-                auto structList{ proc.ReadMemoryArrayEx<DDLStruct>(reinterpret_cast<uintptr_t>(def.structList),
-                                                                   def.numStructs) };
-                auto enumList{ def.numEnums ? proc.ReadMemoryArrayEx<DDLEnum>(reinterpret_cast<uintptr_t>(def.enumList),
-                                                                              def.numEnums)
-                                            : std::make_unique<DDLEnum[]>(1) };
+                auto structList{
+                    proc.ReadMemoryArrayEx<DDLStruct>(reinterpret_cast<uintptr_t>(def.structList), def.numStructs)
+                };
+                auto enumList{
+                    def.numEnums
+                        ? proc.ReadMemoryArrayEx<DDLEnum>(reinterpret_cast<uintptr_t>(def.enumList), def.numEnums)
+                        : std::make_unique<DDLEnum[]>(1)
+                };
 
-                auto DumpDDLStructMembers = [&os, &proc, &def, &entry, &opt, &structList,
-                                             &enumList](DDLStruct& stct, int padding) -> bool {
+                auto DumpDDLStructMembers =
+                    [&os, &proc, &def, &entry, &opt, &structList, &enumList](DDLStruct& stct, int padding) -> bool {
                     if (stct.memberCount && stct.members) {
-                        auto [members, ok] = proc.ReadMemoryArray<DDLMember>(reinterpret_cast<uintptr_t>(stct.members),
-                                                                             stct.memberCount);
+                        auto [members, ok] = proc.ReadMemoryArray<DDLMember>(
+                            reinterpret_cast<uintptr_t>(stct.members),
+                            stct.memberCount
+                        );
 
                         if (!ok) {
                             LOG_ERROR("Can't read DDL members {}", hashutils::ExtractTmpPath("ddl", entry.name));
@@ -183,8 +188,10 @@ namespace {
                         }
 
                         std::sort(
-                            &members[0], &members[stct.memberCount],
-                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; });
+                            &members[0],
+                            &members[stct.memberCount],
+                            [](const DDLMember& d1, const DDLMember& d2) -> bool { return d1.offset < d2.offset; }
+                        );
 
                         for (size_t i = 0; i < stct.memberCount; i++) {
                             DDLMember& member = members[i];
@@ -318,8 +325,11 @@ namespace {
                             proc.ReadMemoryArray<DDLHash>(reinterpret_cast<uintptr_t>(enm.members), enm.memberCount);
 
                         if (!ok) {
-                            LOG_ERROR("Can't read DDL enum members {} / {}",
-                                      hashutils::ExtractTmpPath("ddl", entry.name), (void*)enm.members);
+                            LOG_ERROR(
+                                "Can't read DDL enum members {} / {}",
+                                hashutils::ExtractTmpPath("ddl", entry.name),
+                                (void*)enm.members
+                            );
                             return false;
                         }
 

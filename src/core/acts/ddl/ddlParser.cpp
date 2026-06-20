@@ -14,8 +14,10 @@ using namespace antlr4;
 namespace {
 
     struct DdlParserStaticData final {
-        DdlParserStaticData(std::vector<std::string> ruleNames, std::vector<std::string> literalNames,
-                            std::vector<std::string> symbolicNames)
+        DdlParserStaticData(
+            std::vector<std::string> ruleNames, std::vector<std::string> literalNames,
+            std::vector<std::string> symbolicNames
+        )
             : ruleNames(std::move(ruleNames)), literalNames(std::move(literalNames)),
               symbolicNames(std::move(symbolicNames)), vocabulary(this->literalNames, this->symbolicNames) {}
 
@@ -49,14 +51,38 @@ namespace {
         assert(ddlParserStaticData == nullptr);
 #endif
         auto staticData = std::make_unique<DdlParserStaticData>(
-            std::vector<std::string>{ "prog", "buffer_data", "buffer_flags", "enum", "struct", "struct_def",
-                                      "struct_type", "number" },
-            std::vector<std::string>{ "", "'version'", "'{'", "'}'", "'['", "']'", "'enum'", "','", "';'", "'struct'",
-                                      "'uint'", "'int'", "':'", "'string'", "'('", "')'", "'fixed'", "'<'", "'>'" },
+            std::vector<std::string>{ "prog",
+                                      "buffer_data",
+                                      "buffer_flags",
+                                      "enum",
+                                      "struct",
+                                      "struct_def",
+                                      "struct_type",
+                                      "number" },
+            std::vector<std::string>{ "",
+                                      "'version'",
+                                      "'{'",
+                                      "'}'",
+                                      "'['",
+                                      "']'",
+                                      "'enum'",
+                                      "','",
+                                      "';'",
+                                      "'struct'",
+                                      "'uint'",
+                                      "'int'",
+                                      "':'",
+                                      "'string'",
+                                      "'('",
+                                      "')'",
+                                      "'fixed'",
+                                      "'<'",
+                                      "'>'" },
             std::vector<std::string>{
                 "", "",        "",           "",          "",          "",         "",         "",          "",
                 "", "",        "",           "",          "",          "",         "",         "",          "",
-                "", "NEWLINE", "WHITESPACE", "INTEGER10", "INTEGER16", "INTEGER8", "INTEGER2", "IDENTIFIER" });
+                "", "NEWLINE", "WHITESPACE", "INTEGER10", "INTEGER16", "INTEGER8", "INTEGER2", "IDENTIFIER" }
+        );
         static const int32_t serializedATNSegment[] = {
             4,   1,   25,  114, 2,  0,  7,   0,   2,   1,  7,  1,  2,  2,   7,   2,  2,  3,  7,  3,   2,   4,  7,  4,
             2,   5,   7,   5,   2,  6,  7,   6,   2,   7,  7,  7,  1,  0,   4,   0,  18, 8,  0,  11,  0,   12, 0,  19,
@@ -102,7 +128,9 @@ namespace {
             0,   112, 15,  1,   0,  0,  0,   13,  19,  26, 35, 37, 45, 57,  60,  71, 82, 85, 93, 107, 109
         };
         staticData->serializedATN = antlr4::atn::SerializedATNView(
-            serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
+            serializedATNSegment,
+            sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0])
+        );
 
         antlr4::atn::ATNDeserializer deserializer;
         staticData->atn = deserializer.deserialize(staticData->serializedATN);
@@ -121,8 +149,13 @@ ddlParser::ddlParser(TokenStream* input) : ddlParser(input, antlr4::atn::ParserA
 
 ddlParser::ddlParser(TokenStream* input, const antlr4::atn::ParserATNSimulatorOptions& options) : Parser(input) {
     ddlParser::initialize();
-    _interpreter = new atn::ParserATNSimulator(this, *ddlParserStaticData->atn, ddlParserStaticData->decisionToDFA,
-                                               ddlParserStaticData->sharedContextCache, options);
+    _interpreter = new atn::ParserATNSimulator(
+        this,
+        *ddlParserStaticData->atn,
+        ddlParserStaticData->decisionToDFA,
+        ddlParserStaticData->sharedContextCache,
+        options
+    );
 }
 
 ddlParser::~ddlParser() { delete _interpreter; }

@@ -33,8 +33,10 @@ namespace tool::gsc {
         return true;
     }
 
-    int DecompileGsc(byte* data, size_t size, std::filesystem::path fsPath, GscDecompilerGlobalContext& gdctx,
-                     byte* dbgData, size_t dbgSize) {
+    int DecompileGsc(
+        byte* data, size_t size, std::filesystem::path fsPath, GscDecompilerGlobalContext& gdctx, byte* dbgData,
+        size_t dbgSize
+    ) {
         std::string pathStr{ fsPath.string() };
         const char* path{ pathStr.data() };
         actslib::profiler::Profiler profiler{ "f" };
@@ -247,7 +249,8 @@ namespace tool::gsc {
         {
             // read possible addon data from file after the header (old gdb format / addon format)
             // we duplicate the buffer because the data are relative to the script base, not the gdb base
-            core::bytebuffer::ByteBuffer addonReader{ scriptfile->Ptr(), scriptfile->GetFileSize(),
+            core::bytebuffer::ByteBuffer addonReader{ scriptfile->Ptr(),
+                                                      scriptfile->GetFileSize(),
                                                       scriptfile->GetHeaderSize() };
             if (addonReader.CanRead(8)) {
                 uint64_t magic{ *addonReader.Ptr<uint64_t>() };
@@ -299,8 +302,12 @@ namespace tool::gsc {
             uint64_t hashPath{ ctx.m_vmInfo->HashPath(extractedName) };
 
             if (hashPath != scriptfile->GetName() && gdctx.WarningType(GDGCW_BAD_HASH_PATH)) {
-                LOG_WARNING("Invalid hash algorithm for extracted name 0x{:x} != 0x{:x} for {}", scriptfile->GetName(),
-                            hashPath, extractedName);
+                LOG_WARNING(
+                    "Invalid hash algorithm for extracted name 0x{:x} != 0x{:x} for {}",
+                    scriptfile->GetName(),
+                    hashPath,
+                    extractedName
+                );
             }
         }
         bool isCsc{};
@@ -338,7 +345,8 @@ namespace tool::gsc {
                                 if (!isCsc && typeSure) {
                                     typeSure = false;
                                     LOG_WARNING(
-                                        "Found csc and gsc includes in the same script, can't extrapolate type");
+                                        "Found csc and gsc includes in the same script, can't extrapolate type"
+                                    );
                                     break;
                                 }
                                 isCsc = true;
@@ -347,7 +355,8 @@ namespace tool::gsc {
                                 if (isCsc && typeSure) {
                                     typeSure = false;
                                     LOG_WARNING(
-                                        "Found csc and gsc includes in the same script, can't extrapolate type");
+                                        "Found csc and gsc includes in the same script, can't extrapolate type"
+                                    );
                                     break;
                                 }
                                 isCsc = false;
@@ -356,7 +365,8 @@ namespace tool::gsc {
                                 typeSure = false;
                                 LOG_WARNING(
                                     "Found an include without .gsc or .csc extension, can't extrapolate type: {}",
-                                    incPtr);
+                                    incPtr
+                                );
                                 break;
                             }
                         }
@@ -435,8 +445,11 @@ namespace tool::gsc {
                 asmoutFileOut.open(file);
 
                 if (!asmoutFileOut) {
-                    LOG_ERROR("Can't open output file {} ({})", asmfnamebuff,
-                              hashutils::ExtractTmpScript(scriptfile->GetName()));
+                    LOG_ERROR(
+                        "Can't open output file {} ({})",
+                        asmfnamebuff,
+                        hashutils::ExtractTmpScript(scriptfile->GetName())
+                    );
                     return tool::BASIC_ERROR;
                 }
                 if (!opt.m_noLogs) {
@@ -444,8 +457,11 @@ namespace tool::gsc {
                 }
             } else {
                 if (!opt.m_noLogs) {
-                    LOG_INFO("Decompiling '{}'{}...", hashutils::ExtractTmpScript(scriptfile->GetName()),
-                             (gsicInfo.isGsic ? " (GSIC)" : ""));
+                    LOG_INFO(
+                        "Decompiling '{}'{}...",
+                        hashutils::ExtractTmpScript(scriptfile->GetName()),
+                        (gsicInfo.isGsic ? " (GSIC)" : "")
+                    );
                 }
             }
         }
@@ -698,8 +714,11 @@ namespace tool::gsc {
 
                 for (size_t i = 0; i < scriptfile->GetIncludesCount(); i++) {
                     if (includes[i] >= scriptfile->GetFileSize()) {
-                        LOG_ERROR("Invalid include string offset 0x{:x} > 0x{:x}", includes[i],
-                                  scriptfile->GetFileSize());
+                        LOG_ERROR(
+                            "Invalid include string offset 0x{:x} > 0x{:x}",
+                            includes[i],
+                            scriptfile->GetFileSize()
+                        );
                         return tool::BASIC_ERROR;
                     }
                     // asmout << "#using " << scriptfile->Ptr<char>(includes[i]) << ";" << std::endl;
@@ -760,8 +779,12 @@ namespace tool::gsc {
                             uint64_t hashPath{ ctx.m_vmInfo->HashPath(incExt) };
 
                             if (hashPath != includes[i] && gdctx.WarningType(GDGCW_BAD_HASH_PATH_INCLUDE)) {
-                                LOG_WARNING("Invalid hash algorithm for extracted include 0x{:x} != 0x{:x} for {}",
-                                            includes[i], hashPath, incExt);
+                                LOG_WARNING(
+                                    "Invalid hash algorithm for extracted include 0x{:x} != 0x{:x} for {}",
+                                    includes[i],
+                                    hashPath,
+                                    incExt
+                                );
                             }
                         }
                     }
@@ -1092,9 +1115,18 @@ namespace tool::gsc {
                     continue;
                 }
 
-                auto r =
-                    ctx.contextes.try_emplace(rname, scriptfile->Ptr(exp->GetAddress()), *scriptfile, ctx, opt,
-                                              currentNSP, *exp, handle, ctx.m_vmInfo->vmMagic, ctx.currentPlatform);
+                auto r = ctx.contextes.try_emplace(
+                    rname,
+                    scriptfile->Ptr(exp->GetAddress()),
+                    *scriptfile,
+                    ctx,
+                    opt,
+                    currentNSP,
+                    *exp,
+                    handle,
+                    ctx.m_vmInfo->vmMagic,
+                    ctx.currentPlatform
+                );
 
                 if (!r.second) {
                     asmout << "Duplicate node " << hashutils::ExtractTmpPath("namespace", exp->GetNamespace())
@@ -1111,8 +1143,12 @@ namespace tool::gsc {
                         uint64_t hashScr{ ctx.m_vmInfo->HashField(namePtr) };
 
                         if (hashScr != name && gdctx.WarningType(GDGCW_BAD_HASH_FIELD)) {
-                            LOG_WARNING("Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}", name,
-                                        hashScr, namePtr);
+                            LOG_WARNING(
+                                "Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}",
+                                name,
+                                hashScr,
+                                namePtr
+                            );
                         }
                     }
                     uint64_t fileNameSpace{ exp->GetFileNamespace() };
@@ -1123,8 +1159,12 @@ namespace tool::gsc {
                             uint64_t hashFSScr{ ctx.m_vmInfo->HashFilePath(fnsPtr) };
 
                             if (hashFSScr != fileNameSpace && gdctx.WarningType(GDGCW_BAD_HASH_FILE)) {
-                                LOG_WARNING("Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}",
-                                            fileNameSpace, hashFSScr, fnsPtr);
+                                LOG_WARNING(
+                                    "Invalid hash algorithm for extracted field 0x{:x} != 0x{:x} for {}",
+                                    fileNameSpace,
+                                    hashFSScr,
+                                    fnsPtr
+                                );
                             }
                         }
                     }
@@ -1168,9 +1208,11 @@ namespace tool::gsc {
                                << "::" << hashutils::ExtractTmp("function", exp->GetName()) << " "
                                << asmctx.m_disableDecompilerError << std::endl;
                     } else if (!opt.m_dcomp) {
-                        LOG_WARNING("Can't decompile export {}::{}",
-                                    hashutils::ExtractTmpPath("namespace", exp->GetNamespace()),
-                                    hashutils::ExtractTmp("function", exp->GetName()));
+                        LOG_WARNING(
+                            "Can't decompile export {}::{}",
+                            hashutils::ExtractTmpPath("namespace", exp->GetNamespace()),
+                            hashutils::ExtractTmp("function", exp->GetName())
+                        );
                     }
                 }
 
@@ -1239,7 +1281,8 @@ namespace tool::gsc {
                             }
                             if (opt.m_dasm) {
                                 if (asmctx.m_opt.m_formatter->HasFlag(
-                                        tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
+                                        tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START
+                                    )) {
                                     output << std::endl;
                                 } else {
                                     output << " ";
@@ -1361,9 +1404,12 @@ namespace tool::gsc {
                     }
                     asmout << "{" << std::endl << std::endl;
 
-                    auto handleMethod = [&currentPadding, &opt, &asmout, &scriptfile, name, &ctx,
-                                         &currentAnimTree](uint64_t method, const char* forceName, bool ignoreEmpty,
-                                                           bool specialMember) -> void {
+                    auto handleMethod = [&currentPadding, &opt, &asmout, &scriptfile, name, &ctx, &currentAnimTree](
+                                            uint64_t method,
+                                            const char* forceName,
+                                            bool ignoreEmpty,
+                                            bool specialMember
+                                        ) -> void {
                         auto lname = NameLocated{ name, method };
 
                         auto masmctxit = ctx.contextes.find(lname);
@@ -1567,8 +1613,16 @@ namespace tool::gsc {
                     };
 
                     if (asmctx.m_disableDecompiler) {
-                        DumpFunctionHeader(*exp, asmout, *scriptfile, ctx, asmctx, currentPadding, nullptr,
-                                           &currentAnimTree);
+                        DumpFunctionHeader(
+                            *exp,
+                            asmout,
+                            *scriptfile,
+                            ctx,
+                            asmctx,
+                            currentPadding,
+                            nullptr,
+                            &currentAnimTree
+                        );
                         if (opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                             dctx.WritePadding(asmout << std::endl);
                         } else {
@@ -1585,8 +1639,16 @@ namespace tool::gsc {
                         continue;
                     }
 
-                    DumpFunctionHeader(*exp, asmout, *scriptfile, ctx, asmctx, currentPadding, nullptr,
-                                       &currentAnimTree);
+                    DumpFunctionHeader(
+                        *exp,
+                        asmout,
+                        *scriptfile,
+                        ctx,
+                        asmctx,
+                        currentPadding,
+                        nullptr,
+                        &currentAnimTree
+                    );
                     if (opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NEWLINE_AFTER_BLOCK_START)) {
                         dctx.WritePadding(asmout << std::endl);
                     } else {
@@ -1626,8 +1688,13 @@ namespace tool::gsc {
                     if (actscli::options().heavyHashes) {
                         sprintf_s(asmfnamebuffgdb, "%s/%016llX.%s", outDir, scriptfile->GetName(), fileExt);
                     } else {
-                        sprintf_s(asmfnamebuffgdb, "%s/hashed/script/script_%llx.%s", outDir, scriptfile->GetName(),
-                                  fileExt);
+                        sprintf_s(
+                            asmfnamebuffgdb,
+                            "%s/hashed/script/script_%llx.%s",
+                            outDir,
+                            scriptfile->GetName(),
+                            fileExt
+                        );
                     }
                 } else {
                     sprintf_s(asmfnamebuffgdb, "%s/%s", outDir, name);
@@ -2029,8 +2096,11 @@ namespace tool::gsc {
                 formats << " '" << fmt->name << "'";
             }
 
-            LOG_INFO("-f --format [f]    : Use formatter, values:{}, default: '{}'", formats.str(),
-                     formatter::GetDefaultFormatter().name);
+            LOG_INFO(
+                "-f --format [f]    : Use formatter, values:{}, default: '{}'",
+                formats.str(),
+                formatter::GetDefaultFormatter().name
+            );
         }
         LOG_INFO("-l --rloc          : Write relative location of the function code");
         LOG_INFO("-L --floc          : Write file location of the function code");
@@ -2073,8 +2143,10 @@ namespace tool::gsc {
         LOG_DEBUG("--data-dump        : Dump data in asm");
         LOG_DEBUG("--lc               : Write line count");
         LOG_DEBUG("-i --ignore[t + ]  : ignore step : ");
-        LOG_DEBUG("                     a : all, d: devblocks, s : switch, e : foreach, w : while, i : if, f : for, r "
-                  ": return");
+        LOG_DEBUG(
+            "                     a : all, d: devblocks, s : switch, e : foreach, w : while, i : if, f : for, r "
+            ": return"
+        );
         LOG_DEBUG("                     R : bool return, c: class members, D: devblocks inline, S : special patterns");
     }
 
@@ -2174,7 +2246,8 @@ namespace tool::gsc {
             FileOrigin& orFi{ scriptFiles[scriptFiles.size() - 1] };
             if (std::filesystem::is_directory(orFi.base)) {
                 utils::GetFileRecurse(
-                    orFi.base, orFi.scriptFiles,
+                    orFi.base,
+                    orFi.scriptFiles,
                     [](const std::filesystem::path& path) -> bool {
                         std::string pathname = path.string();
 
@@ -2184,7 +2257,8 @@ namespace tool::gsc {
                                pathname.ends_with(".gsic") || pathname.ends_with(".csic") // Serious GSIC format
                             ;
                     },
-                    true);
+                    true
+                );
                 orFi.dir = true;
             } else {
                 orFi.scriptFiles.emplace_back(orFi.base.filename());
@@ -2211,8 +2285,14 @@ namespace tool::gsc {
                     }
 
                     try {
-                        auto lret = DecompileGsc((byte*)bufferAlign, size, pathRel, gdctx, (byte*)dbgBuffer.data(),
-                                                 dbgBuffer.size());
+                        auto lret = DecompileGsc(
+                            (byte*)bufferAlign,
+                            size,
+                            pathRel,
+                            gdctx,
+                            (byte*)dbgBuffer.data(),
+                            dbgBuffer.size()
+                        );
                         if (lret != tool::OK) {
                             ret = lret;
                         }
@@ -2351,8 +2431,9 @@ namespace {
     };
 } // namespace
 
-ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(ActsAPIGsc_Platform platform,
-                                                        ActsAPIGscDecompiler_OptionalConfig* optCfg) {
+ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(
+    ActsAPIGsc_Platform platform, ActsAPIGscDecompiler_OptionalConfig* optCfg
+) {
     ActsAPIGscDecompiler_Context* ctx{ ActsAPIImpl_New<ActsAPIGscDecompiler_Context>() };
 
     ctx->globalContext.opt.m_platform = (tool::gsc::opcode::Platform)platform;
@@ -2403,8 +2484,8 @@ ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(ActsAPIGsc_Platform plat
     return ctx;
 }
 
-ActsStatus ActsAPIGscDecompiler_DecompileObject(ActsHandle context, uint8_t* data, size_t size, uint8_t* dbgData,
-                                                size_t dbgSize) {
+ActsStatus
+ActsAPIGscDecompiler_DecompileObject(ActsHandle context, uint8_t* data, size_t size, uint8_t* dbgData, size_t dbgSize) {
     ActsAPIGscDecompiler_Context* ctx{ (ActsAPIGscDecompiler_Context*)context };
     try {
         if (tool::gsc::DecompileGsc(data, size, {}, ctx->globalContext, dbgData, dbgSize)) {

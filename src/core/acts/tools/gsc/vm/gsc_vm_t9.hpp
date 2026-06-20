@@ -9,10 +9,12 @@ namespace tool::gsc {
     class T937GSCOBJHandler : public GSCOBJHandler {
       public:
         T937GSCOBJHandler(byte* file, size_t fileSize)
-            : GSCOBJHandler(file, fileSize,
-                            GOHF_GLOBAL | GOHF_INLINE_FUNC_PTR | GOHF_SUPPORT_EV_HANDLER | GOHF_SUPPORT_VAR_VA |
-                                GOHF_SUPPORT_VAR_REF | GOHF_SUPPORT_VAR_PTR | GOHF_FOREACH_TYPE_T9 |
-                                GOHF_SUPPORT_GET_API_SCRIPT | GOHF_SWITCH_TYPE_T89) {}
+            : GSCOBJHandler(
+                  file, fileSize,
+                  GOHF_GLOBAL | GOHF_INLINE_FUNC_PTR | GOHF_SUPPORT_EV_HANDLER | GOHF_SUPPORT_VAR_VA |
+                      GOHF_SUPPORT_VAR_REF | GOHF_SUPPORT_VAR_PTR | GOHF_FOREACH_TYPE_T9 | GOHF_SUPPORT_GET_API_SCRIPT |
+                      GOHF_SWITCH_TYPE_T89
+              ) {}
 
         void DumpHeaderInternal(std::ostream& asmout, const GscInfoOption& opt) override {
             auto* data = Ptr<T937GSCOBJ>();
@@ -148,10 +150,12 @@ namespace tool::gsc {
     class T9GSCOBJHandler : public GSCOBJHandler {
       public:
         T9GSCOBJHandler(byte* file, size_t fileSize)
-            : GSCOBJHandler(file, fileSize,
-                            GOHF_GLOBAL | GOHF_INLINE_FUNC_PTR | GOHF_NOTIFY_CRC | GOHF_SUPPORT_EV_HANDLER |
-                                GOHF_SUPPORT_VAR_VA | GOHF_SUPPORT_VAR_REF | GOHF_SUPPORT_VAR_PTR |
-                                GOHF_FOREACH_TYPE_T9 | GOHF_SUPPORT_GET_API_SCRIPT | GOHF_SWITCH_TYPE_T89) {}
+            : GSCOBJHandler(
+                  file, fileSize,
+                  GOHF_GLOBAL | GOHF_INLINE_FUNC_PTR | GOHF_NOTIFY_CRC | GOHF_SUPPORT_EV_HANDLER | GOHF_SUPPORT_VAR_VA |
+                      GOHF_SUPPORT_VAR_REF | GOHF_SUPPORT_VAR_PTR | GOHF_FOREACH_TYPE_T9 | GOHF_SUPPORT_GET_API_SCRIPT |
+                      GOHF_SWITCH_TYPE_T89
+              ) {}
 
         void DumpHeaderInternal(std::ostream& asmout, const GscInfoOption& opt) override {
             if (opt.m_test_header) {

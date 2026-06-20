@@ -182,8 +182,13 @@ namespace {
 #define ThrowFastFileError(...) ThrowFastFileError_(std::format(__VA_ARGS__))
 
     void DB_LoadXFileData(void* ptr, int64_t len) {
-        LOG_TRACE("DB_LoadXFileData({}, 0x{:x}/0x{:x}) {}", ptr, len, gcx.reader->Remaining(),
-                  hook::library::CodePointer{ _ReturnAddress() });
+        LOG_TRACE(
+            "DB_LoadXFileData({}, 0x{:x}/0x{:x}) {}",
+            ptr,
+            len,
+            gcx.reader->Remaining(),
+            hook::library::CodePointer{ _ReturnAddress() }
+        );
         if (!ptr) {
             ThrowFastFileError("Can't read empty pointer idx:{}", (int)*gcx.g_streamPosIndex);
         }
@@ -194,8 +199,14 @@ namespace {
     }
 
     bool Load_Stream(bool atStreamStart, void* ptr, uint32_t size) {
-        LOG_TRACE("{} Load_Stream({}, {}, 0x{:x}) {}", hook::library::CodePointer{ _ReturnAddress() },
-                  atStreamStart ? "true" : "false", ptr, size, (int)*gcx.g_streamPosIndex);
+        LOG_TRACE(
+            "{} Load_Stream({}, {}, 0x{:x}) {}",
+            hook::library::CodePointer{ _ReturnAddress() },
+            atStreamStart ? "true" : "false",
+            ptr,
+            size,
+            (int)*gcx.g_streamPosIndex
+        );
 
         bool ret;
         if (atStreamStart && size) {
@@ -337,8 +348,9 @@ namespace {
             }
         }
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+        ) override {
             gcx.reader = &reader;
             gcx.opt = &opt;
 
@@ -351,8 +363,13 @@ namespace {
 
             size_t blockSizes[MAX_XFILE_COUNT]{};
             if (ctx.blocksCount != MAX_XFILE_COUNT) {
-                throw std::runtime_error(std::format("INVALID ctx.blocksCount != MAX_XFILE_COUNT ({} != {})",
-                                                     ctx.blocksCount, (int)MAX_XFILE_COUNT));
+                throw std::runtime_error(
+                    std::format(
+                        "INVALID ctx.blocksCount != MAX_XFILE_COUNT ({} != {})",
+                        ctx.blocksCount,
+                        (int)MAX_XFILE_COUNT
+                    )
+                );
             }
 
             for (size_t i = 0; i < MAX_XFILE_COUNT; i++) {

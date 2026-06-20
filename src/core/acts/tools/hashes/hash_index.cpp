@@ -23,14 +23,22 @@ namespace {
         const char* path{};
     } hashIndexes[]{
         { "acts", "default HashIndex", HashIndexURL, true },
-        { "acts-wni", "HashIndex wni format",
-          "https://github.com/ate47/HashIndex/releases/download/release/hashes-all.zip", true },
-        { "acts-cdb", "HashIndex cdb format",
+        { "acts-wni",
+          "HashIndex wni format",
+          "https://github.com/ate47/HashIndex/releases/download/release/hashes-all.zip",
+          true },
+        { "acts-cdb",
+          "HashIndex cdb format",
           "https://github.com/ate47/HashIndex/releases/download/release-cdb/hashes-all.zip" },
-        { "acts-acef", "HashIndex acef format",
-          "https://github.com/ate47/HashIndex/releases/download/release-acef/hashes-all.zip", true },
-        { "echo000-cndb", "echo000/cod-name-db package",
-          "https://github.com/echo000/cod-name-db/releases/latest/download/hash_pkg.zip", false, "package_index" },
+        { "acts-acef",
+          "HashIndex acef format",
+          "https://github.com/ate47/HashIndex/releases/download/release-acef/hashes-all.zip",
+          true },
+        { "echo000-cndb",
+          "echo000/cod-name-db package",
+          "https://github.com/echo000/cod-name-db/releases/latest/download/hash_pkg.zip",
+          false,
+          "package_index" },
     };
 
     HashIndex* FindIndex(const char* name) {
@@ -162,15 +170,17 @@ namespace {
 
         for (const std::filesystem::path& p : wnis) {
             LOG_INFO("Load {}", p.string());
-            if (!deps::scobalula::wni::ReadWNIFile(
-                    p, [&hashMap](uint64_t hash, const char* str) { hashMap[str].insert(hash); })) {
+            if (!deps::scobalula::wni::ReadWNIFile(p, [&hashMap](uint64_t hash, const char* str) {
+                    hashMap[str].insert(hash);
+                })) {
                 return tool::BASIC_ERROR;
             }
         }
         for (const std::filesystem::path& p : cdbs) {
             LOG_INFO("Load {}", p.string());
-            if (!deps::dzporter::cdb::ReadCDBFile(
-                    p, [&hashMap](uint64_t hash, const char* str) { hashMap[str].insert(hash); })) {
+            if (!deps::dzporter::cdb::ReadCDBFile(p, [&hashMap](uint64_t hash, const char* str) {
+                    hashMap[str].insert(hash);
+                })) {
                 return tool::BASIC_ERROR;
             }
         }

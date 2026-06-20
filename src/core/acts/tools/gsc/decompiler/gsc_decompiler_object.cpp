@@ -40,8 +40,12 @@ namespace tool::gsc {
 
         if (maxPtr) {
             exp->SetHandle(maxPtr);
-            return utils::va("%s::%s@%x", hashutils::ExtractTmpPath("namespace", exp->GetNamespace()),
-                             hashutils::ExtractTmp("function", exp->GetName()), floc - exp->GetAddress());
+            return utils::va(
+                "%s::%s@%x",
+                hashutils::ExtractTmpPath("namespace", exp->GetNamespace()),
+                hashutils::ExtractTmp("function", exp->GetName()),
+                floc - exp->GetAddress()
+            );
         }
 
         return utils::va("unk:%lx", floc);
@@ -130,8 +134,8 @@ namespace tool::gsc {
         return ptr;
     }
 
-    int DumpAsm(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx,
-                ASMContext& ctx) {
+    int
+    DumpAsm(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx, ASMContext& ctx) {
         uint32_t baseloc{ exp.GetAddress() };
         uint64_t filename{ ctx.m_gscReader.GetName() };
         // main reading loop
@@ -227,7 +231,8 @@ namespace tool::gsc {
 
                 if (opCode > objctx.m_vmInfo->maxOpCode) {
                     throw std::runtime_error(
-                        std::format("FIND errec {} (0x{:x} > 0x{:x})", opcodeName, opCode, objctx.m_vmInfo->maxOpCode));
+                        std::format("FIND errec {} (0x{:x} > 0x{:x})", opcodeName, opCode, objctx.m_vmInfo->maxOpCode)
+                    );
                     opCode &= objctx.m_vmInfo->maxOpCode;
                     break;
                 }
@@ -287,8 +292,10 @@ namespace tool::gsc {
         return 0;
     }
 
-    DumpVTableAnswer DumpVTable(GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile,
-                                T8GSCOBJContext& objctx, ASMContext& ctx, DecompContext& dctxt) {
+    DumpVTableAnswer DumpVTable(
+        GSCExportReader& exp, std::ostream& out, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx, ASMContext& ctx,
+        DecompContext& dctxt
+    ) {
         using namespace tool::gsc::opcode;
         auto FetchCode = [&ctx, &dctxt, &out]() -> const OPCodeInfo* {
             dctxt.rloc = ctx.FunctionRelativeLocation();
@@ -550,8 +557,10 @@ namespace tool::gsc {
         return DVA_OK;
     }
 
-    void DumpFunctionHeader(GSCExportReader& exp, std::ostream& asmout, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx,
-                            ASMContext& ctx, int padding, const char* forceName, const char** currentAnimTree) {
+    void DumpFunctionHeader(
+        GSCExportReader& exp, std::ostream& asmout, GSCOBJHandler& gscFile, T8GSCOBJContext& objctx, ASMContext& ctx,
+        int padding, const char* forceName, const char** currentAnimTree
+    ) {
         auto remapedFlags = gscFile.RemapFlagsExport(exp.GetFlags());
         bool classMember = remapedFlags & (T8GSCExportFlags::CLASS_MEMBER | T8GSCExportFlags::CLASS_DESTRUCTOR);
 
@@ -683,9 +692,10 @@ namespace tool::gsc {
                             asmout << "/";
                         }
 
-                        asmout << ((remapedFlags & T8GSCExportFlags::EVENT)
-                                       ? hashutils::ExtractTmp("event", fileNamespace)
-                                       : hashutils::ExtractTmpPath("namespace", fileNamespace));
+                        asmout
+                            << ((remapedFlags & T8GSCExportFlags::EVENT)
+                                    ? hashutils::ExtractTmp("event", fileNamespace)
+                                    : hashutils::ExtractTmpPath("namespace", fileNamespace));
                     }
                     asmout << std::endl;
                 }
@@ -1035,8 +1045,11 @@ namespace tool::gsc {
                         }
                         if (ctx.dbgData && ctx.dbgSize) {
                             if (val->string >= ctx.dbgSize) {
-                                LOG_ERROR("Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}",
-                                          val->string, ctx.dbgSize);
+                                LOG_ERROR(
+                                    "Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}",
+                                    val->string,
+                                    ctx.dbgSize
+                                );
                                 str = ctx.CloneString(utils::va("<dev string:x%x>", val->string));
                             } else {
                                 str = (const char*)&ctx.dbgData[val->string];
@@ -1221,8 +1234,11 @@ namespace tool::gsc {
         for (size_t i = 0; i < imports_count; i++) {
             const auto* imp = reinterpret_cast<T8GSCImport*>(import_location);
             if (import_location - reinterpret_cast<uintptr_t>(file) + sizeof(uint32_t) * imp->num_address > fileSize) {
-                LOG_ERROR("Invalid import 0x{:x} with {} addresses",
-                          import_location - reinterpret_cast<uintptr_t>(file), imp->num_address);
+                LOG_ERROR(
+                    "Invalid import 0x{:x} with {} addresses",
+                    import_location - reinterpret_cast<uintptr_t>(file),
+                    imp->num_address
+                );
                 return tool::BASIC_ERROR;
             }
 
@@ -1232,9 +1248,15 @@ namespace tool::gsc {
                 auto remapedFlags = RemapFlagsImport(imp->flags);
 
                 if (imports[j] > fileSize) {
-                    LOG_ERROR("Invalid import {}::{} address 0x{:x} > 0x{:x} for i{}#{}",
-                              hashutils::ExtractTmp("namespace", imp->import_namespace),
-                              hashutils::ExtractTmp("function", imp->name), imports[j], fileSize, i, j);
+                    LOG_ERROR(
+                        "Invalid import {}::{} address 0x{:x} > 0x{:x} for i{}#{}",
+                        hashutils::ExtractTmp("namespace", imp->import_namespace),
+                        hashutils::ExtractTmp("function", imp->name),
+                        imports[j],
+                        fileSize,
+                        i,
+                        j
+                    );
                     break;
                 }
 
@@ -1309,8 +1331,11 @@ namespace tool::gsc {
                     // the acts compiler uses empty strings location when they're not compiled in the gdb
                     if (ctx.dbgData && ctx.dbgSize) {
                         if (val->string >= ctx.dbgSize) {
-                            LOG_ERROR("Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}",
-                                      val->string, ctx.dbgSize);
+                            LOG_ERROR(
+                                "Invalid dev string: location outside of debug file: 0x{:x} >= 0x{:x}",
+                                val->string,
+                                ctx.dbgSize
+                            );
                             str = ctx.CloneString(utils::va("<dev string:x%x>", val->string));
                         } else {
                             str = (const char*)&ctx.dbgData[val->string];
@@ -1446,7 +1471,7 @@ namespace tool::gsc {
         return tool::OK;
     }
 
-    void tool::gsc::GSCOBJHandler::DumpExperimental(std::ostream& asmout, const GscInfoOption& opt,
-                                                    T8GSCOBJContext& ctx) {}
+    void
+    tool::gsc::GSCOBJHandler::DumpExperimental(std::ostream& asmout, const GscInfoOption& opt, T8GSCOBJContext& ctx) {}
 
 } // namespace tool::gsc

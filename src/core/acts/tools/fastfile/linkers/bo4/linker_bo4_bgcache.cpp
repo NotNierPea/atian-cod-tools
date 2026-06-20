@@ -103,6 +103,7 @@ namespace {
         }
     };
 
-    utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> impl{ GetWorkers(), XAssetType::ASSET_TYPE_BG_CACHE,
+    utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> impl{ GetWorkers(),
+                                                                      XAssetType::ASSET_TYPE_BG_CACHE,
                                                                       true };
 } // namespace

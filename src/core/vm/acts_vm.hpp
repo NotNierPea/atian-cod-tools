@@ -273,8 +273,8 @@ namespace acts::vm {
         constexpr const ActsVmConfig& Cfg() { return cfg; }
         void SetRefValue(FieldRef ref, VmVar* var);
         void GetRefValue(FieldRef ref, VmVar* outVar);
-        void RegisterBuiltin(BuiltinCallback callback, uint64_t name, uint32_t minArgs, uint32_t maxArgs,
-                             bool isMethod);
+        void
+        RegisterBuiltin(BuiltinCallback callback, uint64_t name, uint32_t minArgs, uint32_t maxArgs, bool isMethod);
         BuiltinCall* GetBuiltin(uint16_t builtin);
         uint32_t FindScriptFunction(const char* file, uint64_t namesp, uint64_t name);
         uint16_t FindBuiltin(uint64_t name);

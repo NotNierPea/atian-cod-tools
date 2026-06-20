@@ -36,9 +36,10 @@ ACTS_COMMON_API int MainActs(int argc, const char* argv[], void* hInstance = nul
  * @param description description
  * @param func function callback
  */
-ACTS_COMMON_API void RegisterActsTool(const char* name, const char* filename, size_t line, const char* category,
-                                      const char* usage, const char* description,
-                                      int (*func)(int argc, const char* argv[]));
+ACTS_COMMON_API void RegisterActsTool(
+    const char* name, const char* filename, size_t line, const char* category, const char* usage,
+    const char* description, int (*func)(int argc, const char* argv[])
+);
 
 /*
  * Register a new tool category

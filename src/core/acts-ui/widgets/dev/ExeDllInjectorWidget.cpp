@@ -34,8 +34,12 @@ ExeDllInjectorWidget::ExeDllInjectorWidget(QWidget* parent) : QWidget(parent) {
     }
 
     connect(ui.dllOpen, &QPushButton::clicked, this, [this] {
-        QString path = QFileDialog::getOpenFileName(this, tr("Dynamic Link Library"), QString(),
-                                                    tr("Dynamic Link Library (*.dll)"));
+        QString path = QFileDialog::getOpenFileName(
+            this,
+            tr("Dynamic Link Library"),
+            QString(),
+            tr("Dynamic Link Library (*.dll)")
+        );
 
         if (!path.isEmpty()) {
             ui.dllEdit->setText(path);

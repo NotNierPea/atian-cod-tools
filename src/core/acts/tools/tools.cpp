@@ -49,28 +49,38 @@ namespace tool {
         return map;
     }
 
-    toolfunctiondata::toolfunctiondata(const char* name, const char* filename, size_t line, const char* category,
-                                       const char* usage, const char* description, tool::toolfunctionnf func)
-        : toolfunctiondata(name, filename, line, category, usage, description, nullptr,
-                           [func](Process& proc, int argc, const char* argv[]) -> int { return func(argc, argv); }) {}
+    toolfunctiondata::toolfunctiondata(
+        const char* name, const char* filename, size_t line, const char* category, const char* usage,
+        const char* description, tool::toolfunctionnf func
+    )
+        : toolfunctiondata(
+              name, filename, line, category, usage, description, nullptr,
+              [func](Process& proc, int argc, const char* argv[]) -> int { return func(argc, argv); }
+          ) {}
 
-    toolfunctiondata::toolfunctiondata(const char* name, const char* filename, size_t line, const char* category,
-                                       const char* usage, const char* description, const wchar_t* game,
-                                       toolfunction func)
+    toolfunctiondata::toolfunctiondata(
+        const char* name, const char* filename, size_t line, const char* category, const char* usage,
+        const char* description, const wchar_t* game, toolfunction func
+    )
         : m_name(name), m_category(category), m_usage(usage), m_description(description), m_game(game), m_func(func),
           m_nameLower(name ? name : ""), m_usageLower(usage ? usage : ""),
           m_descriptionLower(description ? description : ""), m_gameLower(game ? game : L""),
           m_categoryLower(category ? category : ""), filename(filename), line(line) {
-        std::transform(m_nameLower.begin(), m_nameLower.end(), m_nameLower.begin(),
-                       [](char c) { return std::tolower(c); });
-        std::transform(m_usageLower.begin(), m_usageLower.end(), m_usageLower.begin(),
-                       [](char c) { return std::tolower(c); });
-        std::transform(m_descriptionLower.begin(), m_descriptionLower.end(), m_descriptionLower.begin(),
-                       [](char c) { return std::tolower(c); });
-        std::transform(m_gameLower.begin(), m_gameLower.end(), m_gameLower.begin(),
-                       [](wchar_t c) { return std::tolower(c); });
-        std::transform(m_categoryLower.begin(), m_categoryLower.end(), m_categoryLower.begin(),
-                       [](wchar_t c) { return std::tolower(c); });
+        std::transform(m_nameLower.begin(), m_nameLower.end(), m_nameLower.begin(), [](char c) {
+            return std::tolower(c);
+        });
+        std::transform(m_usageLower.begin(), m_usageLower.end(), m_usageLower.begin(), [](char c) {
+            return std::tolower(c);
+        });
+        std::transform(m_descriptionLower.begin(), m_descriptionLower.end(), m_descriptionLower.begin(), [](char c) {
+            return std::tolower(c);
+        });
+        std::transform(m_gameLower.begin(), m_gameLower.end(), m_gameLower.begin(), [](wchar_t c) {
+            return std::tolower(c);
+        });
+        std::transform(m_categoryLower.begin(), m_categoryLower.end(), m_categoryLower.begin(), [](wchar_t c) {
+            return std::tolower(c);
+        });
 
         if (name) {
             tools()[name] = this;
@@ -363,11 +373,15 @@ namespace tool {
             }
         }
 
-        LOG_TRACE("Tool took {}s to run with output {}{}", (double)(clock() - beginTime) / CLOCKS_PER_SEC, output,
-                  (output == tool::OK            ? " (OK)"
-                   : output == tool::BAD_USAGE   ? " (BAD_USAGE)"
-                   : output == tool::BASIC_ERROR ? " (BASIC_ERROR)"
-                                                 : ""));
+        LOG_TRACE(
+            "Tool took {}s to run with output {}{}",
+            (double)(clock() - beginTime) / CLOCKS_PER_SEC,
+            output,
+            (output == tool::OK            ? " (OK)"
+             : output == tool::BAD_USAGE   ? " (BAD_USAGE)"
+             : output == tool::BASIC_ERROR ? " (BASIC_ERROR)"
+                                           : "")
+        );
 
         hashutils::WriteExtracted(opt.dumpHashmap);
 
@@ -442,10 +456,13 @@ namespace {
 
     int search(int argc, const char* argv[]) {
         if (!tool::search(argv + 2, argc - 2, [](const tool::toolfunctiondata* tool) {
-                LOG_INFO("- {}{} :{} {}", tool->m_name, tool->m_usage,
-                         HAS_LOG_LEVEL(core::logs::LVL_TRACE) ? std::format(" ({}@{})", tool->filename, tool->line)
-                                                              : "",
-                         tool->m_description);
+                LOG_INFO(
+                    "- {}{} :{} {}",
+                    tool->m_name,
+                    tool->m_usage,
+                    HAS_LOG_LEVEL(core::logs::LVL_TRACE) ? std::format(" ({}@{})", tool->filename, tool->line) : "",
+                    tool->m_description
+                );
             })) {
             LOG_ERROR("Can't find any tool with this query");
             return tool::BASIC_ERROR;
@@ -487,8 +504,12 @@ namespace {
         hashutils::ReadDefaultFile();
         tool::gsc::opcode::RegisterOpCodes();
         LOG_INFO("----- acts");
-        LOG_INFO("version .. {} (0x{:x}/0x{:x})", core::actsinfo::VERSION, core::actsinfo::BUILD_VERSION_ID,
-                 core::actsinfo::VERSION_ID);
+        LOG_INFO(
+            "version .. {} (0x{:x}/0x{:x})",
+            core::actsinfo::VERSION,
+            core::actsinfo::BUILD_VERSION_ID,
+            core::actsinfo::VERSION_ID
+        );
         LOG_INFO("tools .... {} ({} categories)", tool::tools().size(), tool::toolsCategories().size());
         LOG_INFO("tools ui . {}", tool::ui::tools().size());
         LOG_INFO("hash(es) . {}", hashutils::GetMap().size());
@@ -528,10 +549,15 @@ namespace {
                         count += reg.size();
                     }
                 }
-                out = utils::va("%s %s:0x%llx", out,
-                                utils::MapString(utils::va("%s", tool::gsc::opcode::PlatformName(plt)),
-                                                 [](char c) { return c == ' ' ? '_' : c; }),
-                                count);
+                out = utils::va(
+                    "%s %s:0x%llx",
+                    out,
+                    utils::MapString(
+                        utils::va("%s", tool::gsc::opcode::PlatformName(plt)),
+                        [](char c) { return c == ' ' ? '_' : c; }
+                    ),
+                    count
+                );
             }
 
             const char* type{ info.HasFlag(tool::gsc::opcode::VMF_GSCBIN) ? "gscbin" : "gscc" };
@@ -549,10 +575,13 @@ namespace {
     }
 } // namespace
 
-void RegisterActsTool(const char* name, const char* filename, size_t line, const char* category, const char* usage,
-                      const char* description, int (*func)(int argc, const char* argv[])) {
+void RegisterActsTool(
+    const char* name, const char* filename, size_t line, const char* category, const char* usage,
+    const char* description, int (*func)(int argc, const char* argv[])
+) {
     GetExToolAlloc().push_back(
-        std::make_unique<tool::toolfunctiondata>(name, filename, line, category, usage, description, func));
+        std::make_unique<tool::toolfunctiondata>(name, filename, line, category, usage, description, func)
+    );
 }
 
 void RegisterActsCategory(const char* name, const char* description, bool visible) {
@@ -561,9 +590,10 @@ void RegisterActsCategory(const char* name, const char* description, bool visibl
     cat.m_name = name;
     cat.visible = visible;
 }
-void ActsAPITool_RegisterActsTool_(const char* name, const char* filename, size_t line, const char* category,
-                                   const char* usage, const char* description,
-                                   int (*func)(int argc, const char* argv[])) {
+void ActsAPITool_RegisterActsTool_(
+    const char* name, const char* filename, size_t line, const char* category, const char* usage,
+    const char* description, int (*func)(int argc, const char* argv[])
+) {
     RegisterActsTool(name, filename, line, category, usage, description, func);
 }
 

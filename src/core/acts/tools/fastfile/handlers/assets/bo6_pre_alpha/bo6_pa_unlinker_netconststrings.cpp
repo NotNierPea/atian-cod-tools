@@ -34,7 +34,8 @@ namespace fastfile::handlers::assets {
             }
         }
     };
-    utils::MapAdder<ImplWorker, uint64_t, Worker> impl{ GetWorkers(),
-                                                        AssetGameRef(GameId::GID_BO6, GameRevId::GRID_BO6_PRE_ALPHA,
-                                                                     bo6::T10AssetType::T10_ASSET_NETCONSTSTRINGS) };
+    utils::MapAdder<ImplWorker, uint64_t, Worker> impl{
+        GetWorkers(),
+        AssetGameRef(GameId::GID_BO6, GameRevId::GRID_BO6_PRE_ALPHA, bo6::T10AssetType::T10_ASSET_NETCONSTSTRINGS)
+    };
 } // namespace fastfile::handlers::assets

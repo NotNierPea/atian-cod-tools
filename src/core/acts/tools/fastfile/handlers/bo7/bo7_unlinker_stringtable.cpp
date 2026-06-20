@@ -70,8 +70,13 @@ namespace {
             std::filesystem::path outFile{ opt.m_output / gamePath / "source" / n };
 
             std::filesystem::create_directories(outFile.parent_path());
-            LOG_OPT_INFO("Dump stringtable {} ({:x}) ({}x{})", outFile.string(), asset->name, asset->rowCount,
-                         asset->columnCount);
+            LOG_OPT_INFO(
+                "Dump stringtable {} ({:x}) ({}x{})",
+                outFile.string(),
+                asset->name,
+                asset->rowCount,
+                asset->columnCount
+            );
 
             utils::OutFileCE os{ outFile };
 
@@ -228,7 +233,8 @@ namespace {
         }
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_STRINGTABLE,
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(),
+                                                                SatHashAssetType::SATH_ASSET_STRINGTABLE,
                                                                 sizeof(StringTable) };
 
 } // namespace

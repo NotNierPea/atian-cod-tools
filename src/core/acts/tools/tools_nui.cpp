@@ -22,8 +22,9 @@ namespace tool::nui {
         return map;
     }
 
-    tooluifunctiondata::tooluifunctiondata(const char* id, const char* description, toolfunctionui setup,
-                                           toolfunctionui func, bool devTool)
+    tooluifunctiondata::tooluifunctiondata(
+        const char* id, const char* description, toolfunctionui setup, toolfunctionui func, bool devTool
+    )
         : m_id(id), m_description(description), m_setup(setup), m_func(func), m_devTool(devTool) {
         snprintf(m_descriptionSmall, sizeof(m_descriptionSmall), "%s", description);
         if (id) {
@@ -151,7 +152,8 @@ namespace tool::nui {
 
         constexpr long long timeFrame = 3600ll * 25;
         double time = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(
-                                   std::chrono::system_clock::now().time_since_epoch())
+                                   std::chrono::system_clock::now().time_since_epoch()
+                               )
                                    .count() %
                                timeFrame);
 
@@ -259,9 +261,14 @@ namespace tool::nui {
 
         {
             int fontX, fontY, comp;
-            float* img = stbi_loadf_from_memory((stbi_uc const*)tool::nui::cascadia::GetCascadiaFont(),
-                                                (int)tool::nui::cascadia::GetCascadiaFontLen(), &fontX, &fontY, &comp,
-                                                STBI_rgb_alpha);
+            float* img = stbi_loadf_from_memory(
+                (stbi_uc const*)tool::nui::cascadia::GetCascadiaFont(),
+                (int)tool::nui::cascadia::GetCascadiaFontLen(),
+                &fontX,
+                &fontY,
+                &comp,
+                STBI_rgb_alpha
+            );
 
             if (!img) {
                 throw std::runtime_error("Can't load cascadia image from memory");
@@ -279,8 +286,13 @@ namespace tool::nui {
 
             LOG_TRACE("loaded cascadia with {}x{} {} -> {}", fontX, fontY, comp, (int)cascadiaTexture);
 
-            nui->cascadiaFont.LoadFont(cascadiaTexture, (const char*)tool::nui::cascadia::GetCascadiaMap(),
-                                       tool::nui::cascadia::GetCascadiaMapLen(), fontX, fontY);
+            nui->cascadiaFont.LoadFont(
+                cascadiaTexture,
+                (const char*)tool::nui::cascadia::GetCascadiaMap(),
+                tool::nui::cascadia::GetCascadiaMapLen(),
+                fontX,
+                fontY
+            );
         }
 
         IMGUI_CHECKVERSION();
@@ -353,8 +365,11 @@ namespace tool::nui {
         vec.y = (float)GetNUIScreenHeight();
         ImGui::SetNextWindowSize(vec);
         ImGui::SetNextWindowBgAlpha(ActsNUI::nui->bg.bgAlpha / 100.0f);
-        ImGui::Begin("acts-nui-menu", 0,
-                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+        ImGui::Begin(
+            "acts-nui-menu",
+            0,
+            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar
+        );
     }
 
     void EndDefaultWindow() { ImGui::End(); }
@@ -421,9 +436,12 @@ namespace tool::nui {
             vec.y = (float)nui.height;
             ImGui::SetNextWindowSize(vec);
             ImGui::SetNextWindowBgAlpha(std::clamp<float>(nui.bg.bgAlpha / 100.0f + 0.10f, 0, 1));
-            if (ImGui::Begin("acts-nui-items", 0,
-                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
-                                 ImGuiWindowFlags_NoSavedSettings)) {
+            if (ImGui::Begin(
+                    "acts-nui-items",
+                    0,
+                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+                        ImGuiWindowFlags_NoSavedSettings
+                )) {
                 if (nui.bg.open) {
                     if (ImGui::ArrowButton("Open", ImGuiDir_Left)) {
                         nui.bg.open = false;
@@ -444,8 +462,10 @@ namespace tool::nui {
                 for (auto& [id, tool] : tool::nui::tools()) {
                     if (tool->m_devTool && !nui.bg.showDevTools)
                         continue;
-                    if (ImGui::Selectable(nui.bg.open ? tool->m_description : tool->m_descriptionSmall,
-                                          &tool->m_open)) {
+                    if (ImGui::Selectable(
+                            nui.bg.open ? tool->m_description : tool->m_descriptionSmall,
+                            &tool->m_open
+                        )) {
                         data = tool;
                         for (auto& [id, tool] : tool::nui::tools()) {
                             if (tool != data) {
@@ -469,9 +489,12 @@ namespace tool::nui {
                     SaveNextConfig();
 
                     static std::string title{};
-                    title = std::format("Atian tools {} UI{}{}", core::actsinfo::VERSION,
-                                        ((data && data->m_description) ? " - " : ""),
-                                        ((data && data->m_description) ? data->m_description : ""));
+                    title = std::format(
+                        "Atian tools {} UI{}{}",
+                        core::actsinfo::VERSION,
+                        ((data && data->m_description) ? " - " : ""),
+                        ((data && data->m_description) ? data->m_description : "")
+                    );
                     nui.SetWindowName(title.c_str());
                 }
 

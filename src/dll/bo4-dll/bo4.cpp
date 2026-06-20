@@ -23,8 +23,9 @@ void bo4::ScrVm_Error(scriptinstance::ScriptInstance inst, const char* format, b
     Internal_ScrVm_Error(custom_gsc_func::custom_error_id, inst, emptyStr, terminal);
 }
 
-bool bo4::FindGSCFuncLocation(byte* location, scriptinstance::ScriptInstance& inst, GSCOBJ*& obj, GSCExport*& exp,
-                              uint32_t& rloc) {
+bool bo4::FindGSCFuncLocation(
+    byte* location, scriptinstance::ScriptInstance& inst, GSCOBJ*& obj, GSCExport*& exp, uint32_t& rloc
+) {
     if (!location) {
         return false;
     }

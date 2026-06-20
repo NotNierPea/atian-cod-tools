@@ -4,10 +4,14 @@ namespace tool::gsc::opcode {
     class OpCodeT71BRegistry {
       public:
         static void OpCode() {
-            VmInfo* vt71b = RegisterVM(VMI_T7_1B, "Call of Duty: Black ops 3 (1B)", "t7", "bo3_1b",
-                                       VmFlags::VMF_CLIENT_VM | VmFlags::VMF_NO_FILE_NAMESPACE | VmFlags::VMF_ALIGN |
-                                           VmFlags::VMF_ANIMTREE_T7 | VmFlags::VMF_HASH_T7 | VmFlags::VMF_ISTRING |
-                                           VmFlags::VMF_UNIQUE_HASH); // | VmFlags::VMF_CALL_NO_PARAMS
+            VmInfo* vt71b = RegisterVM(
+                VMI_T7_1B,
+                "Call of Duty: Black ops 3 (1B)",
+                "t7",
+                "bo3_1b",
+                VmFlags::VMF_CLIENT_VM | VmFlags::VMF_NO_FILE_NAMESPACE | VmFlags::VMF_ALIGN |
+                    VmFlags::VMF_ANIMTREE_T7 | VmFlags::VMF_HASH_T7 | VmFlags::VMF_ISTRING | VmFlags::VMF_UNIQUE_HASH
+            ); // | VmFlags::VMF_CALL_NO_PARAMS
             vt71b->RegisterVmName("t7_1b", "blackops3_1b");
             vt71b->AddPlatform(PLATFORM_PC);
             vt71b->RegisterVMGlobalVariable("level", OPCODE_IW_GetLevel);
@@ -15,21 +19,55 @@ namespace tool::gsc::opcode {
             vt71b->RegisterVMGlobalVariable("anim", OPCODE_IW_GetAnim);
             vt71b->RegisterVMGlobalVariable("world", OPCODE_GetWorld);
             vt71b->RegisterVMGlobalVariable("classes", OPCODE_GetClasses);
-            vt71b->RegisterVMOperatorFunction("isdefined", "isdefined(object) -> bool", OPCODE_IsDefined,
-                                              VPFD_RETURN_VALUE, 1, 1);
-            vt71b->RegisterVMOperatorFunction("notify", "<caller> notify(event, param*)", OPCODE_Notify,
-                                              VPFD_SELF_PARAM | VPFD_USE_PRE_SCRIPT_CALL, 1);
-            vt71b->RegisterVMOperatorFunction("endon", "<caller> endon(event)", OPCODE_IW_SingleEndon, VPFD_SELF_PARAM,
-                                              1, 1);
-            vt71b->RegisterVMOperatorFunction("vectorscale", "vectorscale(vector, factor) -> vector",
-                                              OPCODE_VectorScale, VPFD_RETURN_VALUE, 2, 2);
-            vt71b->RegisterVMOperatorFunction("waittill", "<caller> waittill(event, var*)", OPCODE_IW_SingleWaitTill,
-                                              VPFD_SELF_PARAM | VPFD_UNPACK, 1);
+            vt71b->RegisterVMOperatorFunction(
+                "isdefined",
+                "isdefined(object) -> bool",
+                OPCODE_IsDefined,
+                VPFD_RETURN_VALUE,
+                1,
+                1
+            );
+            vt71b->RegisterVMOperatorFunction(
+                "notify",
+                "<caller> notify(event, param*)",
+                OPCODE_Notify,
+                VPFD_SELF_PARAM | VPFD_USE_PRE_SCRIPT_CALL,
+                1
+            );
+            vt71b->RegisterVMOperatorFunction(
+                "endon",
+                "<caller> endon(event)",
+                OPCODE_IW_SingleEndon,
+                VPFD_SELF_PARAM,
+                1,
+                1
+            );
+            vt71b->RegisterVMOperatorFunction(
+                "vectorscale",
+                "vectorscale(vector, factor) -> vector",
+                OPCODE_VectorScale,
+                VPFD_RETURN_VALUE,
+                2,
+                2
+            );
+            vt71b->RegisterVMOperatorFunction(
+                "waittill",
+                "<caller> waittill(event, var*)",
+                OPCODE_IW_SingleWaitTill,
+                VPFD_SELF_PARAM | VPFD_UNPACK,
+                1
+            );
             // vt71b->RegisterVMOperatorFunction("waittillmatch", "<caller> waittillmatch(event, match) -> struct",
             // OPCODE_WaitTillMatch2, VPFD_SELF_PARAM | VPFD_USE_COUNT | VPFD_RETURN_VALUE, 2); // todo
             vt71b->RegisterVMOperatorFunction("wait", "wait(time)", OPCODE_Wait, VPFD_NONE, 1, 1);
-            vt71b->RegisterVMOperatorFunction("waittillframeend", "waittillframeend()", OPCODE_WaitTillFrameEnd,
-                                              VPFD_NONE, 0, 0);
+            vt71b->RegisterVMOperatorFunction(
+                "waittillframeend",
+                "waittillframeend()",
+                OPCODE_WaitTillFrameEnd,
+                VPFD_NONE,
+                0,
+                0
+            );
             vt71b->RegisterVMHashOPCode('#', OPCODE_GetHash32, 4, [](const char* str) { return hash::HashT7(str); });
             vt71b->RegisterVMHashOPCode('s', OPCODE_GetHash32, 4, [](const char* str) { return hash::HashT7(str); });
             vt71b->RegisterDevCall("assert", "assertmsg", "errormsg", "throw", "println");

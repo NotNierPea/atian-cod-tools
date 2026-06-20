@@ -135,12 +135,19 @@ namespace fastfile::handlers::bo4::map {
                     json.WriteFieldValueXHash("unk168", e.unk168);
                     json.WriteFieldValueXAsset("compassMap", XAssetType::ASSET_TYPE_IMAGE, e.compassMap);
                     json.WriteFieldValueXAsset("compassMapCorrupt", XAssetType::ASSET_TYPE_IMAGE, e.compassMapCorrupt);
-                    json.WriteFieldValueXAsset("operationsBackground", XAssetType::ASSET_TYPE_IMAGE,
-                                               e.operationsBackground);
+                    json.WriteFieldValueXAsset(
+                        "operationsBackground",
+                        XAssetType::ASSET_TYPE_IMAGE,
+                        e.operationsBackground
+                    );
                     json.WriteFieldValueXAsset("accoladelist", XAssetType::ASSET_TYPE_SCRIPTBUNDLELIST, e.accoladelist);
                     json.WriteFieldValueXAsset("objectives", XAssetType::ASSET_TYPE_OBJECTIVE_LIST, e.objectives);
-                    json.WriteFieldValueXAssetArray("playerRoleTemplates", XAssetType::ASSET_TYPE_PLAYER_ROLE_TEMPLATE,
-                                                    e.playerRoleTemplatesCount, e.playerRoleTemplates);
+                    json.WriteFieldValueXAssetArray(
+                        "playerRoleTemplates",
+                        XAssetType::ASSET_TYPE_PLAYER_ROLE_TEMPLATE,
+                        e.playerRoleTemplatesCount,
+                        e.playerRoleTemplates
+                    );
                     json.WriteFieldValueNumber("size", e.size);
                     json.WriteFieldValueVector("engagementRanges", e.engagementRanges);
 

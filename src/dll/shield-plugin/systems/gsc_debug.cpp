@@ -67,8 +67,12 @@ namespace systems::gsc::debug {
                 return;
             }
 
-            systems::errors::ScrVm_Error(bo4::scriptInstance_t::SI_SERVER, "Value '%s' is not a valid enum field",
-                                         false, v);
+            systems::errors::ScrVm_Error(
+                bo4::scriptInstance_t::SI_SERVER,
+                "Value '%s' is not a valid enum field",
+                false,
+                v
+            );
         }
 
         struct ScrHudElem {
@@ -103,9 +107,13 @@ namespace systems::gsc::debug {
 
         template<bool isGetter>
         void InvalidField(ScrHudElem* hud, HudElemField* field) {
-            systems::errors::ScrVm_Error(bo4::scriptInstance_t::SI_SERVER, "Field %s %s not implemented", false,
-                                         isGetter ? "getter" : "setter",
-                                         core::hashes::ExtractTmp("var", field->canonId));
+            systems::errors::ScrVm_Error(
+                bo4::scriptInstance_t::SI_SERVER,
+                "Field %s %s not implemented",
+                false,
+                isGetter ? "getter" : "setter",
+                core::hashes::ExtractTmp("var", field->canonId)
+            );
         }
 
         void Scr_SetEnumString(bo4::scriptInstance_t inst, const char** names, size_t count, int* out) {
@@ -128,36 +136,68 @@ namespace systems::gsc::debug {
         }
 
         void Set_HudHAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_SetEnumString(bo4::scriptInstance_t::SI_SERVER, HudHAlignNames.data(), HudHAlignNames.size(),
-                              (int*)&hud->horzalign);
+            Scr_SetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudHAlignNames.data(),
+                HudHAlignNames.size(),
+                (int*)&hud->horzalign
+            );
         }
         void Get_HudHAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_GetEnumString(bo4::scriptInstance_t::SI_SERVER, HudHAlignNames.data(), HudHAlignNames.size(),
-                              hud->horzalign);
+            Scr_GetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudHAlignNames.data(),
+                HudHAlignNames.size(),
+                hud->horzalign
+            );
         }
         void Set_HudVAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_SetEnumString(bo4::scriptInstance_t::SI_SERVER, HudVAlignNames.data(), HudVAlignNames.size(),
-                              (int*)&hud->vertalign);
+            Scr_SetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudVAlignNames.data(),
+                HudVAlignNames.size(),
+                (int*)&hud->vertalign
+            );
         }
         void Get_HudVAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_GetEnumString(bo4::scriptInstance_t::SI_SERVER, HudVAlignNames.data(), HudVAlignNames.size(),
-                              hud->vertalign);
+            Scr_GetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudVAlignNames.data(),
+                HudVAlignNames.size(),
+                hud->vertalign
+            );
         }
         void Set_HudXAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_SetEnumString(bo4::scriptInstance_t::SI_SERVER, HudXAlignNames.data(), HudXAlignNames.size(),
-                              (int*)&hud->alignx);
+            Scr_SetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudXAlignNames.data(),
+                HudXAlignNames.size(),
+                (int*)&hud->alignx
+            );
         }
         void Get_HudXAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_GetEnumString(bo4::scriptInstance_t::SI_SERVER, HudXAlignNames.data(), HudXAlignNames.size(),
-                              hud->alignx);
+            Scr_GetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudXAlignNames.data(),
+                HudXAlignNames.size(),
+                hud->alignx
+            );
         }
         void Set_HudYAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_SetEnumString(bo4::scriptInstance_t::SI_SERVER, HudYAlignNames.data(), HudYAlignNames.size(),
-                              (int*)&hud->aligny);
+            Scr_SetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudYAlignNames.data(),
+                HudYAlignNames.size(),
+                (int*)&hud->aligny
+            );
         }
         void Get_HudYAlign(ScrHudElem* hud, HudElemField* field) {
-            Scr_GetEnumString(bo4::scriptInstance_t::SI_SERVER, HudYAlignNames.data(), HudYAlignNames.size(),
-                              hud->aligny);
+            Scr_GetEnumString(
+                bo4::scriptInstance_t::SI_SERVER,
+                HudYAlignNames.data(),
+                HudYAlignNames.size(),
+                hud->aligny
+            );
         }
 
 #define __CREATE_GENERIC_HUDELEM_FIELD(field)                                                                          \
@@ -624,8 +664,18 @@ namespace systems::gsc::debug {
                 color[2] = elem.color[2];
                 color[3] = elem.alpha;
 
-                bo4::R_AddCmdDrawText(text, INT_MAX, font, x, y, elem.fontScale, elem.fontScale, 0, color,
-                                      bo4::ITEM_TEXTSTYLE_NORMAL);
+                bo4::R_AddCmdDrawText(
+                    text,
+                    INT_MAX,
+                    font,
+                    x,
+                    y,
+                    elem.fontScale,
+                    elem.fontScale,
+                    0,
+                    color,
+                    bo4::ITEM_TEXTSTYLE_NORMAL
+                );
             }
 
             /*
@@ -658,22 +708,34 @@ namespace systems::gsc::debug {
                 // LOG_TRACE("Scr_SetObjectField({}, {}, {})", magic_enum::enum_name(classnum), entRefUnion.val,
                 // offset);
                 if (offset >= hudFields.size()) {
-                    systems::errors::ScrVm_Error(bo4::scriptInstance_t::SI_SERVER, "Invalid Hud Elem offset: %d", false,
-                                                 offset);
+                    systems::errors::ScrVm_Error(
+                        bo4::scriptInstance_t::SI_SERVER,
+                        "Invalid Hud Elem offset: %d",
+                        false,
+                        offset
+                    );
                     return true;
                 }
                 uint32_t hudElemIndex{ entRefUnion.hudElemIndex };
                 ScrHudElem* hud{ GetHudElem(hudElemIndex) };
                 if (!hud) {
-                    systems::errors::ScrVm_Error(bo4::scriptInstance_t::SI_SERVER, "Invalid Hud Elem index: %d", false,
-                                                 hudElemIndex);
+                    systems::errors::ScrVm_Error(
+                        bo4::scriptInstance_t::SI_SERVER,
+                        "Invalid Hud Elem index: %d",
+                        false,
+                        hudElemIndex
+                    );
                     return true;
                 }
                 HudElemField* field{ &hudFields[offset] };
 
                 if (field->readOnly) {
-                    systems::errors::ScrVm_Error(bo4::scriptInstance_t::SI_SERVER, "Field %s is readonly", false,
-                                                 core::hashes::ExtractTmp("var", field->canonId));
+                    systems::errors::ScrVm_Error(
+                        bo4::scriptInstance_t::SI_SERVER,
+                        "Field %s is readonly",
+                        false,
+                        core::hashes::ExtractTmp("var", field->canonId)
+                    );
                     return true;
                 }
 
@@ -694,15 +756,23 @@ namespace systems::gsc::debug {
                 // LOG_TRACE("Scr_GetObjectField({}, {}, {})", magic_enum::enum_name(classnum), entRefUnion.val,
                 // offset);
                 if (offset >= hudFields.size()) {
-                    systems::errors::ScrVm_Error(bo4::scriptInstance_t::SI_SERVER, "Invalid Hud Elem offset: %d", false,
-                                                 offset);
+                    systems::errors::ScrVm_Error(
+                        bo4::scriptInstance_t::SI_SERVER,
+                        "Invalid Hud Elem offset: %d",
+                        false,
+                        offset
+                    );
                     return;
                 }
                 uint32_t hudElemIndex{ entRefUnion.hudElemIndex };
                 ScrHudElem* hud{ GetHudElem(hudElemIndex) };
                 if (!hud) {
-                    systems::errors::ScrVm_Error(bo4::scriptInstance_t::SI_SERVER, "Invalid Hud Elem index: %d", false,
-                                                 hudElemIndex);
+                    systems::errors::ScrVm_Error(
+                        bo4::scriptInstance_t::SI_SERVER,
+                        "Invalid Hud Elem index: %d",
+                        false,
+                        hudElemIndex
+                    );
                     return;
                 }
                 HudElemField* field{ &hudFields[offset] };
@@ -723,8 +793,13 @@ namespace systems::gsc::debug {
             ScrVar_InitClassMap_Detour.Call(inst, classnum);
 
             if (inst == bo4::scriptInstance_t::SI_SERVER && classnum == bo4::CLASS_NUM_HUDELEM) {
-                LOG_TRACE("ScrVar_InitClassMap({}, {}) {} -> add {} fields", inst ? "client" : "server", (int)classnum,
-                          hook::library::CodePointer{ _ReturnAddress() }, hudFields.size());
+                LOG_TRACE(
+                    "ScrVar_InitClassMap({}, {}) {} -> add {} fields",
+                    inst ? "client" : "server",
+                    (int)classnum,
+                    hook::library::CodePointer{ _ReturnAddress() },
+                    hudFields.size()
+                );
                 for (size_t i = 0; i < hudFields.size(); i++) {
                     bo4::ScrVar_AddClassFields(inst, classnum, hudFields[i].canonId, (int32_t)i);
                 }
@@ -732,10 +807,16 @@ namespace systems::gsc::debug {
         }
 
         void PostInit(uint64_t uid) {
-            systems::gsc::funcs::ScrVm_RegisterFunctionContainer(bo4::scriptInstance_t::SI_SERVER, false,
-                                                                 actsGscDebugFunctions);
-            systems::gsc::funcs::ScrVm_RegisterFunctionContainer(bo4::scriptInstance_t::SI_SERVER, true,
-                                                                 actsGscDebugMethods);
+            systems::gsc::funcs::ScrVm_RegisterFunctionContainer(
+                bo4::scriptInstance_t::SI_SERVER,
+                false,
+                actsGscDebugFunctions
+            );
+            systems::gsc::funcs::ScrVm_RegisterFunctionContainer(
+                bo4::scriptInstance_t::SI_SERVER,
+                true,
+                actsGscDebugMethods
+            );
 
             ScrVar_InitClassMap_Detour.Create(0x275FF10_a, ScrVar_InitClassMap_Stub);
             Scr_SetObjectField_Detour.Create(0x2D72140_a, Scr_SetObjectField_Stub);
@@ -753,8 +834,18 @@ namespace systems::gsc::debug {
         if (!he) {
             return "HudElem[invalid]";
         }
-        return utils::va("HudElem%u[x=%f y=%f z=%f fs=%f rgba=(%f, %f, %f, %f)] %s", GetHudElemId(he), he->x, he->y,
-                         he->z, he->fontScale, he->color[0], he->color[1], he->color[2], he->alpha,
-                         he->text ? he->text : "<empty>");
+        return utils::va(
+            "HudElem%u[x=%f y=%f z=%f fs=%f rgba=(%f, %f, %f, %f)] %s",
+            GetHudElemId(he),
+            he->x,
+            he->y,
+            he->z,
+            he->fontScale,
+            he->color[0],
+            he->color[1],
+            he->color[2],
+            he->alpha,
+            he->text ? he->text : "<empty>"
+        );
     }
 } // namespace systems::gsc::debug

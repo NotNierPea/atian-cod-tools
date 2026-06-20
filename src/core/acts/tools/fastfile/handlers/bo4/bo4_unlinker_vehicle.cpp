@@ -515,52 +515,101 @@ namespace {
             json.WriteFieldValueXAsset("unk1340", games::bo4::pool::ASSET_TYPE_FX, asset->unk1340);
             json.WriteFieldValueXAsset("unk1350", games::bo4::pool::ASSET_TYPE_FX, asset->unk1350);
 
-            json.WriteFieldValueXAsset("killstreakSettings", games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                       asset->killstreakSettings);
-            json.WriteFieldValueXAsset("scriptBundleSettings", games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                       asset->scriptBundleSettings);
-            json.WriteFieldValueXAsset("vehicleRidersBundle", games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                       asset->vehicleRidersBundle);
-            json.WriteFieldValueXAsset("vehicleRidersRobotBundle", games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                       asset->vehicleRidersRobotBundle);
-            json.WriteFieldValueXAsset("vehicleRidersWarlordBundle", games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                       asset->vehicleRidersWarlordBundle);
-            json.WriteFieldValueXAsset("shrapnelSettings", games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                       asset->shrapnelSettings);
-            json.WriteFieldValueXAsset("assassinationBundle", games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
-                                       asset->assassinationBundle);
+            json.WriteFieldValueXAsset(
+                "killstreakSettings",
+                games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                asset->killstreakSettings
+            );
+            json.WriteFieldValueXAsset(
+                "scriptBundleSettings",
+                games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                asset->scriptBundleSettings
+            );
+            json.WriteFieldValueXAsset(
+                "vehicleRidersBundle",
+                games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                asset->vehicleRidersBundle
+            );
+            json.WriteFieldValueXAsset(
+                "vehicleRidersRobotBundle",
+                games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                asset->vehicleRidersRobotBundle
+            );
+            json.WriteFieldValueXAsset(
+                "vehicleRidersWarlordBundle",
+                games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                asset->vehicleRidersWarlordBundle
+            );
+            json.WriteFieldValueXAsset(
+                "shrapnelSettings",
+                games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                asset->shrapnelSettings
+            );
+            json.WriteFieldValueXAsset(
+                "assassinationBundle",
+                games::bo4::pool::ASSET_TYPE_SCRIPTBUNDLE,
+                asset->assassinationBundle
+            );
 
             json.WriteFieldValueXAsset("deathFx", games::bo4::pool::ASSET_TYPE_FX, asset->deathFx);
             json.WriteFieldValueScrString("deathFxTag", asset->deathFxTag);
             json.WriteFieldValueXHash("deathFxSound", asset->deathFxSound);
-            json.WriteFieldValueXAssetArray("lightFx", games::bo4::pool::ASSET_TYPE_FX, ACTS_ARRAYSIZE(asset->lightFx),
-                                            &asset->lightFx[0]);
+            json.WriteFieldValueXAssetArray(
+                "lightFx",
+                games::bo4::pool::ASSET_TYPE_FX,
+                ACTS_ARRAYSIZE(asset->lightFx),
+                &asset->lightFx[0]
+            );
             json.WriteFieldValueScrStringArray("lightFxTag", ACTS_ARRAYSIZE(asset->lightFxTag), &asset->lightFxTag[0]);
-            json.WriteFieldValueXAssetArray("unk1438", games::bo4::pool::ASSET_TYPE_FX, ACTS_ARRAYSIZE(asset->unk1438),
-                                            &asset->unk1438[0]);
+            json.WriteFieldValueXAssetArray(
+                "unk1438",
+                games::bo4::pool::ASSET_TYPE_FX,
+                ACTS_ARRAYSIZE(asset->unk1438),
+                &asset->unk1438[0]
+            );
             json.WriteFieldValueScrStringArray("unk1458", ACTS_ARRAYSIZE(asset->unk1458), &asset->unk1458[0]);
-            json.WriteFieldValueXAssetArray("unk1468", games::bo4::pool::ASSET_TYPE_FX, ACTS_ARRAYSIZE(asset->unk1468),
-                                            &asset->unk1468[0]);
+            json.WriteFieldValueXAssetArray(
+                "unk1468",
+                games::bo4::pool::ASSET_TYPE_FX,
+                ACTS_ARRAYSIZE(asset->unk1468),
+                &asset->unk1468[0]
+            );
             json.WriteFieldValueScrStringArray("unk1488", ACTS_ARRAYSIZE(asset->unk1488), &asset->unk1488[0]);
-            json.WriteFieldValueXAssetArray("unk1498", games::bo4::pool::ASSET_TYPE_FX, ACTS_ARRAYSIZE(asset->unk1498),
-                                            &asset->unk1498[0]);
+            json.WriteFieldValueXAssetArray(
+                "unk1498",
+                games::bo4::pool::ASSET_TYPE_FX,
+                ACTS_ARRAYSIZE(asset->unk1498),
+                &asset->unk1498[0]
+            );
             json.WriteFieldValueScrStringArray("unk14b8", ACTS_ARRAYSIZE(asset->unk14b8), &asset->unk14b8[0]);
 
             json.WriteFieldValueScrString("unk1268", asset->unk1268);
             json.WriteFieldValueScrString("unk12fc", asset->unk12fc);
             json.WriteFieldValueScrString("driverHideTag", asset->driverHideTag);
             json.WriteFieldValueScrStringArray("unk11f4", ACTS_ARRAYSIZE(asset->unk11f4), &asset->unk11f4[0]);
-            json.WriteFieldValueScrStringArray("driverOtherHideTags", ACTS_ARRAYSIZE(asset->driverOtherHideTags),
-                                               &asset->driverOtherHideTags[0]);
-            json.WriteFieldValueScrStringArray("attachmentTags", ACTS_ARRAYSIZE(asset->attachmentTags),
-                                               &asset->attachmentTags[0]);
-            json.WriteFieldValueScrStringArray("deathAttachmentTags", ACTS_ARRAYSIZE(asset->deathAttachmentTags),
-                                               &asset->deathAttachmentTags[0]);
+            json.WriteFieldValueScrStringArray(
+                "driverOtherHideTags",
+                ACTS_ARRAYSIZE(asset->driverOtherHideTags),
+                &asset->driverOtherHideTags[0]
+            );
+            json.WriteFieldValueScrStringArray(
+                "attachmentTags",
+                ACTS_ARRAYSIZE(asset->attachmentTags),
+                &asset->attachmentTags[0]
+            );
+            json.WriteFieldValueScrStringArray(
+                "deathAttachmentTags",
+                ACTS_ARRAYSIZE(asset->deathAttachmentTags),
+                &asset->deathAttachmentTags[0]
+            );
             json.WriteFieldValueScrStringArray("targetTags", ACTS_ARRAYSIZE(asset->targetTags), &asset->targetTags[0]);
 
             json.WriteFieldValueXHashArray("sndNames", ACTS_ARRAYSIZE(asset->sndNames), asset->sndNames);
-            json.WriteFieldValueXHashArray("sndMaterialNames", ACTS_ARRAYSIZE(asset->sndMaterialNames),
-                                           asset->sndMaterialNames);
+            json.WriteFieldValueXHashArray(
+                "sndMaterialNames",
+                ACTS_ARRAYSIZE(asset->sndMaterialNames),
+                asset->sndMaterialNames
+            );
             json.WriteFieldNameString("skidSpeedMin");
             json.WriteValueNumber(asset->skidSpeedMin);
             json.WriteFieldNameString("skidSpeedMax");
@@ -572,32 +621,69 @@ namespace {
             json.WriteFieldValueXAsset("viewModel", games::bo4::pool::ASSET_TYPE_XMODEL, asset->viewModel);
             json.WriteFieldValueXAsset("deathModel", games::bo4::pool::ASSET_TYPE_XMODEL, asset->deathModel);
             json.WriteFieldValueXAsset("enemyModel", games::bo4::pool::ASSET_TYPE_XMODEL, asset->enemyModel);
-            json.WriteFieldValueXAssetArray("deathAttachmentModels", games::bo4::pool::ASSET_TYPE_XMODEL,
-                                            ACTS_ARRAYSIZE(asset->attachmentModels), &asset->attachmentModels[0]);
-            json.WriteFieldValueXAssetArray("deathAttachmentModels", games::bo4::pool::ASSET_TYPE_XMODEL,
-                                            ACTS_ARRAYSIZE(asset->deathAttachmentModels),
-                                            &asset->deathAttachmentModels[0]);
+            json.WriteFieldValueXAssetArray(
+                "deathAttachmentModels",
+                games::bo4::pool::ASSET_TYPE_XMODEL,
+                ACTS_ARRAYSIZE(asset->attachmentModels),
+                &asset->attachmentModels[0]
+            );
+            json.WriteFieldValueXAssetArray(
+                "deathAttachmentModels",
+                games::bo4::pool::ASSET_TYPE_XMODEL,
+                ACTS_ARRAYSIZE(asset->deathAttachmentModels),
+                &asset->deathAttachmentModels[0]
+            );
             json.WriteFieldValueXAsset("soundDef", games::bo4::pool::ASSET_TYPE_VEHICLESOUNDDEF, asset->soundDef);
-            json.WriteFieldValueXAsset("compassIconMaterial", games::bo4::pool::ASSET_TYPE_MATERIAL,
-                                       asset->compassIconMaterial);
-            json.WriteFieldValueXAsset("lightCollisionRumble", games::bo4::pool::ASSET_TYPE_RUMBLE,
-                                       asset->lightCollisionRumble);
-            json.WriteFieldValueXAsset("heavyCollisionRumble", games::bo4::pool::ASSET_TYPE_RUMBLE,
-                                       asset->heavyCollisionRumble);
-            json.WriteFieldValueXAsset("jumpLandingRumble", games::bo4::pool::ASSET_TYPE_RUMBLE,
-                                       asset->jumpLandingRumble);
-            json.WriteFieldValueXAsset("animStateMachine", games::bo4::pool::ASSET_TYPE_ANIMSTATEMACHINE,
-                                       asset->animStateMachine);
-            json.WriteFieldValueXAsset("animSelectorTable", games::bo4::pool::ASSET_TYPE_ANIMSELECTORTABLESET,
-                                       asset->animSelectorTable);
-            json.WriteFieldValueXAsset("animMappingTable", games::bo4::pool::ASSET_TYPE_ANIMMAPPINGTABLE,
-                                       asset->animMappingTable);
-            json.WriteFieldValueXAsset("vehicleFootstepTable", games::bo4::pool::ASSET_TYPE_SURFACESOUNDDEF,
-                                       asset->vehicleFootstepTable);
-            json.WriteFieldValueXAsset("vehicleFootstepFXTable", games::bo4::pool::ASSET_TYPE_SURFACEFX_TABLE,
-                                       asset->vehicleFootstepFXTable);
-            json.WriteFieldValueXAsset("destructibleDef", games::bo4::pool::ASSET_TYPE_DESTRUCTIBLEDEF,
-                                       asset->destructibleDef);
+            json.WriteFieldValueXAsset(
+                "compassIconMaterial",
+                games::bo4::pool::ASSET_TYPE_MATERIAL,
+                asset->compassIconMaterial
+            );
+            json.WriteFieldValueXAsset(
+                "lightCollisionRumble",
+                games::bo4::pool::ASSET_TYPE_RUMBLE,
+                asset->lightCollisionRumble
+            );
+            json.WriteFieldValueXAsset(
+                "heavyCollisionRumble",
+                games::bo4::pool::ASSET_TYPE_RUMBLE,
+                asset->heavyCollisionRumble
+            );
+            json.WriteFieldValueXAsset(
+                "jumpLandingRumble",
+                games::bo4::pool::ASSET_TYPE_RUMBLE,
+                asset->jumpLandingRumble
+            );
+            json.WriteFieldValueXAsset(
+                "animStateMachine",
+                games::bo4::pool::ASSET_TYPE_ANIMSTATEMACHINE,
+                asset->animStateMachine
+            );
+            json.WriteFieldValueXAsset(
+                "animSelectorTable",
+                games::bo4::pool::ASSET_TYPE_ANIMSELECTORTABLESET,
+                asset->animSelectorTable
+            );
+            json.WriteFieldValueXAsset(
+                "animMappingTable",
+                games::bo4::pool::ASSET_TYPE_ANIMMAPPINGTABLE,
+                asset->animMappingTable
+            );
+            json.WriteFieldValueXAsset(
+                "vehicleFootstepTable",
+                games::bo4::pool::ASSET_TYPE_SURFACESOUNDDEF,
+                asset->vehicleFootstepTable
+            );
+            json.WriteFieldValueXAsset(
+                "vehicleFootstepFXTable",
+                games::bo4::pool::ASSET_TYPE_SURFACEFX_TABLE,
+                asset->vehicleFootstepFXTable
+            );
+            json.WriteFieldValueXAsset(
+                "destructibleDef",
+                games::bo4::pool::ASSET_TYPE_DESTRUCTIBLEDEF,
+                asset->destructibleDef
+            );
             json.WriteFieldValueXAsset("tacticalModeIcon", games::bo4::pool::ASSET_TYPE_IMAGE, asset->tacticalModeIcon);
 
             if (asset->animSet && *asset->animSet) {

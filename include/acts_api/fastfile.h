@@ -198,10 +198,10 @@ typedef uint8_t* ActsAPIFastFile_destCallback(void* state, size_t size);
  * @param destDataCB callback to write destination data.
  * @return true if the diff was applied successfully, false otherwise with state->error set to an error message.
  */
-ACTS_COMMON_API bool ActsAPIFastFile_bdiff(ActsAPIFastFile_BDiffState* state,
-                                           ActsAPIFastFile_sourceCallback* sourceDataCB,
-                                           ActsAPIFastFile_diffCallback* patchDataCB,
-                                           ActsAPIFastFile_destCallback* destDataCB);
+ACTS_COMMON_API bool ActsAPIFastFile_bdiff(
+    ActsAPIFastFile_BDiffState* state, ActsAPIFastFile_sourceCallback* sourceDataCB,
+    ActsAPIFastFile_diffCallback* patchDataCB, ActsAPIFastFile_destCallback* destDataCB
+);
 
 // default window size for bdiff, used to reduce reallocation.
 #define DEFAULT_BDIFF_WINDOW_SIZE 0x100000
@@ -217,10 +217,10 @@ ACTS_COMMON_API bool ActsAPIFastFile_bdiff(ActsAPIFastFile_BDiffState* state,
  * @param winsize window size, used to reduce reallocation. Use DEFAULT_BDIFF_WINDOW_SIZE if unknown
  * @return true if the diff was applied successfully, false otherwise with state->error set to an error message.
  */
-ACTS_COMMON_API ActsStatus ActsAPIFastFile_bdiffData(uint8_t* sourceData, size_t sourceDataLen, uint8_t* patchData,
-                                                     size_t patchDataLen, ActsHandle outData,
-                                                     ActsAPIFastFile_BDiffType ACTS_DEFAULT(type, BDT_UNKNOWN),
-                                                     size_t ACTS_DEFAULT(winsize, DEFAULT_BDIFF_WINDOW_SIZE));
+ACTS_COMMON_API ActsStatus ActsAPIFastFile_bdiffData(
+    uint8_t* sourceData, size_t sourceDataLen, uint8_t* patchData, size_t patchDataLen, ActsHandle outData,
+    ActsAPIFastFile_BDiffType ACTS_DEFAULT(type, BDT_UNKNOWN), size_t ACTS_DEFAULT(winsize, DEFAULT_BDIFF_WINDOW_SIZE)
+);
 
 /*
  * Custom handler init function
@@ -236,9 +236,10 @@ typedef bool (*ActsAPIFastFile_InitHandler)(ActsAPIFastFile_FastFileOption* opt,
  * @param dataLen decompressed data buffer length
  * @param ud user data
  */
-typedef bool (*ActsAPIFastFile_HandleHandler)(ActsAPIFastFile_FastFileOption* opt,
-                                              ActsAPIFastFile_FastFileContext* context, uint8_t* data, size_t dataLen,
-                                              void* ud);
+typedef bool (*ActsAPIFastFile_HandleHandler)(
+    ActsAPIFastFile_FastFileOption* opt, ActsAPIFastFile_FastFileContext* context, uint8_t* data, size_t dataLen,
+    void* ud
+);
 /*
  * Custom handler cleanup function
  * @param ud user data
@@ -257,11 +258,10 @@ typedef void (*ActsAPIFastFile_CleanupHandler)(void* ud);
  * @param noPatchOk if true, the handler will be available even if the patch files are not found, otherwise it will be
  * ignored if the patch files are not found (default: false)
  */
-ACTS_COMMON_API void ActsAPIFastFile_RegisterCustomHandler(ActsAPIFastFile_InitHandler init,
-                                                           ActsAPIFastFile_HandleHandler handle,
-                                                           ActsAPIFastFile_CleanupHandler cleanup, void* userdata,
-                                                           const char* name, const char* description,
-                                                           ActsAPIFastFile_CordycepGame cordycepGame, bool noPatchOk);
+ACTS_COMMON_API void ActsAPIFastFile_RegisterCustomHandler(
+    ActsAPIFastFile_InitHandler init, ActsAPIFastFile_HandleHandler handle, ActsAPIFastFile_CleanupHandler cleanup,
+    void* userdata, const char* name, const char* description, ActsAPIFastFile_CordycepGame cordycepGame, bool noPatchOk
+);
 
 /*
  * @return the current options used for the current handler, should be valid until the end of the fastfile tool
@@ -316,8 +316,8 @@ ACTS_COMMON_API void ActsAPIFastFile_AddAssetHeaderHashed(uint64_t name, void* h
  * @param type asset type
  * @param size asset type
  */
-ACTS_COMMON_API void ActsAPIFastFile_AddAssetHeaderStringRef(const char* name, void** header, uint32_t type,
-                                                             size_t size);
+ACTS_COMMON_API void
+ActsAPIFastFile_AddAssetHeaderStringRef(const char* name, void** header, uint32_t type, size_t size);
 /*
  * Add an asset header to the current context ref
  * @param name asset name

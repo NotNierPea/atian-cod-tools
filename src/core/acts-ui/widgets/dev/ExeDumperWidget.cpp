@@ -10,8 +10,9 @@ ExeDumperWidget::ExeDumperWidget(QWidget* parent) : QWidget(parent) {
     ui.returnLabel->setText("");      // remove placeholder
     ui.dumpButton->setEnabled(false); // activated using link
 
-    connect(ui.execPathEdit, &QLineEdit::textChanged, this,
-            [this](const QString& text) { ui.dumpButton->setEnabled(!text.isEmpty()); });
+    connect(ui.execPathEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
+        ui.dumpButton->setEnabled(!text.isEmpty());
+    });
 
     connect(ui.execPathButton, &QPushButton::clicked, this, [this] {
         QString path =

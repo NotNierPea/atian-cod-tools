@@ -53,7 +53,8 @@ namespace fastfile::flexible {
         T* GetPtr() {
             if (size < sizeof(T)) {
                 throw std::runtime_error(
-                    std::format("Section too small {:x} size:0x{:x} < wanted:0x{:x}", (uint32_t)type, size, sizeof(T)));
+                    std::format("Section too small {:x} size:0x{:x} < wanted:0x{:x}", (uint32_t)type, size, sizeof(T))
+                );
             }
             return (T*)buffer;
         }

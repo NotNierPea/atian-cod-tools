@@ -5,8 +5,10 @@
 namespace fastfile::handlers::mwiisp::scriptbundle {
     using namespace fastfile::handlers::mwiisp;
 
-    static void WriteString(core::hashes::raw_file_extractor::JsonWriter& json, const char* prefix, size_t offset,
-                            byte* rawData, size_t rawDataLen) {
+    static void WriteString(
+        core::hashes::raw_file_extractor::JsonWriter& json, const char* prefix, size_t offset, byte* rawData,
+        size_t rawDataLen
+    ) {
         if (offset >= rawDataLen) {
             json.WriteValueString(std::format("invalid:0x%llx", offset));
         } else {
@@ -14,8 +16,9 @@ namespace fastfile::handlers::mwiisp::scriptbundle {
         }
     }
 
-    void WriteDef(core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectDef& def, byte* rawData,
-                  size_t rawDataLen) {
+    void WriteDef(
+        core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectDef& def, byte* rawData, size_t rawDataLen
+    ) {
         switch (def.type) {
         case SBT_UNDEFINED:
             json.WriteValueLiteral("undefined");
@@ -83,8 +86,10 @@ namespace fastfile::handlers::mwiisp::scriptbundle {
             break;
         }
     }
-    void WriteStruct(core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectStruct& data, byte* rawData,
-                     size_t rawDataLen) {
+    void WriteStruct(
+        core::hashes::raw_file_extractor::JsonWriter& json, ScriptBundleObjectStruct& data, byte* rawData,
+        size_t rawDataLen
+    ) {
         json.BeginObject();
 
         for (size_t i = 0; i < data.defsCount; i++) {
@@ -123,8 +128,9 @@ namespace fastfile::handlers::mwiisp::scriptbundle {
                 return;
             }
 
-            char* name{ utils::MapString(utils::va("%s.json", ename),
-                                         [](char c) -> char { return c == ':' ? '/' : c; }) };
+            char* name{ utils::MapString(utils::va("%s.json", ename), [](char c) -> char {
+                return c == ':' ? '/' : c;
+            }) };
 
             std::string_view sw{ name };
             size_t catcut{ sw.find('/') };
@@ -162,8 +168,9 @@ namespace fastfile::handlers::mwiisp::scriptbundle {
 
                 core::hashes::raw_file_extractor::JsonWriter json{};
 
-                std::sort(vec.begin(), vec.end(),
-                          [](ScriptBundle& a, ScriptBundle& b) -> bool { return a.name < b.name; });
+                std::sort(vec.begin(), vec.end(), [](ScriptBundle& a, ScriptBundle& b) -> bool {
+                    return a.name < b.name;
+                });
 
                 LOG_OPT_INFO("Dump {} hashed scriptbundle(s) {}", vec.size(), outFile.string());
 

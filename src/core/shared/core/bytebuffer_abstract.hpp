@@ -87,7 +87,8 @@ namespace core::bytebuffer {
         T Read() {
             if (!CanRead(sizeof(T))) {
                 throw std::runtime_error(
-                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End()));
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End())
+                );
             }
             T t;
             Read(&t, sizeof(T));
@@ -107,7 +108,8 @@ namespace core::bytebuffer {
         T Read(size_t len) {
             if (!CanRead(len)) {
                 throw std::runtime_error(
-                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), len, End()));
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), len, End())
+                );
             }
             T t;
             size_t toread{ std::min<size_t>(sizeof(len), len) };
@@ -122,7 +124,8 @@ namespace core::bytebuffer {
         std::unique_ptr<T> ReadObject() {
             if (!CanRead(sizeof(T))) {
                 throw std::runtime_error(
-                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End()));
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T), End())
+                );
             }
             std::unique_ptr<T> t{ std::make_unique<T>() };
             Read(t.get(), sizeof(T));
@@ -132,8 +135,9 @@ namespace core::bytebuffer {
         template<typename T>
         std::unique_ptr<T[]> ReadArray(size_t count) {
             if (!CanRead(sizeof(T) * count)) {
-                throw std::runtime_error(utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(),
-                                                   sizeof(T) * count, End()));
+                throw std::runtime_error(
+                    utils::va(actssec("Reading too much at 0x%llx + 0x%llx > 0x%llx"), Loc(), sizeof(T) * count, End())
+                );
             }
             std::unique_ptr<T[]> t{ std::make_unique<T[]>(count) };
             Read(t.get(), sizeof(T) * count);

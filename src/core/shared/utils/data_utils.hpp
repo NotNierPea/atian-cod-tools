@@ -13,7 +13,8 @@ namespace utils::data {
     template<typename T>
     std::string ArrayAsString(
         const T* array, size_t count, const char* delim = ", ", const char* prefix = "[", const char* suffix = "]",
-        std::function<std::string(const T&)> format = [](const T& t) { return std::format("{}", t); }) {
+        std::function<std::string(const T&)> format = [](const T& t) { return std::format("{}", t); }
+    ) {
         if (!array) {
             return "nullptr[]";
         }

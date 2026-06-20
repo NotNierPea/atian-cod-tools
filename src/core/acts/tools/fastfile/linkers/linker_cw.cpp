@@ -133,8 +133,11 @@ namespace fastfile::linker::cw {
             fastfile::FastFile& mff{ ctx.fastfiles.emplace_back() };
             bocwctx.data.Link(mff.linkedData, mff.blockSizes);
 
-            LOG_INFO("Fastfile data linked with {} asset(s) and {} string(s)", assetlist.assetCount,
-                     assetlist.stringList.count);
+            LOG_INFO(
+                "Fastfile data linked with {} asset(s) and {} string(s)",
+                assetlist.assetCount,
+                assetlist.stringList.count
+            );
         }
     };
 

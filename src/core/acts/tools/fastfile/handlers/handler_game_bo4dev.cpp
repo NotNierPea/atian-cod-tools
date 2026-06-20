@@ -135,8 +135,9 @@ namespace {
         BO4DevFFHandler()
             : fastfile::FFHandler("bo4dev", "Test bo4 dev", compatibility::scobalula::csi::CordycepGame::CG_NULL) {}
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+        ) override {
             std::filesystem::path out{ opt.m_output / "bo4dev" / ctx.ffname };
             std::filesystem::create_directories(out);
 
@@ -238,7 +239,8 @@ namespace {
                 }
                 default:
                     throw std::runtime_error(
-                        std::format("Missing implementation for asset type 0x{:x}", (int)asset.type));
+                        std::format("Missing implementation for asset type 0x{:x}", (int)asset.type)
+                    );
                 }
             }
         }

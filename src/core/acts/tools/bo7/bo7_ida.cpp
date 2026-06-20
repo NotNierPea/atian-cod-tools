@@ -135,9 +135,13 @@ namespace {
                         GscFunction& func{ container.data.functions[k] };
                         idcBuilder.AddAddressEx(
                             func.func,
-                            utils::va("GScr_%s",
-                                      hashutils::ExtractTmp(container.isMethod ? "function" : "method", func.name)),
-                            "SN_CHECK | SN_NOWARN", "void func(scrContext_t* ctx)");
+                            utils::va(
+                                "GScr_%s",
+                                hashutils::ExtractTmp(container.isMethod ? "function" : "method", func.name)
+                            ),
+                            "SN_CHECK | SN_NOWARN",
+                            "void func(scrContext_t* ctx)"
+                        );
                     }
                 }
             }
@@ -180,13 +184,23 @@ namespace {
                     assetId = *(uint32_t*)&assetLoader[1];
                     assetLoader += 5;
                 } else {
-                    throw std::runtime_error(std::format("Unknown cmp asm 0x{:x} {}", (int)*assetLoader,
-                                                         hook::library::CodePointer{ assetLoader }));
+                    throw std::runtime_error(
+                        std::format(
+                            "Unknown cmp asm 0x{:x} {}",
+                            (int)*assetLoader,
+                            hook::library::CodePointer{ assetLoader }
+                        )
+                    );
                 }
 
                 if (assetLoader[0] != 0x0f || assetLoader[1] != 0x84) {
-                    throw std::runtime_error(std::format("Unknown jmp asm 0x{:x} {}", (int)*assetLoader,
-                                                         hook::library::CodePointer{ assetLoader }));
+                    throw std::runtime_error(
+                        std::format(
+                            "Unknown jmp asm 0x{:x} {}",
+                            (int)*assetLoader,
+                            hook::library::CodePointer{ assetLoader }
+                        )
+                    );
                 }
 
                 loadPtrFuncs[assetId] = hook::library::GetRelative<int32_t>(assetLoader, 2);
@@ -232,21 +246,38 @@ namespace {
                     }
 
                     if (loadFunc) {
-                        idcBuilder.AddAddress(loadFunc, utils::va("Load_%s", typeName),
-                                              utils::va("void Load_%s(DBLoadCtx* ctx, bool atStreamStart, %s* %s)",
-                                                        typeName, typeName, name));
+                        idcBuilder.AddAddress(
+                            loadFunc,
+                            utils::va("Load_%s", typeName),
+                            utils::va(
+                                "void Load_%s(DBLoadCtx* ctx, bool atStreamStart, %s* %s)",
+                                typeName,
+                                typeName,
+                                name
+                            )
+                        );
                     } else {
-                        LOG_WARNING("Invalid second pattern for Load_{}Ptr, can't deduce Load_{} for {}", typeName,
-                                    typeName, hook::library::CodePointer{ func });
+                        LOG_WARNING(
+                            "Invalid second pattern for Load_{}Ptr, can't deduce Load_{} for {}",
+                            typeName,
+                            typeName,
+                            hook::library::CodePointer{ func }
+                        );
                     }
                 } else {
-                    LOG_WARNING("Invalid pattern for Load_{}Ptr, can't deduce Load_{}", typeName, typeName,
-                                hook::library::CodePointer{ func });
+                    LOG_WARNING(
+                        "Invalid pattern for Load_{}Ptr, can't deduce Load_{}",
+                        typeName,
+                        typeName,
+                        hook::library::CodePointer{ func }
+                    );
                 }
 
                 idcBuilder.AddAddress(
-                    func, utils::va("Load_%sPtr", typeName),
-                    utils::va("void Load_%sPtr(DBLoadCtx* ctx, bool atStreamStart, %s** handle)", typeName, typeName));
+                    func,
+                    utils::va("Load_%sPtr", typeName),
+                    utils::va("void Load_%sPtr(DBLoadCtx* ctx, bool atStreamStart, %s** handle)", typeName, typeName)
+                );
             }
         }
 

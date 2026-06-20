@@ -7,8 +7,8 @@
 #include <tools/compatibility/scobalula_wnigen.hpp>
 
 namespace compatibility::scobalula::wnigen {
-    int CompressWNIFile(std::map<std::string, std::unordered_set<uint64_t>>& dataMap,
-                        const std::filesystem::path& out) {
+    int
+    CompressWNIFile(std::map<std::string, std::unordered_set<uint64_t>>& dataMap, const std::filesystem::path& out) {
 
         uint32_t count{};
 
@@ -42,8 +42,14 @@ namespace compatibility::scobalula::wnigen {
             return tool::BASIC_ERROR;
         }
 
-        LOG_INFO("{} hash(es) compressed {}B -> {}B ({}% saved) into {}", count, utils::FancyNumber(rawdata.size()),
-                 utils::FancyNumber(bound), 100 - 100 * bound / rawdata.size(), out.string());
+        LOG_INFO(
+            "{} hash(es) compressed {}B -> {}B ({}% saved) into {}",
+            count,
+            utils::FancyNumber(rawdata.size()),
+            utils::FancyNumber(bound),
+            100 - 100 * bound / rawdata.size(),
+            out.string()
+        );
 
         // header
         utils::WriteValue<uint32_t>(os, deps::scobalula::wni::WNI_MAGIC);
@@ -330,8 +336,9 @@ namespace compatibility::scobalula::wnigen {
 
         ADD_TOOL(wni_r, "compatibility", " [input] [output] [type=csv,txt]", "Read WNI file/dir", wni_r);
         ADD_TOOL(wni_gen_csv, "compatibility", " [input] (output=input.wni)", "Gen WNI file from csv", wni_gen_csv);
-        ADD_TOOL(wni_gen, "compatibility", " [input] (output=input.wni) (algorithms=all)+", "Gen WNI file with algo",
-                 wni_gen);
+        ADD_TOOL(
+            wni_gen, "compatibility", " [input] (output=input.wni) (algorithms=all)+", "Gen WNI file with algo", wni_gen
+        );
         ADD_TOOL(wni_merge, "compatibility", " [input] [output]", "Merge all WNI files into one", wni_merge);
     } // namespace
 } // namespace compatibility::scobalula::wnigen

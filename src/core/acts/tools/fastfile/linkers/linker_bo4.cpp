@@ -184,8 +184,12 @@ namespace fastfile::linker::bo4 {
 
                 ff.data.WriteLinkedData(data);
 
-                LOG_INFO("Fastfile {} data linked with {} asset(s) and {} string(s)", ff.ffname, assetlist.assetCount,
-                         assetlist.stringList.count);
+                LOG_INFO(
+                    "Fastfile {} data linked with {} asset(s) and {} string(s)",
+                    ff.ffname,
+                    assetlist.assetCount,
+                    assetlist.stringList.count
+                );
             };
 
             fastfile::FastFile& mff{ ctx.fastfiles.emplace_back() };
@@ -206,9 +210,13 @@ namespace fastfile::linker::bo4 {
             ff = &mainFF;
         }
 
-        LOG_DEBUG("BO4LinkContext::LinkAsset(type={}, id={}, addAsset={}, ff={})",
-                  games::bo4::pool::XAssetNameFromId(type), !id ? "nullptr" : id, addAsset ? "true" : "false",
-                  ff->ffname);
+        LOG_DEBUG(
+            "BO4LinkContext::LinkAsset(type={}, id={}, addAsset={}, ff={})",
+            games::bo4::pool::XAssetNameFromId(type),
+            !id ? "nullptr" : id,
+            addAsset ? "true" : "false",
+            ff->ffname
+        );
         if (!id) {
             ref = nullptr;
             return; // empty id = no asset to link
@@ -288,8 +296,11 @@ namespace fastfile::linker::bo4 {
             XHash* h{ games::bo4::pool::GetAssetName(type, emptyAsset, len) };
 
             if (!h) {
-                LOG_ERROR("Can't link asset {} with invalid name location: '{}'",
-                          games::bo4::pool::XAssetNameFromId(type), real);
+                LOG_ERROR(
+                    "Can't link asset {} with invalid name location: '{}'",
+                    games::bo4::pool::XAssetNameFromId(type),
+                    real
+                );
                 error = true;
                 return;
             }
@@ -301,8 +312,10 @@ namespace fastfile::linker::bo4 {
         ff->data.PopStream();
     }
 
-    size_t BO4LinkContext::LinkAssetArray(XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg,
-                                          void** array, size_t count, BO4FFContext* ff) {
+    size_t BO4LinkContext::LinkAssetArray(
+        XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg, void** array, size_t count,
+        BO4FFContext* ff
+    ) {
         if (cfg.IsNull()) {
             return 0;
         }
@@ -335,8 +348,8 @@ namespace fastfile::linker::bo4 {
 
     void BO4LinkContext::AddXHash(const char* val, XHash& value) { value.name = HashXHash(val, true); }
 
-    size_t BO4LinkContext::AddXHashArray(const char* id, core::config::RapidJsonGeneric& cfg, XHash* array,
-                                         size_t count) {
+    size_t
+    BO4LinkContext::AddXHashArray(const char* id, core::config::RapidJsonGeneric& cfg, XHash* array, size_t count) {
         if (cfg.IsNull()) {
             return 0;
         }
@@ -371,8 +384,9 @@ namespace fastfile::linker::bo4 {
         value = (ScrString_t)ff.data.AddScrString(val);
     }
 
-    size_t BO4LinkContext::AddScrStringArray(const char* id, core::config::RapidJsonGeneric& cfg, ScrString_t* array,
-                                             size_t count, BO4FFContext& ff) {
+    size_t BO4LinkContext::AddScrStringArray(
+        const char* id, core::config::RapidJsonGeneric& cfg, ScrString_t* array, size_t count, BO4FFContext& ff
+    ) {
         if (cfg.IsNull()) {
             return 0;
         }

@@ -85,8 +85,9 @@ std::unordered_map<uint64_t, const char*> error_handler::errors = {
     { 580674660, "Unknown ent type in GScr_GetFieldSetForEntityType." },
     { 409067247, "No clientfield named found in set." },
     { 2855209542, "Cannot call IncrementClientField on a non-'counter' type clientfield." },
-    { 4220857104, "Cannot call IncrementClientField on a 'counter' type clientfield on the frame it is spawned, since "
-                  "newEnts on the clientside will not process 'counter' type clientfields." },
+    { 4220857104,
+      "Cannot call IncrementClientField on a 'counter' type clientfield on the frame it is spawned, since "
+      "newEnts on the clientside will not process 'counter' type clientfields." },
     { 359760836, "G_Spawn: no free entities." },
     { 2082640650, "Stream_GetNextFileID: Too many open files (128)" },
 

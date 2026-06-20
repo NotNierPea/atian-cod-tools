@@ -65,8 +65,13 @@ namespace hook::library {
 
             if (c == '?') {
                 if (mid) {
-                    throw std::runtime_error(utils::va(actssec("Wildcard pattern in half byte! %s (%s)"), pattern,
-                                                       name ? name : actssec("no name")));
+                    throw std::runtime_error(
+                        utils::va(
+                            actssec("Wildcard pattern in half byte! %s (%s)"),
+                            pattern,
+                            name ? name : actssec("no name")
+                        )
+                    );
                 }
                 if (str[0] == '?') {
                     // test if we are in a packed context
@@ -95,7 +100,8 @@ namespace hook::library {
         // reversed because we set it by default to 0
         if (!mid) {
             throw std::runtime_error(
-                utils::va(actssec("Scan pattern has half byte! %s (%s)"), pattern, name ? name : actssec("no name")));
+                utils::va(actssec("Scan pattern has half byte! %s (%s)"), pattern, name ? name : actssec("no name"))
+            );
         }
 
         auto it1 = mask.begin();
@@ -112,7 +118,8 @@ namespace hook::library {
 
         if (!mask.size()) {
             throw std::runtime_error(
-                std::format(actssec("Empty pattern! %s (%s)"), pattern, name ? name : actssec("no name")));
+                std::format(actssec("Empty pattern! %s (%s)"), pattern, name ? name : actssec("no name"))
+            );
         }
 
         // clear end
@@ -128,7 +135,8 @@ namespace hook::library {
 
         if (!mask.size()) {
             throw std::runtime_error(
-                std::format(actssec("Empty pattern! %s (%s)"), pattern, name ? name : actssec("no name")));
+                std::format(actssec("Empty pattern! %s (%s)"), pattern, name ? name : actssec("no name"))
+            );
         }
 
         library::Library lib{ hmod };
@@ -137,7 +145,8 @@ namespace hook::library {
 
         if (lazySize < mask.size()) {
             throw std::runtime_error(
-                utils::va("Pattern too big! %s (%s)", pattern, pattern, name ? name : "no name")); // wtf?
+                utils::va("Pattern too big! %s (%s)", pattern, pattern, name ? name : "no name")
+            ); // wtf?
         }
 
         LOG_TRACE("Start searching of pattern {} ({})", pattern, name ? name : "no name");

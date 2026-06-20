@@ -196,12 +196,14 @@ namespace tool::mw19 {
             std::vector<std::filesystem::path> scriptFiles{};
             std::filesystem::path scriptDir{ argv[2] };
             utils::GetFileRecurse(
-                scriptDir, scriptFiles,
+                scriptDir,
+                scriptFiles,
                 [](const std::filesystem::path& f) {
                     const auto str = f.string();
                     return str.ends_with(".gscbin") || str.ends_with(".gscc");
                 },
-                true);
+                true
+            );
 
             std::filesystem::create_directories(outDir);
 
@@ -251,9 +253,12 @@ namespace tool::mw19 {
                 uLongf sizef = (uLongf)header.len;
                 uLongf sizef2{ header.compressedLen };
                 int ret;
-                if (header.len &&
-                    (ret = uncompress2(decompressedData.get(), &sizef,
-                                       reinterpret_cast<const Bytef*>(header.GetBuffer()), &sizef2) < 0)) {
+                if (header.len && (ret = uncompress2(
+                                             decompressedData.get(),
+                                             &sizef,
+                                             reinterpret_cast<const Bytef*>(header.GetBuffer()),
+                                             &sizef2
+                                         ) < 0)) {
                     LOG_ERROR("Can't decompress file: {}", zError(ret));
                     return tool::BASIC_ERROR;
                 }

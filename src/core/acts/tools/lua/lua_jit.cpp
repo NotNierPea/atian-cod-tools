@@ -92,8 +92,9 @@ namespace {
             if (reader.CanRead(1) && reader.Ptr<byte>()[0] == 0x78) {
                 // zlib compressed
 
-                int dr{ utils::compress::Decompress(utils::compress::COMP_ZLIB, decompresed, buffer.data(),
-                                                    buffer.size()) };
+                int dr{
+                    utils::compress::Decompress(utils::compress::COMP_ZLIB, decompresed, buffer.data(), buffer.size())
+                };
                 if (dr <= 0) {
                     LOG_ERROR("Can't decompress: {}", dr);
                     continue;
@@ -339,8 +340,9 @@ namespace {
         std::vector<byte>* outDump{};
 
         lua_State* (*lua_newstate)(lua_Alloc alloc, void* ud, int a3, int a4){};
-        void (*cod_lua_setxhash)(lua_State* L, uint64_t(__fastcall* XHash)(const char* str, uint32_t len), void* a3,
-                                 void* a4){};
+        void (*cod_lua_setxhash)(
+            lua_State* L, uint64_t(__fastcall* XHash)(const char* str, uint32_t len), void* a3, void* a4
+        ){};
         int (*lua_loadx)(lua_State* L, lua_Reader reader, void* ud, const char* chunkname, const char* mode){};
         int (*lj_cf_string_dump)(lua_State* L){};
         const char* (*lua_tolstring)(lua_State* L, int idx, size_t* len){};
@@ -413,7 +415,11 @@ namespace {
                 for (hook::library::ScanResult& res : ress) {
                     // patch the whole if and goto the end
                     byte patch[]{
-                        0xe9, 0xFF, 0xFF, 0xFF, 0xFF // jmp XXXX
+                        0xe9,
+                        0xFF,
+                        0xFF,
+                        0xFF,
+                        0xFF // jmp XXXX
                     };
                     *(uint32_t*)&patch[1] = (uint32_t)res.Get<byte>(info.len) + info.len + 1 - 5;
                     hook::process::WriteMemSafe(res.location, patch, sizeof(patch));
@@ -518,8 +524,11 @@ namespace {
         if (opt.compressed) {
             size_t compressSize{};
             std::unique_ptr<byte[]> compressBuff{ utils::compress::Compress(
-                utils::compress::COMP_ZLIB | utils::compress::COMP_HIGH_COMPRESSION, obuff.data(), obuff.size(),
-                &compressSize) };
+                utils::compress::COMP_ZLIB | utils::compress::COMP_HIGH_COMPRESSION,
+                obuff.data(),
+                obuff.size(),
+                &compressSize
+            ) };
 
             LOG_TRACE("script compressed (0x{:x} -> 0x{:x})", obuff.size(), compressSize);
             obuff = { &compressBuff[0], &compressBuff[compressSize] };

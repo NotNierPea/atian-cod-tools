@@ -38,8 +38,8 @@ typedef struct {
  * @param opt dump options
  * @return success or failure, ActsGetAPILastMessage is set to the result status
  */
-ACTS_COMMON_API ActsStatus ActsAPIProcess_DumpProcessExe(const char* in, const char* out,
-                                                         ActsAPIProcess_DumpProcessOption* opt);
+ACTS_COMMON_API ActsStatus
+ActsAPIProcess_DumpProcessExe(const char* in, const char* out, ActsAPIProcess_DumpProcessOption* opt);
 /*
  * Dump a process executable
  * @param pid process ID
@@ -47,8 +47,8 @@ ACTS_COMMON_API ActsStatus ActsAPIProcess_DumpProcessExe(const char* in, const c
  * @param opt dump options
  * @return success or failure, ActsGetAPILastMessage is set to the result status
  */
-ACTS_COMMON_API ActsStatus ActsAPIProcess_DumpProcess(uint32_t pid, const char* out,
-                                                      ActsAPIProcess_DumpProcessOption* opt);
+ACTS_COMMON_API ActsStatus
+ActsAPIProcess_DumpProcess(uint32_t pid, const char* out, ActsAPIProcess_DumpProcessOption* opt);
 /*
  * @return Registered game dumps
  */
@@ -60,7 +60,7 @@ ACTS_COMMON_API ActsAPIProcess_GameDumpInformationList* ActsAPIProcess_GetGameDu
  * @param out output file (if nullptr, deps/[proc name]_dump.exe will be used)
  * @return success or failure, ActsGetAPILastMessage is set to the result status
  */
-ACTS_COMMON_API ActsStatus ActsAPIProcess_DumpGame(ActsAPIProcess_GameDumpInformation* game, const char* root,
-                                                   const char* out);
+ACTS_COMMON_API ActsStatus
+ActsAPIProcess_DumpGame(ActsAPIProcess_GameDumpInformation* game, const char* root, const char* out);
 
 #endif // __ACTS_API_PROCESS_H__

@@ -176,8 +176,9 @@ namespace fastfile::handlers::bo7::scriptbundle {
                 }
             }
 
-            char* name{ utils::MapString(utils::va("%s.json", ename),
-                                         [](char c) -> char { return c == ':' ? '/' : c; }) };
+            char* name{ utils::MapString(utils::va("%s.json", ename), [](char c) -> char {
+                return c == ':' ? '/' : c;
+            }) };
 
             std::string_view sw{ name };
             size_t catcut{ sw.find('/') };
@@ -215,8 +216,9 @@ namespace fastfile::handlers::bo7::scriptbundle {
 
                 HandlerJsonWriter json{};
 
-                std::sort(vec.begin(), vec.end(),
-                          [](ScriptBundle* a, ScriptBundle* b) -> bool { return a->name < b->name; });
+                std::sort(vec.begin(), vec.end(), [](ScriptBundle* a, ScriptBundle* b) -> bool {
+                    return a->name < b->name;
+                });
 
                 LOG_OPT_INFO("Dump {} hashed scriptbundle(s) {}", vec.size(), outFile.string());
 
@@ -236,6 +238,7 @@ namespace fastfile::handlers::bo7::scriptbundle {
         }
     };
 
-    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(), SatHashAssetType::SATH_ASSET_SCRIPTBUNDLE,
+    utils::MapAdder<ImplWorker, SatHashAssetType, Worker> impl{ GetWorkers(),
+                                                                SatHashAssetType::SATH_ASSET_SCRIPTBUNDLE,
                                                                 sizeof(ScriptBundle) };
 } // namespace fastfile::handlers::bo7::scriptbundle

@@ -11,10 +11,12 @@
 
 // test DLL for memapi tests
 namespace {
-    BOOL(WINAPI* ReadProcessMemoryReal)(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize,
-                                        SIZE_T* lpNumberOfBytesRead);
-    BOOL WINAPI ReadProcessMemoryHook(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize,
-                                      SIZE_T* lpNumberOfBytesRead) {
+    BOOL(WINAPI* ReadProcessMemoryReal)(
+        HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesRead
+    );
+    BOOL WINAPI ReadProcessMemoryHook(
+        HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesRead
+    ) {
         std::wofstream of{ "detours.txt", std::ios::app };
 
         of << "Reading " << std::hex << lpBaseAddress << "," << lpBuffer << "," << nSize << " from " << hProcess

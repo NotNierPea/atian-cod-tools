@@ -35,8 +35,14 @@ namespace hook::memory {
             r64 = true;
 
             if (!nearPtr) {
-                throw std::exception(utils::va(actssec("Can't jump from %p to %p: too far (0x%llx)"), location, to,
-                                               (byte*)location - (byte*)to));
+                throw std::exception(
+                    utils::va(
+                        actssec("Can't jump from %p to %p: too far (0x%llx)"),
+                        location,
+                        to,
+                        (byte*)location - (byte*)to
+                    )
+                );
             }
             RedirectJmp(location, nearPtr);
             location = nearPtr;
@@ -54,7 +60,11 @@ namespace hook::memory {
             process::WriteMemSafe(location, jmp, sizeof(jmp));
         } else {
             byte jmp[]{
-                0xE9, 0x00, 0x00, 0x00, 0x00 // jmp rel32
+                0xE9,
+                0x00,
+                0x00,
+                0x00,
+                0x00 // jmp rel32
             };
 
             *reinterpret_cast<int32_t*>(&jmp[1]) = (int32_t)((byte*)to - (byte*)location - sizeof(jmp));

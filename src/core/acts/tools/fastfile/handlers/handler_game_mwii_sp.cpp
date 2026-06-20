@@ -124,8 +124,13 @@ namespace fastfile::handlers::mwiisp {
 #define ThrowFastFileError(...) ThrowFastFileError_(std::format(__VA_ARGS__))
 
         void LoadXFileData(void* ptr, int64_t len) {
-            LOG_TRACE("LoadXFileData({}, 0x{:x}/0x{:x}) {}", ptr, len, gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadXFileData({}, 0x{:x}/0x{:x}) {}",
+                ptr,
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (!ptr) {
                 ThrowFastFileError("Can't read empty pointer idx:{}", (int)*gcx.streamPosIndex);
             }
@@ -149,8 +154,14 @@ namespace fastfile::handlers::mwiisp {
         void DB_IncStreamPos(size_t len) { *gcx.streamPos += len; }
 
         bool LoadStreamTA(bool loadData, void* ptr, int64_t len) {
-            LOG_TRACE("LoadStreamTA({}, {}, 0x{:x}/0x{:x}) {}", loadData, ptr, len, gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadStreamTA({}, {}, 0x{:x}/0x{:x}) {}",
+                loadData,
+                ptr,
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (loadData || !len) {
                 return true;
             }
@@ -206,8 +217,13 @@ namespace fastfile::handlers::mwiisp {
                 auto it{ map.find(hashType) };
                 if (it != map.end()) {
                     if (it->second->assetSize != itemSize) {
-                        LOG_ERROR("Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
-                                  gcx.assetNames.GetTypeName(type), (int)type, it->second->assetSize, itemSize);
+                        LOG_ERROR(
+                            "Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
+                            gcx.assetNames.GetTypeName(type),
+                            (int)type,
+                            it->second->assetSize,
+                            itemSize
+                        );
                     } else {
                         if constexpr (!hasRelativeLoads) {
                             if (!it->second->requiresRelativeLoads) {
@@ -236,8 +252,9 @@ namespace fastfile::handlers::mwiisp {
             void Init(fastfile::FastFileOption& opt) override {
                 acts::game_data::GameData game{ gameDumpId };
                 commonFiles = game.GetCommonFastFiles();
-                hook::module_mapper::Module& mod{ opt.GetGameModule(true, nullptr, false, game.GetModuleName(),
-                                                                    gameDumpId) };
+                hook::module_mapper::Module& mod{
+                    opt.GetGameModule(true, nullptr, false, game.GetModuleName(), gameDumpId)
+                };
                 hook::scan_container::ScanContainer& scan{ mod.GetScanContainer() };
                 game.SetScanContainer(&scan);
 
@@ -248,9 +265,12 @@ namespace fastfile::handlers::mwiisp {
                 }
 
 #ifdef CI_BUILD
-                LOG_WARNING("You are using the {} ({}) "
-                            " handler",
-                            handlerName, handlerId);
+                LOG_WARNING(
+                    "You are using the {} ({}) "
+                    " handler",
+                    handlerName,
+                    handlerId
+                );
                 LOG_WARNING("This handler was developed for the Steam version and might not");
                 LOG_WARNING("work for the BattleNet, COD HQ or the Gamepass version.");
 #endif
@@ -316,8 +336,12 @@ namespace fastfile::handlers::mwiisp {
                     } else {
                         size_t trueLen{ gcx.poolInfo[type].itemSize };
                         if (worker->assetSize != trueLen) {
-                            LOG_WARNING("type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
-                                        PoolName(hashType), worker->assetSize, trueLen);
+                            LOG_WARNING(
+                                "type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
+                                PoolName(hashType),
+                                worker->assetSize,
+                                trueLen
+                            );
                         }
                     }
                 }
@@ -342,8 +366,9 @@ namespace fastfile::handlers::mwiisp {
                 gcx.blocks = nullptr;
             }
 
-            void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                        fastfile::FastFileContext& ctx) override {
+            void Handle(
+                fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+            ) override {
                 gcx.ctx = &ctx;
                 gcx.reader = &reader;
                 gcx.streamLocations.clear();
@@ -469,8 +494,12 @@ namespace fastfile::handlers::mwiisp {
                         for (assetId = 0; assetId < gcx.assets.assetsCount; assetId++) {
                             Asset* asset{ &gcx.assets.assets[assetId] };
 
-                            LOG_DEBUG("load #{} -> {}({})", assetId, PoolName(GetHashType(asset->type)),
-                                      (int)asset->type);
+                            LOG_DEBUG(
+                                "load #{} -> {}({})",
+                                assetId,
+                                PoolName(GetHashType(asset->type)),
+                                (int)asset->type
+                            );
                             *gcx.loadAsset = asset;
                             gcx.Load_Asset(true);
                         }

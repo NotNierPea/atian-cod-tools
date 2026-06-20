@@ -599,8 +599,9 @@ namespace {
         byte* bdiffMagic{ patchData.ReadPtr<byte>(5) };
 
         if (std::memcmp(bdiffMagic, "\xd6\xc3\xc4", 3)) {
-            throw std::runtime_error(std::format("Invalid bdiff magic for 0x{:x} 0x{:x} 0x{:x}", bdiffMagic[0],
-                                                 bdiffMagic[1], bdiffMagic[2]));
+            throw std::runtime_error(
+                std::format("Invalid bdiff magic for 0x{:x} 0x{:x} 0x{:x}", bdiffMagic[0], bdiffMagic[1], bdiffMagic[2])
+            );
         }
 
         if (bdiffMagic[4] & 0xF3) {
@@ -638,8 +639,14 @@ namespace {
                 size_t sizeUnk{ sourceSegmentLocationEx - sourceSegmentLocation };
                 size_t rsized{ sizeUnk + unk0 };
 
-                LOG_INFO("{:x} {:x} {:x} {:x} {:x}", unk0, sourceSegmentLocationEx, sourceSegmentLocation, sizeUnk,
-                         rsized);
+                LOG_INFO(
+                    "{:x} {:x} {:x} {:x} {:x}",
+                    unk0,
+                    sourceSegmentLocationEx,
+                    sourceSegmentLocation,
+                    sizeUnk,
+                    rsized
+                );
                 buffer.Goto(sourceSegmentLocation);
                 byte* diffblock{ buffer.ReadPtr<byte>(rsized) };
                 diffBlockPost = diffblock + sizeUnk;
@@ -730,8 +737,11 @@ namespace {
 
                     LOG_INFO("server ............. {}", (buffer->server ? "true" : "false"));
                     LOG_INFO("encrypted .......... {}", (buffer->encrypted ? "true" : "false"));
-                    LOG_INFO("compress ........... {} (0x{:x})", CompressionNames[buffer->compression],
-                             (int)buffer->compression);
+                    LOG_INFO(
+                        "compress ........... {} (0x{:x})",
+                        CompressionNames[buffer->compression],
+                        (int)buffer->compression
+                    );
                     LOG_INFO("platform ........... {}", (int)buffer->platform);
                     LOG_INFO("builder ............ {}", buffer->builder);
                     LOG_INFO("timestamp .......... {}", buffer->timestamp);
@@ -778,17 +788,26 @@ namespace {
 
                     byte* blockBuff{ reader.ReadPtr<byte>(block->alignedSize) };
 
-                    LOG_TRACE("Decompressing block 0x{:x} (0x{:x}/0x{:x} -> 0x{:x})", loc, block->compressedSize,
-                              block->alignedSize, block->uncompressedSize);
+                    LOG_TRACE(
+                        "Decompressing block 0x{:x} (0x{:x}/0x{:x} -> 0x{:x})",
+                        loc,
+                        block->compressedSize,
+                        block->alignedSize,
+                        block->uncompressedSize
+                    );
 
                     auto decompressed{ std::make_unique<byte[]>(block->uncompressedSize) };
 
                     switch (buffer->compression) {
                     case XFILE_UNCOMPRESSED:
                         if (block->uncompressedSize > block->compressedSize) {
-                            throw std::runtime_error(std::format(
-                                "Can't decompress block, decompressed size isn't big enough: 0x{:x} != 0x{:x}",
-                                block->compressedSize, block->uncompressedSize));
+                            throw std::runtime_error(
+                                std::format(
+                                    "Can't decompress block, decompressed size isn't big enough: 0x{:x} != 0x{:x}",
+                                    block->compressedSize,
+                                    block->uncompressedSize
+                                )
+                            );
                         }
                         memcpy(decompressed.get(), blockBuff, block->uncompressedSize);
                         break;
@@ -807,19 +826,29 @@ namespace {
                     case XFILE_OODLE_MERMAID:
                     case XFILE_OODLE_SELKIE:
                     case XFILE_OODLE_LZNA: {
-                        int ret{ oodle.Decompress(blockBuff, block->compressedSize, decompressed.get(),
-                                                  block->uncompressedSize, deps::oodle::OODLE_FS_YES) };
+                        int ret{ oodle.Decompress(
+                            blockBuff,
+                            block->compressedSize,
+                            decompressed.get(),
+                            block->uncompressedSize,
+                            deps::oodle::OODLE_FS_YES
+                        ) };
 
                         if (ret != block->uncompressedSize) {
-                            throw std::runtime_error(std::format(
-                                "Can't decompress block, returned size isn't the expected one: 0x{:x} != 0x{:x}", ret,
-                                block->uncompressedSize));
+                            throw std::runtime_error(
+                                std::format(
+                                    "Can't decompress block, returned size isn't the expected one: 0x{:x} != 0x{:x}",
+                                    ret,
+                                    block->uncompressedSize
+                                )
+                            );
                         }
                         break;
                     }
                     default:
                         throw std::runtime_error(
-                            std::format("No fastfile decompressor for type {}", (int)buffer->compression));
+                            std::format("No fastfile decompressor for type {}", (int)buffer->compression)
+                        );
                     }
 
                     utils::WriteValue(ffdata, decompressed.get(), block->uncompressedSize);
@@ -844,14 +873,18 @@ namespace {
 
                         if (fdheader->size != sizeof(BDiffHeader)) {
                             throw std::runtime_error(
-                                std::format("Invalid xfile fd header size 0x{:x}", fdheader->size));
+                                std::format("Invalid xfile fd header size 0x{:x}", fdheader->size)
+                            );
                         }
 
                         LOG_INFO("Loading fd file {}", filenameFd);
 
                         if (opt.m_header) {
-                            LOG_INFO("fd size ............... {}B (0x{:x})", utils::FancyNumber(fileFDBuff.size()),
-                                     fileFDBuff.size());
+                            LOG_INFO(
+                                "fd size ............... {}B (0x{:x})",
+                                utils::FancyNumber(fileFDBuff.size()),
+                                fileFDBuff.size()
+                            );
                             LOG_INFO("---- header ----");
                         }
                         PrintXFile(&fdheader->baseXFileHdr);
@@ -876,8 +909,9 @@ namespace {
                             uLongf sizef = (uLongf)fdheader->maxSourceWindowSize;
                             uLongf sizef2{ (uLongf)(fileFDBuff.size() - sizeof(BDiffHeader)) };
                             int ret;
-                            if (ret = uncompress2((Bytef*)uncompress.get(), &sizef, bufffd.Ptr<const Bytef>(),
-                                                  &sizef2) < 0) {
+                            if (ret =
+                                    uncompress2((Bytef*)uncompress.get(), &sizef, bufffd.Ptr<const Bytef>(), &sizef2) <
+                                    0) {
                                 throw std::runtime_error(std::format("error when decompressing {}", zError(ret)));
                             }
 
@@ -886,8 +920,12 @@ namespace {
                         // case XFILE_BDELTA_UNCOMP:
                         // case XFILE_BDELTA_LZMA:
                         default:
-                            throw std::runtime_error(std::format("No fastfile decompressor for type {}",
-                                                                 (int)fdheader->baseXFileHdr.compression));
+                            throw std::runtime_error(
+                                std::format(
+                                    "No fastfile decompressor for type {}",
+                                    (int)fdheader->baseXFileHdr.compression
+                                )
+                            );
                         }
 
                         core::bytebuffer::ByteBuffer buffbd{ uncompress.get(), uncompressSize };
@@ -930,7 +968,8 @@ namespace {
                                 [](uint64_t size) -> byte* {
                                     // destDataCB
                                     return ffDecode.destWindow;
-                                })) {
+                                }
+                            )) {
                             LOG_ERROR("Error when bdiff");
                         }
                     }
@@ -1024,8 +1063,13 @@ namespace {
                             continue;
                         }
 
-                        LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size,
-                                  hashutils::ExtractTmpScript(obj->name));
+                        LOG_TRACE(
+                            "gsc: 0x{:x} 0x{:x} 0x{:x}: {}",
+                            smagic,
+                            loc,
+                            size,
+                            hashutils::ExtractTmpScript(obj->name)
+                        );
 
                         if (!buff.CanRead(size)) {
                             loc++;
@@ -1170,8 +1214,11 @@ namespace {
 
                 LOG_INFO("server ............. {}", (buffer->server ? "true" : "false"));
                 LOG_INFO("encrypted .......... {}", (buffer->encrypted ? "true" : "false"));
-                LOG_INFO("compress ........... {} (0x{:x})", CompressionNames[buffer->compression],
-                         (int)buffer->compression);
+                LOG_INFO(
+                    "compress ........... {} (0x{:x})",
+                    CompressionNames[buffer->compression],
+                    (int)buffer->compression
+                );
                 LOG_INFO("platform ........... {}", (int)buffer->platform);
                 LOG_INFO("builder ............ {}", buffer->builder);
                 LOG_INFO("timestamp .......... {}", buffer->timestamp);
@@ -1211,8 +1258,13 @@ namespace {
 
                 byte* blockBuff{ reader.ReadPtr<byte>(block->alignedSize) };
 
-                LOG_TRACE("Decompressing block 0x{:x} (0x{:x}/0x{:x} -> 0x{:x})", loc, block->compressedSize,
-                          block->alignedSize, block->uncompressedSize);
+                LOG_TRACE(
+                    "Decompressing block 0x{:x} (0x{:x}/0x{:x} -> 0x{:x})",
+                    loc,
+                    block->compressedSize,
+                    block->alignedSize,
+                    block->uncompressedSize
+                );
 
                 size_t decompressedBlock{ utils::Allocate(ffdata, block->uncompressedSize) };
                 byte* decompressed{ &ffdata[decompressedBlock] };
@@ -1221,8 +1273,12 @@ namespace {
                 case XFILE_UNCOMPRESSED:
                     if (block->uncompressedSize > block->compressedSize) {
                         throw std::runtime_error(
-                            std::format("Can't decompress block, decompressed size isn't big enough: 0x{:x} != 0x{:x}",
-                                        block->compressedSize, block->uncompressedSize));
+                            std::format(
+                                "Can't decompress block, decompressed size isn't big enough: 0x{:x} != 0x{:x}",
+                                block->compressedSize,
+                                block->uncompressedSize
+                            )
+                        );
                     }
                     memcpy(decompressed, blockBuff, block->uncompressedSize);
                     break;
@@ -1241,19 +1297,29 @@ namespace {
                 case XFILE_OODLE_MERMAID:
                 case XFILE_OODLE_SELKIE:
                 case XFILE_OODLE_LZNA: {
-                    int ret{ oodle.Decompress(blockBuff, block->compressedSize, decompressed, block->uncompressedSize,
-                                              deps::oodle::OODLE_FS_YES) };
+                    int ret{ oodle.Decompress(
+                        blockBuff,
+                        block->compressedSize,
+                        decompressed,
+                        block->uncompressedSize,
+                        deps::oodle::OODLE_FS_YES
+                    ) };
 
                     if (ret != block->uncompressedSize) {
-                        throw std::runtime_error(std::format(
-                            "Can't decompress block, returned size isn't the expected one: 0x{:x} != 0x{:x}", ret,
-                            block->uncompressedSize));
+                        throw std::runtime_error(
+                            std::format(
+                                "Can't decompress block, returned size isn't the expected one: 0x{:x} != 0x{:x}",
+                                ret,
+                                block->uncompressedSize
+                            )
+                        );
                     }
                     break;
                 }
                 default:
                     throw std::runtime_error(
-                        std::format("No fastfile decompressor for type {}", (int)buffer->compression));
+                        std::format("No fastfile decompressor for type {}", (int)buffer->compression)
+                    );
                 }
             }
 
@@ -1352,8 +1418,13 @@ namespace {
                         continue;
                     }
 
-                    LOG_TRACE("gsc: 0x{:x} 0x{:x} 0x{:x}: {}", smagic, loc, size,
-                              hashutils::ExtractTmpScript(obj->name));
+                    LOG_TRACE(
+                        "gsc: 0x{:x} 0x{:x} 0x{:x}: {}",
+                        smagic,
+                        loc,
+                        size,
+                        hashutils::ExtractTmpScript(obj->name)
+                    );
 
                     if (!buff.CanRead(size)) {
                         loc++;

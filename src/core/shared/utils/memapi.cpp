@@ -125,9 +125,11 @@ bool Process::Open() {
     if (m_handle) {
         return true; // already open
     }
-    m_handle = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION |
-                               PROCESS_ALL_ACCESS,
-                           FALSE, m_pid);
+    m_handle = OpenProcess(
+        PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_ALL_ACCESS,
+        FALSE,
+        m_pid
+    );
 
     ComputeModules();
 
@@ -189,9 +191,19 @@ bool Process::IsInsideModule(uintptr_t ptr) const { return ptr >= m_modAddress &
 namespace {
     HANDLE NtCreateThreadEx(const Process& proc, uintptr_t location, uintptr_t arg) {
         HANDLE out{};
-        NTSTATUS ret{ deps::ntdll::NtCreateThreadEx(&out, SPECIFIC_RIGHTS_ALL | STANDARD_RIGHTS_ALL, nullptr,
-                                                    proc.GetHandle(), reinterpret_cast<void*>(location), arg, 0x6, 0, 0,
-                                                    0, nullptr) };
+        NTSTATUS ret{ deps::ntdll::NtCreateThreadEx(
+            &out,
+            SPECIFIC_RIGHTS_ALL | STANDARD_RIGHTS_ALL,
+            nullptr,
+            proc.GetHandle(),
+            reinterpret_cast<void*>(location),
+            arg,
+            0x6,
+            0,
+            0,
+            0,
+            nullptr
+        ) };
 
         if (ret >= 0)
             return out;
@@ -206,8 +218,15 @@ HANDLE Process::Exec(uintptr_t location, uintptr_t arg) const {
         return INVALID_HANDLE_VALUE;
     }
     // return NtCreateThreadEx(*this, location, arg);
-    return CreateRemoteThread(m_handle, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(location),
-                              reinterpret_cast<void*>(arg), 0, nullptr);
+    return CreateRemoteThread(
+        m_handle,
+        nullptr,
+        0,
+        reinterpret_cast<LPTHREAD_START_ROUTINE>(location),
+        reinterpret_cast<void*>(arg),
+        0,
+        nullptr
+    );
 }
 
 void Process::FreeMemory(uintptr_t ptr, size_t size) const {
@@ -643,9 +662,11 @@ void ProcessModule::ComputeExports() {
         return; // nothing
     }
 
-    if (!m_parent.ReadMemory(&exports,
-                             start + ntHeader.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress,
-                             sizeof(exports))) {
+    if (!m_parent.ReadMemory(
+            &exports,
+            start + ntHeader.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress,
+            sizeof(exports)
+        )) {
         std::cerr << "Can't read module exports for " << this->name << "\n";
         return;
     }
@@ -658,14 +679,20 @@ void ProcessModule::ComputeExports() {
         return;
     }
     auto ordinals = std::make_unique<WORD[]>(exports.NumberOfNames);
-    if (!m_parent.ReadMemory(&ordinals[0], start + exports.AddressOfNameOrdinals,
-                             sizeof(ordinals[0]) * exports.NumberOfNames)) {
+    if (!m_parent.ReadMemory(
+            &ordinals[0],
+            start + exports.AddressOfNameOrdinals,
+            sizeof(ordinals[0]) * exports.NumberOfNames
+        )) {
         std::cerr << "Can't read module exports ordinals\n";
         return;
     }
     auto functions = std::make_unique<DWORD[]>(exports.NumberOfFunctions);
-    if (!m_parent.ReadMemory(&functions[0], start + exports.AddressOfFunctions,
-                             sizeof(functions[0]) * (size_t)(exports.NumberOfFunctions))) {
+    if (!m_parent.ReadMemory(
+            &functions[0],
+            start + exports.AddressOfFunctions,
+            sizeof(functions[0]) * (size_t)(exports.NumberOfFunctions)
+        )) {
         std::cerr << "Can't read module exports functions\n";
         return;
     }

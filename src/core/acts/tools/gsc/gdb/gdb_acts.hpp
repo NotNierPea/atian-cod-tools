@@ -69,8 +69,11 @@ namespace tool::gsc::vm {
             if (dbg->HasFeature(ADF_CHECKSUM)) {
                 asmout << "// dbg crc .. " << "0x" << std::hex << dbg->checksum << "\n";
                 if (ctx.scriptfile->GetChecksum() && ctx.scriptfile->GetChecksum() != dbg->checksum) {
-                    LOG_WARNING("Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}",
-                                ctx.scriptfile->GetChecksum(), dbg->checksum);
+                    LOG_WARNING(
+                        "Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}",
+                        ctx.scriptfile->GetChecksum(),
+                        dbg->checksum
+                    );
                     return;
                 }
             }
@@ -83,9 +86,10 @@ namespace tool::gsc::vm {
                         if (dbg->crc_offset > ctx.scriptfile->GetFileSize()) {
                             asmout << "INVALID LOC";
                         } else {
-                            utils::PrintFormattedString(asmout << "\"",
-                                                        ctx.scriptfile->Ptr<const char>(dbg->crc_offset))
-                                << "\"";
+                            utils::PrintFormattedString(
+                                asmout << "\"",
+                                ctx.scriptfile->Ptr<const char>(dbg->crc_offset)
+                            ) << "\"";
                         }
                     } else if (ctx.scriptfile->HasFlag(GOHF_NOTIFY_CRC)) {
                         asmout << ctx.GetFLocName(dbg->crc_offset);

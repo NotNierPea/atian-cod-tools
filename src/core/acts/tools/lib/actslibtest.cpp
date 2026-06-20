@@ -263,7 +263,11 @@ namespace {
 
             std::error_code err{};
             auto map = mio::make_mmap<mio::basic_mmap<mio::access_mode::read, char>, const char*>(
-                argv[3], 0, mio::map_entire_file, err);
+                argv[3],
+                0,
+                mio::map_entire_file,
+                err
+            );
 
             std::cout.write(map.data(), map.size());
             std::cout << "\n";
@@ -336,7 +340,11 @@ namespace {
             {
                 LOG_INFO("Mapping");
                 auto map = mio::make_mmap<mio::basic_mmap<mio::access_mode::write, char>, const char*>(
-                    argv[3], 0, (bit * len - 1) / 8 + 1, err);
+                    argv[3],
+                    0,
+                    (bit * len - 1) / 8 + 1,
+                    err
+                );
 
                 LOG_INFO("Set");
                 actslib::data::compact::Sequence seq{ map.data(), len, bit };
@@ -350,7 +358,11 @@ namespace {
             {
                 LOG_INFO("Mapping");
                 auto map = mio::make_mmap<mio::basic_mmap<mio::access_mode::write, char>, const char*>(
-                    argv[3], 0, (bit * len - 1) / 8 + 1, err);
+                    argv[3],
+                    0,
+                    (bit * len - 1) / 8 + 1,
+                    err
+                );
 
                 actslib::data::compact::Sequence seq{ map.data(), len, bit };
 

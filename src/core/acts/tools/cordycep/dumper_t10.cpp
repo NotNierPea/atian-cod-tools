@@ -31,8 +31,8 @@ namespace tool::cordycep::dump::t10 {
             return true;
         }
 
-        int dpcordimpl(Process& proc, compatibility::scobalula::csi::CordycepProc& cordycep, int argc,
-                       const char* argv[]) {
+        int
+        dpcordimpl(Process& proc, compatibility::scobalula::csi::CordycepProc& cordycep, int argc, const char* argv[]) {
             PoolOptionImpl opt{};
 
             if (!opt.Compute(argv, 2, argc) || opt.m_help) {
@@ -125,7 +125,8 @@ namespace tool::cordycep::dump::t10 {
                     std::filesystem::path outDirPool{ outDir / name };
                     std::filesystem::create_directories(outDirPool);
                     int du = ForEachEntry(
-                        proc, pools[type],
+                        proc,
+                        pools[type],
                         [&nullFiles, &outDirPool, &proc](const XAsset64& asset, size_t count) -> bool {
                             std::filesystem::path outFile{ outDirPool / std::format("file_{:x}.txt", asset.ID) };
 
@@ -148,7 +149,8 @@ namespace tool::cordycep::dump::t10 {
                             }
 
                             return true;
-                        });
+                        }
+                    );
 
                     if (nullFiles) {
                         LOG_ERROR("Find {} null files", nullFiles);
@@ -164,9 +166,12 @@ namespace tool::cordycep::dump::t10 {
                 return tool::OK;
             }
 
-            auto HandlePool = [&opt, &pools, &proc,
-                               &total](T10RAssetType type, const std::filesystem::path& outDir,
-                                       std::function<bool(const XAsset64& asset, size_t count)> func) {
+            auto HandlePool = [&opt, &pools, &proc, &total](
+                                  T10RAssetType type,
+                                  const std::filesystem::path& outDir,
+                                  std::function<bool(const XAsset64& asset, size_t count)>
+                                      func
+                              ) {
                 if (!opt.m_dump_types[type] && !opt.m_dump_all_available) {
                     return;
                 }
@@ -200,8 +205,8 @@ namespace tool::cordycep::dump::t10 {
                 std::unordered_map<uint64_t, const char*> map{};
             } localized;
 
-            std::function<const char*(uint64_t hash)> GetLocalized = [&opt, &localized, &proc,
-                                                                      &pools](uint64_t hash) -> const char* {
+            std::function<const char*(uint64_t hash)> GetLocalized =
+                [&opt, &localized, &proc, &pools](uint64_t hash) -> const char* {
                 if (!opt.m_mapLocalized) {
                     return hashutils::ExtractTmp("hash", hash);
                 }
@@ -209,19 +214,22 @@ namespace tool::cordycep::dump::t10 {
 
                     localized.loaded = true;
 
-                    ForEachEntry(proc, pools[T10R_ASSET_LOCALIZE],
-                                 [&proc, &localized](const XAsset64& asset, size_t count) {
-                                     LocalizeEntry entry{};
-                                     if (!proc.ReadMemory(&entry, asset.Header, sizeof(entry))) {
-                                         LOG_ERROR("Can't read LocalizeEntry {:x}", asset.Header);
-                                         return false;
-                                     }
+                    ForEachEntry(
+                        proc,
+                        pools[T10R_ASSET_LOCALIZE],
+                        [&proc, &localized](const XAsset64& asset, size_t count) {
+                            LocalizeEntry entry{};
+                            if (!proc.ReadMemory(&entry, asset.Header, sizeof(entry))) {
+                                LOG_ERROR("Can't read LocalizeEntry {:x}", asset.Header);
+                                return false;
+                            }
 
-                                     localized.map[entry.hash & hash::MASK60] =
-                                         localized.alloc.CloneStr(proc.ReadStringTmp(entry.value));
+                            localized.map[entry.hash & hash::MASK60] =
+                                localized.alloc.CloneStr(proc.ReadStringTmp(entry.value));
 
-                                     return true;
-                                 });
+                            return true;
+                        }
+                    );
                 }
 
                 auto it = localized.map.find(hash & hash::MASK60);

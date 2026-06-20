@@ -38,8 +38,11 @@ namespace ui3::tools {
         if (file) {
             tool->OpenFile(file);
             if (!tool->SupportFileOpen()) {
-                QMessageBox::warning(nullptr, "Error",
-                                     QString("UI Tool '%1' does not support opening files").arg(tool->name));
+                QMessageBox::warning(
+                    nullptr,
+                    "Error",
+                    QString("UI Tool '%1' does not support opening files").arg(tool->name)
+                );
             }
         } else {
             tool->Activate();

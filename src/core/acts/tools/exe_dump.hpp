@@ -24,6 +24,6 @@ namespace tool::exe_dump {
      * @param out out path
      * @param opt optional params
      */
-    void DumpProcessExe(const std::filesystem::path& in, const std::filesystem::path& out,
-                        DumpProcessOpt* opt = nullptr);
+    void
+    DumpProcessExe(const std::filesystem::path& in, const std::filesystem::path& out, DumpProcessOpt* opt = nullptr);
 } // namespace tool::exe_dump

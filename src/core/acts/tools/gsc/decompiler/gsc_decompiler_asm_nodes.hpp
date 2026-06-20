@@ -45,8 +45,9 @@ namespace tool::gsc::opcode {
         bool m_hex;
         bool m_canBeCastToBool;
         bool m_isIntConst;
-        ASMContextNodeValue(Type value, ASMContextNodeType type, bool hex = false, bool canBeCastToBool = false,
-                            bool isIntConst = false)
+        ASMContextNodeValue(
+            Type value, ASMContextNodeType type, bool hex = false, bool canBeCastToBool = false, bool isIntConst = false
+        )
             : ASMContextNodeValueVir(PRIORITY_VALUE, type), m_value(value), m_hex(hex),
               m_canBeCastToBool(canBeCastToBool), m_isIntConst(isIntConst) {}
 
@@ -207,8 +208,9 @@ namespace tool::gsc::opcode {
             return new ASMContextNodeVectorN(copy, count);
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             for (size_t i = 0; i < count; i++) {
                 if (!nodes[i])
                     continue;
@@ -227,9 +229,10 @@ namespace tool::gsc::opcode {
         ASMContextNodeVector(ASMContextNode* x, ASMContextNode* y, ASMContextNode* z)
             : ASMContextNode(PRIORITY_VALUE, TYPE_VECTOR), m_x(x), m_y(y), m_z(z) {}
         ASMContextNodeVector(float x, float y, float z)
-            : ASMContextNodeVector(new ASMContextNodeValue<float>(x, TYPE_FLOAT),
-                                   new ASMContextNodeValue<float>(y, TYPE_FLOAT),
-                                   new ASMContextNodeValue<float>(z, TYPE_FLOAT)) {}
+            : ASMContextNodeVector(
+                  new ASMContextNodeValue<float>(x, TYPE_FLOAT), new ASMContextNodeValue<float>(y, TYPE_FLOAT),
+                  new ASMContextNodeValue<float>(z, TYPE_FLOAT)
+              ) {}
         ~ASMContextNodeVector() {
             delete m_x;
             delete m_y;
@@ -257,8 +260,9 @@ namespace tool::gsc::opcode {
             return new ASMContextNodeVector(m_x->Clone(), m_y->Clone(), m_z->Clone());
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_x) {
                 func(m_x, ctx);
                 m_x->ApplySubNodes(func, ctx);
@@ -391,8 +395,9 @@ namespace tool::gsc::opcode {
 
         ASMContextNode* Clone0() const override { return new ASMContextNodeRef(m_op, m_var->Clone()); }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_var) {
                 func(m_var, ctx);
                 m_var->ApplySubNodes(func, ctx);
@@ -443,8 +448,9 @@ namespace tool::gsc::opcode {
             return new ASMContextNodeArrayAccess(m_operandleft->Clone(), m_operandright->Clone());
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_operandleft) {
                 func(m_operandleft, ctx);
                 m_operandleft->ApplySubNodes(func, ctx);
@@ -483,8 +489,9 @@ namespace tool::gsc::opcode {
             return new ASMContextNodeArrayBuildNode(m_key ? m_key->Clone() : nullptr, m_value->Clone());
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_key) {
                 func(m_key, ctx);
                 m_key->ApplySubNodes(func, ctx);
@@ -552,8 +559,9 @@ namespace tool::gsc::opcode {
             return n;
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             for (ASMContextNodeArrayBuildNode*& ref : m_operands) {
                 if (ref) {
                     func(reinterpret_cast<ASMContextNode*&>(ref), ctx);
@@ -617,8 +625,9 @@ namespace tool::gsc::opcode {
             return n;
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             for (ASMContextNodeArrayBuildNode*& ref : m_operands) {
                 if (ref) {
                     func(reinterpret_cast<ASMContextNode*&>(ref), ctx);
@@ -637,8 +646,9 @@ namespace tool::gsc::opcode {
         ASMContextNodeCallFuncPtrType m_ftype;
         byte m_flags;
         std::vector<ASMContextNode*> m_operands{};
-        ASMContextNodeCallFuncPtr(ASMContextNodeCallFuncPtrType type, byte flags,
-                                  ASMContextNodeType nodeType = TYPE_FUNC_CALL)
+        ASMContextNodeCallFuncPtr(
+            ASMContextNodeCallFuncPtrType type, byte flags, ASMContextNodeType nodeType = TYPE_FUNC_CALL
+        )
             : ASMContextNode(PRIORITY_ACCESS, nodeType), m_ftype(type), m_flags(flags) {}
         ~ASMContextNodeCallFuncPtr() {
             for (auto& ref : m_operands) {
@@ -763,8 +773,9 @@ namespace tool::gsc::opcode {
             out << ")";
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             for (auto& ref : m_operands) {
                 if (ref) {
                     func(ref, ctx);
@@ -841,8 +852,9 @@ namespace tool::gsc::opcode {
             }
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_operand1) {
                 func(m_operand1, ctx);
                 m_operand1->ApplySubNodes(func, ctx);
@@ -864,8 +876,10 @@ namespace tool::gsc::opcode {
         ASMContextNode* m_operand1;
         ASMContextNode* m_operand2;
         bool m_isBoolValue;
-        ASMContextNodeOp2(const char* description, ASMContextNodePriority priority, ASMContextNode* operand1,
-                          ASMContextNode* operand2, bool isBoolValue, ASMContextNodeType type = TYPE_UNDEFINED)
+        ASMContextNodeOp2(
+            const char* description, ASMContextNodePriority priority, ASMContextNode* operand1,
+            ASMContextNode* operand2, bool isBoolValue, ASMContextNodeType type = TYPE_UNDEFINED
+        )
             : ASMContextNode(priority, type), m_description(description), m_operand1(operand1), m_operand2(operand2),
               m_isBoolValue(isBoolValue) {}
         ~ASMContextNodeOp2() {
@@ -874,8 +888,14 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeOp2(m_description, m_priority, m_operand1->Clone(), m_operand2->Clone(),
-                                         m_isBoolValue, m_type);
+            return new ASMContextNodeOp2(
+                m_description,
+                m_priority,
+                m_operand1->Clone(),
+                m_operand2->Clone(),
+                m_isBoolValue,
+                m_type
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -914,8 +934,9 @@ namespace tool::gsc::opcode {
 
         bool IsBoolConvertable(bool strict, ASMContext& ctx) override { return m_isBoolValue; }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_operand1) {
                 func(m_operand1, ctx);
                 m_operand1->ApplySubNodes(func, ctx);
@@ -933,8 +954,10 @@ namespace tool::gsc::opcode {
         bool m_prefix;
         ASMContextNode* m_operand;
         bool m_isBoolValue;
-        ASMContextNodeOp1(const char* description, bool prefix, ASMContextNode* operand,
-                          ASMContextNodeType type = TYPE_UNDEFINED, bool isBoolValue = false)
+        ASMContextNodeOp1(
+            const char* description, bool prefix, ASMContextNode* operand, ASMContextNodeType type = TYPE_UNDEFINED,
+            bool isBoolValue = false
+        )
             : ASMContextNode(PRIORITY_UNARY, type), m_prefix(prefix), m_description(description), m_operand(operand),
               m_isBoolValue(isBoolValue) {
             assert(operand);
@@ -972,8 +995,9 @@ namespace tool::gsc::opcode {
 
         bool IsBoolConvertable(bool strict, ASMContext& ctx) override { return m_isBoolValue; }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_operand) {
                 func(m_operand, ctx);
                 m_operand->ApplySubNodes(func, ctx);
@@ -988,8 +1012,10 @@ namespace tool::gsc::opcode {
         bool m_isBoolVal;
         bool m_noParenthesis;
         std::vector<ASMContextNode*> m_operands{};
-        ASMContextNodeMultOp(const char* description, bool caller, ASMContextNodeType type = TYPE_STATEMENT,
-                             bool isBoolVal = false, bool noParenthesis = false)
+        ASMContextNodeMultOp(
+            const char* description, bool caller, ASMContextNodeType type = TYPE_STATEMENT, bool isBoolVal = false,
+            bool noParenthesis = false
+        )
             : ASMContextNode(PRIORITY_VALUE, type), m_description(description), m_caller(caller),
               m_isBoolVal(isBoolVal), m_noParenthesis(noParenthesis) {}
         ~ASMContextNodeMultOp() {
@@ -1054,8 +1080,9 @@ namespace tool::gsc::opcode {
             }
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             for (auto& ref : m_operands) {
                 if (ref) {
                     func(ref, ctx);
@@ -1071,8 +1098,10 @@ namespace tool::gsc::opcode {
         ASMContextNode* m_self;
         ASMContextNode* m_operand;
         bool m_isBoolVal;
-        ASMContextNodeFunctionOperator(const char* operatorName, ASMContextNode* self, ASMContextNode* operand,
-                                       ASMContextNodeType type = TYPE_STATEMENT, bool isBoolVal = false)
+        ASMContextNodeFunctionOperator(
+            const char* operatorName, ASMContextNode* self, ASMContextNode* operand,
+            ASMContextNodeType type = TYPE_STATEMENT, bool isBoolVal = false
+        )
             : ASMContextNode(PRIORITY_VALUE, type), m_operatorName(operatorName), m_self(self), m_operand(operand),
               m_isBoolVal(isBoolVal) {
             assert(operand);
@@ -1085,8 +1114,13 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeFunctionOperator(m_operatorName, m_self ? m_self->Clone() : nullptr,
-                                                      m_operand->Clone(), m_type, m_isBoolVal);
+            return new ASMContextNodeFunctionOperator(
+                m_operatorName,
+                m_self ? m_self->Clone() : nullptr,
+                m_operand->Clone(),
+                m_type,
+                m_isBoolVal
+            );
         }
 
         ASMContextNode* ConvertToBool() override { return m_isBoolVal ? this : nullptr; }
@@ -1112,8 +1146,9 @@ namespace tool::gsc::opcode {
             out << ")";
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_self) {
                 func(m_self, ctx);
                 m_self->ApplySubNodes(func, ctx);
@@ -1140,10 +1175,11 @@ namespace tool::gsc::opcode {
 
         bool IsFakeIf() const { return m_special_op && m_operand; }
 
-        ASMContextNodeJumpOperator(const char* operatorName, ASMContextNode* operand, int64_t location,
-                                   ASMContextNodeType type, int32_t opLoc, bool showJump = true, int64_t delta = 0,
-                                   ASMContextNodeJumpOperatorSpecialJump special_op = SPECIAL_JUMP_DEFAULT,
-                                   bool returnCandidate = false)
+        ASMContextNodeJumpOperator(
+            const char* operatorName, ASMContextNode* operand, int64_t location, ASMContextNodeType type, int32_t opLoc,
+            bool showJump = true, int64_t delta = 0,
+            ASMContextNodeJumpOperatorSpecialJump special_op = SPECIAL_JUMP_DEFAULT, bool returnCandidate = false
+        )
             : ASMContextNode(PRIORITY_INST, type), m_operatorName(operatorName), m_operand(operand),
               m_location(location), m_opLoc(opLoc), m_showJump(showJump), m_delta(delta), m_special_op(special_op),
               m_returnCandidate(returnCandidate) {
@@ -1157,9 +1193,17 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeJumpOperator(m_operatorName, m_operand ? m_operand->Clone() : nullptr, m_location,
-                                                  m_type, m_opLoc, m_showJump, m_delta, m_special_op,
-                                                  m_returnCandidate);
+            return new ASMContextNodeJumpOperator(
+                m_operatorName,
+                m_operand ? m_operand->Clone() : nullptr,
+                m_location,
+                m_type,
+                m_opLoc,
+                m_showJump,
+                m_delta,
+                m_special_op,
+                m_returnCandidate
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -1228,8 +1272,9 @@ namespace tool::gsc::opcode {
             }
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_operand) {
                 func(m_operand, ctx);
                 m_operand->ApplySubNodes(func, ctx);
@@ -1259,10 +1304,10 @@ namespace tool::gsc::opcode {
         std::string m_operatorName;
         ASMContextNode* m_left;
         ASMContextNode* m_right;
-        ASMContextNodeLeftRightOperator(ASMContextNode* left, ASMContextNode* right,
-                                        const std::string& operatorName = " = ",
-                                        ASMContextNodePriority priority = PRIORITY_SET,
-                                        ASMContextNodeType type = TYPE_SET)
+        ASMContextNodeLeftRightOperator(
+            ASMContextNode* left, ASMContextNode* right, const std::string& operatorName = " = ",
+            ASMContextNodePriority priority = PRIORITY_SET, ASMContextNodeType type = TYPE_SET
+        )
             : ASMContextNode(priority, type), m_operatorName(operatorName), m_left(left), m_right(right) {}
         ~ASMContextNodeLeftRightOperator() {
             if (m_left)
@@ -1272,8 +1317,13 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeLeftRightOperator(m_left->Clone(), m_right->Clone(), m_operatorName, m_priority,
-                                                       m_type);
+            return new ASMContextNodeLeftRightOperator(
+                m_left->Clone(),
+                m_right->Clone(),
+                m_operatorName,
+                m_priority,
+                m_type
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -1284,8 +1334,9 @@ namespace tool::gsc::opcode {
             m_right->Dump(out, ctx);
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_left) {
                 func(m_left, ctx);
                 m_left->ApplySubNodes(func, ctx);
@@ -1312,8 +1363,11 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeNew(m_classname, m_constructorCall ? m_constructorCall->Clone() : nullptr,
-                                         m_constructorCallDec);
+            return new ASMContextNodeNew(
+                m_classname,
+                m_constructorCall ? m_constructorCall->Clone() : nullptr,
+                m_constructorCallDec
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -1323,8 +1377,9 @@ namespace tool::gsc::opcode {
             }
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_constructorCall) {
                 func(m_constructorCall, ctx);
                 m_constructorCall->ApplySubNodes(func, ctx);
@@ -1406,8 +1461,9 @@ namespace tool::gsc::opcode {
             ctx.WritePadding(out, true) << "}\n";
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_node) {
                 func(m_node, ctx);
                 m_node->ApplySubNodes(func, ctx);
@@ -1449,7 +1505,8 @@ namespace tool::gsc::opcode {
             sw->m_cases.reserve(m_cases.size());
             for (const auto& cs : m_cases) {
                 sw->m_cases.push_back(
-                    { cs.value ? cs.value->Clone() : cs.value, static_cast<ASMContextNodeBlock*>(cs.block->Clone()) });
+                    { cs.value ? cs.value->Clone() : cs.value, static_cast<ASMContextNodeBlock*>(cs.block->Clone()) }
+                );
             }
             return sw;
         }
@@ -1514,15 +1571,17 @@ namespace tool::gsc::opcode {
             ctx.WritePadding(out, true) << "}\n";
         }
 
-        void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func,
-                            ASMContext& ctx) override {
+        void ApplySubBlocks(
+            const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func, ASMContext& ctx
+        ) override {
             for (const auto& cs : m_cases) {
                 cs.block->ApplySubBlocks(func, ctx);
             }
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_node) {
                 func(m_node, ctx);
                 m_node->ApplySubNodes(func, ctx);
@@ -1557,8 +1616,12 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeForEach(m_arrayNode->Clone(), static_cast<ASMContextNodeBlock*>(m_block->Clone()),
-                                             m_key, m_item);
+            return new ASMContextNodeForEach(
+                m_arrayNode->Clone(),
+                static_cast<ASMContextNodeBlock*>(m_block->Clone()),
+                m_key,
+                m_item
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -1587,13 +1650,15 @@ namespace tool::gsc::opcode {
             m_block->Dump(out, ctx);
         }
 
-        void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func,
-                            ASMContext& ctx) override {
+        void ApplySubBlocks(
+            const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func, ASMContext& ctx
+        ) override {
             m_block->ApplySubBlocks(func, ctx);
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_arrayNode) {
                 func(m_arrayNode, ctx);
                 m_arrayNode->ApplySubNodes(func, ctx);
@@ -1612,8 +1677,10 @@ namespace tool::gsc::opcode {
         ASMContextNode* m_delta;
         ASMContextNodeBlock* m_block;
         ASMContextNode* m_originJump;
-        ASMContextNodeForDelta(ASMContextNode* init, ASMContextNode* cond, ASMContextNode* delta,
-                               ASMContextNodeBlock* block, ASMContextNode* originJump)
+        ASMContextNodeForDelta(
+            ASMContextNode* init, ASMContextNode* cond, ASMContextNode* delta, ASMContextNodeBlock* block,
+            ASMContextNode* originJump
+        )
             : ASMContextNode(PRIORITY_INST, TYPE_FOR), m_init(init), m_cond(cond), m_delta(delta), m_block(block),
               m_originJump(originJump) {
             assert(init);
@@ -1634,9 +1701,13 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeForDelta(m_init->Clone(), m_cond ? m_cond->Clone() : nullptr, m_delta->Clone(),
-                                              static_cast<ASMContextNodeBlock*>(m_block->Clone()),
-                                              m_originJump ? m_originJump->Clone() : nullptr);
+            return new ASMContextNodeForDelta(
+                m_init->Clone(),
+                m_cond ? m_cond->Clone() : nullptr,
+                m_delta->Clone(),
+                static_cast<ASMContextNodeBlock*>(m_block->Clone()),
+                m_originJump ? m_originJump->Clone() : nullptr
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -1678,13 +1749,15 @@ namespace tool::gsc::opcode {
             m_block->Dump(out, ctx);
         }
 
-        void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func,
-                            ASMContext& ctx) override {
+        void ApplySubBlocks(
+            const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func, ASMContext& ctx
+        ) override {
             m_block->ApplySubBlocks(func, ctx);
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_init) {
                 func(m_init, ctx);
                 m_init->ApplySubNodes(func, ctx);
@@ -1728,8 +1801,11 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeDoWhile(m_condition->Clone(), static_cast<ASMContextNodeBlock*>(m_block->Clone()),
-                                             m_originJump ? m_originJump->Clone() : nullptr);
+            return new ASMContextNodeDoWhile(
+                m_condition->Clone(),
+                static_cast<ASMContextNodeBlock*>(m_block->Clone()),
+                m_originJump ? m_originJump->Clone() : nullptr
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -1776,13 +1852,15 @@ namespace tool::gsc::opcode {
             out << ")";
         }
 
-        void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func,
-                            ASMContext& ctx) override {
+        void ApplySubBlocks(
+            const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func, ASMContext& ctx
+        ) override {
             m_block->ApplySubBlocks(func, ctx);
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_condition) {
                 func(m_condition, ctx);
                 m_condition->ApplySubNodes(func, ctx);
@@ -1822,9 +1900,11 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeWhile(m_condition ? m_condition->Clone() : nullptr,
-                                           static_cast<ASMContextNodeBlock*>(m_block->Clone()),
-                                           m_originJump ? m_originJump->Clone() : nullptr);
+            return new ASMContextNodeWhile(
+                m_condition ? m_condition->Clone() : nullptr,
+                static_cast<ASMContextNodeBlock*>(m_block->Clone()),
+                m_originJump ? m_originJump->Clone() : nullptr
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -1888,13 +1968,15 @@ namespace tool::gsc::opcode {
             m_block->Dump(out, ctx);
         }
 
-        void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func,
-                            ASMContext& ctx) override {
+        void ApplySubBlocks(
+            const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func, ASMContext& ctx
+        ) override {
             m_block->ApplySubBlocks(func, ctx);
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_condition) {
                 func(m_condition, ctx);
                 m_condition->ApplySubNodes(func, ctx);
@@ -1942,10 +2024,11 @@ namespace tool::gsc::opcode {
         }
 
         ASMContextNode* Clone0() const override {
-            return new ASMContextNodeIfElse(m_condition ? m_condition->Clone() : nullptr,
-                                            m_ifblock ? static_cast<ASMContextNodeBlock*>(m_ifblock->Clone()) : nullptr,
-                                            m_elseblock ? static_cast<ASMContextNodeBlock*>(m_elseblock->Clone())
-                                                        : nullptr);
+            return new ASMContextNodeIfElse(
+                m_condition ? m_condition->Clone() : nullptr,
+                m_ifblock ? static_cast<ASMContextNodeBlock*>(m_ifblock->Clone()) : nullptr,
+                m_elseblock ? static_cast<ASMContextNodeBlock*>(m_elseblock->Clone()) : nullptr
+            );
         }
 
         void Dump(std::ostream& out, DecompContext& ctx) const override {
@@ -2064,8 +2147,9 @@ namespace tool::gsc::opcode {
             }
         }
 
-        void ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func,
-                            ASMContext& ctx) override {
+        void ApplySubBlocks(
+            const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func, ASMContext& ctx
+        ) override {
             if (m_ifblock) {
                 m_ifblock->ApplySubBlocks(func, ctx);
             }
@@ -2074,8 +2158,9 @@ namespace tool::gsc::opcode {
             }
         }
 
-        void ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                           SubNodeContext& ctx) override {
+        void ApplySubNodes(
+            const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+        ) override {
             if (m_condition) {
                 func(m_condition, ctx);
                 m_condition->ApplySubNodes(func, ctx);

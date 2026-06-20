@@ -8,8 +8,8 @@ namespace tool::gsc::opcode {
 
     OPCodeInfo::OPCodeInfo(OPCode id, const char* name) : m_id(id), m_name(name) {}
 
-    int OPCodeInfo::Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                         tool::gsc::T8GSCOBJContext& objctx) const {
+    int
+    OPCodeInfo::Dump(std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const {
         out << std::endl;
         return 0; // by default nop
     }
@@ -47,7 +47,8 @@ namespace tool::gsc::opcode {
         void Run(ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             auto* right = context.PopASMCNode();
             context.PushASMCNode(
-                new ASMContextNodeOp2(m_description, m_priority, m_node ? m_node->Clone() : nullptr, right, true));
+                new ASMContextNodeOp2(m_description, m_priority, m_node ? m_node->Clone() : nullptr, right, true)
+            );
         }
     };
     class ASMContextLocationOpCompleteTernary : public ASMContextLocationOp {
@@ -80,8 +81,9 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << "Unknown operator: " << std::hex << value << std::endl;
 
             byte* oldBcl = context.m_bcl;
@@ -197,8 +199,9 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             auto& loc = context.Aligned<uint16_t>();
 
             uint16_t val = context.Read<uint16_t>(loc);
@@ -216,8 +219,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoRegisterVariable(OPCode id, const char* name, bool hasName)
             : OPCodeInfo(id, name), m_hasName(hasName) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             uint64_t name;
 
             if (m_hasName) {
@@ -250,8 +254,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoRegisterMultipleVariables()
             : OPCodeInfo(OPCode::OPCODE_IW_RegisterMultipleVariables, "IW_RegisterMultipleVariables") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             byte count = context.Read<byte>(context.m_bcl++);
 
             out << "count: " << std::dec << (int)count << std::endl;
@@ -280,8 +285,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoSetNewLocalVariable()
             : OPCodeInfo(OPCode::OPCODE_IW_SetNewLocalVariableFieldCached0, "IW_SetNewLocalVariableFieldCached0") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             byte id{ context.Read<byte>(context.m_bcl) };
             const char* ids{ utils::va("var%d", id) };
             uint64_t name = hash::Hash64(ids);
@@ -299,7 +305,12 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                    new ASMContextNodeIdentifier(name), context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET));
+                    new ASMContextNodeIdentifier(name),
+                    context.PopASMCNode(),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                ));
                 context.CompleteStatement();
             }
 
@@ -313,8 +324,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoRemoveLocalVariables() : OPCodeInfo(OPCode::OPCODE_IW_RemoveVariables, "IW_RemoveVariables") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             byte count{ context.Read<byte>(context.m_bcl) };
             context.m_bcl += 1;
 
@@ -341,8 +353,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoSafeCreateLocalVariables()
             : OPCodeInfo(OPCODE_SafeCreateLocalVariables, "SafeCreateLocalVariables") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             byte count = context.Read<byte>(context.m_bcl++);
 
             context.m_localvars.reserve((size_t)count + 1);
@@ -441,8 +454,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoCheckClearParams() : OPCodeInfo(OPCODE_CheckClearParams, "CheckClearParams") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
             // don't create statement, we can ignore it
             context.m_lastOpCodeBase = -1;
@@ -454,8 +468,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoGetObjectType(OPCode id, const char* name, const char* hashType) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             auto& ref = context.Aligned<uint32_t>();
 
             auto name = context.Read<uint32_t>(ref);
@@ -478,8 +493,8 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<Type>();
             }
@@ -507,16 +522,19 @@ namespace tool::gsc::opcode {
         ASMContextNodeType m_nodeType;
 
       public:
-        OPCodeInfoGetConstant(OPCode id, const char* name, Type value, bool canBeCastToBool = false,
-                              bool isIntConst = false, ASMContextNodeType nodeType = TYPE_VALUE)
+        OPCodeInfoGetConstant(
+            OPCode id, const char* name, Type value, bool canBeCastToBool = false, bool isIntConst = false,
+            ASMContextNodeType nodeType = TYPE_VALUE
+        )
             : OPCodeInfo(id, name), m_value(value), m_canBeCastToBool(canBeCastToBool), m_isIntConst(isIntConst),
               m_nodeType(nodeType) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
                 context.PushASMCNode(
-                    new ASMContextNodeValue<Type>(m_value, m_nodeType, false, m_canBeCastToBool, m_isIntConst));
+                    new ASMContextNodeValue<Type>(m_value, m_nodeType, false, m_canBeCastToBool, m_isIntConst)
+                );
             }
 
             out << std::endl;
@@ -528,8 +546,8 @@ namespace tool::gsc::opcode {
     class OPCodeInfoCastBool : public OPCodeInfo {
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
                 if (context.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FFL_NO_BOOL_ANALYSIS)) {
                     context.PushASMCNode(context.PopASMCNode());
@@ -553,8 +571,8 @@ namespace tool::gsc::opcode {
         OPCodeInfoGetConstantRef(OPCode id, const char* name, Type value, ASMContextNodeType type = TYPE_VALUE)
             : OPCodeInfo(id, name), m_value(value), m_type(type) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
                 context.SetObjectIdASMCNode(new ASMContextNodeValue<Type>(m_value, m_type));
             }
@@ -572,16 +590,18 @@ namespace tool::gsc::opcode {
         ASMContextNodeType m_nodeType;
 
       public:
-        OPCodeInfoGetConstantSet(OPCode id, const char* name, Type value, bool inst = false,
-                                 ASMContextNodeType nodeType = TYPE_VALUE)
+        OPCodeInfoGetConstantSet(
+            OPCode id, const char* name, Type value, bool inst = false, ASMContextNodeType nodeType = TYPE_VALUE
+        )
             : OPCodeInfo(id, name), m_value(value), m_inst(inst), m_nodeType(nodeType) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
                 auto* left = context.PopASMCNode();
                 context.PushASMCNode(
-                    new ASMContextNodeLeftRightOperator(left, new ASMContextNodeValue<Type>(m_value, m_nodeType)));
+                    new ASMContextNodeLeftRightOperator(left, new ASMContextNodeValue<Type>(m_value, m_nodeType))
+                );
                 if (m_inst) {
                     context.CompleteStatement();
                 }
@@ -597,13 +617,17 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
                 auto* left = context.PopASMCNode();
                 context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                    left, new ASMContextNodeIdentifier(hash::HashT89Scr("size"), "var"), ".", PRIORITY_ACCESS,
-                    TYPE_ACCESS));
+                    left,
+                    new ASMContextNodeIdentifier(hash::HashT89Scr("size"), "var"),
+                    ".",
+                    PRIORITY_ACCESS,
+                    TYPE_ACCESS
+                ));
             }
 
             out << std::endl;
@@ -616,8 +640,8 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
 
                 auto* vector = context.PopASMCNode();
@@ -668,8 +692,8 @@ namespace tool::gsc::opcode {
         OPCodeInfoGetNumber(OPCode id, const char* name, ASMContextNodeType type = TYPE_VALUE)
             : OPCodeInfo(id, name), m_valtype(type) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<Type>();
             }
@@ -680,8 +704,9 @@ namespace tool::gsc::opcode {
                 const char* str = objctx.GetStringValue(animTree->second);
 
                 if (context.m_runDecompiler) {
-                    bool useReal{ (context.m_opt.m_formatter->HasFlag(
-                                      tool::gsc::formatter::FormatterFlags::FFL_ANIM_REAL)) != 0 };
+                    bool useReal{
+                        (context.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FormatterFlags::FFL_ANIM_REAL)) != 0
+                    };
                     // check if we can only display the anim name
                     if (useReal && context.useAnimTree && strcmp(context.useAnimTree, str)) {
                         context.m_exp.SetHandle(context.m_readerHandle);
@@ -689,7 +714,9 @@ namespace tool::gsc::opcode {
                             "using more than one #animtree in {}::{}, can't use anim renderer, current: {} != {}",
                             hashutils::ExtractTmp("namespace", context.m_exp.GetNamespace()),
                             hashutils::ExtractTmp("function", context.m_exp.GetName()),
-                            context.useAnimTree ? context.useAnimTree : "<none>", str);
+                            context.useAnimTree ? context.useAnimTree : "<none>",
+                            str
+                        );
                         useReal = false;
                     }
                     context.useAnimTree = str;
@@ -740,8 +767,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoDevBlockCall() : OPCodeInfo(OPCODE_IW_DevBlock, "IW_DevBlock") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<int16_t>();
             }
@@ -773,13 +800,16 @@ namespace tool::gsc::opcode {
         bool m_localized;
 
       public:
-        OPCodeInfoGetHash(OPCode id, const char* name, const char* type, bool hash64 = true, bool isInlined = false,
-                          bool canInline = false, bool localized = false)
+        OPCodeInfoGetHash(
+            OPCode id, const char* name, const char* type, bool hash64 = true, bool isInlined = false,
+            bool canInline = false, bool localized = false
+        )
             : m_type(type), m_hash64(hash64), m_isInlined(isInlined), m_canInline(canInline), m_localized(localized),
               OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 if (m_hash64) {
                     context.Aligned<uint64_t>();
@@ -802,7 +832,11 @@ namespace tool::gsc::opcode {
             if (context.m_runDecompiler) {
 
                 context.PushASMCNode(new ASMContextNodeHash(
-                    hash, m_isInlined || (m_canInline && objctx.m_vmInfo->IsScrHash(hash)), m_type, m_localized));
+                    hash,
+                    m_isInlined || (m_canInline && objctx.m_vmInfo->IsScrHash(hash)),
+                    m_type,
+                    m_localized
+                ));
             }
 
             out << m_type << "\"";
@@ -826,11 +860,13 @@ namespace tool::gsc::opcode {
         OPCodeInfoJump(OPCode id, const char* name, bool jump32 = false, bool jumpNeg = false)
             : jump32(jump32), jumpNeg(jumpNeg), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             // get the jump opcode location
             int32_t m_jumpLocation = context.FunctionRelativeLocation(
-                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1));
+                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1)
+            );
 
             ASMContextNode* node = nullptr;
             ASMContextNodeType type = TYPE_JUMP;
@@ -925,8 +961,13 @@ namespace tool::gsc::opcode {
 
             if (newLoc - context.m_gscReader.Ptr() > context.m_gscReader.GetFileSize() ||
                 newLoc < context.m_gscReader.Ptr()) {
-                throw std::runtime_error(std::format("jump with invalid delta: {}0x{:x}", (delta < 0 ? "-" : ""),
-                                                     (delta < 0 ? -delta : delta)));
+                throw std::runtime_error(
+                    std::format(
+                        "jump with invalid delta: {}0x{:x}",
+                        (delta < 0 ? "-" : ""),
+                        (delta < 0 ? -delta : delta)
+                    )
+                );
                 return -1;
             }
 
@@ -980,11 +1021,15 @@ namespace tool::gsc::opcode {
 
                                         ASMContextNode* ifpart = jumpNode->m_operand;
                                         if (!(context.m_opt.m_formatter->HasFlag(
-                                                tool::gsc::formatter::FFL_NO_BOOL_ANALYSIS))) {
+                                                tool::gsc::formatter::FFL_NO_BOOL_ANALYSIS
+                                            ))) {
                                             ifpart = ASMCNodeConvertToBool(ifpart, context);
                                         }
                                         locref.m_lateop.emplace_back(new ASMContextLocationOpCompleteTernary(
-                                            ifpart, top, !IsJumpConditionForceReversed(jumpNode)));
+                                            ifpart,
+                                            top,
+                                            !IsJumpConditionForceReversed(jumpNode)
+                                        ));
                                         jumpNode->m_operand = nullptr;
                                         delete jumpNode;
                                         inject = false;
@@ -1029,7 +1074,8 @@ namespace tool::gsc::opcode {
             if (m_id == OPCODE_DevblockBegin) {
                 context.m_devBlocks.emplace_back(m_jumpLocation, delta);
                 context.m_objctx.m_devblocks.insert(
-                    context.ScriptAbsoluteLocation(context.m_fonctionStart + m_jumpLocation));
+                    context.ScriptAbsoluteLocation(context.m_fonctionStart + m_jumpLocation)
+                );
             }
 
             out << "Jump ." << std::hex << std::setfill('0') << std::setw(sizeof(int32_t) << 1) << locref.rloc
@@ -1044,10 +1090,12 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int32_t m_jumpLocation = context.FunctionRelativeLocation(
-                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1));
+                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1)
+            );
             // get the jump opcode location
 
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
@@ -1111,8 +1159,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoJumpPush() : OPCodeInfo(OPCODE_JumpPush, "JumpPush") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int32_t jumpLocation = context.FunctionRelativeLocation(context.m_bcl - 2);
             auto& bytecode = context.Aligned<uintptr_t>();
 
@@ -1122,7 +1171,8 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 context.PushASMCNode(
-                    new ASMContextNodeJumpOperator("jumppush", nullptr, location, TYPE_STATEMENT, jumpLocation));
+                    new ASMContextNodeJumpOperator("jumppush", nullptr, location, TYPE_STATEMENT, jumpLocation)
+                );
                 context.CompleteStatement();
             }
 
@@ -1138,8 +1188,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoVector(OPCode opcode, const char* desc, size_t count) : OPCodeInfo(opcode, desc), count(count) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 if (count == 3) {
                     auto* x = context.PopASMCNode();
@@ -1166,8 +1217,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoGetVector(OPCode id, const char* name, size_t count) : OPCodeInfo(id, name), count(count) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<float>();
             }
@@ -1218,8 +1270,9 @@ namespace tool::gsc::opcode {
             return false;
         }
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             byte flag = context.Read<byte>(context.m_bcl++);
 
             float x, y, z;
@@ -1249,8 +1302,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoName(OPCode id, const char* name, const char* hashType)
             : OPCodeInfo(id, name), m_hashType(hashType) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             auto& ref = context.Aligned<uint32_t>();
 
             auto name = context.Read<uint32_t>(ref);
@@ -1267,8 +1321,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoSetVariableFieldRef(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             auto& ref = context.Aligned<uint32_t>();
 
             auto name = context.Read<uint32_t>(ref);
@@ -1279,10 +1334,18 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 auto* node = new ASMContextNodeLeftRightOperator(
-                    new ASMContextNodeLeftRightOperator(context.GetObjectIdASMCNode(),
-                                                        new ASMContextNodeIdentifier(name), ".", PRIORITY_ACCESS,
-                                                        TYPE_ACCESS),
-                    context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET);
+                    new ASMContextNodeLeftRightOperator(
+                        context.GetObjectIdASMCNode(),
+                        new ASMContextNodeIdentifier(name),
+                        ".",
+                        PRIORITY_ACCESS,
+                        TYPE_ACCESS
+                    ),
+                    context.PopASMCNode(),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                );
                 context.SetFieldIdASMCNode(node->Clone());
                 context.PushASMCNode(node);
                 context.CompleteStatement();
@@ -1296,8 +1359,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoSetVariableFieldCached(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar = context.Read<byte>(context.m_bcl++);
 
             uint64_t name;
@@ -1312,8 +1376,13 @@ namespace tool::gsc::opcode {
             out << hashutils::ExtractTmp("var", name) << std::endl;
 
             if (context.m_runDecompiler) {
-                auto* node = new ASMContextNodeLeftRightOperator(new ASMContextNodeIdentifier(name),
-                                                                 context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET);
+                auto* node = new ASMContextNodeLeftRightOperator(
+                    new ASMContextNodeIdentifier(name),
+                    context.PopASMCNode(),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                );
                 context.SetFieldIdASMCNode(node->Clone());
                 context.PushASMCNode(node);
             }
@@ -1329,8 +1398,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoSetWaittillVariableFieldCached(OPCode id, const char* name, const char* valueName = nullptr)
             : OPCodeInfo(id, name), m_valueName(valueName) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             uint64_t name;
             if (!m_valueName) {
                 int lvar = context.Read<byte>(context.m_bcl++);
@@ -1358,11 +1428,21 @@ namespace tool::gsc::opcode {
                     if (prev->m_type == TYPE_WAITTILL_SET) {
                         auto* lro = reinterpret_cast<ASMContextNodeLeftRightOperator*>(prev);
                         lro->m_left = new ASMContextNodeLeftRightOperator(
-                            lro->m_left, new ASMContextNodeIdentifier(name), ", ", PRIORITY_SET, TYPE_WAITTILL_SET);
+                            lro->m_left,
+                            new ASMContextNodeIdentifier(name),
+                            ", ",
+                            PRIORITY_SET,
+                            TYPE_WAITTILL_SET
+                        );
                         node = lro;
                     } else {
-                        node = new ASMContextNodeLeftRightOperator(new ASMContextNodeIdentifier(name), prev, " = ",
-                                                                   PRIORITY_SET, TYPE_WAITTILL_SET);
+                        node = new ASMContextNodeLeftRightOperator(
+                            new ASMContextNodeIdentifier(name),
+                            prev,
+                            " = ",
+                            PRIORITY_SET,
+                            TYPE_WAITTILL_SET
+                        );
                     }
 
                     context.SetFieldIdASMCNode(node->Clone());
@@ -1383,15 +1463,21 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoSetVariableField(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
 
             if (context.m_runDecompiler) {
                 // iw8 check
                 if (context.PeekASMCNode()->m_type != ASMContextNodeType::TYPE_DELTA) {
                     context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                        context.GetFieldIdASMCNode(), context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET));
+                        context.GetFieldIdASMCNode(),
+                        context.PopASMCNode(),
+                        " = ",
+                        PRIORITY_SET,
+                        TYPE_SET
+                    ));
                 }
                 context.CompleteStatement();
             }
@@ -1405,8 +1491,9 @@ namespace tool::gsc::opcode {
         OPCodeT9SetVariableFieldFromEvalArrayRef()
             : OPCodeInfo(OPCODE_T9_SetVariableFieldFromEvalArrayRef, "SetVariableFieldFromEvalArrayRef") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
 
             if (context.m_runDecompiler) {
@@ -1416,7 +1503,12 @@ namespace tool::gsc::opcode {
                 context.SetFieldIdASMCNode(accessNode);
 
                 context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                    context.GetFieldIdASMCNode(), context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET));
+                    context.GetFieldIdASMCNode(),
+                    context.PopASMCNode(),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                ));
                 context.CompleteStatement();
             }
 
@@ -1431,8 +1523,9 @@ namespace tool::gsc::opcode {
         OPCodeT9Iterator(OPCode id, const char* name, const char* op, ASMContextNodeType ittype)
             : OPCodeInfo(id, name), m_op(op), m_ittype(ittype) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
             if (context.m_runDecompiler) {
                 ASMContextNode* iterator = context.PopASMCNode();
@@ -1453,8 +1546,9 @@ namespace tool::gsc::opcode {
         OPCodeT9GetVarRef() : OPCodeInfo(OPCODE_T9_GetVarRef, "GetVarRef") {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
             if (context.m_runDecompiler) {
                 context.PushASMCNode(new ASMContextNodeRef("&", context.GetFieldIdASMCNode()->Clone()));
@@ -1468,8 +1562,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoEvalSelfFieldVariable(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             auto& ref = context.Aligned<uint32_t>();
 
             auto name = context.Read<uint32_t>(ref);
@@ -1480,9 +1575,13 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 context.SetObjectIdASMCNode(new ASMContextNodeValue<const char*>("self", TYPE_SELF));
-                context.PushASMCNode(new ASMContextNodeLeftRightOperator(context.GetObjectIdASMCNode(),
-                                                                         new ASMContextNodeIdentifier(name), ".",
-                                                                         PRIORITY_ACCESS, TYPE_ACCESS));
+                context.PushASMCNode(new ASMContextNodeLeftRightOperator(
+                    context.GetObjectIdASMCNode(),
+                    new ASMContextNodeIdentifier(name),
+                    ".",
+                    PRIORITY_ACCESS,
+                    TYPE_ACCESS
+                ));
             }
 
             return 0;
@@ -1499,12 +1598,14 @@ namespace tool::gsc::opcode {
         ReadObjectType readtype;
 
       public:
-        OPCodeInfoClearFieldVariable(OPCode id, const char* name, bool stack, bool isref,
-                                     ReadObjectType readtype = ROT_ID, bool useref = false)
+        OPCodeInfoClearFieldVariable(
+            OPCode id, const char* name, bool stack, bool isref, ReadObjectType readtype = ROT_ID, bool useref = false
+        )
             : OPCodeInfo(id, name), m_stack(stack), m_isref(isref), readtype(readtype), m_useref(useref) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             ASMContextNode* fieldNameNode;
             if (!m_stack) {
                 if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
@@ -1546,7 +1647,8 @@ namespace tool::gsc::opcode {
                         out << "." << name << std::endl;
                     } else {
                         throw std::runtime_error(
-                            std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype));
+                            std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype)
+                        );
                     }
                 }
             } else {
@@ -1556,11 +1658,19 @@ namespace tool::gsc::opcode {
             if (context.m_runDecompiler) {
                 ASMContextNode* nameNode = m_stack ? context.PopASMCNode() : fieldNameNode;
                 ASMContextNode* fieldAccessNode = new ASMContextNodeLeftRightOperator(
-                    m_useref ? context.GetFieldIdASMCNode() : context.GetObjectIdASMCNode(), nameNode, ".",
-                    PRIORITY_ACCESS, TYPE_ACCESS);
+                    m_useref ? context.GetFieldIdASMCNode() : context.GetObjectIdASMCNode(),
+                    nameNode,
+                    ".",
+                    PRIORITY_ACCESS,
+                    TYPE_ACCESS
+                );
                 context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                    fieldAccessNode, new ASMContextNodeValue<const char*>("undefined", TYPE_GET_UNDEFINED), " = ",
-                    PRIORITY_SET, TYPE_SET));
+                    fieldAccessNode,
+                    new ASMContextNodeValue<const char*>("undefined", TYPE_GET_UNDEFINED),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                ));
                 context.CompleteStatement();
             }
 
@@ -1573,12 +1683,13 @@ namespace tool::gsc::opcode {
         ReadObjectType readtype;
 
       public:
-        OPCodeInfoSetGlobalObjectFieldVariable(OPCode id, const char* name, const char* gvarName = nullptr,
-                                               ReadObjectType readtype = ROT_ID)
+        OPCodeInfoSetGlobalObjectFieldVariable(
+            OPCode id, const char* name, const char* gvarName = nullptr, ReadObjectType readtype = ROT_ID
+        )
             : OPCodeInfo(id, name), gvarName(gvarName), readtype(readtype) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             uint64_t name;
             if (!gvarName) {
                 if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
@@ -1626,16 +1737,23 @@ namespace tool::gsc::opcode {
                 out << "." << name << std::endl;
             } else {
                 throw std::runtime_error(
-                    std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype));
+                    std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype)
+                );
             }
 
             if (context.m_runDecompiler) {
                 context.SetObjectIdASMCNode(new ASMContextNodeIdentifier(name));
-                auto* ref = new ASMContextNodeLeftRightOperator(context.GetObjectIdASMCNode(), fieldNameNode, ".",
-                                                                PRIORITY_ACCESS, TYPE_ACCESS);
+                auto* ref = new ASMContextNodeLeftRightOperator(
+                    context.GetObjectIdASMCNode(),
+                    fieldNameNode,
+                    ".",
+                    PRIORITY_ACCESS,
+                    TYPE_ACCESS
+                );
 
                 context.PushASMCNode(
-                    new ASMContextNodeLeftRightOperator(ref, context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET));
+                    new ASMContextNodeLeftRightOperator(ref, context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET)
+                );
                 context.CompleteStatement();
             }
 
@@ -1649,12 +1767,14 @@ namespace tool::gsc::opcode {
         bool push;
 
       public:
-        OPCodeInfoEvalGlobalObjectFieldVariable(OPCode id, const char* name, const char* gvarName = nullptr,
-                                                bool push = true, ReadObjectType readtype = ROT_ID)
+        OPCodeInfoEvalGlobalObjectFieldVariable(
+            OPCode id, const char* name, const char* gvarName = nullptr, bool push = true,
+            ReadObjectType readtype = ROT_ID
+        )
             : OPCodeInfo(id, name), gvarName(gvarName), push(push), readtype(readtype) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             uint64_t name;
             if (!gvarName) {
                 if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
@@ -1701,13 +1821,19 @@ namespace tool::gsc::opcode {
                 out << "." << name << std::endl;
             } else {
                 throw std::runtime_error(
-                    std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype));
+                    std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype)
+                );
             }
 
             if (context.m_runDecompiler) {
                 context.SetObjectIdASMCNode(new ASMContextNodeIdentifier(name));
-                auto* node = new ASMContextNodeLeftRightOperator(context.GetObjectIdASMCNode(), fieldNameNode, ".",
-                                                                 PRIORITY_ACCESS, TYPE_ACCESS);
+                auto* node = new ASMContextNodeLeftRightOperator(
+                    context.GetObjectIdASMCNode(),
+                    fieldNameNode,
+                    ".",
+                    PRIORITY_ACCESS,
+                    TYPE_ACCESS
+                );
                 if (push) {
                     context.PushASMCNode(node);
                 } else {
@@ -1723,8 +1849,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoCastAndEvalFieldVariable(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<uint32_t>();
             }
@@ -1743,9 +1870,13 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 context.SetObjectIdASMCNode(context.PopASMCNode());
-                context.PushASMCNode(new ASMContextNodeLeftRightOperator(context.GetObjectIdASMCNode(),
-                                                                         new ASMContextNodeIdentifier(name), ".",
-                                                                         PRIORITY_ACCESS, TYPE_ACCESS));
+                context.PushASMCNode(new ASMContextNodeLeftRightOperator(
+                    context.GetObjectIdASMCNode(),
+                    new ASMContextNodeIdentifier(name),
+                    ".",
+                    PRIORITY_ACCESS,
+                    TYPE_ACCESS
+                ));
             }
 
             return 0;
@@ -1762,8 +1893,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoEvalFieldVariable(OPCode id, const char* name, bool stack, bool ref, ReadObjectType readtype = ROT_ID)
             : OPCodeInfo(id, name), m_stack(stack), m_ref(ref), readtype(readtype) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             ASMContextNode* fieldNameNode{};
             if (!m_stack) {
                 if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
@@ -1791,7 +1923,8 @@ namespace tool::gsc::opcode {
                     out << "." << name << std::endl;
                 } else {
                     throw std::runtime_error(
-                        std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype));
+                        std::format("OPCodeInfoSetGlobalObjectFieldVariable: Can't read {}", (int)readtype)
+                    );
                 }
             } else {
                 out << std::endl;
@@ -1799,8 +1932,12 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 ASMContextNode* node = new ASMContextNodeLeftRightOperator(
-                    context.GetObjectIdASMCNode(), m_stack ? context.PopASMCNode() : fieldNameNode, ".",
-                    PRIORITY_ACCESS, TYPE_ACCESS);
+                    context.GetObjectIdASMCNode(),
+                    m_stack ? context.PopASMCNode() : fieldNameNode,
+                    ".",
+                    PRIORITY_ACCESS,
+                    TYPE_ACCESS
+                );
 
                 if (m_ref) {
                     context.SetFieldIdASMCNode(node);
@@ -1821,8 +1958,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoEvalLocalVariableCached(OPCode id, const char* name, int count = 1, int forceId = -1)
             : OPCodeInfo(id, name), count(count), forceId(forceId) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             for (size_t i = 0; i < count; i++) {
                 if (i) {
                     context.WritePadding(out);
@@ -1864,8 +2002,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoSetLocalVariableCached(OPCode id, const char* name, bool stack, int localId = -1)
             : OPCodeInfo(id, name), m_stack(stack), localId(localId) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar;
 
             if (localId >= 0) {
@@ -1889,10 +2028,20 @@ namespace tool::gsc::opcode {
                 if (!m_stack) {
                     context.SetFieldIdASMCNode(new ASMContextNodeIdentifier(name));
                     context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                        context.GetFieldIdASMCNode(), context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET));
+                        context.GetFieldIdASMCNode(),
+                        context.PopASMCNode(),
+                        " = ",
+                        PRIORITY_SET,
+                        TYPE_SET
+                    ));
                 } else {
                     context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                        new ASMContextNodeIdentifier(name), context.PopASMCNode(), " = ", PRIORITY_SET, TYPE_SET));
+                        new ASMContextNodeIdentifier(name),
+                        context.PopASMCNode(),
+                        " = ",
+                        PRIORITY_SET,
+                        TYPE_SET
+                    ));
                 }
                 context.CompleteStatement();
             }
@@ -1907,8 +2056,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoClearLocalVariableCached(OPCode id, const char* name, int localId = -1)
             : OPCodeInfo(id, name), localId(localId) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar;
             if (localId >= 0) {
                 lvar = localId;
@@ -1930,8 +2080,11 @@ namespace tool::gsc::opcode {
             if (context.m_runDecompiler) {
                 context.PushASMCNode(new ASMContextNodeLeftRightOperator(
                     new ASMContextNodeIdentifier(name),
-                    new ASMContextNodeValue<const char*>("undefined", TYPE_GET_UNDEFINED), " = ", PRIORITY_SET,
-                    TYPE_SET));
+                    new ASMContextNodeValue<const char*>("undefined", TYPE_GET_UNDEFINED),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                ));
                 context.CompleteStatement();
             }
 
@@ -1946,8 +2099,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoFirstArrayKey(OPCode id, const char* name, bool stack) : OPCodeInfo(id, name), m_stack(stack) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             uint64_t name;
             if (!m_stack) {
@@ -1991,8 +2145,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoSetNextArrayKeyCached(OPCode id, const char* name, bool set = true)
             : OPCodeInfo(id, name), m_set(set) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             uint64_t name{};
             if (m_set) {
@@ -2041,8 +2196,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoEvalFieldObjectFromRef(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             uint64_t name;
             int lvar = (int)context.Read<byte>(context.m_bcl++);
@@ -2071,8 +2227,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoEvalLocalVariableRefCached(OPCode id, const char* name, int localid = -1)
             : OPCodeInfo(id, name), m_localid(localid) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             uint64_t name;
             int lvar;
@@ -2104,8 +2261,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoEvalLocalVariableDefined(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             uint64_t name;
             int lvar = (int)context.Read<byte>(context.m_bcl++);
@@ -2121,7 +2279,12 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 context.PushASMCNode(new ASMContextNodeFunctionOperator(
-                    "isdefined", nullptr, new ASMContextNodeIdentifier(name), TYPE_FUNC_IS_DEFINED, true));
+                    "isdefined",
+                    nullptr,
+                    new ASMContextNodeIdentifier(name),
+                    TYPE_FUNC_IS_DEFINED,
+                    true
+                ));
             }
 
             return 0;
@@ -2134,8 +2297,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoEvalLocalArrayCached(OPCode id, const char* name, bool ref) : OPCodeInfo(id, name), ref(ref) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar = (int)context.Read<byte>(context.m_bcl++);
 
             uint64_t name;
@@ -2168,8 +2332,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoEvalLocalObjectCached()
             : OPCodeInfo(OPCODE_IW_EvalLocalVariableObjectCached, "IW_EvalLocalVariableObjectCached") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar = (int)context.Read<byte>(context.m_bcl++);
 
             uint64_t name;
@@ -2198,8 +2363,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoEvalArray(OPCode id, const char* name, bool stack) : OPCodeInfo(id, name), m_stack(stack) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             out << std::endl;
 
@@ -2224,8 +2390,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoCreateArray(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             out << std::endl;
 
@@ -2243,8 +2410,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoAddToArray(OPCode id, const char* name, bool hasKey) : OPCodeInfo(id, name), m_hasKey(hasKey) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             out << std::endl;
 
@@ -2255,8 +2423,8 @@ namespace tool::gsc::opcode {
 
                 if (arrayVal->m_type == TYPE_ARRAY_BUILD) {
                     // we are building an array, we can add the value
-                    static_cast<ASMContextNodeArrayBuild*>(arrayVal)->AddValue(
-                        key, value, objctx.m_vmInfo->HasFlag(VmFlags::VMF_INV_ADD_TO_OBJECT));
+                    static_cast<ASMContextNodeArrayBuild*>(arrayVal)
+                        ->AddValue(key, value, objctx.m_vmInfo->HasFlag(VmFlags::VMF_INV_ADD_TO_OBJECT));
                 } else {
                     ASMContextNodeMultOp* node = new ASMContextNodeMultOp("$addtoarray", false);
 
@@ -2277,8 +2445,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoCreateStruct(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             out << std::endl;
 
@@ -2297,8 +2466,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoAddToStruct(OPCode id, const char* name, bool popKey) : m_popKey(popKey), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             uint64_t key{};
             if (!m_popKey) {
@@ -2316,8 +2486,8 @@ namespace tool::gsc::opcode {
 
                 if (structVal->m_type == TYPE_STRUCT_BUILD) {
                     // we are building an array, we can add the value
-                    static_cast<ASMContextNodeStructBuild*>(structVal)->AddValue(
-                        keyNode, value, (objctx.m_vmInfo->flags & VmFlags::VMF_INV_ADD_TO_OBJECT));
+                    static_cast<ASMContextNodeStructBuild*>(structVal)
+                        ->AddValue(keyNode, value, (objctx.m_vmInfo->flags & VmFlags::VMF_INV_ADD_TO_OBJECT));
                 } else {
                     ASMContextNodeMultOp* node = new ASMContextNodeMultOp("addtostruct", false);
 
@@ -2337,8 +2507,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoCastFieldObject(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             out << std::endl;
 
@@ -2354,8 +2525,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoPreScriptCall(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
 
             out << std::endl;
 
@@ -2373,8 +2545,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoEnd(OPCode id, const char* name, bool isReturn) : OPCodeInfo(id, name), m_isReturn(isReturn) {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 if (m_isReturn) {
                     auto* ref = new ASMContextNodeOp1("return ", true, context.PopASMCNode());
@@ -2407,16 +2580,21 @@ namespace tool::gsc::opcode {
         OPCodeInfoClearArray(OPCode id, const char* name) : OPCodeInfo(id, name) {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 auto* fieldId = context.GetFieldIdASMCNode();
                 auto* key = context.PopASMCNode();
 
                 ASMContextNode* accessNode = new ASMContextNodeArrayAccess(fieldId, key);
                 context.PushASMCNode(new ASMContextNodeLeftRightOperator(
-                    accessNode, new ASMContextNodeValue<const char*>("undefined", TYPE_GET_UNDEFINED), " = ",
-                    PRIORITY_SET, TYPE_SET));
+                    accessNode,
+                    new ASMContextNodeValue<const char*>("undefined", TYPE_GET_UNDEFINED),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                ));
 
                 context.CompleteStatement();
             }
@@ -2434,8 +2612,9 @@ namespace tool::gsc::opcode {
             : OPCodeInfo(id, name), m_operatorName(operatorName) {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 auto* ref = new ASMContextNodeValue<const char*>(m_operatorName, TYPE_STATEMENT);
                 // convert it to statement
@@ -2451,8 +2630,9 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int32_t token{ context.Read<int32_t>(context.m_bcl) };
             context.m_bcl += 4;
 
@@ -2476,8 +2656,9 @@ namespace tool::gsc::opcode {
             : OPCodeInfo(id, name), m_operatorName(operatorName) {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 auto* ref = new ASMContextNodeValue<const char*>(m_operatorName, TYPE_STATEMENT);
                 // convert it to statement
@@ -2498,8 +2679,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoDevOp(bool push) : OPCodeInfo(OPCODE_DevOp, "DevOp"), m_push(push) {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
             if (context.m_runDecompiler) {
                 ASMContextNodeMultOp* node = new ASMContextNodeMultOp("DevOp", false);
@@ -2520,8 +2702,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoInvalidOpCode() : OPCodeInfo(OPCODE_InvalidOpCode, "InvalidOpCode") {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
             if (context.m_runDecompiler) {
                 ASMContextNodeMultOp* node = new ASMContextNodeMultOp("InvalidOpCode", false);
@@ -2542,8 +2725,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoDevConsume(OPCode id, const char* name, size_t len, bool push)
             : len(len), push(push), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << "data(" << std::dec << len << "):";
             std::vector<ASMContextNode*> numbers{};
             for (size_t i = 0; i < len; i++) {
@@ -2580,8 +2764,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoFuncHash(OPCode id, const char* name, bool push, const char* desc)
             : OPCodeInfo(id, name), m_push(push), m_desc(desc) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             auto& bytecode = context.Aligned<uint64_t>();
 
             uint64_t hash = context.Read<uint64_t>(bytecode);
@@ -2613,8 +2798,9 @@ namespace tool::gsc::opcode {
         OPCodeT9EvalFieldVariableFromObject(OPCode id, const char* name, bool stack)
             : OPCodeInfo(id, name), stack(stack) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar = (int)context.Read<byte>(context.m_bcl++);
 
             auto& bytecode = context.Aligned<uint32_t>();
@@ -2657,8 +2843,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeT9EvalArrayCached(OPCode id, const char* name, bool push) : m_push(push), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar = (int)context.Read<byte>(context.m_bcl++);
 
             uint64_t name;
@@ -2689,8 +2876,9 @@ namespace tool::gsc::opcode {
         OPCodeT9SetFieldVariableFromObjectFromRef()
             : OPCodeInfo(OPCODE_T9_SetFieldVariableFromObjectFromRef, "T9_SetFieldVariableFromObjectFromRef") {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar = (int)context.Read<byte>(context.m_bcl++);
 
             auto& bytecode = context.Aligned<uint32_t>();
@@ -2716,8 +2904,13 @@ namespace tool::gsc::opcode {
                 auto* right = new ASMContextNodeIdentifier(field);
 
                 auto* objectNode = new ASMContextNodeLeftRightOperator(left, right, ".", PRIORITY_ACCESS, TYPE_ACCESS);
-                auto* node = new ASMContextNodeLeftRightOperator(objectNode, context.PopASMCNode(), " = ", PRIORITY_SET,
-                                                                 TYPE_SET);
+                auto* node = new ASMContextNodeLeftRightOperator(
+                    objectNode,
+                    context.PopASMCNode(),
+                    " = ",
+                    PRIORITY_SET,
+                    TYPE_SET
+                );
                 context.SetFieldIdASMCNode(node->Clone());
                 context.PushASMCNode(node);
                 context.CompleteStatement();
@@ -2736,15 +2929,18 @@ namespace tool::gsc::opcode {
         ASMContextNodeType m_type;
 
       public:
-        OPCodeInfoFunctionOperator(OPCode id, const char* name, const char* operatorName, bool hasSelf = false,
-                                   bool complete = true, bool canHaveArg2 = false, bool isBool = false,
-                                   bool noParenthesis = false, ASMContextNodeType type = TYPE_STATEMENT)
+        OPCodeInfoFunctionOperator(
+            OPCode id, const char* name, const char* operatorName, bool hasSelf = false, bool complete = true,
+            bool canHaveArg2 = false, bool isBool = false, bool noParenthesis = false,
+            ASMContextNodeType type = TYPE_STATEMENT
+        )
             : OPCodeInfo(id, name), m_operatorName(operatorName), m_hasSelf(hasSelf), m_complete(complete),
               m_canHaveArg2(canHaveArg2), m_isBool(isBool), m_noParenthesis(noParenthesis), m_type(type) {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 ASMContextNodeMultOp* node =
                     new ASMContextNodeMultOp(m_operatorName, m_hasSelf, m_type, m_isBool, m_noParenthesis);
@@ -2768,8 +2964,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoNotify(OPCode id, const char* name) : OPCodeInfo(id, name) {}
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 ASMContextNodeMultOp* node = new ASMContextNodeMultOp("notify", true);
                 // self
@@ -2806,8 +3003,9 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoIWEvent(OPCode id, const char* name, const char* type) : OPCodeInfo(id, name), type(type) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (context.m_runDecompiler) {
                 ASMContextNodeMultOp* node = new ASMContextNodeMultOp(type, true);
                 // self
@@ -2842,8 +3040,8 @@ namespace tool::gsc::opcode {
         OPCodeInfoFuncCall(OPCode id, const char* name, size_t delta, bool hasParam)
             : m_delta(delta), m_hasParam(hasParam), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             int params;
             bool readParam{ !objctx.m_vmInfo->HasFlag(VmFlags::VMF_CALL_NO_PARAMS) ||
                             (objctx.m_vmInfo->HasFlag(VmFlags::VMF_IW_CALLS) && m_hasParam) };
@@ -3040,8 +3238,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoFuncGet(OPCode id, const char* name, size_t delta) : m_delta(delta), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             uint64_t tmpBuffData[2];
             uint64_t* data = tmpBuffData;
             size_t flags{};
@@ -3108,8 +3306,8 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             byte params = context.Read<byte>(context.m_bcl++);
             auto& bytecode = context.Aligned<uint32_t>();
 
@@ -3188,8 +3386,8 @@ namespace tool::gsc::opcode {
         OPCodeInfoFuncCallPtr(OPCode id, const char* name, bool hasParam)
             : m_hasParam(hasParam), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             int params;
             if ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) ||
                 (m_hasParam && objctx.m_vmInfo->HasFlag(VMF_IW_CALLS))) {
@@ -3291,8 +3489,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoGetString(OPCode id, const char* name, bool istr) : OPCodeInfo(id, name), m_istr(istr) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<int32_t>();
             }
@@ -3327,7 +3525,8 @@ namespace tool::gsc::opcode {
                         (context.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FormatterFlags::FFL_NOERROR_STR))
                             ? ""
                             : "<unknown string>",
-                        m_istr ? "&" : nullptr));
+                        m_istr ? "&" : nullptr
+                    ));
                 }
             }
 
@@ -3343,8 +3542,8 @@ namespace tool::gsc::opcode {
         OPCodeInfoGetAnimation(OPCode id, const char* name, bool doubleAnim)
             : m_doubleAnim(doubleAnim), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<int64_t>();
             }
@@ -3367,15 +3566,19 @@ namespace tool::gsc::opcode {
 
                 out << "%" << utils::FormattedString(str1) << "::" << utils::FormattedString(str2);
 
-                bool useReal{ (context.m_opt.m_formatter->HasFlag(
-                                  tool::gsc::formatter::FormatterFlags::FFL_ANIM_REAL)) != 0 };
+                bool useReal{
+                    (context.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FormatterFlags::FFL_ANIM_REAL)) != 0
+                };
                 // check if we can only display the anim name
                 if (useReal && context.useAnimTree && strcmp(context.useAnimTree, str1)) {
                     context.m_exp.SetHandle(context.m_readerHandle);
-                    LOG_WARNING("using more than one animtree in {}::{}, can't use anim renderer, current: {} != {}",
-                                hashutils::ExtractTmp("namespace", context.m_exp.GetNamespace()),
-                                hashutils::ExtractTmp("function", context.m_exp.GetName()),
-                                context.useAnimTree ? context.useAnimTree : "<none>", str1);
+                    LOG_WARNING(
+                        "using more than one animtree in {}::{}, can't use anim renderer, current: {} != {}",
+                        hashutils::ExtractTmp("namespace", context.m_exp.GetNamespace()),
+                        hashutils::ExtractTmp("function", context.m_exp.GetName()),
+                        context.useAnimTree ? context.useAnimTree : "<none>",
+                        str1
+                    );
                     useReal = false;
                 }
                 context.useAnimTree = str1;
@@ -3395,15 +3598,19 @@ namespace tool::gsc::opcode {
                 base++;
                 out << "$" << utils::FormattedString(str2);
 
-                bool useReal{ (context.m_opt.m_formatter->HasFlag(
-                                  tool::gsc::formatter::FormatterFlags::FFL_ANIM_REAL)) != 0 };
+                bool useReal{
+                    (context.m_opt.m_formatter->HasFlag(tool::gsc::formatter::FormatterFlags::FFL_ANIM_REAL)) != 0
+                };
                 // check if we can only display the anim name
                 if (useReal && context.useAnimTree && strcmp(context.useAnimTree, str2)) {
                     context.m_exp.SetHandle(context.m_readerHandle);
-                    LOG_WARNING("using more than one #animtree in {}::{}, can't use anim renderer, current: {} != {}",
-                                hashutils::ExtractTmp("namespace", context.m_exp.GetNamespace()),
-                                hashutils::ExtractTmp("function", context.m_exp.GetName()),
-                                context.useAnimTree ? context.useAnimTree : "<none>", str2);
+                    LOG_WARNING(
+                        "using more than one #animtree in {}::{}, can't use anim renderer, current: {} != {}",
+                        hashutils::ExtractTmp("namespace", context.m_exp.GetNamespace()),
+                        hashutils::ExtractTmp("function", context.m_exp.GetName()),
+                        context.useAnimTree ? context.useAnimTree : "<none>",
+                        str2
+                    );
                     useReal = false;
                 }
                 context.useAnimTree = str2;
@@ -3446,8 +3653,8 @@ namespace tool::gsc::opcode {
         OPCodeInfoGetGlobal(OPCode id, const char* name, OPCodeInfoGetGlobalGetType ref, const char* gvarName)
             : m_ref(ref), m_gvarName(gvarName), OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             uint64_t name;
             if (!m_gvarName) {
                 if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
@@ -3498,8 +3705,8 @@ namespace tool::gsc::opcode {
         OPCodeT9EvalFieldVariableFromGlobalObject()
             : OPCodeInfo(OPCODE_T9_EvalFieldVariableFromGlobalObject, "T9_EvalFieldVariableFromGlobalObject") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             auto& base = context.Aligned<uint16_t>();
 
             uint16_t ref = context.Read<uint16_t>(base);
@@ -3528,7 +3735,8 @@ namespace tool::gsc::opcode {
 
                 context.SetObjectIdASMCNode(left->Clone());
                 context.SetFieldIdASMCNode(
-                    new ASMContextNodeLeftRightOperator(left, right, ".", PRIORITY_ACCESS, TYPE_ACCESS));
+                    new ASMContextNodeLeftRightOperator(left, right, ".", PRIORITY_ACCESS, TYPE_ACCESS)
+                );
             }
 
             return 0;
@@ -3539,8 +3747,8 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             int lvar = (int)context.Read<byte>(context.m_bcl++);
 
             if (lvar >= context.m_localvars.size()) {
@@ -3559,8 +3767,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoSwitch() : OPCodeInfo(OPCODE_Switch, "Switch") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             // size:  8+16*cases,
             // align: 4 + 4 + (8 + 8)*cases,
             // logic uint32 deltaSwitchTable;uint32 cases;(uint64 value;uint64 delta)[cases]
@@ -3645,7 +3853,8 @@ namespace tool::gsc::opcode {
                         out << std::dec << caseValue;
                         if (node) {
                             node->m_cases.push_back(
-                                { new ASMContextNodeValue<int64_t>(caseValue, TYPE_VALUE), caseRLoc });
+                                { new ASMContextNodeValue<int64_t>(caseValue, TYPE_VALUE), caseRLoc }
+                            );
                         }
                     }
                     out << "(0x" << std::hex << floc << ")";
@@ -3686,10 +3895,11 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoGetPositionRef() : OPCodeInfo(OPCODE_IW_GetPositionRef, "IW_GetPositionRef") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             int32_t opcodeLocation = context.FunctionRelativeLocation(
-                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1));
+                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1)
+            );
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<int16_t>();
             }
@@ -3744,8 +3954,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoIWSwitch() : OPCodeInfo(OPCODE_IW_Switch, "IW_Switch") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             auto& baseTable = context.m_bcl;
             int32_t table = context.Read<int32_t>(baseTable);
             // we move to the table
@@ -3813,7 +4023,8 @@ namespace tool::gsc::opcode {
                         out << std::dec << val.integer;
                         if (node) {
                             node->m_cases.push_back(
-                                { new ASMContextNodeValue<int64_t>(val.integer, TYPE_VALUE), caseRLoc });
+                                { new ASMContextNodeValue<int64_t>(val.integer, TYPE_VALUE), caseRLoc }
+                            );
                         }
                         break;
                     case 0xffff: { // string
@@ -3830,11 +4041,13 @@ namespace tool::gsc::opcode {
                             // probably only dev blocks
                             out << "bad str stack: 0x" << std::hex << val.hash;
                             if (node) {
-                                outputStr =
-                                    new ASMContextNodeString((context.m_opt.m_formatter->HasFlag(
-                                                                 tool::gsc::formatter::FormatterFlags::FFL_NOERROR_STR))
-                                                                 ? ""
-                                                                 : "<unknown string>");
+                                outputStr = new ASMContextNodeString(
+                                    (context.m_opt.m_formatter->HasFlag(
+                                        tool::gsc::formatter::FormatterFlags::FFL_NOERROR_STR
+                                    ))
+                                        ? ""
+                                        : "<unknown string>"
+                                );
                             }
                         }
                         if (node) {
@@ -3874,7 +4087,8 @@ namespace tool::gsc::opcode {
                         out << std::dec << "unk " << type << ":" << val.hash;
                         if (node) {
                             node->m_cases.push_back(
-                                { new ASMContextNodeValue<int64_t>(val.hash, TYPE_VALUE), caseRLoc });
+                                { new ASMContextNodeValue<int64_t>(val.hash, TYPE_VALUE), caseRLoc }
+                            );
                         }
                         break;
                     }
@@ -3893,7 +4107,8 @@ namespace tool::gsc::opcode {
 
                         if (node) {
                             node->m_cases.push_back(
-                                { new ASMContextNodeValue<int64_t>(val.str, TYPE_VALUE), caseRLoc });
+                                { new ASMContextNodeValue<int64_t>(val.str, TYPE_VALUE), caseRLoc }
+                            );
                         }
                     }
                 }
@@ -3931,8 +4146,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoEndSwitch() : OPCodeInfo(OPCODE_EndSwitch, "EndSwitch") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             int32_t jumpLocation = context.FunctionRelativeLocation(context.m_bcl - 2);
             auto& baseCount = context.Aligned<int32_t>();
 
@@ -3954,7 +4169,8 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 context.PushASMCNode(
-                    new ASMContextNodeJumpOperator("endswitch", nullptr, rloc, TYPE_JUMP_ENDSWITCH, jumpLocation));
+                    new ASMContextNodeJumpOperator("endswitch", nullptr, rloc, TYPE_JUMP_ENDSWITCH, jumpLocation)
+                );
                 context.CompleteStatement();
             }
 
@@ -3968,8 +4184,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoIWEndSwitch() : OPCodeInfo(OPCODE_IW_EndSwitch, "IW_EndSwitch") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             int32_t jumpLocation = context.FunctionRelativeLocation(context.m_bcl - 2);
             auto& baseCount = context.m_bcl;
 
@@ -3984,7 +4200,8 @@ namespace tool::gsc::opcode {
 
             if (context.m_runDecompiler) {
                 context.PushASMCNode(
-                    new ASMContextNodeJumpOperator("endswitch", nullptr, rloc, TYPE_JUMP_ENDSWITCH, jumpLocation));
+                    new ASMContextNodeJumpOperator("endswitch", nullptr, rloc, TYPE_JUMP_ENDSWITCH, jumpLocation)
+                );
                 context.CompleteStatement();
             }
 
@@ -4005,14 +4222,16 @@ namespace tool::gsc::opcode {
         bool m_forceFunc;
         bool m_convertBool;
         bool m_isBoolValueRet;
-        OPCodeInfopushopn(OPCode id, const char* name, INT n, const char* op, ASMContextNodeType type,
-                          ASMContextNodePriority priority, bool caller = false, bool forceFunc = false,
-                          bool convertBool = false, bool isBoolValueRet = false)
+        OPCodeInfopushopn(
+            OPCode id, const char* name, INT n, const char* op, ASMContextNodeType type,
+            ASMContextNodePriority priority, bool caller = false, bool forceFunc = false, bool convertBool = false,
+            bool isBoolValueRet = false
+        )
             : OPCodeInfo(id, name), m_n(n), m_op(op), m_type(type), m_priority(priority), m_caller(caller),
               m_forceFunc(forceFunc), m_convertBool(convertBool), m_isBoolValueRet(isBoolValueRet) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
                 bool cb = m_convertBool;
                 auto popVal = [&context, cb]() {
@@ -4050,8 +4269,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoTry() : OPCodeInfo(OPCODE_T10_Try, "T10_Try") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<int16_t>();
             }
@@ -4081,8 +4300,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoTryEnd() : OPCodeInfo(OPCODE_T10_TryEnd, "T10_TryEnd") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (objctx.m_vmInfo->HasFlag(VmFlags::VMF_ALIGN)) {
                 context.Aligned<int16_t>();
             }
@@ -4105,8 +4324,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfodec(OPCode id, const char* name) : OPCodeInfo(id, name) {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (context.m_runDecompiler) {
 
                 if (context.m_stack.size()) {
@@ -4137,8 +4356,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoCount(OPCode id, const char* name, const char* op, bool pushReturn, int addedToCount = 0)
             : OPCodeInfo(id, name), m_addedToCount(addedToCount), m_op(op), m_pushReturn(pushReturn) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             byte count = context.Read<byte>(context.m_bcl++) + m_addedToCount;
 
             out << "count:" << (int)count << std::endl;
@@ -4172,8 +4392,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoCountWaittill(OPCode id, const char* name, const char* op, byte added = 0)
             : OPCodeInfo(id, name), m_op(op), m_added(added) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             byte count = context.Read<byte>(context.m_bcl++) + m_added;
 
             out << "count:" << (int)count << std::endl;
@@ -4203,13 +4424,16 @@ namespace tool::gsc::opcode {
         unsigned int m_delta;
         bool m_hasCaller;
         ASMContextNodeType m_type = TYPE_STATEMENT;
-        OPCodeInfoSingle(OPCode id, const char* name, const char* op, bool pushReturn, unsigned int count = 1,
-                         unsigned int delta = 0, bool hasCaller = true, ASMContextNodeType type = TYPE_STATEMENT)
+        OPCodeInfoSingle(
+            OPCode id, const char* name, const char* op, bool pushReturn, unsigned int count = 1,
+            unsigned int delta = 0, bool hasCaller = true, ASMContextNodeType type = TYPE_STATEMENT
+        )
             : OPCodeInfo(id, name), m_op(op), m_pushReturn(pushReturn), m_count(count), m_delta(delta),
               m_hasCaller(hasCaller), m_type(type) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             if (m_delta) {
                 out << "data: ";
 
@@ -4251,8 +4475,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoSingleFunc(OPCode id, const char* name, const char* op, bool pushReturn, bool isBoolVal = false)
             : OPCodeInfo(id, name), m_op(op), m_pushReturn(pushReturn), m_isBoolVal(isBoolVal) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << std::endl;
 
             if (context.m_runDecompiler) {
@@ -4280,8 +4505,8 @@ namespace tool::gsc::opcode {
       public:
         using OPCodeInfo::OPCodeInfo;
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             context.CompleteStatement();
             out << std::endl;
             return 0;
@@ -4292,8 +4517,8 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoClearParams() : OPCodeInfo(OPCODE_ClearParams, "ClearParams") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             if (!objctx.m_vmInfo->HasFlag(VmFlags::VMF_WAITTILL_RETURN)) {
                 context.CompleteStatement();
             }
@@ -4307,10 +4532,11 @@ namespace tool::gsc::opcode {
       public:
         OPCodeInfoT8CGetLazyFunction() : OPCodeInfo(OPCODE_T8C_GetLazyFunction, "T8C_GetLazyFunction") {}
 
-        int Dump(std::ostream& out, uint16_t v, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int
+        Dump(std::ostream& out, uint16_t v, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx) const override {
             int32_t lazylocation = context.FunctionRelativeLocation(
-                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1));
+                context.m_bcl - ((objctx.m_vmInfo->HasFlag(VmFlags::VMF_OPCODE_U16)) ? 2 : 1)
+            );
             auto& base = context.Aligned<int32_t>();
 
             uint32_t nsp = context.Read<uint32_t>(base);
@@ -4326,7 +4552,8 @@ namespace tool::gsc::opcode {
             located.script = script;
 
             context.m_objctx.m_lazyLinks[located].push_back(
-                context.ScriptAbsoluteLocation(context.m_fonctionStart + lazylocation));
+                context.ScriptAbsoluteLocation(context.m_fonctionStart + lazylocation)
+            );
 
             out << "@" << hashutils::ExtractTmpPath("namespace", nsp) << "<" << std::flush
                 << hashutils::ExtractTmpScript(script) << ">::" << std::flush
@@ -4347,8 +4574,9 @@ namespace tool::gsc::opcode {
         OPCodeInfoDeltaVal(OPCode id, const char* name, const char* op, bool ref)
             : OPCodeInfo(id, name), m_op(op), m_ref(ref) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             out << m_op << std::endl;
 
             if (context.m_runDecompiler) {
@@ -4372,8 +4600,9 @@ namespace tool::gsc::opcode {
         OPCodeT9DeltaLocalVariableCached(OPCode id, const char* name, const char* op)
             : OPCodeInfo(id, name), m_op(op) {}
 
-        int Dump(std::ostream& out, uint16_t value, ASMContext& context,
-                 tool::gsc::T8GSCOBJContext& objctx) const override {
+        int Dump(
+            std::ostream& out, uint16_t value, ASMContext& context, tool::gsc::T8GSCOBJContext& objctx
+        ) const override {
             int lvar = (int)*(context.m_bcl++);
 
             uint64_t name;
@@ -4407,13 +4636,17 @@ namespace tool::gsc::opcode {
             const OPCodeInfoStatement opAbort{ OPCODE_Abort, "Abort", "Abort()" };
             const OPCodeInfoStatement opBreakpoint{ OPCODE_Breakpoint, "Breakpoint", "Breakpoint()" };
             const OPCodeInfoStatement opAutoBreakpoint{ OPCODE_AutoBreakpoint, "AutoBreakpoint", "AutoBreakpoint()" };
-            const OPCodeInfoStatement opErrorBreakpoint{ OPCODE_ErrorBreakpoint, "ErrorBreakpoint",
+            const OPCodeInfoStatement opErrorBreakpoint{ OPCODE_ErrorBreakpoint,
+                                                         "ErrorBreakpoint",
                                                          "ErrorBreakpoint()" };
-            const OPCodeInfoStatement opWatchBreakpoint{ OPCODE_WatchBreakpoint, "WatchBreakpoint",
+            const OPCodeInfoStatement opWatchBreakpoint{ OPCODE_WatchBreakpoint,
+                                                         "WatchBreakpoint",
                                                          "WatchBreakpoint()" };
-            const OPCodeInfoStatement opNotifyBreakpoint{ OPCODE_NotifyBreakpoint, "NotifyBreakpoint",
+            const OPCodeInfoStatement opNotifyBreakpoint{ OPCODE_NotifyBreakpoint,
+                                                          "NotifyBreakpoint",
                                                           "NotifyBreakpoint()" };
-            const OPCodeInfoStatement opThreadEndBreakpoint{ OPCODE_ThreadEndBreakpoint, "ThreadEndBreakpoint",
+            const OPCodeInfoStatement opThreadEndBreakpoint{ OPCODE_ThreadEndBreakpoint,
+                                                             "ThreadEndBreakpoint",
                                                              "ThreadEndBreakpoint()" };
             const OPCodeInfoStatement opPushVar{ OPCODE_PushVar, "PushVar", "PushVar()" };
             const OPCodeInfoStatement opPushEntityVar{ OPCODE_PushEntityVar, "PushEntityVar", "PushEntityVar()" };
@@ -4463,8 +4696,9 @@ namespace tool::gsc::opcode {
             const OPCodeInfoStatement opProfileStart{ OPCODE_ProfileStart, "ProfileStart", "profilestart()" };
             const OPCodeInfoStatement opProfileStop{ OPCODE_ProfileStop, "ProfileStop", "profilestop()" };
             const OPCodeInfoFuncHash opPixBeginEvent{ OPCODE_PixBeginEvent, "PixBeginEvent", false, "pixbeginevent" };
-            const OPCodeInfoFuncHash opT7_ProfileStart{ OPCODE_T7_ProfileStart, "T7_ProfileStart", true,
-                                                        "profilestart" };
+            const OPCodeInfoFuncHash opT7_ProfileStart{
+                OPCODE_T7_ProfileStart, "T7_ProfileStart", true, "profilestart"
+            };
             const OPCodeInfoStatement opPixEndEvent{ OPCODE_PixEndEvent, "PixEndEvent", "pixendevent()" };
             const OPCodeInfoStatement opUnknown10e{ OPCODE_Unknown10e, "Unknown10e", "operator_Unknown10e()" };
             const OPCodeInfoStatement opUnknown126{ OPCODE_Unknown126, "Unknown126", "operator_Unknown126()" };
@@ -4508,13 +4742,15 @@ namespace tool::gsc::opcode {
             const OPCodeInfoSetVariableField opSetVariableField{ OPCODE_SetVariableField, "SetVariableField" };
             const OPCodeInfoSetVariableFieldRef opSetVariableFieldRef{ OPCODE_SetVariableFieldRef,
                                                                        "SetVariableFieldRef" };
-            const OPCodeInfoClearFieldVariable opClearFieldVariable{ OPCODE_ClearFieldVariable, "ClearFieldVariable",
-                                                                     false, false };
-            const OPCodeInfoClearFieldVariable opClearFieldVariableOnStack{ OPCODE_ClearFieldVariableOnStack,
-                                                                            "ClearFieldVariableOnStack", true, false };
-            const OPCodeInfoClearFieldVariable opIW_ClearFieldVariableToken{ OPCODE_IW_ClearFieldVariableToken,
-                                                                             "IW_ClearFieldVariableToken", false, false,
-                                                                             ROT_TOKEN };
+            const OPCodeInfoClearFieldVariable opClearFieldVariable{
+                OPCODE_ClearFieldVariable, "ClearFieldVariable", false, false
+            };
+            const OPCodeInfoClearFieldVariable opClearFieldVariableOnStack{
+                OPCODE_ClearFieldVariableOnStack, "ClearFieldVariableOnStack", true, false
+            };
+            const OPCodeInfoClearFieldVariable opIW_ClearFieldVariableToken{
+                OPCODE_IW_ClearFieldVariableToken, "IW_ClearFieldVariableToken", false, false, ROT_TOKEN
+            };
 
             const OPCodeInfoEvalSelfFieldVariable opEvalSelfFieldVariable{ OPCODE_EvalSelfFieldVariable,
                                                                            "EvalSelfFieldVariable" };
@@ -4523,21 +4759,24 @@ namespace tool::gsc::opcode {
             };
             const OPCodeInfoCastAndEvalFieldVariable opCastAndEvalFieldVariable{ OPCODE_CastAndEvalFieldVariable,
                                                                                  "CastAndEvalFieldVariable" };
-            const OPCodeInfoEvalFieldVariable opEvalFieldVariable{ OPCODE_EvalFieldVariable, "EvalFieldVariable", false,
-                                                                   false };
-            const OPCodeInfoEvalFieldVariable opEvalFieldVariableRef{ OPCODE_EvalFieldVariableRef,
-                                                                      "EvalFieldVariableRef", false, true };
-            const OPCodeInfoEvalFieldVariable opEvalFieldVariableOnStack{ OPCODE_EvalFieldVariableOnStack,
-                                                                          "EvalFieldVariableOnStack", true, false };
-            const OPCodeInfoEvalFieldVariable opEvalFieldVariableOnStackRef{ OPCODE_EvalFieldVariableOnStackRef,
-                                                                             "EvalFieldVariableOnStackRef", true,
-                                                                             true };
-            const OPCodeInfoEvalFieldVariable opIW_EvalFieldVariableToken{ OPCODE_IW_EvalFieldVariableToken,
-                                                                           "IW_EvalFieldVariableToken", false, false,
-                                                                           ROT_TOKEN };
-            const OPCodeInfoEvalFieldVariable opIW_EvalFieldVariableTokenRef{ OPCODE_IW_EvalFieldVariableTokenRef,
-                                                                              "IW_EvalFieldVariableTokenRef", false,
-                                                                              true, ROT_TOKEN };
+            const OPCodeInfoEvalFieldVariable opEvalFieldVariable{
+                OPCODE_EvalFieldVariable, "EvalFieldVariable", false, false
+            };
+            const OPCodeInfoEvalFieldVariable opEvalFieldVariableRef{
+                OPCODE_EvalFieldVariableRef, "EvalFieldVariableRef", false, true
+            };
+            const OPCodeInfoEvalFieldVariable opEvalFieldVariableOnStack{
+                OPCODE_EvalFieldVariableOnStack, "EvalFieldVariableOnStack", true, false
+            };
+            const OPCodeInfoEvalFieldVariable opEvalFieldVariableOnStackRef{
+                OPCODE_EvalFieldVariableOnStackRef, "EvalFieldVariableOnStackRef", true, true
+            };
+            const OPCodeInfoEvalFieldVariable opIW_EvalFieldVariableToken{
+                OPCODE_IW_EvalFieldVariableToken, "IW_EvalFieldVariableToken", false, false, ROT_TOKEN
+            };
+            const OPCodeInfoEvalFieldVariable opIW_EvalFieldVariableTokenRef{
+                OPCODE_IW_EvalFieldVariableTokenRef, "IW_EvalFieldVariableTokenRef", false, true, ROT_TOKEN
+            };
 
             // localvar related
             const OPCodeInfoCheckClearParams opCheckClearParams{};
@@ -4552,11 +4791,14 @@ namespace tool::gsc::opcode {
                 OPCODE_SetLocalVariableCachedOnStack, "SetLocalVariableCachedOnStack", true
             };
             const OPCodeInfoSetLocalVariableCached opSetLocalVariableCached{ OPCODE_SetLocalVariableCached,
-                                                                             "SetLocalVariableCached", false };
-            const OPCodeInfoSetLocalVariableCached opIW_SetLocalVariableCached{ OPCODE_IW_SetLocalVariableCached0,
-                                                                                "IW_SetLocalVariableCached", false, 0 };
+                                                                             "SetLocalVariableCached",
+                                                                             false };
+            const OPCodeInfoSetLocalVariableCached opIW_SetLocalVariableCached{
+                OPCODE_IW_SetLocalVariableCached0, "IW_SetLocalVariableCached", false, 0
+            };
             const OPCodeInfoFirstArrayKey opFirstArrayKey{ OPCODE_FirstArrayKey, "FirstArrayKey", true };
-            const OPCodeInfoFirstArrayKey opFirstArrayKeyCached{ OPCODE_FirstArrayKeyCached, "FirstArrayKeyCached",
+            const OPCodeInfoFirstArrayKey opFirstArrayKeyCached{ OPCODE_FirstArrayKeyCached,
+                                                                 "FirstArrayKeyCached",
                                                                  false };
             const OPCodeInfoSetNextArrayKeyCached opNextArrayKey{ OPCODE_NextArrayKey, "NextArrayKey", false };
             const OPCodeInfoSetNextArrayKeyCached opSetNextArrayKeyCached{ OPCODE_SetNextArrayKeyCached,
@@ -4573,9 +4815,11 @@ namespace tool::gsc::opcode {
 
             // idc
             const OPCodeInfoName opEvalLocalVariableCachedDebug{ OPCODE_EvalLocalVariableCachedDebug,
-                                                                 "EvalLocalVariableCachedDebug", "var" };
+                                                                 "EvalLocalVariableCachedDebug",
+                                                                 "var" };
             const OPCodeInfoName opEvalLocalVariableRefCachedDebug{ OPCODE_EvalLocalVariableRefCachedDebug,
-                                                                    "EvalLocalVariableRefCachedDebug", "var" };
+                                                                    "EvalLocalVariableRefCachedDebug",
+                                                                    "var" };
             const OPCodeInfoGetLocalVar opUnknownc7{ OPCODE_Unknownc7, "Unknownc7" };
 
             // ref op
@@ -4585,20 +4829,26 @@ namespace tool::gsc::opcode {
             const OPCodeInfoDeltaVal opIW_IncRef{ OPCODE_IW_IncRef, "IW_IncRef", "++", true };
 
             // control
-            const OPCodeInfoCount opEndOnCallback{ OPCODE_EndOnCallback, "EndOnCallback", "endoncallback",
-                                                   false };                         // count = params + self
+            const OPCodeInfoCount opEndOnCallback{
+                OPCODE_EndOnCallback, "EndOnCallback", "endoncallback", false
+            };                                                                      // count = params + self
             const OPCodeInfoCount opEndOn{ OPCODE_EndOn, "EndOn", "endon", false }; // count = params + self
             // ret control
-            const OPCodeInfoCountWaittill opWaitTill{ OPCODE_WaitTill, "WaitTill",
+            const OPCodeInfoCountWaittill opWaitTill{ OPCODE_WaitTill,
+                                                      "WaitTill",
                                                       "waittill" }; // count = params + self
-            const OPCodeInfoCountWaittill opWaitTillMatchTimeout{ OPCODE_WaitTillMatchTimeout, "WaitTillMatchTimeout",
+            const OPCodeInfoCountWaittill opWaitTillMatchTimeout{ OPCODE_WaitTillMatchTimeout,
+                                                                  "WaitTillMatchTimeout",
                                                                   "waittillmatchtimeout" };
-            const OPCodeInfoCountWaittill opWaitTillMatch{ OPCODE_WaitTillMatch, "WaitTillMatch",
+            const OPCodeInfoCountWaittill opWaitTillMatch{ OPCODE_WaitTillMatch,
+                                                           "WaitTillMatch",
                                                            "waittillmatch" }; // count = params + self
-            const OPCodeInfoCountWaittill opWaittillTimeout{ OPCODE_WaittillTimeout, "WaittillTimeout",
+            const OPCodeInfoCountWaittill opWaittillTimeout{ OPCODE_WaittillTimeout,
+                                                             "WaittillTimeout",
                                                              "waittilltimeout" }; // count = params + self
-            const OPCodeInfoCountWaittill opWaitTillMatch2{ OPCODE_WaitTillMatch2, "WaitTillMatch2", "waittillmatch",
-                                                            1 }; // count = params + self - 1 (no hash?)
+            const OPCodeInfoCountWaittill opWaitTillMatch2{
+                OPCODE_WaitTillMatch2, "WaitTillMatch2", "waittillmatch", 1
+            }; // count = params + self - 1 (no hash?)
             // operation
             const OPCodeInfopushopn opBit_And{
                 OPCODE_Bit_And, "Bit_And", 2, "&", TYPE_OPERATION_MERGE, PRIORITY_BIT_AND
@@ -4719,7 +4969,8 @@ namespace tool::gsc::opcode {
             const OPCodeInfoVectorScale opVectorScale{ OPCODE_VectorScale, "VectorScale" };
             const OPCodeInfoGetObjectSize opSizeOf{ OPCODE_SizeOf, "SizeOf" };
 
-            const OPCodeInfoStatement opWaitTillFrameEnd{ OPCODE_WaitTillFrameEnd, "WaitTillFrameEnd",
+            const OPCodeInfoStatement opWaitTillFrameEnd{ OPCODE_WaitTillFrameEnd,
+                                                          "WaitTillFrameEnd",
                                                           "waittillframeend()" };
             const OPCodeInfoFunctionOperator opWait{ OPCODE_Wait, "Wait", "wait", false, true, false, false, true };
             const OPCodeInfoFunctionOperator opWait2{ OPCODE_Wait2, "Wait2", "wait", false, true, false, false, true };
@@ -4738,8 +4989,9 @@ namespace tool::gsc::opcode {
             const OPCodeInfoClearArray opClearArray{ OPCODE_ClearArray, "ClearArray" };
             const OPCodeInfoGetConstant<const char*> opGetSelf{ OPCODE_GetSelf, "GetSelf", "self",
                                                                 false,          false,     TYPE_SELF };
-            const OPCodeInfoGetConstantRef<const char*> opGetSelfObject{ OPCODE_GetSelfObject, "GetSelfObject", "self",
-                                                                         TYPE_SELF };
+            const OPCodeInfoGetConstantRef<const char*> opGetSelfObject{
+                OPCODE_GetSelfObject, "GetSelfObject", "self", TYPE_SELF
+            };
 
             // class stuff
             const OPCodeInfoGetObjectType opGetObjectType{ OPCODE_GetObjectType, "GetObjectType", "class" };
@@ -4751,70 +5003,96 @@ namespace tool::gsc::opcode {
 
             // functions
             const OPCodeInfoFuncCall opScriptFunctionCall{ OPCODE_ScriptFunctionCall, "ScriptFunctionCall", 4, false };
-            const OPCodeInfoFuncCall opIW_ScriptFunctionCallFar2{ OPCODE_IW_ScriptFunctionCallFar2,
-                                                                  "IW_ScriptFunctionCallFar2", 4, false };
-            const OPCodeInfoFuncCall opScriptThreadCallEndOn{ OPCODE_ScriptThreadCallEndOn, "ScriptThreadCallEndOn", 4,
-                                                              true };
+            const OPCodeInfoFuncCall opIW_ScriptFunctionCallFar2{
+                OPCODE_IW_ScriptFunctionCallFar2, "IW_ScriptFunctionCallFar2", 4, false
+            };
+            const OPCodeInfoFuncCall opScriptThreadCallEndOn{
+                OPCODE_ScriptThreadCallEndOn, "ScriptThreadCallEndOn", 4, true
+            };
             const OPCodeInfoFuncCall opScriptThreadCall{ OPCODE_ScriptThreadCall, "ScriptThreadCall", 4, true };
-            const OPCodeInfoFuncCall opScriptMethodThreadCallEndOn{ OPCODE_ScriptMethodThreadCallEndOn,
-                                                                    "ScriptMethodThreadCallEndOn", 4, true };
+            const OPCodeInfoFuncCall opScriptMethodThreadCallEndOn{
+                OPCODE_ScriptMethodThreadCallEndOn, "ScriptMethodThreadCallEndOn", 4, true
+            };
             const OPCodeInfoFuncCall opScriptMethodCall{ OPCODE_ScriptMethodCall, "ScriptMethodCall", 4, false };
-            const OPCodeInfoFuncCall opScriptMethodThreadCall{ OPCODE_ScriptMethodThreadCall, "ScriptMethodThreadCall",
-                                                               4, true };
-            const OPCodeInfoFuncCall opCallBuiltinFunction{ OPCODE_CallBuiltinFunction, "CallBuiltinFunction", 2,
-                                                            true };
-            const OPCodeInfoFuncCall opIW_CallBuiltinFunction0{ OPCODE_IW_CallBuiltinFunction0,
-                                                                "IW_CallBuiltinFunction0", 2, false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinFunction1{ OPCODE_IW_CallBuiltinFunction1,
-                                                                "IW_CallBuiltinFunction1", 2, false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinFunction2{ OPCODE_IW_CallBuiltinFunction2,
-                                                                "IW_CallBuiltinFunction2", 2, false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinFunction3{ OPCODE_IW_CallBuiltinFunction3,
-                                                                "IW_CallBuiltinFunction3", 2, false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinFunction4{ OPCODE_IW_CallBuiltinFunction4,
-                                                                "IW_CallBuiltinFunction4", 2, false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinFunction5{ OPCODE_IW_CallBuiltinFunction5,
-                                                                "IW_CallBuiltinFunction5", 2, false };
+            const OPCodeInfoFuncCall opScriptMethodThreadCall{
+                OPCODE_ScriptMethodThreadCall, "ScriptMethodThreadCall", 4, true
+            };
+            const OPCodeInfoFuncCall opCallBuiltinFunction{
+                OPCODE_CallBuiltinFunction, "CallBuiltinFunction", 2, true
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinFunction0{
+                OPCODE_IW_CallBuiltinFunction0, "IW_CallBuiltinFunction0", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinFunction1{
+                OPCODE_IW_CallBuiltinFunction1, "IW_CallBuiltinFunction1", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinFunction2{
+                OPCODE_IW_CallBuiltinFunction2, "IW_CallBuiltinFunction2", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinFunction3{
+                OPCODE_IW_CallBuiltinFunction3, "IW_CallBuiltinFunction3", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinFunction4{
+                OPCODE_IW_CallBuiltinFunction4, "IW_CallBuiltinFunction4", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinFunction5{
+                OPCODE_IW_CallBuiltinFunction5, "IW_CallBuiltinFunction5", 2, false
+            };
             const OPCodeInfoFuncCall opCallBuiltinMethod{ OPCODE_CallBuiltinMethod, "CallBuiltinMethod", 2, true };
-            const OPCodeInfoFuncCall opIW_CallBuiltinMethod0{ OPCODE_IW_CallBuiltinMethod0, "IW_CallBuiltinMethod0", 2,
-                                                              false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinMethod1{ OPCODE_IW_CallBuiltinMethod1, "IW_CallBuiltinMethod1", 2,
-                                                              false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinMethod2{ OPCODE_IW_CallBuiltinMethod2, "IW_CallBuiltinMethod2", 2,
-                                                              false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinMethod3{ OPCODE_IW_CallBuiltinMethod3, "IW_CallBuiltinMethod3", 2,
-                                                              false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinMethod4{ OPCODE_IW_CallBuiltinMethod4, "IW_CallBuiltinMethod4", 2,
-                                                              false };
-            const OPCodeInfoFuncCall opIW_CallBuiltinMethod5{ OPCODE_IW_CallBuiltinMethod5, "IW_CallBuiltinMethod5", 2,
-                                                              false };
+            const OPCodeInfoFuncCall opIW_CallBuiltinMethod0{
+                OPCODE_IW_CallBuiltinMethod0, "IW_CallBuiltinMethod0", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinMethod1{
+                OPCODE_IW_CallBuiltinMethod1, "IW_CallBuiltinMethod1", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinMethod2{
+                OPCODE_IW_CallBuiltinMethod2, "IW_CallBuiltinMethod2", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinMethod3{
+                OPCODE_IW_CallBuiltinMethod3, "IW_CallBuiltinMethod3", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinMethod4{
+                OPCODE_IW_CallBuiltinMethod4, "IW_CallBuiltinMethod4", 2, false
+            };
+            const OPCodeInfoFuncCall opIW_CallBuiltinMethod5{
+                OPCODE_IW_CallBuiltinMethod5, "IW_CallBuiltinMethod5", 2, false
+            };
 
             const OPCodeInfoFuncCall opIW_LocalCall{ OPCODE_IW_LocalCall, "IW_LocalCall", 4, false };
             const OPCodeInfoFuncCall opIW_LocalCall2{ OPCODE_IW_LocalCall2, "IW_LocalCall2", 4, false };
             const OPCodeInfoFuncCall opIW_LocalThreadCall{ OPCODE_IW_LocalThreadCall, "IW_LocalThreadCall", 4, true };
             const OPCodeInfoFuncCall opIW_LocalMethodCall{ OPCODE_IW_LocalMethodCall, "IW_LocalMethodCall", 4, false };
-            const OPCodeInfoFuncCall opIW_LocalMethodCall2{ OPCODE_IW_LocalMethodCall2, "IW_LocalMethodCall2", 4,
-                                                            false };
-            const OPCodeInfoFuncCall opIW_LocalMethodThreadCall{ OPCODE_IW_LocalMethodThreadCall,
-                                                                 "IW_LocalMethodThreadCall", 4, true };
+            const OPCodeInfoFuncCall opIW_LocalMethodCall2{
+                OPCODE_IW_LocalMethodCall2, "IW_LocalMethodCall2", 4, false
+            };
+            const OPCodeInfoFuncCall opIW_LocalMethodThreadCall{
+                OPCODE_IW_LocalMethodThreadCall, "IW_LocalMethodThreadCall", 4, true
+            };
 
             const OPCodeInfoFuncCallPtr opScriptThreadCallPointerEndOn{ OPCODE_ScriptThreadCallPointerEndOn,
-                                                                        "ScriptThreadCallPointerEndOn", true };
+                                                                        "ScriptThreadCallPointerEndOn",
+                                                                        true };
             const OPCodeInfoFuncCallPtr opScriptThreadCallPointer{ OPCODE_ScriptThreadCallPointer,
-                                                                   "ScriptThreadCallPointer", true };
+                                                                   "ScriptThreadCallPointer",
+                                                                   true };
             const OPCodeInfoFuncCallPtr opScriptMethodThreadCallPointer{ OPCODE_ScriptMethodThreadCallPointer,
-                                                                         "ScriptMethodThreadCallPointer", true };
+                                                                         "ScriptMethodThreadCallPointer",
+                                                                         true };
             const OPCodeInfoFuncCallPtr opScriptMethodThreadCallPointerEndOn{ OPCODE_ScriptMethodThreadCallPointerEndOn,
                                                                               "ScriptMethodThreadCallPointerEndOn",
                                                                               true };
             const OPCodeInfoFuncCallPtr opScriptFunctionCallPointer{ OPCODE_ScriptFunctionCallPointer,
-                                                                     "ScriptFunctionCallPointer", false };
+                                                                     "ScriptFunctionCallPointer",
+                                                                     false };
             const OPCodeInfoFuncCallPtr opScriptMethodCallPointer{ OPCODE_ScriptMethodCallPointer,
-                                                                   "ScriptMethodCallPointer", false };
+                                                                   "ScriptMethodCallPointer",
+                                                                   false };
             const OPCodeInfoFuncCallPtr opIW_BuiltinFunctionCallPointer{ OPCODE_IW_BuiltinFunctionCallPointer,
-                                                                         "IW_BuiltinFunctionCallPointer", true };
+                                                                         "IW_BuiltinFunctionCallPointer",
+                                                                         true };
             const OPCodeInfoFuncCallPtr opIW_BuiltinMethodCallPointer{ OPCODE_IW_BuiltinMethodCallPointer,
-                                                                       "IW_BuiltinMethodCallPointer", true };
+                                                                       "IW_BuiltinMethodCallPointer",
+                                                                       true };
 
             // linked ref
             const OPCodeInfoFuncGet opGetResolveFunction{ OPCODE_GetResolveFunction, "GetResolveFunction", 4 };
@@ -4822,8 +5100,9 @@ namespace tool::gsc::opcode {
             const OPCodeInfoFuncGet opIW_GetLocal{ OPCODE_IW_GetLocal, "IW_GetLocal", 4 };
             const OPCodeInfoGetString opGetString{ OPCODE_GetString, "GetString", false };
             const OPCodeInfoGetGlobal opGetGlobal{ OPCODE_GetGlobal, "GetGlobal", GGGT_PUSH, nullptr };
-            const OPCodeInfoGetGlobal opGetGlobalObject{ OPCODE_GetGlobalObject, "GetGlobalObject", GGGT_GLOBAL,
-                                                         nullptr };
+            const OPCodeInfoGetGlobal opGetGlobalObject{
+                OPCODE_GetGlobalObject, "GetGlobalObject", GGGT_GLOBAL, nullptr
+            };
 
             // T9
             const OPCodeT9EvalFieldVariableFromObject opT9_EvalFieldVariableFromObjectFromRef{
@@ -4836,20 +5115,26 @@ namespace tool::gsc::opcode {
             const OPCodeT9EvalFieldVariableFromGlobalObject opT9_EvalFieldVariableFromGlobalObject{};
             const OPCodeT9SetVariableFieldFromEvalArrayRef opT9_SetVariableFieldFromEvalArrayRef{};
             const OPCodeT9EvalArrayCached opT9_EvalArrayCached{ OPCODE_T9_EvalArrayCached, "T9_EvalArrayCached", true };
-            const OPCodeInfoCount opT9_EndOnCallbackParam{ OPCODE_T9_EndOnCallbackParam, "T9_EndOnCallbackParam",
-                                                           "endoncallbackparam", false }; // count = params + self
+            const OPCodeInfoCount opT9_EndOnCallbackParam{
+                OPCODE_T9_EndOnCallbackParam, "T9_EndOnCallbackParam", "endoncallbackparam", false
+            }; // count = params + self
             const OPCodeT9GetVarRef opT9_GetVarRef{};
-            const OPCodeT9Iterator opT9_IteratorKey{ OPCODE_T9_IteratorKey, "T9_IteratorKey", "iteratorkey",
-                                                     TYPE_ARRAY_NEXTKEY_IT };
-            const OPCodeT9Iterator opT9_IteratorVal{ OPCODE_T9_IteratorVal, "T9_IteratorVal", "iteratorval",
-                                                     TYPE_ARRAY_NEXTVAL_IT };
-            const OPCodeT9Iterator opT9_IteratorNext{ OPCODE_T9_IteratorNext, "T9_IteratorNext", "iteratornext",
-                                                      TYPE_ARRAY_NEXT_IT };
+            const OPCodeT9Iterator opT9_IteratorKey{
+                OPCODE_T9_IteratorKey, "T9_IteratorKey", "iteratorkey", TYPE_ARRAY_NEXTKEY_IT
+            };
+            const OPCodeT9Iterator opT9_IteratorVal{
+                OPCODE_T9_IteratorVal, "T9_IteratorVal", "iteratorval", TYPE_ARRAY_NEXTVAL_IT
+            };
+            const OPCodeT9Iterator opT9_IteratorNext{
+                OPCODE_T9_IteratorNext, "T9_IteratorNext", "iteratornext", TYPE_ARRAY_NEXT_IT
+            };
 
             const OPCodeT9DeltaLocalVariableCached opT9_IncLocalVariableCached{ OPCODE_T9_IncLocalVariableCached,
-                                                                                "IncLocalVariableCached", "++" };
+                                                                                "IncLocalVariableCached",
+                                                                                "++" };
             const OPCodeT9DeltaLocalVariableCached opT9_DecLocalVariableCached{ OPCODE_T9_DecLocalVariableCached,
-                                                                                "DecLocalVariableCached", "--" };
+                                                                                "DecLocalVariableCached",
+                                                                                "--" };
 
             const OPCodeInfoEvalLocalVariableCached opT9_EvalLocalVariableCachedDouble{
                 OPCODE_T9_EvalLocalVariableCachedDouble, "EvalLocalVariableCached2n", 2
@@ -4860,37 +5145,41 @@ namespace tool::gsc::opcode {
 
             // IW
             const OPCodeInfoRegisterVariable opIW_RegisterVariable{ OPCode::OPCODE_IW_RegisterVariable,
-                                                                    "IW_RegisterVariable", true };
-            const OPCodeInfoRegisterVariable opIW_CreateLocalVar{ OPCode::OPCODE_IW_CreateLocalVar, "IW_CreateLocalVar",
+                                                                    "IW_RegisterVariable",
+                                                                    true };
+            const OPCodeInfoRegisterVariable opIW_CreateLocalVar{ OPCode::OPCODE_IW_CreateLocalVar,
+                                                                  "IW_CreateLocalVar",
                                                                   false };
             const OPCodeInfoRegisterMultipleVariables opIW_RegisterMultipleVariables{};
             const OPCodeInfoSetNewLocalVariable opIW_SetNewLocalVariable{};
-            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached0{ OPCODE_IW_EvalLocalVariableCached0,
-                                                                                   "IW_EvalLocalVariableCached0", 1,
-                                                                                   0 };
-            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached1{ OPCODE_IW_EvalLocalVariableCached1,
-                                                                                   "IW_EvalLocalVariableCached1", 1,
-                                                                                   1 };
-            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached2{ OPCODE_IW_EvalLocalVariableCached2,
-                                                                                   "IW_EvalLocalVariableCached2", 1,
-                                                                                   2 };
-            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached3{ OPCODE_IW_EvalLocalVariableCached3,
-                                                                                   "IW_EvalLocalVariableCached3", 1,
-                                                                                   3 };
-            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached4{ OPCODE_IW_EvalLocalVariableCached4,
-                                                                                   "IW_EvalLocalVariableCached4", 1,
-                                                                                   4 };
-            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached5{ OPCODE_IW_EvalLocalVariableCached5,
-                                                                                   "IW_EvalLocalVariableCached5", 1,
-                                                                                   5 };
+            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached0{
+                OPCODE_IW_EvalLocalVariableCached0, "IW_EvalLocalVariableCached0", 1, 0
+            };
+            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached1{
+                OPCODE_IW_EvalLocalVariableCached1, "IW_EvalLocalVariableCached1", 1, 1
+            };
+            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached2{
+                OPCODE_IW_EvalLocalVariableCached2, "IW_EvalLocalVariableCached2", 1, 2
+            };
+            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached3{
+                OPCODE_IW_EvalLocalVariableCached3, "IW_EvalLocalVariableCached3", 1, 3
+            };
+            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached4{
+                OPCODE_IW_EvalLocalVariableCached4, "IW_EvalLocalVariableCached4", 1, 4
+            };
+            const OPCodeInfoEvalLocalVariableCached opIW_EvalLocalVariableCached5{
+                OPCODE_IW_EvalLocalVariableCached5, "IW_EvalLocalVariableCached5", 1, 5
+            };
             const OPCodeInfoEvalLocalArrayCached opIW_EvalLocalArrayRefCached{ OPCODE_IW_EvalLocalArrayRefCached,
-                                                                               "IW_EvalLocalArrayRefCached", true };
+                                                                               "IW_EvalLocalArrayRefCached",
+                                                                               true };
             const OPCodeInfoEvalLocalArrayCached opIW_EvalLocalArrayCached{ OPCODE_IW_EvalLocalArrayCached,
-                                                                            "IW_EvalLocalArrayCached", false };
+                                                                            "IW_EvalLocalArrayCached",
+                                                                            false };
             const OPCodeInfoEvalLocalObjectCached opIW_EvalLocalObjectCached{};
-            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalLevelFieldVariable{ OPCODE_IW_EvalLevelFieldVariable,
-                                                                                       "IW_EvalLevelFieldVariable",
-                                                                                       "level", true };
+            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalLevelFieldVariable{
+                OPCODE_IW_EvalLevelFieldVariable, "IW_EvalLevelFieldVariable", "level", true
+            };
             const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalLevelFieldVariableRef{
                 OPCODE_IW_EvalLevelFieldVariableRef, "IW_EvalLevelFieldVariableRef", "level", false
             };
@@ -4906,11 +5195,12 @@ namespace tool::gsc::opcode {
             const OPCodeInfoSetGlobalObjectFieldVariable opIW_SetLevelFieldVariableToken{
                 OPCODE_IW_SetLevelFieldVariableToken, "IW_SetLevelFieldVariableToken", "level", ROT_TOKEN
             };
-            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalAnimFieldVar{ OPCODE_IW_EvalAnimFieldVar,
-                                                                                 "IW_EvalAnimFieldVar", "anim", true };
-            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalAnimFieldVarRef{ OPCODE_IW_EvalAnimFieldVarRef,
-                                                                                    "IW_EvalAnimFieldVarRef", "anim",
-                                                                                    false };
+            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalAnimFieldVar{
+                OPCODE_IW_EvalAnimFieldVar, "IW_EvalAnimFieldVar", "anim", true
+            };
+            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalAnimFieldVarRef{
+                OPCODE_IW_EvalAnimFieldVarRef, "IW_EvalAnimFieldVarRef", "anim", false
+            };
             const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalAnimFieldVariableToken{
                 OPCODE_IW_EvalAnimFieldVariableToken, "IW_EvalAnimFieldVariableToken", "anim", true, ROT_TOKEN
             };
@@ -4921,13 +5211,15 @@ namespace tool::gsc::opcode {
                 OPCODE_IW_SetAnimFieldVariableToken, "IW_SetAnimFieldVariableToken", "anim", ROT_TOKEN
             };
             const OPCodeInfoSetGlobalObjectFieldVariable opIW_SetAnimFieldVar{ OPCODE_IW_SetAnimFieldVar,
-                                                                               "IW_SetAnimFieldVar", "anim" };
+                                                                               "IW_SetAnimFieldVar",
+                                                                               "anim" };
             // let's say it's a "global"
-            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalSelfFieldVar{ OPCODE_IW_EvalSelfFieldVar,
-                                                                                 "IW_EvalSelfFieldVar", "self", true };
-            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalSelfFieldVarRef{ OPCODE_IW_EvalSelfFieldVarRef,
-                                                                                    "IW_EvalSelfFieldVarRef", "self",
-                                                                                    false };
+            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalSelfFieldVar{
+                OPCODE_IW_EvalSelfFieldVar, "IW_EvalSelfFieldVar", "self", true
+            };
+            const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalSelfFieldVarRef{
+                OPCODE_IW_EvalSelfFieldVarRef, "IW_EvalSelfFieldVarRef", "self", false
+            };
             const OPCodeInfoEvalGlobalObjectFieldVariable opIW_EvalSelfFieldVariableToken{
                 OPCODE_IW_EvalSelfFieldVariableToken, "IW_EvalSelfFieldVariableToken", "self", true, ROT_TOKEN
             };
@@ -4938,7 +5230,8 @@ namespace tool::gsc::opcode {
                 OPCODE_IW_SetSelfFieldVariableToken, "IW_SetSelfFieldVariableToken", "self", ROT_TOKEN
             };
             const OPCodeInfoSetGlobalObjectFieldVariable opIW_SetSelfFieldVar{ OPCODE_IW_SetSelfFieldVar,
-                                                                               "IW_SetSelfFieldVar", "self" };
+                                                                               "IW_SetSelfFieldVar",
+                                                                               "self" };
             const OPCodeInfoFuncGet opIW_GetBuiltinFunction{ OPCODE_IW_GetBuiltinFunction, "IW_GetBuiltinFunction", 2 };
             const OPCodeInfoFuncGet opIW_GetBuiltinMethod{ OPCODE_IW_GetBuiltinMethod, "IW_GetBuiltinMethod", 2 };
             const OPCodeInfoSingle opIW_SingleEndon{ OPCODE_IW_SingleEndon, "IW_SingleEndon", "endon", false };
@@ -4947,8 +5240,9 @@ namespace tool::gsc::opcode {
             };
             const OPCodeInfoSingleFunc opIW_IsTrue{ OPCODE_IW_IsTrue, "IW_IsTrue", "istrue", true, true };
             const OPCodeInfoGetGlobal opIW_GetLevel{ OPCODE_IW_GetLevel, "IW_GetLevel", GGGT_PUSH, "level" };
-            const OPCodeInfoGetGlobal opIW_GetLevelGRef{ OPCODE_IW_GetLevelGRef, "IW_GetLevelGRef", GGGT_GLOBAL,
-                                                         "level" };
+            const OPCodeInfoGetGlobal opIW_GetLevelGRef{
+                OPCODE_IW_GetLevelGRef, "IW_GetLevelGRef", GGGT_GLOBAL, "level"
+            };
             const OPCodeInfoGetGlobal opIW_GetGame{ OPCODE_IW_GetGame, "IW_GetGame", GGGT_PUSH, "game" };
             const OPCodeInfoGetGlobal opIW_GetGameRef{ OPCODE_IW_GetGameRef, "IW_GetGameRef", GGGT_FIELD, "game" };
             const OPCodeInfoGetGlobal opIW_GetAnim{ OPCODE_IW_GetAnim, "IW_GetAnim", GGGT_PUSH, "anim" };
@@ -4956,10 +5250,12 @@ namespace tool::gsc::opcode {
             const OPCodeInfoGetGlobal opGetWorld{ OPCODE_GetWorld, "GetWorld", GGGT_PUSH, "world" };
             const OPCodeInfoGetGlobal opGetWorldObject{ OPCODE_GetWorldObject, "GetWorldObject", GGGT_GLOBAL, "world" };
             const OPCodeInfoGetGlobal opGetClasses{ OPCODE_GetClasses, "GetClasses", GGGT_PUSH, "classes" };
-            const OPCodeInfoGetGlobal opGetClassesObject{ OPCODE_GetClassesObject, "GetClassesObject", GGGT_GLOBAL,
-                                                          "classes" };
+            const OPCodeInfoGetGlobal opGetClassesObject{
+                OPCODE_GetClassesObject, "GetClassesObject", GGGT_GLOBAL, "classes"
+            };
             const OPCodeT9EvalArrayCached opIW_EvalArrayCachedField{ OPCODE_IW_EvalArrayCachedField,
-                                                                     "IW_EvalArrayCachedField", false };
+                                                                     "IW_EvalArrayCachedField",
+                                                                     false };
             const OPCodeInfoClearLocalVariableCached opIW_ClearFieldVariableRef{ OPCODE_IW_ClearFieldVariableRef,
                                                                                  "IW_ClearFieldVariableRef" };
             const OPCodeInfoClearLocalVariableCached opIW_ClearLocalVariableCached0{
@@ -4978,7 +5274,8 @@ namespace tool::gsc::opcode {
             const OPCodeInfoIWEndSwitch opIW_EndSwitch{};
             const OPCodeInfoGetString opIW_GetIString{ OPCODE_IW_GetIString, "IW_GetIString", true };
             const OPCodeInfoGetAnimation opIW_GetAnimation{ OPCODE_IW_GetAnimation, "IW_GetAnimation", true };
-            const OPCodeInfoGetAnimation opIW_GetAnimationTree{ OPCODE_IW_GetAnimationTree, "IW_GetAnimationTree",
+            const OPCodeInfoGetAnimation opIW_GetAnimationTree{ OPCODE_IW_GetAnimationTree,
+                                                                "IW_GetAnimationTree",
                                                                 false };
             const OPCodeInfoAddToStruct opIW_AddToStruct{ OPCODE_IW_AddToStruct, "IW_AddToStruct", false };
             const OPCodeInfoSetWaittillVariableFieldCached opIW_SetWaittillVariableFieldCached{
@@ -4989,7 +5286,8 @@ namespace tool::gsc::opcode {
             };
 
             const OPCodeInfoStatement opIW_WaitFrame{ OPCODE_IW_WaitFrame, "IW_WaitFrame", "waitframe()" };
-            const OPCodeInfoGetConstant<const char*> opIW_GetThread{ OPCODE_IW_GetThread, "IW_GetThread",
+            const OPCodeInfoGetConstant<const char*> opIW_GetThread{ OPCODE_IW_GetThread,
+                                                                     "IW_GetThread",
                                                                      "getthread()" };
             const OPCodeInfoSingle opIW_WaitTillMatch{
                 OPCODE_IW_WaitTillMatch, "IW_WaitTillMatch", "waittillmatch", true, 2, 2, true, TYPE_WAITTILL
@@ -5016,9 +5314,13 @@ namespace tool::gsc::opcode {
             void RegisterOpCodeHandler(const OPCodeInfo* info) {
                 const OPCodeInfo*& ref{ handlerMap[info->m_id] };
                 if (ref) {
-                    LOG_WARNING("OPCODE {} ({}) registered twice {} and {}",
-                                utils::PtrOrElse(OpCodeName(info->m_id), "<unknown>"), (int)info->m_id, info->m_name,
-                                ref->m_name);
+                    LOG_WARNING(
+                        "OPCODE {} ({}) registered twice {} and {}",
+                        utils::PtrOrElse(OpCodeName(info->m_id), "<unknown>"),
+                        (int)info->m_id,
+                        info->m_name,
+                        ref->m_name
+                    );
                 }
                 ref = info;
             }

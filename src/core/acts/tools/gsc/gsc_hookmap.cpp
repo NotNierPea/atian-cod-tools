@@ -34,8 +34,9 @@ namespace {
             return tool::BASIC_ERROR;
         }
 
-        std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)mainBuff.data(),
-                                                                                     mainBuff.size()) };
+        std::shared_ptr<tool::gsc::GSCOBJHandler> handler{
+            readerBuilder->NewHandler((byte*)mainBuff.data(), mainBuff.size())
+        };
 
         if (!handler->IsValidHeader(mainBuff.size())) {
             LOG_ERROR("Invalid header for vm {}", vmInfo->name);
@@ -132,9 +133,12 @@ namespace {
                         // not a dev call we can check it
                         used[handler->GetName()][name_space].insert(name);
                     } else {
-                        LOG_DEBUG("devcall {} {}::{}", hashutils::ExtractTmpScript(handler->GetName()),
-                                  hashutils::ExtractTmp("namespace", name_space),
-                                  hashutils::ExtractTmp("function", name));
+                        LOG_DEBUG(
+                            "devcall {} {}::{}",
+                            hashutils::ExtractTmpScript(handler->GetName()),
+                            hashutils::ExtractTmp("namespace", name_space),
+                            hashutils::ExtractTmp("function", name)
+                        );
                     }
                 }
                 import_location += impSize + sizeof(uint32_t) * numAddress;
@@ -154,8 +158,12 @@ namespace {
             for (const auto& [script, usedd] : used) {
                 for (const auto& [ns, names] : usedd) {
                     for (uint64_t name : names) {
-                        LOG_INFO("{}::{} (from {})", hashutils::ExtractTmp("namespace", ns),
-                                 hashutils::ExtractTmp("function", name), hashutils::ExtractTmpScript(script));
+                        LOG_INFO(
+                            "{}::{} (from {})",
+                            hashutils::ExtractTmp("namespace", ns),
+                            hashutils::ExtractTmp("function", name),
+                            hashutils::ExtractTmpScript(script)
+                        );
                     }
                 }
             }
@@ -227,8 +235,9 @@ namespace {
                 continue;
             }
 
-            std::shared_ptr<tool::gsc::GSCOBJHandler> handler{ readerBuilder->NewHandler((byte*)mainBuff.data(),
-                                                                                         mainBuff.size()) };
+            std::shared_ptr<tool::gsc::GSCOBJHandler> handler{
+                readerBuilder->NewHandler((byte*)mainBuff.data(), mainBuff.size())
+            };
 
             if (!handler->IsValidHeader(mainBuff.size())) {
                 LOG_ERROR("{} : Invalid header for vm {}", file.string(), vmInfo->name);
@@ -299,8 +308,11 @@ namespace {
                     auto iti = scs.find(*usings);
 
                     if (iti == scs.end()) {
-                        LOG_ERROR("{} : The include '{}' is missing", sc.fileSys.string(),
-                                  hashutils::ExtractTmpScript(*usings));
+                        LOG_ERROR(
+                            "{} : The include '{}' is missing",
+                            sc.fileSys.string(),
+                            hashutils::ExtractTmpScript(*usings)
+                        );
                         continue; // can't explore
                     }
 
@@ -358,8 +370,9 @@ namespace {
         return tool::OK;
     }
 
-    ADD_TOOL(gschook, "gsc", " [base] [dump]", "find all the linked functions of a script from a dump", nullptr,
-             gschook);
+    ADD_TOOL(
+        gschook, "gsc", " [base] [dump]", "find all the linked functions of a script from a dump", nullptr, gschook
+    );
 #ifndef CI_BUILD
     ADD_TOOL(gsclerr, "gsc", " [dump]", "find all the link errors in a gsc dump", nullptr, gsclerr);
 #endif

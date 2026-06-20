@@ -170,8 +170,14 @@ namespace {
                 plt = PLATFORM_UNKNOWN;
             }
 
-            LOG_INFO("Vm: {} ({:x}), platform: {} ({:x}), size: {:x}", nfo->name, nfo->vmMagic, pltName, (int)platform,
-                     size);
+            LOG_INFO(
+                "Vm: {} ({:x}), platform: {} ({:x}), size: {:x}",
+                nfo->name,
+                nfo->vmMagic,
+                pltName,
+                (int)platform,
+                size
+            );
 
             std::map<byte, std::vector<uint16_t>> opcodes{};
 
@@ -282,6 +288,8 @@ namespace {
 
     ADD_TOOL(serious_db, "compatibility", " ([type] [vm])+", "Create a t7compiler database", nullptr, builddb);
     ADD_TOOL(serious_dbd, "compatibility", " [database]", "Dump a t7compiler database", nullptr, dumpdb);
-    ADD_TOOL(serious_remap, "compatibility", " [database] [vm] [plt] [old] [new]", "Remap an opcode in a vm", nullptr,
-             remapdb);
+    ADD_TOOL(
+        serious_remap, "compatibility", " [database] [vm] [plt] [old] [new]", "Remap an opcode in a vm", nullptr,
+        remapdb
+    );
 } // namespace

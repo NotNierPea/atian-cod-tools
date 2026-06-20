@@ -161,7 +161,12 @@ namespace {
 
     void __declspec(noinline) __declspec(cdecl) Test(TestStruct* str) {
         reinterpret_cast<void (*)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)>(0x7ffcafe67260)(
-            str->a, str->b, str->c, str->d, str->e);
+            str->a,
+            str->b,
+            str->c,
+            str->d,
+            str->e
+        );
     }
 
     int PTCallExt(Process& proc, int argc, const char* argv[]) {
@@ -184,7 +189,16 @@ namespace {
 
     int PTCallExt2(Process& proc, int argc, const char* argv[]) {
         auto ret = memapi::Call<void*, const wchar_t*, int, int, int, int, int>(
-            proc, reinterpret_cast<uintptr_t>(&TestFunc1), nullptr, L"test", 32, 42, 65, 72, 85);
+            proc,
+            reinterpret_cast<uintptr_t>(&TestFunc1),
+            nullptr,
+            L"test",
+            32,
+            42,
+            65,
+            72,
+            85
+        );
 
         if (!ret) {
             std::cerr << "Error when calling func\n";
@@ -196,15 +210,25 @@ namespace {
         return tool::OK;
     }
 
-    void TestFunc2(double value, const wchar_t* value2, int value3, int value4, int value5, const wchar_t* value6,
-                   double value7) {
+    void TestFunc2(
+        double value, const wchar_t* value2, int value3, int value4, int value5, const wchar_t* value6, double value7
+    ) {
         std::wcout << value << ":" << value2 << ":" << value3 << ":" << value4 << ":" << value5 << ":" << value6 << ":"
                    << value7 << "\n";
     }
 
     int PTCallExt3(Process& proc, int argc, const char* argv[]) {
         auto ret = memapi::Call<double, const wchar_t*, int, int, int, const wchar_t*, double>(
-            proc, reinterpret_cast<uintptr_t>(&TestFunc2), 12.3, L"test", 32, 42, 65, L"test 3", 85.65);
+            proc,
+            reinterpret_cast<uintptr_t>(&TestFunc2),
+            12.3,
+            L"test",
+            32,
+            42,
+            65,
+            L"test 3",
+            85.65
+        );
 
         if (!ret) {
             std::cerr << "Error when calling func\n";
@@ -252,8 +276,15 @@ namespace {
 
         std::cout << "ok 1\n";
 
-        if (!memapi::Call<int, double, float, const wchar_t*, bool>(proc, ProcessInjectionTest2, 2, 3.5, 4.5, L"Hello",
-                                                                    true)) {
+        if (!memapi::Call<int, double, float, const wchar_t*, bool>(
+                proc,
+                ProcessInjectionTest2,
+                2,
+                3.5,
+                4.5,
+                L"Hello",
+                true
+            )) {
             std::cerr << "Error when calling ProcessInjectionTest2\n";
             return tool::BASIC_ERROR;
         }

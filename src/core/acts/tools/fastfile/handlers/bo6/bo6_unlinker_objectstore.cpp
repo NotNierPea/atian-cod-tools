@@ -61,8 +61,12 @@ namespace {
             json.BeginObject();
 
             json.WriteFieldValueXHash("name", asset->name);
-            json.WriteFieldValueXAssetArray("storageFiles", bo6::T10H_ASSET_STORAGEFILE, asset->storageFilesCount,
-                                            asset->storageFiles);
+            json.WriteFieldValueXAssetArray(
+                "storageFiles",
+                bo6::T10H_ASSET_STORAGEFILE,
+                asset->storageFilesCount,
+                asset->storageFiles
+            );
             json.EndObject();
 
             std::filesystem::path outFile{ opt.m_output / gamePath / "source" / "tables" / "objectstore" / "project" /
@@ -86,8 +90,12 @@ namespace {
             json.BeginObject();
 
             json.WriteFieldValueXHash("name", asset->name);
-            json.WriteFieldValueXAssetArray("storageFiles", bo6::T10H_ASSET_STORAGEFILE, asset->storageFilesCount,
-                                            asset->storageFiles);
+            json.WriteFieldValueXAssetArray(
+                "storageFiles",
+                bo6::T10H_ASSET_STORAGEFILE,
+                asset->storageFilesCount,
+                asset->storageFiles
+            );
             json.EndObject();
 
             std::filesystem::path outFile{ opt.m_output / gamePath / "source" / "tables" / "objectstore" / "ddlconfig" /

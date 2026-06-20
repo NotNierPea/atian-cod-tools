@@ -50,12 +50,23 @@ namespace {
 
         byte* signature{ header->signature };
 
-        LOG_INFO("signaturerr: {}",
-                 utils::data::ArrayAsString<byte>(header->signature, sizeof(header->signature), "", "", "",
-                                                  [](const byte& b) { return std::format("{:02x}", (int)b); }));
-        LOG_INFO("signaturunk: {}",
-                 utils::data::ArrayAsString<byte>(header->unkSign, sizeof(header->unkSign), "", "", "",
-                                                  [](const byte& b) { return std::format("{:02x}", (int)b); }));
+        LOG_INFO(
+            "signaturerr: {}",
+            utils::data::ArrayAsString<byte>(
+                header->signature,
+                sizeof(header->signature),
+                "",
+                "",
+                "",
+                [](const byte& b) { return std::format("{:02x}", (int)b); }
+            )
+        );
+        LOG_INFO(
+            "signaturunk: {}",
+            utils::data::ArrayAsString<byte>(header->unkSign, sizeof(header->unkSign), "", "", "", [](const byte& b) {
+                return std::format("{:02x}", (int)b);
+            })
+        );
 
         SHA256 sha256[4]{};
 
@@ -71,8 +82,14 @@ namespace {
                 break;
             }
 
-            LOG_INFO("#0x{:x} alignedSize=0x{:x} compressedSize=0x{:x} uncompressedSize=0x{:x} offset=0x{:x}", chunks,
-                     block->alignedSize, block->compressedSize, block->uncompressedSize, block->offset);
+            LOG_INFO(
+                "#0x{:x} alignedSize=0x{:x} compressedSize=0x{:x} uncompressedSize=0x{:x} offset=0x{:x}",
+                chunks,
+                block->alignedSize,
+                block->compressedSize,
+                block->uncompressedSize,
+                block->offset
+            );
 
             if (!block->uncompressedSize) {
                 reader.Align(0x800000);
@@ -85,9 +102,13 @@ namespace {
             sha256[chunks % 4].add(blockBuff, block->compressedSize);
             byte buff[0x100]{};
             sha256[chunks % 4].getHash(buff);
-            LOG_INFO("signature{}: {}", chunks % 4,
-                     utils::data::ArrayAsString<byte>(buff, 0x100, "", "", "",
-                                                      [](const byte& b) { return std::format("{:02x}", (int)b); }));
+            LOG_INFO(
+                "signature{}: {}",
+                chunks % 4,
+                utils::data::ArrayAsString<byte>(buff, 0x100, "", "", "", [](const byte& b) {
+                    return std::format("{:02x}", (int)b);
+                })
+            );
             chunks++;
         }
         LOG_INFO("chunk: {}", chunks);

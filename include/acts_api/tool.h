@@ -17,9 +17,10 @@ typedef enum { ActsAPITool_OK = 0, ActsAPITool_BASIC_ERROR = -1, ActsAPITool_BAD
  * @param description description
  * @param func function callback
  */
-ACTS_COMMON_API void ActsAPITool_RegisterActsTool_(const char* name, const char* filename, size_t line,
-                                                   const char* category, const char* usage, const char* description,
-                                                   int (*func)(int argc, const char* argv[]));
+ACTS_COMMON_API void ActsAPITool_RegisterActsTool_(
+    const char* name, const char* filename, size_t line, const char* category, const char* usage,
+    const char* description, int (*func)(int argc, const char* argv[])
+);
 
 /*
  * Register a new tool

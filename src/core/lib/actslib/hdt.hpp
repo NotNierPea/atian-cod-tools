@@ -236,8 +236,13 @@ namespace actslib::hdt {
             cookie.LoadCookie(is);
 
             if (cookie.GetType() != HCT_GLOBAL || cookie.GetFormat() != HDTV1) {
-                throw std::runtime_error(actslib::va("Global HDT v1 cookie excepted, find %s/%s",
-                                                     FormatName(cookie.GetType()), cookie.GetFormat().c_str()));
+                throw std::runtime_error(
+                    actslib::va(
+                        "Global HDT v1 cookie excepted, find %s/%s",
+                        FormatName(cookie.GetType()),
+                        cookie.GetFormat().c_str()
+                    )
+                );
             }
 
             header = LoadHeader(is);

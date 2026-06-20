@@ -20,8 +20,9 @@ namespace tool::nui {
         toolfunctionui m_func;
         toolfunctionui m_setup;
 
-        tooluifunctiondata(const char* id, const char* description, toolfunctionui m_setup, toolfunctionui registerFunc,
-                           bool devTool);
+        tooluifunctiondata(
+            const char* id, const char* description, toolfunctionui m_setup, toolfunctionui registerFunc, bool devTool
+        );
 
         bool operator!() const;
         bool operatorbool() const;
@@ -38,10 +39,13 @@ namespace tool::nui {
     void EndDefaultWindow();
     void DisableNextBackground();
     void SaveNextConfig();
-    bool OpenFile(const wchar_t* title, const wchar_t* patterns, wchar_t* outFile, size_t outFileLen,
-                  DWORD flags = OFN_PATHMUSTEXIST);
-    bool OpenFile(const wchar_t* title, const wchar_t* patterns, char* outFile, size_t outFileLen,
-                  DWORD flags = OFN_PATHMUSTEXIST);
+    bool OpenFile(
+        const wchar_t* title, const wchar_t* patterns, wchar_t* outFile, size_t outFileLen,
+        DWORD flags = OFN_PATHMUSTEXIST
+    );
+    bool OpenFile(
+        const wchar_t* title, const wchar_t* patterns, char* outFile, size_t outFileLen, DWORD flags = OFN_PATHMUSTEXIST
+    );
 
     class ActsConfig {
         std::vector<float> floor{};

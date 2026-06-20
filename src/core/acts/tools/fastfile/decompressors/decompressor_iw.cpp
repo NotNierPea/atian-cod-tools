@@ -156,12 +156,14 @@ namespace {
 
     // bo6  "48 83 EC 28 FF C9 83"
     // mw23 "48 83 EC 28 FF C9 83 F9 10 77"
-    void DecompressBlock(fastfile::FastFileIWCompression type, const void* src, void* dest, unsigned int srcLen,
-                         unsigned int destLen) {
+    void DecompressBlock(
+        fastfile::FastFileIWCompression type, const void* src, void* dest, unsigned int srcLen, unsigned int destLen
+    ) {
         utils::compress::CompressionAlgorithm alg{ fastfile::GetFastFileCompressionAlgorithm(type) };
         if (!utils::compress::Decompress(alg, dest, destLen, src, srcLen)) {
             throw std::runtime_error(
-                std::format("Can't decompress {} data", fastfile::GetFastFileCompressionName(type)));
+                std::format("Can't decompress {} data", fastfile::GetFastFileCompressionName(type))
+            );
         }
     }
 
@@ -176,8 +178,13 @@ namespace {
 
     void PrintHeader(utils::OutFileCE& hos, DB_FFHeader* header, const char* title, bool ffHeader) {
         char type{ FFMagicType(header->magic) };
-        WriteHeaderFile("---- {}{} header {}{} ----", cli::clicolor::COLOR_RED, ffHeader ? "ff" : "fp", title,
-                        cli::clicolor::CD_RESET);
+        WriteHeaderFile(
+            "---- {}{} header {}{} ----",
+            cli::clicolor::COLOR_RED,
+            ffHeader ? "ff" : "fp",
+            title,
+            cli::clicolor::CD_RESET
+        );
         WriteHeaderFile("version: 0x{:x} / 0x{:x}", header->headerVersion, header->xfileVersion);
         WriteHeaderFile("flags: 0x{:x}, plt: {}", header->flags, type);
 
@@ -187,48 +194,114 @@ namespace {
             case IWFV_BO6:
                 switch (header->xfileVersion) {
                 case 1:
-                    WriteHeaderFile("size:0x{:x} fileSize:0x{:x} preloadWalkSize:0x{:x}", h.bo6.size, h.bo6.fileSize,
-                                    h.bo6.preloadWalkSize);
-                    WriteHeaderFile("unk18:0x{:x} unk20:0x{:x} unk24:0x{:x} unk28:0x{:x} unk30:0x{:x}", h.bo6.unk18,
-                                    h.bo6.unk20, h.bo6.unk24, h.bo6.unk28, h.bo6.unk30);
-                    WriteHeaderFile("Blocks: {}", utils::data::ArrayAsString<uint64_t>(
-                                                      h.bo6.blockSize, ACTS_ARRAYSIZE(h.bo6.blockSize), ",", "", "",
-                                                      [](const uint64_t& blk) { return std::format("0x{:x}", blk); }));
+                    WriteHeaderFile(
+                        "size:0x{:x} fileSize:0x{:x} preloadWalkSize:0x{:x}",
+                        h.bo6.size,
+                        h.bo6.fileSize,
+                        h.bo6.preloadWalkSize
+                    );
+                    WriteHeaderFile(
+                        "unk18:0x{:x} unk20:0x{:x} unk24:0x{:x} unk28:0x{:x} unk30:0x{:x}",
+                        h.bo6.unk18,
+                        h.bo6.unk20,
+                        h.bo6.unk24,
+                        h.bo6.unk28,
+                        h.bo6.unk30
+                    );
+                    WriteHeaderFile(
+                        "Blocks: {}",
+                        utils::data::ArrayAsString<uint64_t>(
+                            h.bo6.blockSize,
+                            ACTS_ARRAYSIZE(h.bo6.blockSize),
+                            ",",
+                            "",
+                            "",
+                            [](const uint64_t& blk) { return std::format("0x{:x}", blk); }
+                        )
+                    );
                     WriteHeaderFile("isEncrypted: {}", h.bo6.encrypt.isEncrypted ? "true" : "false");
                     break;
                 default:
-                    LOG_WARNING("Unknown header data: headerVersion=0x{:x}/xfileVersion=0x{:x}", header->headerVersion,
-                                header->xfileVersion);
+                    LOG_WARNING(
+                        "Unknown header data: headerVersion=0x{:x}/xfileVersion=0x{:x}",
+                        header->headerVersion,
+                        header->xfileVersion
+                    );
                     break;
                 }
                 break;
             case IWFV_MW19:
-                WriteHeaderFile("size:0x{:x} fileSize:0x{:x} preloadWalkSize:0x{:x}", h.mw19.size, h.mw19.fileSize,
-                                h.mw19.preloadWalkSize);
+                WriteHeaderFile(
+                    "size:0x{:x} fileSize:0x{:x} preloadWalkSize:0x{:x}",
+                    h.mw19.size,
+                    h.mw19.fileSize,
+                    h.mw19.preloadWalkSize
+                );
                 return;
             case IWFV_MW23:
-                WriteHeaderFile("size:0x{:x} fileSize:0x{:x} preloadWalkSize:0x{:x}", h.mwiii.size, h.mwiii.fileSize,
-                                h.mwiii.preloadWalkSize);
-                WriteHeaderFile("timestamp:{}, unk20:0x{:x}({}) / unk24:0x{:x}/({})", h.mwiii.timestamp, h.mwiii.unk20,
-                                h.mwiii.unk20, h.mwiii.unk24, h.mwiii.unk24);
+                WriteHeaderFile(
+                    "size:0x{:x} fileSize:0x{:x} preloadWalkSize:0x{:x}",
+                    h.mwiii.size,
+                    h.mwiii.fileSize,
+                    h.mwiii.preloadWalkSize
+                );
+                WriteHeaderFile(
+                    "timestamp:{}, unk20:0x{:x}({}) / unk24:0x{:x}/({})",
+                    h.mwiii.timestamp,
+                    h.mwiii.unk20,
+                    h.mwiii.unk20,
+                    h.mwiii.unk24,
+                    h.mwiii.unk24
+                );
                 WriteHeaderFile("unk28:0x{:x} unk30:0x{:x}", h.mwiii.unk28, h.mwiii.unk30);
-                WriteHeaderFile("Blocks: {}", utils::data::ArrayAsString<uint64_t>(
-                                                  h.mwiii.blockSize, ACTS_ARRAYSIZE(h.mwiii.blockSize), ",", "", "",
-                                                  [](const uint64_t& blk) { return std::format("0x{:x}", blk); }));
+                WriteHeaderFile(
+                    "Blocks: {}",
+                    utils::data::ArrayAsString<uint64_t>(
+                        h.mwiii.blockSize,
+                        ACTS_ARRAYSIZE(h.mwiii.blockSize),
+                        ",",
+                        "",
+                        "",
+                        [](const uint64_t& blk) { return std::format("0x{:x}", blk); }
+                    )
+                );
                 WriteHeaderFile("isEncrypted: {}", h.mwiii.encrypt.isEncrypted ? "true" : "false");
                 return;
             default:
                 WriteHeaderFile("unk14:0x{:x}", header->unk14);
-                WriteHeaderFile("unk18:0x{:x}({}) / unk1c:0x{:x}/({})", header->unk18, header->unk18, header->unk1c,
-                                header->unk1c);
-                WriteHeaderFile("unk20:0x{:x}({}) / unk24:0x{:x}/({})", header->unk20, header->unk20, header->unk24,
-                                header->unk24);
-                WriteHeaderFile("unk28:0x{:x}({}) / unk2c:0x{:x}/({})", header->unk28, header->unk28, header->unk2c,
-                                header->unk2c);
-                WriteHeaderFile("unk30:0x{:x}({}) / unk34:0x{:x}/({})", header->unk30, header->unk30, header->unk34,
-                                header->unk34);
-                LOG_WARNING("Unknown header data: headerVersion=0x{:x}/xfileVersion=0x{:x}", header->headerVersion,
-                            header->xfileVersion);
+                WriteHeaderFile(
+                    "unk18:0x{:x}({}) / unk1c:0x{:x}/({})",
+                    header->unk18,
+                    header->unk18,
+                    header->unk1c,
+                    header->unk1c
+                );
+                WriteHeaderFile(
+                    "unk20:0x{:x}({}) / unk24:0x{:x}/({})",
+                    header->unk20,
+                    header->unk20,
+                    header->unk24,
+                    header->unk24
+                );
+                WriteHeaderFile(
+                    "unk28:0x{:x}({}) / unk2c:0x{:x}/({})",
+                    header->unk28,
+                    header->unk28,
+                    header->unk2c,
+                    header->unk2c
+                );
+                WriteHeaderFile(
+                    "unk30:0x{:x}({}) / unk34:0x{:x}/({})",
+                    header->unk30,
+                    header->unk30,
+                    header->unk34,
+                    header->unk34
+                );
+                LOG_WARNING(
+                    "Unknown header data: headerVersion=0x{:x}/xfileVersion=0x{:x}",
+                    header->headerVersion,
+                    header->xfileVersion
+                );
                 break;
             }
         }
@@ -243,9 +316,14 @@ namespace {
             switch (chunk.type) {
             case fastfile::flexible::ST_IW_FASTFILE_CHECKSUM: {
                 fastfile::flexible::PFFIWChecksums& checksums{ chunk.GetVal<fastfile::flexible::PFFIWChecksums>() };
-                WriteHeaderFile("ff header iw checksums: loaded:{} 0x{:x} 0x{:x} 0x{:x} 0x{:x}",
-                                checksums.loaded ? "true" : "false", checksums.checksum[0], checksums.checksum[1],
-                                checksums.checksum[2], checksums.checksum[3]);
+                WriteHeaderFile(
+                    "ff header iw checksums: loaded:{} 0x{:x} 0x{:x} 0x{:x} 0x{:x}",
+                    checksums.loaded ? "true" : "false",
+                    checksums.checksum[0],
+                    checksums.checksum[1],
+                    checksums.checksum[2],
+                    checksums.checksum[3]
+                );
                 break;
             }
             case fastfile::flexible::ST_IW_DEPS: {
@@ -257,19 +335,30 @@ namespace {
                 fastfile::flexible::PFFIW_0xc95c6b9c& iw0xc95c6b9c{
                     chunk.GetVal<fastfile::flexible::PFFIW_0xc95c6b9c>()
                 };
-                WriteHeaderFile("ff header iw 0xc95c6b9c: {} 0x{:x}", iw0xc95c6b9c.loaded ? "true" : "false",
-                                iw0xc95c6b9c.unk8);
+                WriteHeaderFile(
+                    "ff header iw 0xc95c6b9c: {} 0x{:x}",
+                    iw0xc95c6b9c.loaded ? "true" : "false",
+                    iw0xc95c6b9c.unk8
+                );
                 break;
             }
             case fastfile::flexible::ST_IW_BOOT_INFO: {
                 fastfile::flexible::PFFIWBootInfo& info{ chunk.GetVal<fastfile::flexible::PFFIWBootInfo>() };
-                WriteHeaderFile("ff header iw boot info: {}/{} (0x{:x}/0x{:x})",
-                                hashutils::ExtractTmp("hash", info.projectName),
-                                hashutils::ExtractTmp("hash", info.unk8), info.unk10, info.unk18);
+                WriteHeaderFile(
+                    "ff header iw boot info: {}/{} (0x{:x}/0x{:x})",
+                    hashutils::ExtractTmp("hash", info.projectName),
+                    hashutils::ExtractTmp("hash", info.unk8),
+                    info.unk10,
+                    info.unk18
+                );
                 for (size_t i = 0; i < info.count; i++) {
                     fastfile::flexible::PFFIWBootInfoAssetLimit& limit{ info.assetLimits[i] };
-                    WriteHeaderFile("-- limit {} : 0x{:x} ({})", hashutils::ExtractTmp("hash", limit.assetName),
-                                    limit.limit, limit.limit);
+                    WriteHeaderFile(
+                        "-- limit {} : 0x{:x} ({})",
+                        hashutils::ExtractTmp("hash", limit.assetName),
+                        limit.limit,
+                        limit.limit
+                    );
                 }
                 break;
             }
@@ -293,8 +382,13 @@ namespace {
                         view = utils::data::AsHex(chunk.buffer, chunk.size);
                     } else {
                         view = utils::data::ArrayAsString<uint64_t>(
-                            (uint64_t*)chunk.buffer, chunk.size / 8, ",", "", "",
-                            [](const uint64_t& v) { return std::format("0x{:x}", v); });
+                            (uint64_t*)chunk.buffer,
+                            chunk.size / 8,
+                            ",",
+                            "",
+                            "",
+                            [](const uint64_t& v) { return std::format("0x{:x}", v); }
+                        );
                     }
                     break;
                 }
@@ -349,8 +443,10 @@ namespace {
             // std::make_unique<byte[]>(0x5000); // 0x4928, but maybe it'll change by few bytes
         }
 
-        void LoadFastFile(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                          fastfile::FastFileContext& ctx, std::vector<byte>& ffdata) {
+        void LoadFastFile(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx,
+            std::vector<byte>& ffdata
+        ) {
             if (!reader.CanRead(sizeof(DB_FFHeader))) {
                 throw std::runtime_error("Can't read XFile header");
             }
@@ -492,7 +588,8 @@ namespace {
                         reader.Skip(0x7ffc);
                         if (reader.Read<uint32_t>() != 0x43574902) {
                             throw std::runtime_error(
-                                std::format("invalid iwc after RSA block at 0x{:x}", reader.Loc()));
+                                std::format("invalid iwc after RSA block at 0x{:x}", reader.Loc())
+                            );
                         }
 
                         size_t dataStart{ reader.Loc() + 4 };
@@ -560,8 +657,13 @@ namespace {
                 alg = fastfile::GetFastFileCompressionAlgorithm(compressDataHeader.compression);
             }
 
-            LOG_DEBUG("loaded header secure:{}, alg:{}({})  0x{:x}", secure, alg, (int)compressDataHeader.compression,
-                      reader.Loc());
+            LOG_DEBUG(
+                "loaded header secure:{}, alg:{}({})  0x{:x}",
+                secure,
+                alg,
+                (int)compressDataHeader.compression,
+                reader.Loc()
+            );
 
             size_t offset{};
             size_t count{};
@@ -594,9 +696,16 @@ namespace {
 
                 uint32_t alignedSize{ utils::Aligned<uint32_t>(block->compressedSize) };
 
-                LOG_TRACE("Decompressing {} block#{:x} 0x{:x} (0x{:x}/0x{:x} -> 0x{:x}) encryptionCTR:0x{:x}",
-                          utils::compress::GetCompressionName(alg), id, loc, block->compressedSize, alignedSize,
-                          block->uncompressedSize, block->encryptionCTR);
+                LOG_TRACE(
+                    "Decompressing {} block#{:x} 0x{:x} (0x{:x}/0x{:x} -> 0x{:x}) encryptionCTR:0x{:x}",
+                    utils::compress::GetCompressionName(alg),
+                    id,
+                    loc,
+                    block->compressedSize,
+                    alignedSize,
+                    block->uncompressedSize,
+                    block->encryptionCTR
+                );
 
                 byte* blockBuff{ reader.ReadPtr<byte>(alignedSize) };
 
@@ -606,11 +715,22 @@ namespace {
                 byte* decompressed{ &ffdata[offset] };
                 offset += block->uncompressedSize;
 
-                int r{ utils::compress::Decompress2(alg, decompressed, block->uncompressedSize, blockBuff,
-                                                    block->compressedSize) };
+                int r{ utils::compress::Decompress2(
+                    alg,
+                    decompressed,
+                    block->uncompressedSize,
+                    blockBuff,
+                    block->compressedSize
+                ) };
                 if (r < 0) {
-                    throw std::runtime_error(std::format("Can't decompress block 0x{:x}: {} ({})", loc,
-                                                         utils::compress::DecompressResultName(r), r));
+                    throw std::runtime_error(
+                        std::format(
+                            "Can't decompress block 0x{:x}: {} ({})",
+                            loc,
+                            utils::compress::DecompressResultName(r),
+                            r
+                        )
+                    );
                 }
             }
 
@@ -682,7 +802,8 @@ namespace {
                 }
                 default:
                     throw std::runtime_error(
-                        std::format("patch version not supported 0x{:x}", fpHeader->headerVersion));
+                        std::format("patch version not supported 0x{:x}", fpHeader->headerVersion)
+                    );
                 }
                 size_t endSize{ std::string::npos };
                 uint64_t* blockSizes{};
@@ -769,7 +890,8 @@ namespace {
                             fpreader.Skip(0x7ffc);
                             if (fpreader.Read<uint32_t>() != 0x43574902) {
                                 throw std::runtime_error(
-                                    std::format("invalid iwc after RSA block at 0x{:x}", fpreader.Loc()));
+                                    std::format("invalid iwc after RSA block at 0x{:x}", fpreader.Loc())
+                                );
                             }
 
                             size_t dataStart{ fpreader.Loc() + 4 };
@@ -836,8 +958,13 @@ namespace {
                         alg = fastfile::GetFastFileCompressionAlgorithm(compressDataHeader.compression);
                     }
 
-                    LOG_DEBUG("loaded bo6 patch secure:{}, alg:{}({})  0x{:x}", secure, alg,
-                              (int)compressDataHeader.compression, fpreader.Loc());
+                    LOG_DEBUG(
+                        "loaded bo6 patch secure:{}, alg:{}({})  0x{:x}",
+                        secure,
+                        alg,
+                        (int)compressDataHeader.compression,
+                        fpreader.Loc()
+                    );
                     break;
                 }
                 default:
@@ -875,9 +1002,16 @@ namespace {
 
                     uint32_t alignedSize{ utils::Aligned<uint32_t>(block->compressedSize) };
 
-                    LOG_TRACE("Decompressing {} block#{:x} 0x{:x} (0x{:x}/0x{:x} -> 0x{:x}) encryptionCTR:0x{:x}",
-                              utils::compress::GetCompressionName(alg), id, loc, block->compressedSize, alignedSize,
-                              block->uncompressedSize, block->encryptionCTR);
+                    LOG_TRACE(
+                        "Decompressing {} block#{:x} 0x{:x} (0x{:x}/0x{:x} -> 0x{:x}) encryptionCTR:0x{:x}",
+                        utils::compress::GetCompressionName(alg),
+                        id,
+                        loc,
+                        block->compressedSize,
+                        alignedSize,
+                        block->uncompressedSize,
+                        block->encryptionCTR
+                    );
 
                     byte* blockBuff{ fpreader.ReadPtr<byte>(alignedSize) };
 
@@ -887,11 +1021,22 @@ namespace {
                     byte* decompressed{ &fpdata[offsetpatch] };
                     offsetpatch += block->uncompressedSize;
 
-                    int r{ utils::compress::Decompress2(alg, decompressed, block->uncompressedSize, blockBuff,
-                                                        block->compressedSize) };
+                    int r{ utils::compress::Decompress2(
+                        alg,
+                        decompressed,
+                        block->uncompressedSize,
+                        blockBuff,
+                        block->compressedSize
+                    ) };
                     if (r < 0) {
-                        throw std::runtime_error(std::format("Can't decompress block 0x{:x}: {} ({})", loc,
-                                                             utils::compress::DecompressResultName(r), r));
+                        throw std::runtime_error(
+                            std::format(
+                                "Can't decompress block 0x{:x}: {} ({})",
+                                loc,
+                                utils::compress::DecompressResultName(r),
+                                r
+                            )
+                        );
                     }
                 }
 

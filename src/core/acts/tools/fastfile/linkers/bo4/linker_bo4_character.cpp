@@ -170,110 +170,345 @@ namespace {
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("destructibleDef"),
-                          character.destructibleDef, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("gibDef"), character.gibDef, false,
-                          &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("destructibleDef"),
+                character.destructibleDef,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("gibDef"),
+                character.gibDef,
+                false,
+                &ff
+            );
             ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("fxDef"), character.fxDef, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("deathFxDef"), character.deathFxDef,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("altFxDef1"), character.altFxDef1,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("altFxDef2"), character.altFxDef2,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("altFxDef3"), character.altFxDef3,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("altFxDef4"), character.altFxDef4,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("altFxDef5"), character.altFxDef5,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_SCRIPTBUNDLE, objCfg.GetCString("altFxDef6"), character.altFxDef6,
-                          false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("deathFxDef"),
+                character.deathFxDef,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("altFxDef1"),
+                character.altFxDef1,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("altFxDef2"),
+                character.altFxDef2,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("altFxDef3"),
+                character.altFxDef3,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("altFxDef4"),
+                character.altFxDef4,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("altFxDef5"),
+                character.altFxDef5,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_SCRIPTBUNDLE,
+                objCfg.GetCString("altFxDef6"),
+                character.altFxDef6,
+                false,
+                &ff
+            );
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("body"), character.body, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("bodyAlias"), character.bodyAlias,
-                          false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("bodyAlias"),
+                character.bodyAlias,
+                false,
+                &ff
+            );
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("head"), character.head, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("headAlias"), character.headAlias,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("headAliasZombie"),
-                          character.headAliasZombie, false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("headAlias"),
+                character.headAlias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("headAliasZombie"),
+                character.headAliasZombie,
+                false,
+                &ff
+            );
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("hat"), character.hat, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("hatAlias"), character.hatAlias, false,
-                          &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("hatAlias"),
+                character.hatAlias,
+                false,
+                &ff
+            );
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("gear"), character.gear, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("gearAlias"), character.gearAlias,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("viewModel"), character.viewModel, false,
-                          &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("shadowCharacter"),
-                          character.shadowCharacter, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedTorso_Clean"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedTorso_Clean_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedTorso_RightArmGone"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedTorso_RightArmGone_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedTorso_LeftArmGone"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedTorso_LeftArmGone_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedTorso_GutsGone"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedTorso_GutsGone_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedTorso_HeadGone"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedTorso_HeadGone_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedLegs_Clean"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedLegs_Clean_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedLegs_RightLegGone"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedLegs_RightLegGone_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedLegs_LeftLegGone"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedLegs_LeftLegGone_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("damagedLegs_NoLegs"),
-                          character.damagedTorso_Clean, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELALIAS, objCfg.GetCString("damagedLegs_NoLegs_Alias"),
-                          character.damagedTorso_Clean_Alias, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("chestGear_Right"),
-                          character.chestGear_Right, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("chestGear_Left"), character.chestGear_Left,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("frontPack"), character.frontPack, false,
-                          &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("frontPackLow"), character.frontPackLow,
-                          false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("gearAlias"),
+                character.gearAlias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("viewModel"),
+                character.viewModel,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("shadowCharacter"),
+                character.shadowCharacter,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedTorso_Clean"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedTorso_Clean_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedTorso_RightArmGone"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedTorso_RightArmGone_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedTorso_LeftArmGone"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedTorso_LeftArmGone_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedTorso_GutsGone"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedTorso_GutsGone_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedTorso_HeadGone"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedTorso_HeadGone_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedLegs_Clean"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedLegs_Clean_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedLegs_RightLegGone"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedLegs_RightLegGone_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedLegs_LeftLegGone"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedLegs_LeftLegGone_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("damagedLegs_NoLegs"),
+                character.damagedTorso_Clean,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODELALIAS,
+                objCfg.GetCString("damagedLegs_NoLegs_Alias"),
+                character.damagedTorso_Clean_Alias,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("chestGear_Right"),
+                character.chestGear_Right,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("chestGear_Left"),
+                character.chestGear_Left,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("frontPack"),
+                character.frontPack,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("frontPackLow"),
+                character.frontPackLow,
+                false,
+                &ff
+            );
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("backPack"), character.backPack, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("rearGear_Right"), character.rearGear_Right,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("rearGear_Left"), character.rearGear_Left,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("rearGearSide_Right"),
-                          character.rearGearSide_Right, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("rearGearSide_Left"),
-                          character.rearGearSide_Left, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("sideGear_Right"), character.sideGear_Right,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("sideGear_Left"), character.sideGear_Left,
-                          false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("frontGear_Right"),
-                          character.frontGear_Right, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("frontGear_Left"), character.frontGear_Left,
-                          false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("rearGear_Right"),
+                character.rearGear_Right,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("rearGear_Left"),
+                character.rearGear_Left,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("rearGearSide_Right"),
+                character.rearGearSide_Right,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("rearGearSide_Left"),
+                character.rearGearSide_Left,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("sideGear_Right"),
+                character.sideGear_Right,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("sideGear_Left"),
+                character.sideGear_Left,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("frontGear_Right"),
+                character.frontGear_Right,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_XMODEL,
+                objCfg.GetCString("frontGear_Left"),
+                character.frontGear_Left,
+                false,
+                &ff
+            );
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("helmet"), character.helmet, false, &ff);
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("misc1"), character.misc1, false, &ff);
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("misc2"), character.misc2, false, &ff);
             ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, objCfg.GetCString("misc3"), character.misc3, false, &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_RAGDOLL, objCfg.GetCString("ragdollDef"), character.ragdollDef, false,
-                          &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_RAGDOLL,
+                objCfg.GetCString("ragdollDef"),
+                character.ragdollDef,
+                false,
+                &ff
+            );
 
             ff.data.AddXString(character.eyeGlowFX, objCfg.GetCString("eyeGlowFX"));
             ff.data.AddXString(character.eyeGlowBone, objCfg.GetCString("eyeGlowBone"));

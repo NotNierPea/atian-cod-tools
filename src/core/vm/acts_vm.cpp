@@ -327,8 +327,12 @@ namespace acts::vm {
             ScriptExport* exp{};
             ActScript* script{};
             if (GetFunctionInfo(currentThread->codePos, &exp, &script)) {
-                msg = utils::va("\n[%s<%s>::%s]", this->cfg.hashToString(exp->name_space), script->GetName(),
-                                cfg.hashToString(exp->name));
+                msg = utils::va(
+                    "\n[%s<%s>::%s]",
+                    this->cfg.hashToString(exp->name_space),
+                    script->GetName(),
+                    cfg.hashToString(exp->name)
+                );
             }
         }
         if (terminate) {
@@ -338,8 +342,9 @@ namespace acts::vm {
         }
     }
 
-    void ActsVm::RegisterBuiltin(BuiltinCallback callback, uint64_t name, uint32_t minArgs, uint32_t maxArgs,
-                                 bool isMethod) {
+    void ActsVm::RegisterBuiltin(
+        BuiltinCallback callback, uint64_t name, uint32_t minArgs, uint32_t maxArgs, bool isMethod
+    ) {
         BuiltinCall* call;
         if (isMethod) {
             if (callMethodsCount == ACTS_ARRAYSIZE(callMethods)) {
@@ -603,9 +608,15 @@ namespace acts::vm {
             case SIF_METHOD_CHILDTHREAD: {
                 uint32_t ref{ GetScriptExport(&nfo, imports->name_space, imports->name) };
                 if (ref == BAD_SCRIPTFUNC_ID) {
-                    Error(utils::va("Can't find script export %x::%x included by %s", imports->name_space,
-                                    imports->name, script->GetName()),
-                          true);
+                    Error(
+                        utils::va(
+                            "Can't find script export %x::%x included by %s",
+                            imports->name_space,
+                            imports->name,
+                            script->GetName()
+                        ),
+                        true
+                    );
                 }
 
                 for (size_t j = 0; j < imports->num_address; j++) {
@@ -628,8 +639,10 @@ namespace acts::vm {
             case SIF_FUNCTION_BUILTIN: {
                 uint16_t ref{ FindBuiltinFunction(imports->name) };
                 if (ref == BAD_BUILTIN_ID) {
-                    Error(utils::va("Can't find builtin function %x included by %s", imports->name, script->GetName()),
-                          true);
+                    Error(
+                        utils::va("Can't find builtin function %x included by %s", imports->name, script->GetName()),
+                        true
+                    );
                 }
 
                 for (size_t j = 0; j < imports->num_address; j++) {
@@ -640,8 +653,10 @@ namespace acts::vm {
             case SIF_METHOD_BUILTIN: {
                 uint16_t ref{ FindBuiltinMethod(imports->name) };
                 if (ref == BAD_BUILTIN_ID) {
-                    Error(utils::va("Can't find builtin method %x included by %s", imports->name, script->GetName()),
-                          true);
+                    Error(
+                        utils::va("Can't find builtin method %x included by %s", imports->name, script->GetName()),
+                        true
+                    );
                 }
 
                 for (size_t j = 0; j < imports->num_address; j++) {
@@ -652,7 +667,8 @@ namespace acts::vm {
             default:
                 Error(
                     utils::va("Can't link import with bad flags, nsp_%x:::func_%x", imports->name, imports->name_space),
-                    true);
+                    true
+                );
                 break;
             }
 

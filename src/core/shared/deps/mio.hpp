@@ -494,8 +494,9 @@ namespace mio {
      * `mmap_source::handle_type`.
      */
     template<typename MappingToken>
-    mmap_source make_mmap_source(const MappingToken& token, mmap_source::size_type offset,
-                                 mmap_source::size_type length, std::error_code& error) {
+    mmap_source make_mmap_source(
+        const MappingToken& token, mmap_source::size_type offset, mmap_source::size_type length, std::error_code& error
+    ) {
         return make_mmap<mmap_source>(token, offset, length, error);
     }
 
@@ -512,8 +513,9 @@ namespace mio {
      * `mmap_sink::handle_type`.
      */
     template<typename MappingToken>
-    mmap_sink make_mmap_sink(const MappingToken& token, mmap_sink::size_type offset, mmap_sink::size_type length,
-                             std::error_code& error) {
+    mmap_sink make_mmap_sink(
+        const MappingToken& token, mmap_sink::size_type offset, mmap_sink::size_type length, std::error_code& error
+    ) {
         return make_mmap<mmap_sink>(token, offset, length, error);
     }
 
@@ -581,12 +583,14 @@ namespace mio {
 namespace mio {
     namespace detail {
 
-        template<typename S, typename C = typename std::decay<S>::type, typename = decltype(std::declval<C>().data()),
-                 typename = typename std::enable_if<std::is_same<typename C::value_type, char>::value
+        template<
+            typename S, typename C = typename std::decay<S>::type, typename = decltype(std::declval<C>().data()),
+            typename = typename std::enable_if<
+                std::is_same<typename C::value_type, char>::value
 #ifdef _WIN32
-                                                    || std::is_same<typename C::value_type, wchar_t>::value
+                || std::is_same<typename C::value_type, wchar_t>::value
 #endif
-                                                    >::type>
+                >::type>
         struct char_type_helper {
             using type = typename C::value_type;
         };
@@ -641,11 +645,11 @@ namespace mio {
 
         template<typename CharT, typename S>
         struct is_c_str_helper {
-            static constexpr bool value =
-                std::is_same<CharT*,
-                             // TODO: I'm so sorry for this... Can this be made cleaner?
-                             typename std::add_pointer<typename std::remove_cv<
-                                 typename std::remove_pointer<typename std::decay<S>::type>::type>::type>::type>::value;
+            static constexpr bool value = std::is_same<
+                CharT*,
+                // TODO: I'm so sorry for this... Can this be made cleaner?
+                typename std::add_pointer<typename std::remove_cv<
+                    typename std::remove_pointer<typename std::decay<S>::type>::type>::type>::type>::value;
         };
 
         template<typename S>
@@ -669,14 +673,16 @@ namespace mio {
                 ;
         };
 
-        template<typename String, typename = decltype(std::declval<String>().data()),
-                 typename = typename std::enable_if<!is_c_str_or_c_wstr<String>::value>::type>
+        template<
+            typename String, typename = decltype(std::declval<String>().data()),
+            typename = typename std::enable_if<!is_c_str_or_c_wstr<String>::value>::type>
         const typename char_type<String>::type* c_str(const String& path) {
             return path.data();
         }
 
-        template<typename String, typename = decltype(std::declval<String>().empty()),
-                 typename = typename std::enable_if<!is_c_str_or_c_wstr<String>::value>::type>
+        template<
+            typename String, typename = decltype(std::declval<String>().empty()),
+            typename = typename std::enable_if<!is_c_str_or_c_wstr<String>::value>::type>
         bool empty(const String& path) {
             return path.empty();
         }
@@ -721,28 +727,47 @@ namespace mio {
                 std::wstring ret;
                 if (!s.empty()) {
                     ret.resize(s.size());
-                    int wide_char_count = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), static_cast<int>(s.size()),
-                                                              &ret[0], static_cast<int>(s.size()));
+                    int wide_char_count = MultiByteToWideChar(
+                        CP_UTF8,
+                        0,
+                        s.c_str(),
+                        static_cast<int>(s.size()),
+                        &ret[0],
+                        static_cast<int>(s.size())
+                    );
                     ret.resize(wide_char_count);
                 }
                 return ret;
             }
 
-            template<typename String, typename = typename std::enable_if<
-                                          std::is_same<typename char_type<String>::type, char>::value>::type>
+            template<
+                typename String,
+                typename = typename std::enable_if<std::is_same<typename char_type<String>::type, char>::value>::type>
             file_handle_type open_file_helper(const String& path, const access_mode mode) {
-                return ::CreateFileW(s_2_ws(path).c_str(),
-                                     mode == access_mode::read ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE,
-                                     FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+                return ::CreateFileW(
+                    s_2_ws(path).c_str(),
+                    mode == access_mode::read ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    0,
+                    OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL,
+                    0
+                );
             }
 
             template<typename String>
-            typename std::enable_if<std::is_same<typename char_type<String>::type, wchar_t>::value,
-                                    file_handle_type>::type
+            typename std::enable_if<
+                std::is_same<typename char_type<String>::type, wchar_t>::value, file_handle_type>::type
             open_file_helper(const String& path, const access_mode mode) {
-                return ::CreateFileW(c_str(path),
-                                     mode == access_mode::read ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE,
-                                     FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+                return ::CreateFileW(
+                    c_str(path),
+                    mode == access_mode::read ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    0,
+                    OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL,
+                    0
+                );
             }
 
         } // namespace win
@@ -808,22 +833,33 @@ namespace mio {
 #endif
         };
 
-        inline mmap_context memory_map(const file_handle_type file_handle, const int64_t offset, const int64_t length,
-                                       const access_mode mode, std::error_code& error) {
+        inline mmap_context memory_map(
+            const file_handle_type file_handle, const int64_t offset, const int64_t length, const access_mode mode,
+            std::error_code& error
+        ) {
             const int64_t aligned_offset = make_offset_page_aligned(offset);
             const int64_t length_to_map = offset - aligned_offset + length;
 #ifdef _WIN32
             const int64_t max_file_size = offset + length;
-            const auto file_mapping_handle =
-                ::CreateFileMapping(file_handle, 0, mode == access_mode::read ? PAGE_READONLY : PAGE_READWRITE,
-                                    win::int64_high(max_file_size), win::int64_low(max_file_size), 0);
+            const auto file_mapping_handle = ::CreateFileMapping(
+                file_handle,
+                0,
+                mode == access_mode::read ? PAGE_READONLY : PAGE_READWRITE,
+                win::int64_high(max_file_size),
+                win::int64_low(max_file_size),
+                0
+            );
             if (file_mapping_handle == invalid_handle) {
                 error = detail::last_error();
                 return {};
             }
-            char* mapping_start = static_cast<char*>(
-                ::MapViewOfFile(file_mapping_handle, mode == access_mode::read ? FILE_MAP_READ : FILE_MAP_WRITE,
-                                win::int64_high(aligned_offset), win::int64_low(aligned_offset), length_to_map));
+            char* mapping_start = static_cast<char*>(::MapViewOfFile(
+                file_mapping_handle,
+                mode == access_mode::read ? FILE_MAP_READ : FILE_MAP_WRITE,
+                win::int64_high(aligned_offset),
+                win::int64_low(aligned_offset),
+                length_to_map
+            ));
             if (mapping_start == nullptr) {
                 // Close file handle if mapping it failed.
                 ::CloseHandle(file_mapping_handle);
@@ -831,10 +867,14 @@ namespace mio {
                 return {};
             }
 #else // POSIX
-            char* mapping_start =
-                static_cast<char*>(::mmap(0, // Don't give hint as to where to map.
-                                          length_to_map, mode == access_mode::read ? PROT_READ : PROT_WRITE, MAP_SHARED,
-                                          file_handle, aligned_offset));
+            char* mapping_start = static_cast<char*>(::mmap(
+                0, // Don't give hint as to where to map.
+                length_to_map,
+                mode == access_mode::read ? PROT_READ : PROT_WRITE,
+                MAP_SHARED,
+                file_handle,
+                aligned_offset
+            ));
             if (mapping_start == MAP_FAILED) {
                 error = detail::last_error();
                 return {};
@@ -917,8 +957,9 @@ namespace mio {
 
     template<access_mode AccessMode, typename ByteT>
     template<typename String>
-    void basic_mmap<AccessMode, ByteT>::map(const String& path, const size_type offset, const size_type length,
-                                            std::error_code& error) {
+    void basic_mmap<AccessMode, ByteT>::map(
+        const String& path, const size_type offset, const size_type length, std::error_code& error
+    ) {
         error.clear();
         if (detail::empty(path)) {
             error = std::make_error_code(std::errc::invalid_argument);
@@ -937,8 +978,9 @@ namespace mio {
     }
 
     template<access_mode AccessMode, typename ByteT>
-    void basic_mmap<AccessMode, ByteT>::map(const handle_type handle, const size_type offset, const size_type length,
-                                            std::error_code& error) {
+    void basic_mmap<AccessMode, ByteT>::map(
+        const handle_type handle, const size_type offset, const size_type length, std::error_code& error
+    ) {
         error.clear();
         if (handle == invalid_handle) {
             error = std::make_error_code(std::errc::bad_file_descriptor);
@@ -955,8 +997,13 @@ namespace mio {
             return;
         }
 
-        const auto ctx = detail::memory_map(handle, offset, length == map_entire_file ? (file_size - offset) : length,
-                                            AccessMode, error);
+        const auto ctx = detail::memory_map(
+            handle,
+            offset,
+            length == map_entire_file ? (file_size - offset) : length,
+            AccessMode,
+            error
+        );
         if (!error) {
             // We must unmap the previous mapping that may have existed prior to this call.
             // Note that this must only be invoked after a new mapping has been created in
@@ -1294,8 +1341,9 @@ namespace mio {
          * while establishing the mapping is wrapped in a `std::system_error` and is
          * thrown.
          */
-        basic_shared_mmap(const handle_type handle, const size_type offset = 0,
-                          const size_type length = map_entire_file) {
+        basic_shared_mmap(
+            const handle_type handle, const size_type offset = 0, const size_type length = map_entire_file
+        ) {
             std::error_code error;
             map(handle, offset, length, error);
             if (error) {
@@ -1520,8 +1568,8 @@ namespace mio {
 
       private:
         template<typename MappingToken>
-        void map_impl(const MappingToken& token, const size_type offset, const size_type length,
-                      std::error_code& error) {
+        void
+        map_impl(const MappingToken& token, const size_type offset, const size_type length, std::error_code& error) {
             if (!pimpl_) {
                 mmap_type mmap = make_mmap<mmap_type>(token, offset, length, error);
                 if (error) {

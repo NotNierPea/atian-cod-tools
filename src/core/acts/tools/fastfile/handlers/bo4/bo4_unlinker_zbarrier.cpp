@@ -100,10 +100,16 @@ namespace {
 
                     json.BeginObject();
                     json.WriteFieldValueXAsset("boardModel", games::bo4::pool::ASSET_TYPE_XMODEL, board->pBoardModel);
-                    json.WriteFieldValueXAsset("alternateBoardModel", games::bo4::pool::ASSET_TYPE_XMODEL,
-                                               board->pAlternateBoardModel);
-                    json.WriteFieldValueXAsset("upgradedBoardModel", games::bo4::pool::ASSET_TYPE_XMODEL,
-                                               board->pUpgradedBoardModel);
+                    json.WriteFieldValueXAsset(
+                        "alternateBoardModel",
+                        games::bo4::pool::ASSET_TYPE_XMODEL,
+                        board->pAlternateBoardModel
+                    );
+                    json.WriteFieldValueXAsset(
+                        "upgradedBoardModel",
+                        games::bo4::pool::ASSET_TYPE_XMODEL,
+                        board->pUpgradedBoardModel
+                    );
                     json.WriteFieldValueXHash("tearAnim", board->tearAnim);
                     json.WriteFieldValueXHash("boardAnim", board->boardAnim);
                     json.WriteFieldValueXHash("idleAnim", board->idleAnim);

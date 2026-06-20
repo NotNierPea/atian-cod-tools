@@ -66,15 +66,19 @@ int MainActsUI(int argc, const char** argv) {
     // load acts api data
     int r{ InitActsAPI(false, &argc, (const char***)&argv, core::actsinfo::BUILD_VERSION_ID) };
     if (r) {
-        platform::InfoMessageBox("ACTS API Error",
-                                 "Failed to initialize ACTS API! Check the acts-ui.logs for more information.", false,
-                                 true);
+        platform::InfoMessageBox(
+            "ACTS API Error",
+            "Failed to initialize ACTS API! Check the acts-ui.logs for more information.",
+            false,
+            true
+        );
         return r;
     }
     if (core::logs::getlevel() <= core::logs::LVL_TRACE) {
         // logs from QT are really verbose, so we only enable them if we're in trace mode
-        QLoggingCategory::setFilterRules("qt.core.library\n"
-                                         //"qt.*=true\n"
+        QLoggingCategory::setFilterRules(
+            "qt.core.library\n"
+            //"qt.*=true\n"
         );
     }
 

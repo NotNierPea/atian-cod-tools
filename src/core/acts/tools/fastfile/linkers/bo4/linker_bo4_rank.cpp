@@ -212,16 +212,29 @@ namespace {
             prestigeInfo.unlockLevel = (int32_t)objCfg.GetInteger("unlockLevel");
             prestigeInfo.winsRequired = (uint32_t)objCfg.GetInteger("winsRequired");
             prestigeInfo.unk2c = (uint32_t)objCfg.GetInteger("unk2c");
-            prestigeInfo.titleOfOrigin =
-                objCfg.GetEnumVal<PrestigeTypeOfOrigin>("titleOfOrigin", PrestigeTypeOfOriginNamesEnum,
-                                                        ACTS_ARRAYSIZE(PrestigeTypeOfOriginNamesEnum), ORIGIN_TITLE_T8);
+            prestigeInfo.titleOfOrigin = objCfg.GetEnumVal<PrestigeTypeOfOrigin>(
+                "titleOfOrigin",
+                PrestigeTypeOfOriginNamesEnum,
+                ACTS_ARRAYSIZE(PrestigeTypeOfOriginNamesEnum),
+                ORIGIN_TITLE_T8
+            );
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, objCfg.GetCString("iconName"), prestigeInfo.iconName, false,
-                          &ff);
-            ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, objCfg.GetCString("iconNameLarge"), prestigeInfo.iconNameLarge,
-                          false, &ff);
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_IMAGE,
+                objCfg.GetCString("iconName"),
+                prestigeInfo.iconName,
+                false,
+                &ff
+            );
+            ctx.LinkAsset(
+                XAssetType::ASSET_TYPE_IMAGE,
+                objCfg.GetCString("iconNameLarge"),
+                prestigeInfo.iconNameLarge,
+                false,
+                &ff
+            );
 
             ff.data.PopStream();
 

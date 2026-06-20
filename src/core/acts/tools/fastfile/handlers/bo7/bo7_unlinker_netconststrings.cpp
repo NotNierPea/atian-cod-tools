@@ -77,7 +77,8 @@ namespace {
             uint32_t unk20;
             bool unk24;
         };
-        static_assert(sizeof(NCSInfo) == 0x28);)
+        static_assert(sizeof(NCSInfo) == 0x28);
+    )
 
 #undef __STRUCTTXT
 
@@ -100,8 +101,10 @@ namespace {
                 InitNCSInfo =
                     scan.ScanSingle("48 89 5C 24 10 48 89 7C 24 18 55 48 8B EC 48 83 EC 20 48 8D", "InitNCSInfo")
                         .GetPtr<void (*)()>();
-                s_netConstStringTypeAssetData = scan.ScanSingle("48 89 05 ?? ?? ?? ?? C6 45 10 00 E8 ?? ?? ?? ?? 33 FF",
-                                                                "s_netConstStringTypeAssetData")
+                s_netConstStringTypeAssetData = scan.ScanSingle(
+                                                        "48 89 05 ?? ?? ?? ?? C6 45 10 00 E8 ?? ?? ?? ?? 33 FF",
+                                                        "s_netConstStringTypeAssetData"
+                )
                                                     .GetRelative<int32_t, NCSInfo*>(3);
             } catch (std::runtime_error& err) {
                 LOG_WARNING("Can't load NSC string data: {}", err.what());

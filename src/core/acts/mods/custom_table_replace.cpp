@@ -54,8 +54,11 @@ static int custom_table_replace(int argc, const char* argv[]) {
 
     XAssetPoolEntry entry{};
 
-    if (!proc.ReadMemory(&entry, proc[offset::assetPool] + sizeof(entry) * pool::ASSET_TYPE_STRINGTABLE,
-                         sizeof(entry))) {
+    if (!proc.ReadMemory(
+            &entry,
+            proc[offset::assetPool] + sizeof(entry) * pool::ASSET_TYPE_STRINGTABLE,
+            sizeof(entry)
+        )) {
         std::cerr << "Can't read pool entry\n";
         return tool::BASIC_ERROR;
     }

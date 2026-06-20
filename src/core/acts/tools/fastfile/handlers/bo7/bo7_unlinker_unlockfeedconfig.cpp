@@ -144,8 +144,10 @@ namespace {
             if (opt.testDump) {
 
                 for (size_t i = 0; i < ACTS_ARRAYSIZE(asset->__pad); i++) {
-                    json.WriteFieldValueUnknown(utils::va("unk%x", offsetof(UnlockFeedConfig, __pad) + 8 * i),
-                                                asset->__pad[i]);
+                    json.WriteFieldValueUnknown(
+                        utils::va("unk%x", offsetof(UnlockFeedConfig, __pad) + 8 * i),
+                        asset->__pad[i]
+                    );
                 }
             }
             json.EndObject();

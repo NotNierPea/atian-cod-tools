@@ -199,33 +199,63 @@ namespace {
             json.WriteFieldValueXAsset("shadowCharacter", ASSET_TYPE_XMODEL, asset->shadowCharacter);
 
             json.WriteFieldValueXAsset("damagedTorso_Clean", ASSET_TYPE_XMODEL, asset->damagedTorso_Clean);
-            json.WriteFieldValueXAsset("damagedTorso_Clean_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedTorso_Clean_Alias);
-            json.WriteFieldValueXAsset("damagedTorso_RightArmGone", ASSET_TYPE_XMODEL,
-                                       asset->damagedTorso_RightArmGone);
-            json.WriteFieldValueXAsset("damagedTorso_RightArmGone_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedTorso_RightArmGone_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedTorso_Clean_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedTorso_Clean_Alias
+            );
+            json.WriteFieldValueXAsset(
+                "damagedTorso_RightArmGone",
+                ASSET_TYPE_XMODEL,
+                asset->damagedTorso_RightArmGone
+            );
+            json.WriteFieldValueXAsset(
+                "damagedTorso_RightArmGone_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedTorso_RightArmGone_Alias
+            );
             json.WriteFieldValueXAsset("damagedTorso_LeftArmGone", ASSET_TYPE_XMODEL, asset->damagedTorso_LeftArmGone);
-            json.WriteFieldValueXAsset("damagedTorso_LeftArmGone_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedTorso_LeftArmGone_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedTorso_LeftArmGone_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedTorso_LeftArmGone_Alias
+            );
             json.WriteFieldValueXAsset("damagedTorso_GutsGone", ASSET_TYPE_XMODEL, asset->damagedTorso_GutsGone);
-            json.WriteFieldValueXAsset("damagedTorso_GutsGone_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedTorso_GutsGone_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedTorso_GutsGone_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedTorso_GutsGone_Alias
+            );
             json.WriteFieldValueXAsset("damagedTorso_HeadGone", ASSET_TYPE_XMODEL, asset->damagedTorso_HeadGone);
-            json.WriteFieldValueXAsset("damagedTorso_HeadGone_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedTorso_HeadGone_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedTorso_HeadGone_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedTorso_HeadGone_Alias
+            );
             json.WriteFieldValueXAsset("damagedLegs_Clean", ASSET_TYPE_XMODEL, asset->damagedLegs_Clean);
-            json.WriteFieldValueXAsset("damagedLegs_Clean_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedLegs_Clean_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedLegs_Clean_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedLegs_Clean_Alias
+            );
             json.WriteFieldValueXAsset("damagedLegs_RightLegGone", ASSET_TYPE_XMODEL, asset->damagedLegs_RightLegGone);
-            json.WriteFieldValueXAsset("damagedLegs_RightLegGone_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedLegs_RightLegGone_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedLegs_RightLegGone_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedLegs_RightLegGone_Alias
+            );
             json.WriteFieldValueXAsset("damagedLegs_LeftLegGone", ASSET_TYPE_XMODEL, asset->damagedLegs_LeftLegGone);
-            json.WriteFieldValueXAsset("damagedLegs_LeftLegGone_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedLegs_LeftLegGone_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedLegs_LeftLegGone_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedLegs_LeftLegGone_Alias
+            );
             json.WriteFieldValueXAsset("damagedLegs_NoLegs", ASSET_TYPE_XMODEL, asset->damagedLegs_NoLegs);
-            json.WriteFieldValueXAsset("damagedLegs_NoLegs_Alias", ASSET_TYPE_XMODELALIAS,
-                                       asset->damagedLegs_NoLegs_Alias);
+            json.WriteFieldValueXAsset(
+                "damagedLegs_NoLegs_Alias",
+                ASSET_TYPE_XMODELALIAS,
+                asset->damagedLegs_NoLegs_Alias
+            );
 
             json.WriteFieldValueXAsset("chestGear_Right", ASSET_TYPE_XMODEL, asset->chestGear_Right);
             if (asset->chestGear_Right_Required)

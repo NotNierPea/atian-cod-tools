@@ -56,8 +56,11 @@ namespace systems::test {
 
                     XHash role{ *(XHash*)table.playerRoles[i]->levels };
 
-                    LOG_DEBUG("patch CustomizationTable::playerRoles[{}] {}", i,
-                              core::hashes::ExtractTmp("hash", role));
+                    LOG_DEBUG(
+                        "patch CustomizationTable::playerRoles[{}] {}",
+                        i,
+                        core::hashes::ExtractTmp("hash", role)
+                    );
 
                     table.playerRoles[i]->enabled = true;
                 }

@@ -12,8 +12,9 @@ namespace core::logs {
         LVL_ERROR = 4,
     };
 
-    typedef void (*logcallback)(loglevel level, const char* header, const char* file, size_t line, const char* str,
-                                bool endl);
+    typedef void (*logcallback)(
+        loglevel level, const char* header, const char* file, size_t line, const char* str, bool endl
+    );
 
     constexpr size_t GetLogFileSplit(const char* line) {
         std::string_view sw{ line };
@@ -83,8 +84,8 @@ namespace core::logs {
 
     void log(loglevel level, const char* header, const char* file, size_t line, const char* str, bool endl = true);
     void log(loglevel level, const char* file, size_t line, const char* str, bool endl = true);
-    inline void log(loglevel level, const char* header, const char* file, size_t line, const std::string& str,
-                    bool endl = true) {
+    inline void
+    log(loglevel level, const char* header, const char* file, size_t line, const std::string& str, bool endl = true) {
         log(level, header, file, line, str.c_str(), endl);
     }
     inline void log(loglevel level, const char* file, size_t line, const std::string& str, bool endl = true) {
@@ -99,8 +100,10 @@ namespace core::logs {
 #define LOG_GET_LOG_LINE 0
 #else
 #define LOG_GET_LOG_REF_STR_DATA                                                                                       \
-    (core::logs::GetLogFile<core::logs::GetLogFileLen(__FILE__), core::logs::GetLogFileSplit(__FILE__),                \
-                            core::logs::GetLogFileExt(__FILE__)>(__FILE__))
+    (core::logs::GetLogFile<                                                                                           \
+        core::logs::GetLogFileLen(__FILE__),                                                                           \
+        core::logs::GetLogFileSplit(__FILE__),                                                                         \
+        core::logs::GetLogFileExt(__FILE__)>(__FILE__))
 #define LOG_GET_LOG_REF_STR (LOG_GET_LOG_REF_STR_DATA.data())
 #define LOG_GET_LOG_LINE __LINE__
 #endif

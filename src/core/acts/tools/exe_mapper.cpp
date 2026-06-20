@@ -66,7 +66,8 @@ namespace {
             if (core::logs::getlevel() <= core::logs::LVL_TRACE)
                 osnames << " " << name;
 
-            hook::library::Library dep{ name, false,
+            hook::library::Library dep{ name,
+                                        false,
                                         platform::LSF_SEARCH_DEFAULT_DIRS | platform::LSF_DONT_RESOLVE_REFERENCES };
 
             outVC << dep << ":\n";
@@ -544,8 +545,14 @@ namespace {
             size_t animtcount{ handler->GetAnimTreeDoubleCount() };
             size_t animtucount{ handler->GetAnimTreeSingleCount() };
 
-            LOG_DEBUG("Decrypting {} ({}) ({}/{}/{})...", path.string(),
-                      hashutils::ExtractTmpScript(handler->GetName()), strscount, animtcount, animtucount);
+            LOG_DEBUG(
+                "Decrypting {} ({}) ({}/{}/{})...",
+                path.string(),
+                hashutils::ExtractTmpScript(handler->GetName()),
+                strscount,
+                animtcount,
+                animtucount
+            );
 
             // strings table
 
@@ -557,8 +564,12 @@ namespace {
 
                     if (rloc + sizeof(*strs) + sizeof(uint32_t) * strs->num_address > buffer.size() ||
                         strs->string >= buffer.size()) {
-                        LOG_ERROR("Can't decrypt {}: String too far 0x{:x} >= {:x}", path.string(), strs->string,
-                                  buffer.size());
+                        LOG_ERROR(
+                            "Can't decrypt {}: String too far 0x{:x} >= {:x}",
+                            path.string(),
+                            strs->string,
+                            buffer.size()
+                        );
                         break;
                     }
                     DecryptString(handler->Ptr<char>(strs->string));
@@ -574,8 +585,9 @@ namespace {
             // animtrees tables
 
             if (animtcount) {
-                tool::gsc::GSC_ANIMTREE_ITEM* animt{ handler->Ptr<tool::gsc::GSC_ANIMTREE_ITEM>(
-                    handler->GetAnimTreeDoubleOffset()) };
+                tool::gsc::GSC_ANIMTREE_ITEM* animt{
+                    handler->Ptr<tool::gsc::GSC_ANIMTREE_ITEM>(handler->GetAnimTreeDoubleOffset())
+                };
                 size_t j = 0;
                 for (; j < animtcount; j++) {
                     size_t rloc{ (size_t)((byte*)animt - handler->Ptr()) };
@@ -587,8 +599,9 @@ namespace {
                     DecryptString(handler->Ptr<char>(animt->address_str1));
                     DecryptString(handler->Ptr<char>(animt->address_str2));
 
-                    animt = reinterpret_cast<tool::gsc::GSC_ANIMTREE_ITEM*>(reinterpret_cast<uint32_t*>(&animt[1]) +
-                                                                            animt->num_address);
+                    animt = reinterpret_cast<tool::gsc::GSC_ANIMTREE_ITEM*>(
+                        reinterpret_cast<uint32_t*>(&animt[1]) + animt->num_address
+                    );
                 }
                 if (j != animtcount) {
                     continue;
@@ -597,8 +610,9 @@ namespace {
             }
 
             if (animtucount) {
-                tool::gsc::GSC_USEANIMTREE_ITEM* animtu{ handler->Ptr<tool::gsc::GSC_USEANIMTREE_ITEM>(
-                    handler->GetAnimTreeSingleOffset()) };
+                tool::gsc::GSC_USEANIMTREE_ITEM* animtu{
+                    handler->Ptr<tool::gsc::GSC_USEANIMTREE_ITEM>(handler->GetAnimTreeSingleOffset())
+                };
                 size_t k = 0;
                 for (; k < animtucount; k++) {
                     size_t rloc{ (size_t)((byte*)animtu - handler->Ptr()) };
@@ -611,7 +625,8 @@ namespace {
                     DecryptString(handler->Ptr<char>(animtu->address));
 
                     animtu = reinterpret_cast<tool::gsc::GSC_USEANIMTREE_ITEM*>(
-                        reinterpret_cast<uint32_t*>(&animtu[1]) + animtu->num_address);
+                        reinterpret_cast<uint32_t*>(&animtu[1]) + animtu->num_address
+                    );
                 }
                 if (k != animtucount) {
                     continue;
@@ -629,8 +644,14 @@ namespace {
             }
 
             size_t total{ strscount + animtucount + animtcount };
-            LOG_INFO("Decrypted {} ({}) into {} / {} (0x{:x}) string(s)", path.string(),
-                     hashutils::ExtractTmpScript(handler->GetName()), outfile.string(), total, total);
+            LOG_INFO(
+                "Decrypted {} ({}) into {} / {} (0x{:x}) string(s)",
+                path.string(),
+                hashutils::ExtractTmpScript(handler->GetName()),
+                outfile.string(),
+                total,
+                total
+            );
             c++;
         }
         LOG_INFO("{} (0x{:x}) script(s) decrypted", c, c);
@@ -762,15 +783,18 @@ namespace {
     ADD_TOOL(exe_scan, "dev", "[exe] [pattern]", "Scan exe", exe_scan);
     ADD_TOOL(exe_rva, "dev", "[exe] [rva]", "Find all rva for an exe", exe_rva);
     ADD_TOOL(exe_rcx, "dev", "[exe] [rva] [rcx]", "Find all call for a rva with a param", exe_rcx);
-    ADD_TOOL(exe_rcx_find, "dev", "[exe] [rva] [len] (output tsv)", "Find all call for a rva with a param",
-             exe_rcx_find);
+    ADD_TOOL(
+        exe_rcx_find, "dev", "[exe] [rva] [len] (output tsv)", "Find all call for a rva with a param", exe_rcx_find
+    );
     ADD_TOOL(exe_ret_string, "dev", "[exe] [rva]", "Load a string from an exe", exe_ret_string);
     ADD_TOOL(game_validate, "dev", " [game=all]", "Validate scans for an exe", game_validate);
     ADD_TOOL(read_strings, "dev", "[file] [output] (min size=4)", "Dump file strings", read_strings);
     ADD_TOOL(exe_pool_dumper, "common", "[exe] [start] [end] (outfile) (prefix)", "Dump pool names", exe_pool_dumper);
     ADD_TOOL(sp24_data_dump, "bo6", "[exe]", "Dump common data from an exe dump", sp24_data_dump);
-    ADD_TOOL(scripts_decrypt, "gsc", "[exe] [type] [scripts] [ouput]",
-             "Map exe in memory and use it to decrypt GSC scripts", scripts_decrypt);
+    ADD_TOOL(
+        scripts_decrypt, "gsc", "[exe] [type] [scripts] [ouput]", "Map exe in memory and use it to decrypt GSC scripts",
+        scripts_decrypt
+    );
 
 } // namespace
 

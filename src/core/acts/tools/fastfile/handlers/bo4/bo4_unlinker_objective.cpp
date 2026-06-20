@@ -119,13 +119,18 @@ namespace {
             json.BeginObject();
 
             json.WriteFieldValueXHash("name", asset->name);
-            json.WriteFieldValueString("hAlign",
-                                       asset->hAlign >= ACTS_ARRAYSIZE(HALIGN) ? "invalid" : HALIGN[asset->hAlign]);
-            json.WriteFieldValueString("vAlign",
-                                       asset->vAlign >= ACTS_ARRAYSIZE(VALIGN) ? "invalid" : VALIGN[asset->vAlign]);
-            json.WriteFieldValueString("waypointOffset",
-                                       std::format("{}, {}, {}", asset->waypointOffset[0], asset->waypointOffset[1],
-                                                   asset->waypointOffset[2]));
+            json.WriteFieldValueString(
+                "hAlign",
+                asset->hAlign >= ACTS_ARRAYSIZE(HALIGN) ? "invalid" : HALIGN[asset->hAlign]
+            );
+            json.WriteFieldValueString(
+                "vAlign",
+                asset->vAlign >= ACTS_ARRAYSIZE(VALIGN) ? "invalid" : VALIGN[asset->vAlign]
+            );
+            json.WriteFieldValueString(
+                "waypointOffset",
+                std::format("{}, {}, {}", asset->waypointOffset[0], asset->waypointOffset[1], asset->waypointOffset[2])
+            );
             json.WriteFieldValueBool("waypointShowDistance", asset->waypointShowDistance);
             json.WriteFieldValueBool("waypointHideArrow", asset->waypointHideArrow);
             json.WriteFieldValueBool("waypointClamp", asset->waypointClamp);
@@ -146,8 +151,11 @@ namespace {
             json.WriteFieldValueXHash("notifyString", asset->notifyString);
             json.WriteFieldValueXAsset("objectiveImage", games::bo4::pool::ASSET_TYPE_IMAGE, asset->objectiveImage);
             json.WriteFieldValueXAsset("waypointImage", games::bo4::pool::ASSET_TYPE_IMAGE, asset->waypointImage);
-            json.WriteFieldValueXAsset("subObjectiveImage", games::bo4::pool::ASSET_TYPE_IMAGE,
-                                       asset->subObjectiveImage);
+            json.WriteFieldValueXAsset(
+                "subObjectiveImage",
+                games::bo4::pool::ASSET_TYPE_IMAGE,
+                asset->subObjectiveImage
+            );
 
             if (asset->unk24)
                 json.WriteFieldValueNumber("unk24", (int)asset->unk24); // unused?

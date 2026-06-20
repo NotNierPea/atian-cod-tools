@@ -24,12 +24,16 @@ namespace core::config {
         int64_t enumValue;
     };
 
-    int64_t ParseEnumValue(const char* value, const ConfigEnumData* data, size_t dataCount,
-                           int64_t defaultEnumValue = {}, const char* path = nullptr);
+    int64_t ParseEnumValue(
+        const char* value, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue = {},
+        const char* path = nullptr
+    );
 
     template<typename T>
-    inline T ParseEnumValue(const char* value, const ConfigEnumData* data, size_t dataCount, T defaultEnumValue = {},
-                            const char* path = nullptr) {
+    inline T ParseEnumValue(
+        const char* value, const ConfigEnumData* data, size_t dataCount, T defaultEnumValue = {},
+        const char* path = nullptr
+    ) {
         return (T)ParseEnumValue(value, data, dataCount, (int64_t)defaultEnumValue, path);
     }
 
@@ -98,8 +102,8 @@ namespace core::config {
             return GetBool(path.c_str(), defaultValue);
         }
         int64_t GetEnum(const char* path, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue = 0);
-        inline int64_t GetEnum(const std::string& path, const ConfigEnumData* data, size_t dataCount,
-                               int64_t defaultEnumValue = 0) {
+        inline int64_t
+        GetEnum(const std::string& path, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue = 0) {
             return GetEnum(path.c_str(), data, dataCount, defaultEnumValue);
         }
         template<typename T>
@@ -107,8 +111,8 @@ namespace core::config {
             return (T)GetEnum(path, data, dataCount, (int64_t)defaultEnumValue);
         }
         template<typename T>
-        inline T GetEnumVal(const std::string& path, const ConfigEnumData* data, size_t dataCount,
-                            T defaultEnumValue = {}) {
+        inline T
+        GetEnumVal(const std::string& path, const ConfigEnumData* data, size_t dataCount, T defaultEnumValue = {}) {
             return (T)GetEnum(path.c_str(), data, dataCount, (int64_t)defaultEnumValue);
         }
         bool ScanStringN(const char* path, const char* format, size_t count, ...);
@@ -413,12 +417,12 @@ namespace core::config {
     inline bool GetBool(const std::string& path, bool defaultValue = false) {
         return GetMainConfig().GetBool(path, defaultValue);
     }
-    inline int64_t GetEnum(const char* path, const ConfigEnumData* data, size_t dataCount,
-                           int64_t defaultEnumValue = 0) {
+    inline int64_t
+    GetEnum(const char* path, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue = 0) {
         return GetMainConfig().GetEnum(path, data, dataCount, defaultEnumValue);
     }
-    inline int64_t GetEnum(const std::string& path, const ConfigEnumData* data, size_t dataCount,
-                           int64_t defaultEnumValue = 0) {
+    inline int64_t
+    GetEnum(const std::string& path, const ConfigEnumData* data, size_t dataCount, int64_t defaultEnumValue = 0) {
         return GetMainConfig().GetEnum(path, data, dataCount, defaultEnumValue);
     }
     template<typename T>

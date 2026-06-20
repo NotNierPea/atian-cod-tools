@@ -60,8 +60,15 @@ namespace {
 
 #define REGISTER_COMMON_TOOL(id, category, usage, desc, ...)                                                           \
     static tool::toolfunctiondata __toolfunctiondata_##id(                                                             \
-        #id, LOG_GET_LOG_REF_STR, __LINE__, category, usage, desc, nullptr,                                            \
-        [](Process& _, int argc, const char* argv[]) -> int { return CommonTool(argc, argv, __VA_ARGS__); })
+        #id,                                                                                                           \
+        LOG_GET_LOG_REF_STR,                                                                                           \
+        __LINE__,                                                                                                      \
+        category,                                                                                                      \
+        usage,                                                                                                         \
+        desc,                                                                                                          \
+        nullptr,                                                                                                       \
+        [](Process& _, int argc, const char* argv[]) -> int { return CommonTool(argc, argv, __VA_ARGS__); }            \
+    )
 
     REGISTER_COMMON_TOOL(dp, "common", " [pool]+", "dump pool", "dpbo4", "dpcw", "dpt7", "dpcord");
     REGISTER_COMMON_TOOL(wps, "common", " [output]", "write pooled scripts", "wpsbo4", "wpscw", "wpst7", "wpscod2020");

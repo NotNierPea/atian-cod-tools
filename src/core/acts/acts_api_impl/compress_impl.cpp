@@ -12,8 +12,8 @@ ActsStatus ActsAPICompress_GetCompressSize(ActsAPICompress_Algorithm alg, size_t
         return ACTS_STATUS_ERROR;
     }
 }
-ActsStatus ActsAPICompress_Compress(ActsAPICompress_Algorithm alg, void* dest, size_t* destSize, const void* src,
-                                    size_t srcSize) {
+ActsStatus
+ActsAPICompress_Compress(ActsAPICompress_Algorithm alg, void* dest, size_t* destSize, const void* src, size_t srcSize) {
     ACTS_API_ASSERT_NOT_NULL(dest);
     ACTS_API_ASSERT_NOT_NULL(destSize);
     ACTS_API_ASSERT_NOT_NULL(src);
@@ -29,15 +29,17 @@ ActsStatus ActsAPICompress_Compress(ActsAPICompress_Algorithm alg, void* dest, s
         return ACTS_STATUS_ERROR;
     }
 }
-ActsStatus ActsAPICompress_Decompress(ActsAPICompress_Algorithm alg, void* dest, size_t* destSize, const void* src,
-                                      size_t srcSize) {
+ActsStatus ActsAPICompress_Decompress(
+    ActsAPICompress_Algorithm alg, void* dest, size_t* destSize, const void* src, size_t srcSize
+) {
     ACTS_API_ASSERT_NOT_NULL(destSize);
     ACTS_API_ASSERT(!*destSize || dest);
     ACTS_API_ASSERT(!srcSize || src);
 
     try {
-        int decomp{ utils::compress::Decompress2((utils::compress::CompressionAlgorithm)alg, dest, *destSize, src,
-                                                 srcSize) };
+        int decomp{
+            utils::compress::Decompress2((utils::compress::CompressionAlgorithm)alg, dest, *destSize, src, srcSize)
+        };
         if (decomp >= 0) {
             *destSize = decomp;
             return ACTS_STATUS_OK;

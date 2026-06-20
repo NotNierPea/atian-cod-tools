@@ -73,8 +73,10 @@ namespace hashutils {
             for (std::filesystem::path& p : wnipaths) {
                 pi.Report(loaded++, numFiles, std::format("Loading WNI {}...", p.string()));
                 if (!deps::scobalula::wni::ReadWNIFile(
-                        p, [](uint64_t hash, const char* str) { AddPrecomputed(hash, str, true, false); },
-                        [](size_t len) -> void* { return core::hashes::AllocHashMemory(len); })) {
+                        p,
+                        [](uint64_t hash, const char* str) { AddPrecomputed(hash, str, true, false); },
+                        [](size_t len) -> void* { return core::hashes::AllocHashMemory(len); }
+                    )) {
                     LOG_ERROR("Error when reading WNI files");
                 };
             }
@@ -82,8 +84,10 @@ namespace hashutils {
             for (std::filesystem::path& p : cdbpaths) {
                 pi.Report(loaded++, numFiles, std::format("Loading CDB {}...", p.string()));
                 if (!deps::dzporter::cdb::ReadCDBFile(
-                        p, [](uint64_t hash, const char* str) { AddPrecomputed(hash, str, true, false); },
-                        [](size_t len) -> void* { return core::hashes::AllocHashMemory(len); })) {
+                        p,
+                        [](uint64_t hash, const char* str) { AddPrecomputed(hash, str, true, false); },
+                        [](size_t len) -> void* { return core::hashes::AllocHashMemory(len); }
+                    )) {
                     LOG_ERROR("Error when reading CDB files");
                 };
             }
@@ -346,8 +350,9 @@ namespace hashutils {
         AddPrecomputed(hash::Hash64("localize.json"), "localize.json", true, false);
 
         size_t hashFileLen;
-        byte* hashFile{ (byte*)utils::ReadFilePtr(file, &hashFileLen,
-                                                  [](size_t len) { return core::hashes::AllocHashMemory(len); }) };
+        byte* hashFile{ (byte*)utils::ReadFilePtr(file, &hashFileLen, [](size_t len) {
+            return core::hashes::AllocHashMemory(len);
+        }) };
 
         if (!hashFile) {
             LOG_TRACE("End load hash file {}", file);

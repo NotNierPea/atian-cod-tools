@@ -106,7 +106,8 @@ namespace acts::compiler::adl {
             if (number->children.size() != 3) {
                 std::string txt{ number->getText() };
                 throw std::runtime_error(
-                    utils::va("INVALID CHILDREN COUNT %d FOR %s", number->children.size(), txt.c_str()));
+                    utils::va("INVALID CHILDREN COUNT %d FOR %s", number->children.size(), txt.c_str())
+                );
             }
 
             if (IS_RULE_TYPE(number->children[1], adlParser::RuleNumber)) {
@@ -174,7 +175,8 @@ namespace acts::compiler::adl {
         default: {
             std::string txt{ number->getText() };
             throw std::runtime_error(
-                utils::va("INVALID TERM NODE TYPE %d FOR %s", (int)term->getSymbol()->getType(), txt.c_str()));
+                utils::va("INVALID TERM NODE TYPE %d FOR %s", (int)term->getSymbol()->getType(), txt.c_str())
+            );
         }
         }
     }
@@ -185,8 +187,10 @@ namespace acts::compiler::adl {
       public:
         ACTSErrorListener(const std::string& filename) : filename(filename) {}
 
-        void syntaxError(Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
-                         const std::string& msg, std::exception_ptr e) override {
+        void syntaxError(
+            Recognizer* recognizer, Token* offendingSymbol, size_t line, size_t charPositionInLine,
+            const std::string& msg, std::exception_ptr e
+        ) override {
             if (charPositionInLine) {
                 LOG_ERROR("{}:{}#{} : {}", filename, line, charPositionInLine, msg);
             } else if (line) {
@@ -196,8 +200,8 @@ namespace acts::compiler::adl {
             }
         }
 
-        void PrintLineMessage(core::logs::loglevel lvl, size_t line, size_t charPositionInLine,
-                              const std::string& msg) {
+        void
+        PrintLineMessage(core::logs::loglevel lvl, size_t line, size_t charPositionInLine, const std::string& msg) {
             if (charPositionInLine) {
                 LOG_LVLF(lvl, "{}#{}:{} {}", filename, line, charPositionInLine, msg);
             } else {
@@ -267,8 +271,9 @@ namespace acts::compiler::adl {
         return {};
     }
 
-    bool CompileAdl(core::preprocessor::PreProcessorOption& preproc, const std::string& filename, std::string& data,
-                    ADLData& output) {
+    bool CompileAdl(
+        core::preprocessor::PreProcessorOption& preproc, const std::string& filename, std::string& data, ADLData& output
+    ) {
         std::filesystem::path filePath{ filename };
 
         LOG_DEBUG("Load ADL file {}", filename);
@@ -326,14 +331,20 @@ namespace acts::compiler::adl {
 
                 std::string includeBuffer{};
                 if (!utils::ReadFile(inc, includeBuffer)) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Can't read file {}", inc.string()));
+                    errList->PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Can't read file {}", inc.string())
+                    );
                     return false;
                 }
 
                 if (!CompileAdl(preproc, inc.string(), includeBuffer, output)) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Can't load file {}", inc.string()));
+                    errList->PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Can't load file {}", inc.string())
+                    );
                     return false;
                 }
 
@@ -343,16 +354,22 @@ namespace acts::compiler::adl {
                 int64_t lenDef{ NumberNodeValue(rule->children[1]) };
 
                 if (lenDef < 0) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Invalid custom type len: 0x{:x}", lenDef));
+                    errList->PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Invalid custom type len: 0x{:x}", lenDef)
+                    );
                     err = true;
                     continue;
                 }
                 std::string name{ rule->children[2]->getText() };
 
                 if (!output.CreateCustomType(name, lenDef)) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Can't register custom type: {} already defined", name));
+                    errList->PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Can't register custom type: {} already defined", name)
+                    );
                     err = true;
                     continue;
                 }
@@ -371,8 +388,11 @@ namespace acts::compiler::adl {
 
                     if (alignVal && alignVal != 1 && alignVal != 2 && alignVal != 4 && alignVal != 8 &&
                         alignVal != 0x10) {
-                        errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                                  std::format("Invalid align: 0x{:x}", alignVal));
+                        errList->PrintLineMessage(
+                            core::logs::LVL_ERROR,
+                            rule,
+                            std::format("Invalid align: 0x{:x}", alignVal)
+                        );
                         err = true;
                         continue;
                     }
@@ -385,8 +405,11 @@ namespace acts::compiler::adl {
                     int64_t sizeVal{ NumberNodeValue(rule->children[i + 2]) };
 
                     if (sizeVal < 0) {
-                        errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                                  std::format("Invalid size: 0x{:x}", sizeVal));
+                        errList->PrintLineMessage(
+                            core::logs::LVL_ERROR,
+                            rule,
+                            std::format("Invalid size: 0x{:x}", sizeVal)
+                        );
                         err = true;
                         continue;
                     }
@@ -401,8 +424,8 @@ namespace acts::compiler::adl {
                 ADLStruct* str{ output.CreateStruct(name, align, size) };
 
                 if (!str) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Type '{}' already defined", name));
+                    errList
+                        ->PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Type '{}' already defined", name));
                     err = true;
                     continue;
                 }
@@ -420,8 +443,11 @@ namespace acts::compiler::adl {
                         std::string typeName{ structMember->children[0]->getText() };
                         nfield.type = output.IdOfName(typeName);
                         if (!nfield.type) {
-                            errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                                      std::format("Invalid struct type: {}", typeName));
+                            errList->PrintLineMessage(
+                                core::logs::LVL_ERROR,
+                                rule,
+                                std::format("Invalid struct type: {}", typeName)
+                            );
                             err = true;
                             continue;
                         }
@@ -434,8 +460,10 @@ namespace acts::compiler::adl {
                         } else {
                             if (nfield.type == str->id) {
                                 errList->PrintLineMessage(
-                                    core::logs::LVL_ERROR, rule,
-                                    std::format("Recursive type definition isn't available: {}", typeName));
+                                    core::logs::LVL_ERROR,
+                                    rule,
+                                    std::format("Recursive type definition isn't available: {}", typeName)
+                                );
                                 err = true;
                                 continue;
                             }
@@ -448,8 +476,10 @@ namespace acts::compiler::adl {
                         for (size_t j = 0; j < str->fields.size(); j++) {
                             if (str->fields[j].name == fieldHash) {
                                 errList->PrintLineMessage(
-                                    core::logs::LVL_ERROR, structMember->children[idx],
-                                    std::format("Field already defined for this structure {}", fieldName));
+                                    core::logs::LVL_ERROR,
+                                    structMember->children[idx],
+                                    std::format("Field already defined for this structure {}", fieldName)
+                                );
                                 err = true;
                                 break;
                             }
@@ -461,8 +491,11 @@ namespace acts::compiler::adl {
                             int64_t arraySize{ NumberNodeValue(structMember->children[++idx]) };
 
                             if (arraySize < 0) {
-                                errList->PrintLineMessage(core::logs::LVL_ERROR, structMember->children[idx],
-                                                          std::format("Can't have negative array size {}", arraySize));
+                                errList->PrintLineMessage(
+                                    core::logs::LVL_ERROR,
+                                    structMember->children[idx],
+                                    std::format("Can't have negative array size {}", arraySize)
+                                );
                                 err = true;
                                 arraySize = 0;
                             }
@@ -492,15 +525,23 @@ namespace acts::compiler::adl {
 
                         if (oper == "$padding") {
                             if (arraySize < 0) {
-                                errList->PrintLineMessage(core::logs::LVL_ERROR, structMember->children[1],
-                                                          std::format("Padding to a negative size {}", arraySize));
+                                errList->PrintLineMessage(
+                                    core::logs::LVL_ERROR,
+                                    structMember->children[1],
+                                    std::format("Padding to a negative size {}", arraySize)
+                                );
                                 err = true;
                                 break;
                             } else if ((size_t)arraySize < str->size) {
                                 errList->PrintLineMessage(
-                                    core::logs::LVL_ERROR, structMember->children[1],
-                                    std::format("Padding to a size after the current size 0x{:x} < 0x{:x}", arraySize,
-                                                str->size));
+                                    core::logs::LVL_ERROR,
+                                    structMember->children[1],
+                                    std::format(
+                                        "Padding to a size after the current size 0x{:x} < 0x{:x}",
+                                        arraySize,
+                                        str->size
+                                    )
+                                );
                                 err = true;
                                 break;
                             }
@@ -515,22 +556,33 @@ namespace acts::compiler::adl {
                         } else if (oper == "$assert_offset") {
                             if (arraySize != str->size) {
                                 errList->PrintLineMessage(
-                                    core::logs::LVL_ERROR, structMember->children[1],
-                                    std::format("$assert_offset invalid: 0x{:x} != 0x{:x}", arraySize, str->size));
+                                    core::logs::LVL_ERROR,
+                                    structMember->children[1],
+                                    std::format("$assert_offset invalid: 0x{:x} != 0x{:x}", arraySize, str->size)
+                                );
                                 err = true;
                                 break;
                             }
                         } else {
-                            errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                                      std::format("Operator not handler : {}", oper));
+                            errList->PrintLineMessage(
+                                core::logs::LVL_ERROR,
+                                rule,
+                                std::format("Operator not handler : {}", oper)
+                            );
                             err = true;
                             continue;
                         }
 
                     } else {
-                        errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                                  std::format("Struct member not handler ({}): {}",
-                                                              structMember->getRuleIndex(), structMember->getText()));
+                        errList->PrintLineMessage(
+                            core::logs::LVL_ERROR,
+                            rule,
+                            std::format(
+                                "Struct member not handler ({}): {}",
+                                structMember->getRuleIndex(),
+                                structMember->getText()
+                            )
+                        );
                         err = true;
                         continue;
                     }
@@ -539,9 +591,15 @@ namespace acts::compiler::adl {
                 if (str->forcedSize) {
                     if (str->size > str->forcedSize) {
                         errList->PrintLineMessage(
-                            core::logs::LVL_ERROR, rule,
-                            std::format("Can't force the size for the type '{}' too large 0x{:x} >= 0x{:x}", name,
-                                        str->size, str->forcedSize));
+                            core::logs::LVL_ERROR,
+                            rule,
+                            std::format(
+                                "Can't force the size for the type '{}' too large 0x{:x} >= 0x{:x}",
+                                name,
+                                str->size,
+                                str->forcedSize
+                            )
+                        );
                         err = true;
                         continue;
                     }
@@ -558,8 +616,11 @@ namespace acts::compiler::adl {
                 ADLDataTypeId typeId{ output.IdOfName(type) };
 
                 if (!IsDefaultType(typeId) || !IsIntType(typeId)) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Type '{}' doesn't exist or isn't an int type", type));
+                    errList->PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Type '{}' doesn't exist or isn't an int type", type)
+                    );
                     err = true;
                     continue;
                 }
@@ -585,8 +646,8 @@ namespace acts::compiler::adl {
                 ADLFlag* str{ output.CreateFlag(name, typeId) };
 
                 if (!str) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Type '{}' already defined", name));
+                    errList
+                        ->PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Type '{}' already defined", name));
                     err = true;
                     continue;
                 }
@@ -606,9 +667,17 @@ namespace acts::compiler::adl {
                     }
 
                     if (value >= maxValue || value < minValue) {
-                        errList->PrintLineMessage(core::logs::LVL_ERROR, enumMember,
-                                                  std::format("Out of bounds value for '{}', {} not in [{},{}[", name,
-                                                              value, minValue, maxValue));
+                        errList->PrintLineMessage(
+                            core::logs::LVL_ERROR,
+                            enumMember,
+                            std::format(
+                                "Out of bounds value for '{}', {} not in [{},{}[",
+                                name,
+                                value,
+                                minValue,
+                                maxValue
+                            )
+                        );
                         err = true;
                     }
 
@@ -619,8 +688,11 @@ namespace acts::compiler::adl {
                         fieldName = enumVal->getText();
                     } else {
                         fieldName = "";
-                        errList->PrintLineMessage(core::logs::LVL_ERROR, enumVal,
-                                                  std::format("Unhandled flag val {}", enumVal->getText()));
+                        errList->PrintLineMessage(
+                            core::logs::LVL_ERROR,
+                            enumVal,
+                            std::format("Unhandled flag val {}", enumVal->getText())
+                        );
                         err = true;
                     }
                     output.AddHash(fieldName);
@@ -630,8 +702,10 @@ namespace acts::compiler::adl {
                     for (size_t j = 0; j < str->fields.size(); j++) {
                         if (str->fields[j].name == fieldHash) {
                             errList->PrintLineMessage(
-                                core::logs::LVL_ERROR, enumVal,
-                                std::format("Field already defined for this structure {}", fieldName));
+                                core::logs::LVL_ERROR,
+                                enumVal,
+                                std::format("Field already defined for this structure {}", fieldName)
+                            );
                             err = true;
                             break;
                         }
@@ -651,8 +725,11 @@ namespace acts::compiler::adl {
                 ADLDataTypeId typeId{ output.IdOfName(type) };
 
                 if (!IsDefaultType(typeId) || !IsIntType(typeId)) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Type '{}' doesn't exist or isn't an int type", type));
+                    errList->PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Type '{}' doesn't exist or isn't an int type", type)
+                    );
                     err = true;
                     continue;
                 }
@@ -680,8 +757,8 @@ namespace acts::compiler::adl {
                 ADLEnum* str{ output.CreateEnum(name, typeId) };
 
                 if (!str) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Type '{}' already defined", name));
+                    errList
+                        ->PrintLineMessage(core::logs::LVL_ERROR, rule, std::format("Type '{}' already defined", name));
                     err = true;
                     continue;
                 }
@@ -701,9 +778,17 @@ namespace acts::compiler::adl {
                     }
 
                     if (value > maxValue || value < minValue) {
-                        errList->PrintLineMessage(core::logs::LVL_ERROR, enumMember,
-                                                  std::format("Out of bounds value for '{}', {} not in [{},{}]", name,
-                                                              value, minValue, maxValue));
+                        errList->PrintLineMessage(
+                            core::logs::LVL_ERROR,
+                            enumMember,
+                            std::format(
+                                "Out of bounds value for '{}', {} not in [{},{}]",
+                                name,
+                                value,
+                                minValue,
+                                maxValue
+                            )
+                        );
                         err = true;
                     }
 
@@ -714,8 +799,11 @@ namespace acts::compiler::adl {
                         fieldName = enumVal->getText();
                     } else {
                         fieldName = "";
-                        errList->PrintLineMessage(core::logs::LVL_ERROR, enumVal,
-                                                  std::format("Unhandled flag val {}", enumVal->getText()));
+                        errList->PrintLineMessage(
+                            core::logs::LVL_ERROR,
+                            enumVal,
+                            std::format("Unhandled flag val {}", enumVal->getText())
+                        );
                         err = true;
                     }
 
@@ -726,8 +814,10 @@ namespace acts::compiler::adl {
                     for (size_t j = 0; j < str->fields.size(); j++) {
                         if (str->fields[j].name == fieldHash) {
                             errList->PrintLineMessage(
-                                core::logs::LVL_ERROR, enumVal,
-                                std::format("Field already defined for this structure {}", fieldName));
+                                core::logs::LVL_ERROR,
+                                enumVal,
+                                std::format("Field already defined for this structure {}", fieldName)
+                            );
                             err = true;
                             break;
                         }
@@ -775,16 +865,21 @@ namespace acts::compiler::adl {
                     continue;
                 }
                 if (!output.RegisterTypeDef(dest, def)) {
-                    errList->PrintLineMessage(core::logs::LVL_ERROR, rule,
-                                              std::format("Type is already defined : {}", dest));
+                    errList->PrintLineMessage(
+                        core::logs::LVL_ERROR,
+                        rule,
+                        std::format("Type is already defined : {}", dest)
+                    );
                     err = true;
                     continue;
                 }
             } break;
             default:
                 errList->PrintLineMessage(
-                    core::logs::LVL_ERROR, rule,
-                    std::format("Unhandled rule ({}): {}", rule->getRuleIndex(), rule->getText()));
+                    core::logs::LVL_ERROR,
+                    rule,
+                    std::format("Unhandled rule ({}): {}", rule->getRuleIndex(), rule->getText())
+                );
                 err = true;
                 continue;
             }

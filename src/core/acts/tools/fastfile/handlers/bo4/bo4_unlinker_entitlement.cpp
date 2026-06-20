@@ -71,9 +71,11 @@ namespace {
             json.WriteFieldValueNumber("dwItemID", asset->dwItemID);
             json.WriteFieldValueNumber("entitlementDescCount", asset->entitlementDescCount);
             json.WriteFieldValueXString("unk48", asset->unk48);
-            json.WriteFieldValueXAsset("firstPartyEntitlement",
-                                       games::bo4::pool::XAssetType::ASSET_TYPE_FIRSTPARTYENTITLEMENT,
-                                       asset->firstPartyEntitlement);
+            json.WriteFieldValueXAsset(
+                "firstPartyEntitlement",
+                games::bo4::pool::XAssetType::ASSET_TYPE_FIRSTPARTYENTITLEMENT,
+                asset->firstPartyEntitlement
+            );
 
             if (asset->itemIds) {
                 json.WriteFieldNameString("itemIds");

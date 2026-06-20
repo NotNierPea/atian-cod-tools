@@ -28,7 +28,12 @@ void example_gsc() {
 
     // we create a compiler context
     ActsHandle context = ActsAPIGscCompiler_CreateCompilerContext(
-        vm, PLATFORM_PC, "scripts/core_common/acts/my_custom_script.gsc", false, NULL);
+        vm,
+        PLATFORM_PC,
+        "scripts/core_common/acts/my_custom_script.gsc",
+        false,
+        NULL
+    );
 
     if (!IS_ACTS_HANDLE_VALID(context)) {
         fprintf(stderr, "Can't allocate context\n");

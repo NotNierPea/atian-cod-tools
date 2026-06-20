@@ -141,7 +141,8 @@ namespace actslib::rdf::raio {
 
             if (!out)
                 throw std::runtime_error(
-                    actslib::va("Can't create default chunk %s", rdf::GetRDFComponentTypeName(type)));
+                    actslib::va("Can't create default chunk %s", rdf::GetRDFComponentTypeName(type))
+                );
 
             ToClose<std::ofstream> outClose{ out };
 
@@ -168,22 +169,25 @@ namespace actslib::rdf::raio {
                 if (!force) {
                     return false;
                 }
-                bufferss.resize(bufferOffsets[rdf::RDF_SUBJECT] +
-                                (size_t)((triple.subject->length + sizeof(size_t) + 1) * 1.5));
+                bufferss.resize(
+                    bufferOffsets[rdf::RDF_SUBJECT] + (size_t)((triple.subject->length + sizeof(size_t) + 1) * 1.5)
+                );
             }
             if (bufferOffsets[rdf::RDF_PREDICATE] + triple.predicate->length + sizeof(size_t) + 1 > buffersp.size()) {
                 if (!force) {
                     return false;
                 }
-                buffersp.resize(bufferOffsets[rdf::RDF_PREDICATE] +
-                                (size_t)((triple.predicate->length + sizeof(size_t) + 1) * 1.5));
+                buffersp.resize(
+                    bufferOffsets[rdf::RDF_PREDICATE] + (size_t)((triple.predicate->length + sizeof(size_t) + 1) * 1.5)
+                );
             }
             if (bufferOffsets[rdf::RDF_OBJECT] + triple.object->length + sizeof(size_t) + 1 > bufferso.size()) {
                 if (!force) {
                     return false;
                 }
-                bufferso.resize(bufferOffsets[rdf::RDF_OBJECT] +
-                                (size_t)((triple.object->length + sizeof(size_t) + 1) * 1.5));
+                bufferso.resize(
+                    bufferOffsets[rdf::RDF_OBJECT] + (size_t)((triple.object->length + sizeof(size_t) + 1) * 1.5)
+                );
             }
 
             size_t offs = bufferOffsets[rdf::RDF_SUBJECT];
@@ -202,21 +206,36 @@ namespace actslib::rdf::raio {
             *reinterpret_cast<size_t*>(buffersp.data() + offp) = index;
             *reinterpret_cast<size_t*>(bufferso.data() + offo) = index;
 
-            assert((bufferss.size() > offs + sizeof(size_t) &&
-                    bufferss.size() - (offs + sizeof(size_t)) >= triple.subject->length) &&
-                   "bad buffer s");
-            memcpy(bufferss.data() + offs + sizeof(size_t), triple.subject->buffer + triple.subject->offset,
-                   triple.subject->length);
-            assert((buffersp.size() > offp + sizeof(size_t) &&
-                    buffersp.size() - (offp + sizeof(size_t)) >= triple.predicate->length) &&
-                   "bad buffer p");
-            memcpy(buffersp.data() + offp + sizeof(size_t), triple.predicate->buffer + triple.predicate->offset,
-                   triple.predicate->length);
-            assert((bufferso.size() > offo + sizeof(size_t) &&
-                    bufferso.size() - (offo + sizeof(size_t)) >= triple.object->length) &&
-                   "bad buffer o");
-            memcpy(bufferso.data() + offo + sizeof(size_t), triple.object->buffer + triple.object->offset,
-                   triple.object->length);
+            assert(
+                (bufferss.size() > offs + sizeof(size_t) &&
+                 bufferss.size() - (offs + sizeof(size_t)) >= triple.subject->length) &&
+                "bad buffer s"
+            );
+            memcpy(
+                bufferss.data() + offs + sizeof(size_t),
+                triple.subject->buffer + triple.subject->offset,
+                triple.subject->length
+            );
+            assert(
+                (buffersp.size() > offp + sizeof(size_t) &&
+                 buffersp.size() - (offp + sizeof(size_t)) >= triple.predicate->length) &&
+                "bad buffer p"
+            );
+            memcpy(
+                buffersp.data() + offp + sizeof(size_t),
+                triple.predicate->buffer + triple.predicate->offset,
+                triple.predicate->length
+            );
+            assert(
+                (bufferso.size() > offo + sizeof(size_t) &&
+                 bufferso.size() - (offo + sizeof(size_t)) >= triple.object->length) &&
+                "bad buffer o"
+            );
+            memcpy(
+                bufferso.data() + offo + sizeof(size_t),
+                triple.object->buffer + triple.object->offset,
+                triple.object->length
+            );
 
             // end str
             bufferss.data()[bufferOffsets[rdf::RDF_SUBJECT] - 1] = 0;
@@ -245,8 +264,13 @@ namespace actslib::rdf::raio {
 
                 if (!out) {
                     auto sus = su.string();
-                    throw std::runtime_error(actslib::va("Can't create chunk file of %s into '%s'",
-                                                         rdf::GetRDFComponentTypeName(type), sus.c_str()));
+                    throw std::runtime_error(
+                        actslib::va(
+                            "Can't create chunk file of %s into '%s'",
+                            rdf::GetRDFComponentTypeName(type),
+                            sus.c_str()
+                        )
+                    );
                 }
 
                 ToClose<std::ofstream> outClose{ out };
@@ -269,7 +293,8 @@ namespace actslib::rdf::raio {
                 w.WriteEnd();
             } catch (std::exception& e) {
                 throw std::runtime_error(
-                    actslib::va("can't create chunk %s : %s", rdf::GetRDFComponentTypeName(type), e.what()));
+                    actslib::va("can't create chunk %s : %s", rdf::GetRDFComponentTypeName(type), e.what())
+                );
             }
         };
 
@@ -314,8 +339,9 @@ namespace actslib::rdf::raio {
             return true;
         }
 
-        void MergeChunks(const std::vector<actslib::data::KMergerChunk>& chunks,
-                         const std::filesystem::path& chunkLocation) override {
+        void MergeChunks(
+            const std::vector<actslib::data::KMergerChunk>& chunks, const std::filesystem::path& chunkLocation
+        ) override {
             std::vector<std::shared_ptr<rdf::raio::CompressComponentReaderFile>> readers{};
 
             if (ALOG_IFTRACE) {
@@ -341,7 +367,8 @@ namespace actslib::rdf::raio {
                 const char* typeName = rdf::GetRDFComponentTypeName(type);
                 for (const auto& chunk : chunks) {
                     readers.emplace_back(
-                        std::make_shared<rdf::raio::CompressComponentReaderFile>(chunk.file / typeName));
+                        std::make_shared<rdf::raio::CompressComponentReaderFile>(chunk.file / typeName)
+                    );
                 }
 
                 class IdCompComparator {
@@ -352,7 +379,8 @@ namespace actslib::rdf::raio {
                 };
 
                 actslib::data::iterator::AllocatedMergeAIterator<
-                    const rdf::raio::IdComponent, std::shared_ptr<rdf::raio::CompressComponentReaderFile>,
+                    const rdf::raio::IdComponent,
+                    std::shared_ptr<rdf::raio::CompressComponentReaderFile>,
                     IdCompComparator>
                     merger{ readers, [](auto& e) { return e; } };
 
@@ -365,7 +393,8 @@ namespace actslib::rdf::raio {
                 if (!out) {
                     auto sus = su.string();
                     throw std::runtime_error(
-                        actslib::va("Can't create merge chunk file of %s into '%s'", typeName, sus.c_str()));
+                        actslib::va("Can't create merge chunk file of %s into '%s'", typeName, sus.c_str())
+                    );
                 }
 
                 ToClose<std::ofstream> outClose{ out };

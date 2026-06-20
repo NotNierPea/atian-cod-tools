@@ -8,8 +8,10 @@
 
 namespace deps::dzporter::cdb {
     namespace {
-        void CDBRead(core::bytebuffer::FileReader& reader, std::function<void(uint64_t hash, const char* str)>& each,
-                     std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+        void CDBRead(
+            core::bytebuffer::FileReader& reader, std::function<void(uint64_t hash, const char* str)>& each,
+            std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex
+        ) {
 
             NameDatabaseHeader header;
             reader.Read(&header, sizeof(header));
@@ -18,8 +20,12 @@ namespace deps::dzporter::cdb {
                 throw std::runtime_error(std::format("invalid magic: {:x}", header.magic));
             }
 
-            LOG_TRACE("cdb: entries: {}, compressedSize: {}, decompressedSize: {}", header.entries,
-                      header.compressedSize, header.decompressedSize);
+            LOG_TRACE(
+                "cdb: entries: {}, compressedSize: {}, decompressedSize: {}",
+                header.entries,
+                header.compressedSize,
+                header.decompressedSize
+            );
 
             if (!header.entries) {
                 return; // nothing to read
@@ -28,8 +34,13 @@ namespace deps::dzporter::cdb {
             std::unique_ptr<byte[]> decompressed{ std::make_unique<byte[]>(header.decompressedSize) };
             std::unique_ptr<byte[]> compressed{ reader.ReadArray<byte>(header.compressedSize) };
 
-            int r{ utils::compress::Decompress2(utils::compress::COMP_LZ4, decompressed.get(), header.decompressedSize,
-                                                compressed.get(), header.compressedSize) };
+            int r{ utils::compress::Decompress2(
+                utils::compress::COMP_LZ4,
+                decompressed.get(),
+                header.decompressedSize,
+                compressed.get(),
+                header.compressedSize
+            ) };
 
             if (r < 0) {
                 throw std::runtime_error(std::format("can't decompress {}", utils::compress::DecompressResultName(r)));
@@ -71,8 +82,8 @@ namespace deps::dzporter::cdb {
         }
     } // namespace
 
-    void CompressCDBFile(std::map<std::string, std::unordered_set<uint64_t>>& dataMap,
-                         const std::filesystem::path& out) {
+    void
+    CompressCDBFile(std::map<std::string, std::unordered_set<uint64_t>>& dataMap, const std::filesystem::path& out) {
 
         uint32_t count{};
 
@@ -108,8 +119,14 @@ namespace deps::dzporter::cdb {
             throw std::runtime_error("Failed to compress, abort.");
         }
 
-        LOG_INFO("{} hash(es) compressed {}B -> {}B ({}% saved) into {}", count, utils::FancyNumber(rawdata.size()),
-                 utils::FancyNumber(bound), 100 - 100 * bound / rawdata.size(), out.string());
+        LOG_INFO(
+            "{} hash(es) compressed {}B -> {}B ({}% saved) into {}",
+            count,
+            utils::FancyNumber(rawdata.size()),
+            utils::FancyNumber(bound),
+            100 - 100 * bound / rawdata.size(),
+            out.string()
+        );
 
         // header
         deps::dzporter::cdb::NameDatabaseHeader header{};
@@ -133,8 +150,10 @@ namespace deps::dzporter::cdb {
         CompressCDBFile(rev, out);
     }
 
-    bool ReadCDBFile(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
-                     std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+    bool ReadCDBFile(
+        std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
+        std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex
+    ) {
         std::vector<byte> buff{};
         LOG_DEBUG("Read {}", path.string());
 
@@ -154,8 +173,10 @@ namespace deps::dzporter::cdb {
         }
     }
 
-    bool ReadCDBFiles(std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
-                      std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex) {
+    bool ReadCDBFiles(
+        std::filesystem::path path, std::function<void(uint64_t hash, const char* str)> each,
+        std::function<void*(size_t len)> allocMemory, std::mutex* loadMutex
+    ) {
         std::vector<std::filesystem::path> paths{};
 
         utils::GetFileRecurseExt(path, paths, ".cdb\0");
@@ -169,7 +190,9 @@ namespace deps::dzporter::cdb {
 
     void LoadHashFile(std::filesystem::path p) {
         ReadCDBFiles(
-            p, [](uint64_t hash, const char* str) { core::hashes::AddPrecomputed(hash, str, false); },
-            core::hashes::AllocHashMemory);
+            p,
+            [](uint64_t hash, const char* str) { core::hashes::AddPrecomputed(hash, str, false); },
+            core::hashes::AllocHashMemory
+        );
     }
 } // namespace deps::dzporter::cdb

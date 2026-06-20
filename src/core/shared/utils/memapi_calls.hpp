@@ -6,11 +6,12 @@ namespace memapi {
 
 #ifdef ASMJIT_STATIC
     // param+ = stack, last first pushed
-    inline void CallExtFuncBuildStack(Process& proc, hook::process::AssemblerExp& asml,
-                                      std::vector<ProcessMemory>& allocData) {}
+    inline void
+    CallExtFuncBuildStack(Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData) {}
     template<typename Arg0, typename... Args>
-    inline void CallExtFuncBuildStack(Process& proc, hook::process::AssemblerExp& asml,
-                                      std::vector<ProcessMemory>& allocData, float arg, Args... args) {
+    inline void CallExtFuncBuildStack(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, float arg, Args... args
+    ) {
         using namespace asmjit::x86;
 
         CallExtFuncBuildStack(proc, asml, allocData, args...);
@@ -19,8 +20,10 @@ namespace memapi {
         // asml.push(rax);
     }
     template<typename Arg0, typename... Args>
-    inline void CallExtFuncBuildStack(Process& proc, hook::process::AssemblerExp& asml,
-                                      std::vector<ProcessMemory>& allocData, double arg, Args... args) {
+    inline void CallExtFuncBuildStack(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, double arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
 
         CallExtFuncBuildStack(proc, asml, allocData, args...);
@@ -29,8 +32,10 @@ namespace memapi {
         // asml.push(rax);
     }
     template<typename... Args>
-    inline void CallExtFuncBuildStack(Process& proc, hook::process::AssemblerExp& asml,
-                                      std::vector<ProcessMemory>& allocData, const char* arg, Args... args) {
+    inline void CallExtFuncBuildStack(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, const char* arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
 
         CallExtFuncBuildStack(proc, asml, allocData, args...);
@@ -41,8 +46,9 @@ namespace memapi {
         asml.push(rax);
     }
     template<typename Arg0, typename... Args>
-    inline void CallExtFuncBuildStack(Process& proc, hook::process::AssemblerExp& asml,
-                                      std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args) {
+    inline void CallExtFuncBuildStack(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args
+    ) {
         using namespace asmjit::x86;
 
         CallExtFuncBuildStack(proc, asml, allocData, args...);
@@ -51,25 +57,30 @@ namespace memapi {
     }
 
     // param 3 -> R9  | XMM3
-    inline void CallExtFuncBuild3(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData) {}
+    inline void
+    CallExtFuncBuild3(Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData) {}
     template<typename... Args>
-    inline void CallExtFuncBuild3(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, double arg, Args... args) {
+    inline void CallExtFuncBuild3(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, double arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuildStack(proc, asml, allocData, args...);
         // asml.movsd(xmm3, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild3(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, float arg, Args... args) {
+    inline void CallExtFuncBuild3(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, float arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuildStack(proc, asml, allocData, args...);
         // asml.movss(xmm3, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild3(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, const char* arg, Args... args) {
+    inline void CallExtFuncBuild3(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, const char* arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuildStack(proc, asml, allocData, args...);
         size_t size{};
@@ -78,33 +89,39 @@ namespace memapi {
         asml.mov(r9, str);
     }
     template<typename Arg0, typename... Args>
-    inline void CallExtFuncBuild3(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args) {
+    inline void CallExtFuncBuild3(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuildStack(proc, asml, allocData, args...);
         asml.mov(r9, arg);
     }
 
     // param 2 -> R8  | XMM2
-    inline void CallExtFuncBuild2(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData) {}
+    inline void
+    CallExtFuncBuild2(Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData) {}
     template<typename... Args>
-    inline void CallExtFuncBuild2(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, double arg, Args... args) {
+    inline void CallExtFuncBuild2(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, double arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild3(proc, asml, allocData, args...);
         // asml.movsd(xmm2, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild2(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, float arg, Args... args) {
+    inline void CallExtFuncBuild2(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, float arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild3(proc, asml, allocData, args...);
         // asml.movss(xmm2, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild2(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, const char* arg, Args... args) {
+    inline void CallExtFuncBuild2(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, const char* arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild3(proc, asml, allocData, args...);
         size_t size{};
@@ -113,33 +130,39 @@ namespace memapi {
         asml.mov(r8, str);
     }
     template<typename Arg0, typename... Args>
-    inline void CallExtFuncBuild2(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args) {
+    inline void CallExtFuncBuild2(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild3(proc, asml, allocData, args...);
         asml.mov(r8, arg);
     }
 
     // param 1 -> RDX | XMM1
-    inline void CallExtFuncBuild1(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData) {}
+    inline void
+    CallExtFuncBuild1(Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData) {}
     template<typename... Args>
-    inline void CallExtFuncBuild1(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, double arg, Args... args) {
+    inline void CallExtFuncBuild1(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, double arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild2(proc, asml, allocData, args...);
         // asml.movsd(xmm1, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild1(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, float arg, Args... args) {
+    inline void CallExtFuncBuild1(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, float arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild2(proc, asml, allocData, args...);
         // asml.movss(xmm1, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild1(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, const char* arg, Args... args) {
+    inline void CallExtFuncBuild1(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, const char* arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild2(proc, asml, allocData, args...);
         size_t size{};
@@ -148,33 +171,39 @@ namespace memapi {
         asml.mov(rdx, str);
     }
     template<typename Arg0, typename... Args>
-    inline void CallExtFuncBuild1(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args) {
+    inline void CallExtFuncBuild1(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild2(proc, asml, allocData, args...);
         asml.mov(rdx, arg);
     }
 
     // param 0 -> RCX | XMM0
-    inline void CallExtFuncBuild0(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData) {}
+    inline void
+    CallExtFuncBuild0(Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData) {}
     template<typename... Args>
-    inline void CallExtFuncBuild0(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, double arg, Args... args) {
+    inline void CallExtFuncBuild0(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, double arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild1(proc, asml, allocData, args...);
         // asml.movsd(xmm0, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild0(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, float arg, Args... args) {
+    inline void CallExtFuncBuild0(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, float arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild1(proc, asml, allocData, args...);
         // asml.movsd(xmm0, arg);
     }
     template<typename... Args>
-    inline void CallExtFuncBuild0(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, const char* arg, Args... args) {
+    inline void CallExtFuncBuild0(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, const char* arg,
+        Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild1(proc, asml, allocData, args...);
         size_t size{};
@@ -183,8 +212,9 @@ namespace memapi {
         asml.mov(rcx, str);
     }
     template<typename Arg0, typename... Args>
-    inline void CallExtFuncBuild0(Process& proc, hook::process::AssemblerExp& asml,
-                                  std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args) {
+    inline void CallExtFuncBuild0(
+        Process& proc, hook::process::AssemblerExp& asml, std::vector<ProcessMemory>& allocData, Arg0 arg, Args... args
+    ) {
         using namespace asmjit::x86;
         CallExtFuncBuild1(proc, asml, allocData, args...);
         asml.mov(rcx, arg);

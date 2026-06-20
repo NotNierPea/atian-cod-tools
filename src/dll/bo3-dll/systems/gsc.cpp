@@ -49,15 +49,22 @@ namespace {
         pZip->m_pRealloc = MINIZRealloc;
         pZip->m_pAlloc_opaque = &zipAllocator;
         mz_bool r{ mz_zip_reader_init_file_Detour.Call<mz_bool>(pZip, pFilename, flags) };
-        LOG_TRACE("mz_zip_reader_init_file_Stub({}, {}, {}) = {} ({})", (void*)pZip, pFilename, flags,
-                  r ? "true" : "false", hook::library::CodePointer{ _ReturnAddress() });
+        LOG_TRACE(
+            "mz_zip_reader_init_file_Stub({}, {}, {}) = {} ({})",
+            (void*)pZip,
+            pFilename,
+            flags,
+            r ? "true" : "false",
+            hook::library::CodePointer{ _ReturnAddress() }
+        );
         return r;
     }
 
     void PostInit(uint64_t id) {
         mz_zip_reader_init_file_Detour.Create(
             acts::Scan().ScanSingle("48 89 5C 24 10 48 89 74 24 18 57 48 83 EC 20 41 8B F0 48 8B D9").GetPtr(),
-            mz_zip_reader_init_file_Stub);
+            mz_zip_reader_init_file_Stub
+        );
     }
 
     REGISTER_SYSTEM(gsc, nullptr, PostInit);

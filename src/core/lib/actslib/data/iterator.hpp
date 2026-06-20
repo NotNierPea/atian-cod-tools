@@ -99,8 +99,9 @@ namespace actslib::data::iterator {
         AIterator<Type>* main;
 
       public:
-        AllocatedMergeAIterator(std::vector<InputType>& input,
-                                std::function<std::shared_ptr<AIterator<Type>>(InputType&)> map) {
+        AllocatedMergeAIterator(
+            std::vector<InputType>& input, std::function<std::shared_ptr<AIterator<Type>>(InputType&)> map
+        ) {
 #ifdef max
 #undef max
 #endif
@@ -121,7 +122,8 @@ namespace actslib::data::iterator {
                 do {
                     for (size_t i = 0; i + 1 < len; i += 2) {
                         its.emplace_back(
-                            std::make_shared<MergeIterator<Type, Comparator>>(*its[start + i], *its[start + i + 1]));
+                            std::make_shared<MergeIterator<Type, Comparator>>(*its[start + i], *its[start + i + 1])
+                        );
                     }
 
                     if (len & 1) {

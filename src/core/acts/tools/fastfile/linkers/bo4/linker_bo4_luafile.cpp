@@ -53,7 +53,10 @@ namespace {
             lua_setmode(H, HKSC_MODE_SOURCE);
             lua_setbytecodestrippinglevel(H, BYTECODE_STRIPPING_ALL);
             int status{ hksI_parser_buffer(
-                H, luaFile.data(), luaFile.size(), pathstr.data(),
+                H,
+                luaFile.data(),
+                luaFile.size(),
+                pathstr.data(),
                 [](hksc_State* H, void* ud) -> int {
                     return lua_dump(
                         H,
@@ -64,9 +67,11 @@ namespace {
 
                             return 0;
                         },
-                        ud);
+                        ud
+                    );
                 },
-                &outluac) };
+                &outluac
+            ) };
 
             if (status) {
                 LOG_ERROR("Can't compile lua {}: {}", pathstr, lua_geterror(H));

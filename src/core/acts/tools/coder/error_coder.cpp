@@ -427,30 +427,110 @@ namespace {
         std::wstring encw = utils::StrToWStr(info.encodeStr);
         std::wstring decw = utils::StrToWStr(info.decodeStr);
 
-        info.titleLabel = CreateWindowExW(0, L"STATIC", L"Error coder", SS_CENTER | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                          window, NULL, hInstance, NULL);
+        info.titleLabel = CreateWindowExW(
+            0,
+            L"STATIC",
+            L"Error coder",
+            SS_CENTER | WS_CHILD | WS_VISIBLE,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
-        info.encodeEdit =
-            CreateWindowExW(0, L"EDIT", encw.c_str(), WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0,
-                            0, 0, 0, window, NULL, hInstance, NULL);
+        info.encodeEdit = CreateWindowExW(
+            0,
+            L"EDIT",
+            encw.c_str(),
+            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
-        info.encodeResEdit =
-            CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0,
-                            window, NULL, hInstance, NULL);
+        info.encodeResEdit = CreateWindowExW(
+            0,
+            L"EDIT",
+            L"",
+            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
-        info.encodeEditLabel = CreateWindowExW(0, L"STATIC", L"Encode : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                               window, NULL, hInstance, NULL);
+        info.encodeEditLabel = CreateWindowExW(
+            0,
+            L"STATIC",
+            L"Encode : ",
+            SS_RIGHT | WS_CHILD | WS_VISIBLE,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
-        info.decodeEdit =
-            CreateWindowExW(0, L"EDIT", decw.c_str(), WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0,
-                            0, 0, 0, window, NULL, hInstance, NULL);
+        info.decodeEdit = CreateWindowExW(
+            0,
+            L"EDIT",
+            decw.c_str(),
+            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
-        info.decodeResEdit =
-            CreateWindowExW(0, L"EDIT", L"", WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0,
-                            window, NULL, hInstance, NULL);
+        info.decodeResEdit = CreateWindowExW(
+            0,
+            L"EDIT",
+            L"",
+            WS_BORDER | WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
-        info.decodeEditLabel = CreateWindowExW(0, L"STATIC", L"Decode : ", SS_RIGHT | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                               window, NULL, hInstance, NULL);
+        info.decodeEditLabel = CreateWindowExW(
+            0,
+            L"STATIC",
+            L"Decode : ",
+            SS_RIGHT | WS_CHILD | WS_VISIBLE,
+            0,
+            0,
+            0,
+            0,
+            window,
+            NULL,
+            hInstance,
+            NULL
+        );
 
         if (info.encodeEdit == NULL || info.encodeResEdit == NULL || info.decodeEdit == NULL ||
             info.decodeResEdit == NULL || info.encodeEditLabel == NULL || info.decodeEditLabel == NULL ||
@@ -603,7 +683,9 @@ namespace {
                         throw std::runtime_error("Too many components");
                     }
 
-                    error_coder::ErrorCode code{ words[0].c_str(), words[1].c_str(), words[2].c_str(),
+                    error_coder::ErrorCode code{ words[0].c_str(),
+                                                 words[1].c_str(),
+                                                 words[2].c_str(),
                                                  words[3].c_str() };
 
                     uint32_t err = error_coder::Decode(code);
@@ -680,8 +762,12 @@ namespace {
                 searchOutput = ss.str();
             }
             if (!searchOutput.empty()) {
-                ImGui::InputText("Search", searchOutput.data(), searchOutput.length() + 1,
-                                 ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputText(
+                    "Search",
+                    searchOutput.data(),
+                    searchOutput.length() + 1,
+                    ImGuiInputTextFlags_ReadOnly
+                );
             }
         }
 

@@ -63,12 +63,16 @@ namespace {
     };
 
     utils::MapAdder<ImplWorker, XAssetType, Worker> impl{ GetWorkers(), XAssetType::ASSET_TYPE_SCRIPT_USING, "common" };
-    utils::MapAdder<ImplWorker, XAssetType, Worker> implcp{ GetWorkers(), XAssetType::ASSET_TYPE_SCRIPT_USING_CP,
+    utils::MapAdder<ImplWorker, XAssetType, Worker> implcp{ GetWorkers(),
+                                                            XAssetType::ASSET_TYPE_SCRIPT_USING_CP,
                                                             "cp" };
-    utils::MapAdder<ImplWorker, XAssetType, Worker> implmp{ GetWorkers(), XAssetType::ASSET_TYPE_SCRIPT_USING_MP,
+    utils::MapAdder<ImplWorker, XAssetType, Worker> implmp{ GetWorkers(),
+                                                            XAssetType::ASSET_TYPE_SCRIPT_USING_MP,
                                                             "mp" };
-    utils::MapAdder<ImplWorker, XAssetType, Worker> implwz{ GetWorkers(), XAssetType::ASSET_TYPE_SCRIPT_USING_WZ,
+    utils::MapAdder<ImplWorker, XAssetType, Worker> implwz{ GetWorkers(),
+                                                            XAssetType::ASSET_TYPE_SCRIPT_USING_WZ,
                                                             "wz" };
-    utils::MapAdder<ImplWorker, XAssetType, Worker> implzm{ GetWorkers(), XAssetType::ASSET_TYPE_SCRIPT_USING_ZM,
+    utils::MapAdder<ImplWorker, XAssetType, Worker> implzm{ GetWorkers(),
+                                                            XAssetType::ASSET_TYPE_SCRIPT_USING_ZM,
                                                             "zm" };
 } // namespace

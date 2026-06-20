@@ -44,8 +44,8 @@ ACTS_COMMON_API ActsAPICompress_Algorithm ActsAPICompress_GetAlgorithm(const cha
  * @param outSize output size
  * @return ACTS_STATUS_OK if the size can be get, ACTS_STATUS_ERROR otherwise with ActsGetAPILastMessage set
  */
-ACTS_COMMON_API ActsStatus ActsAPICompress_GetCompressSize(ActsAPICompress_Algorithm alg, size_t srcSize,
-                                                           size_t* outSize);
+ACTS_COMMON_API ActsStatus
+ActsAPICompress_GetCompressSize(ActsAPICompress_Algorithm alg, size_t srcSize, size_t* outSize);
 
 /*
  * Compress a buffer
@@ -57,8 +57,8 @@ ACTS_COMMON_API ActsStatus ActsAPICompress_GetCompressSize(ActsAPICompress_Algor
  * @param srcSize source size
  * @return ACTS_STATUS_OK if the buffer is compressed, ACTS_STATUS_ERROR otherwise with ActsGetAPILastMessage set
  */
-ACTS_COMMON_API ActsStatus ActsAPICompress_Compress(ActsAPICompress_Algorithm alg, void* dest, size_t* destSize,
-                                                    const void* src, size_t srcSize);
+ACTS_COMMON_API ActsStatus
+ActsAPICompress_Compress(ActsAPICompress_Algorithm alg, void* dest, size_t* destSize, const void* src, size_t srcSize);
 /*
  * Decompress a buffer
  * @param alg compression algorithm
@@ -68,7 +68,8 @@ ACTS_COMMON_API ActsStatus ActsAPICompress_Compress(ActsAPICompress_Algorithm al
  * @param srcSize source size
  * @return ACTS_STATUS_OK if the buffer is decompressed, ACTS_STATUS_ERROR otherwise with ActsGetAPILastMessage set
  */
-ACTS_COMMON_API ActsStatus ActsAPICompress_Decompress(ActsAPICompress_Algorithm alg, void* dest, size_t* destSize,
-                                                      const void* src, size_t srcSize);
+ACTS_COMMON_API ActsStatus ActsAPICompress_Decompress(
+    ActsAPICompress_Algorithm alg, void* dest, size_t* destSize, const void* src, size_t srcSize
+);
 
 #endif // __ACTS_API_COMPRESS_H__

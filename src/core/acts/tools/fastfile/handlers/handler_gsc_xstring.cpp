@@ -7,11 +7,13 @@ namespace {
     class GscXStringFFHandler : public fastfile::FFHandler {
       public:
         GscXStringFFHandler()
-            : fastfile::FFHandler("gscxstring", "GSC Scripts XString based",
-                                  compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {}
+            : fastfile::FFHandler(
+                  "gscxstring", "GSC Scripts XString based", compatibility::scobalula::csi::CordycepGame::CG_NULL, true
+              ) {}
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& decReader,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& decReader, fastfile::FastFileContext& ctx
+        ) override {
 
             {
 

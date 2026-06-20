@@ -53,8 +53,9 @@ namespace tool::gsc::compiler {
         }
     }
 
-    AscmNodeCreateLocalVariables::AscmNodeCreateLocalVariables(const FunctionVar* lvars, size_t count, size_t params,
-                                                               const FunctionObject& fobj, bool obfuscate)
+    AscmNodeCreateLocalVariables::AscmNodeCreateLocalVariables(
+        const FunctionVar* lvars, size_t count, size_t params, const FunctionObject& fobj, bool obfuscate
+    )
         : params(params), obfuscate(obfuscate) {
         hasRegister = fobj.obj.HasOpCode(OPCODE_IW_RegisterVariable);
         hasRegisters = fobj.obj.HasOpCode(OPCODE_IW_RegisterMultipleVariables);

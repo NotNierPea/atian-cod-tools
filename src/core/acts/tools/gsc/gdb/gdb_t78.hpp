@@ -23,8 +23,12 @@ namespace tool::gsc::vm {
 
             asmout << "// dbg crc .. " << "0x" << std::hex << dbg->source_crc << "\n";
             if (ctx.scriptfile->GetChecksum() && ctx.scriptfile->GetChecksum() != dbg->source_crc) {
-                LOG_WARNING("Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}, magic: 0x{:x}",
-                            ctx.scriptfile->GetChecksum(), dbg->source_crc, *(uint64_t*)dbg);
+                LOG_WARNING(
+                    "Can't use dbg data: unmatching checksums: 0x{:x} != 0x{:x}, magic: 0x{:x}",
+                    ctx.scriptfile->GetChecksum(),
+                    dbg->source_crc,
+                    *(uint64_t*)dbg
+                );
                 return;
             }
 

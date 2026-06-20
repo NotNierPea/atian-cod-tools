@@ -51,8 +51,10 @@ namespace {
     }
 
     // Scan a memory range [base, base + size) for the pattern (with wildcards)
-    void scan_range_for_pattern(std::uint8_t* base, std::size_t size, const std::vector<PatternByte>& pattern,
-                                std::vector<std::uint8_t*>& outMatches) {
+    void scan_range_for_pattern(
+        std::uint8_t* base, std::size_t size, const std::vector<PatternByte>& pattern,
+        std::vector<std::uint8_t*>& outMatches
+    ) {
         const std::size_t patSize = pattern.size();
         if (size < patSize) {
             return;
@@ -148,7 +150,8 @@ namespace {
 
         if (replacementPattern.size() > searchPattern.size()) {
             throw std::invalid_argument(
-                "scan_and_replace_pattern: replacement pattern cannot be longer than search pattern");
+                "scan_and_replace_pattern: replacement pattern cannot be longer than search pattern"
+            );
         }
 
         // Require that the replacement has no wildcards.
@@ -172,8 +175,12 @@ namespace {
 
             DWORD oldProtect = 0;
             // Make just the bytes we are going to overwrite RWX.
-            if (!VirtualProtect(static_cast<LPVOID>(p), static_cast<SIZE_T>(bytesToPatch), PAGE_EXECUTE_READWRITE,
-                                &oldProtect)) {
+            if (!VirtualProtect(
+                    static_cast<LPVOID>(p),
+                    static_cast<SIZE_T>(bytesToPatch),
+                    PAGE_EXECUTE_READWRITE,
+                    &oldProtect
+                )) {
                 // Couldn't change protection; skip this match.
                 continue;
             }
@@ -246,11 +253,14 @@ namespace {
         return r;
     }
 
-    NTSTATUS NTAPI NtQuerySystemInformation_Stub(SYSTEM_INFORMATION_CLASS SystemInformationClass,
-                                                 PVOID SystemInformation, ULONG SystemInformationLength,
-                                                 PULONG ReturnLength) {
-        NTSTATUS status{ NtQuerySystemInformation_Detour.Call<NTSTATUS>(SystemInformationClass, SystemInformation,
-                                                                        SystemInformationLength, ReturnLength) };
+    NTSTATUS NTAPI NtQuerySystemInformation_Stub(
+        SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength,
+        PULONG ReturnLength
+    ) {
+        NTSTATUS status{
+            NtQuerySystemInformation_Detour
+                .Call<NTSTATUS>(SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength)
+        };
 
         if (NT_SUCCESS(status) && SystemInformationClass == SystemProcessInformation) {
             PSYSTEM_PROCESS_INFORMATION spi{ (PSYSTEM_PROCESS_INFORMATION)SystemInformation };
@@ -267,11 +277,17 @@ namespace {
         return status;
     }
 
-    NTSTATUS NTAPI NtQueryInformationProcess_Stub(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass,
-                                                  PVOID ProcessInformation, ULONG ProcessInformationLength,
-                                                  PULONG ReturnLength) {
+    NTSTATUS NTAPI NtQueryInformationProcess_Stub(
+        HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation,
+        ULONG ProcessInformationLength, PULONG ReturnLength
+    ) {
         NTSTATUS status{ NtQueryInformationProcess_Detour.Call<NTSTATUS>(
-            ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength) };
+            ProcessHandle,
+            ProcessInformationClass,
+            ProcessInformation,
+            ProcessInformationLength,
+            ReturnLength
+        ) };
 
         constexpr DWORD ProcessDebugPort = 7;
         constexpr DWORD ProcessDebugObjectHandle = 30;

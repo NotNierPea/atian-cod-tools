@@ -312,8 +312,13 @@ namespace {
                     continue;
                 }
 
-                LOG_INFO("{:x}/{:x} -> {:x} ({})", method.start, method.iv,
-                         hash::Hash64A(argv[i], method.start, method.iv), method.name ? method.name : "???");
+                LOG_INFO(
+                    "{:x}/{:x} -> {:x} ({})",
+                    method.start,
+                    method.iv,
+                    hash::Hash64A(argv[i], method.start, method.iv),
+                    method.name ? method.name : "???"
+                );
             }
         }
 
@@ -435,9 +440,10 @@ namespace {
             return tool::BASIC_ERROR;
         }
 
-        void (*DB_LoadExeFFChecksum)(
-            uint32_t* checksums){ mod->ScanSingle("E8 ?? ?? ?? ?? 8B 43 04 39 44 24 38")
-                                      .GetRelative<int32_t, decltype(DB_LoadExeFFChecksum)>(1) };
+        void (*DB_LoadExeFFChecksum)(uint32_t* checksums){
+            mod->ScanSingle("E8 ?? ?? ?? ?? 8B 43 04 39 44 24 38")
+                .GetRelative<int32_t, decltype(DB_LoadExeFFChecksum)>(1)
+        };
 
         uint32_t checksums[4]{};
 

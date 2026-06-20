@@ -155,16 +155,28 @@ namespace {
                                 SndAliasInfo* info{ alias->info };
 
                                 json.WriteFieldValueXHash("type", info->type);
-                                json.WriteFieldValueXAsset("soundSubmix", bo6::T10H_ASSET_SOUNDSUBMIX,
-                                                           info->soundSubmix);
-                                json.WriteFieldValueXAsset("soundSpeakerMap", bo6::T10H_ASSET_SOUNDSPEAKERMAP,
-                                                           info->soundSpeakerMap);
+                                json.WriteFieldValueXAsset(
+                                    "soundSubmix",
+                                    bo6::T10H_ASSET_SOUNDSUBMIX,
+                                    info->soundSubmix
+                                );
+                                json.WriteFieldValueXAsset(
+                                    "soundSpeakerMap",
+                                    bo6::T10H_ASSET_SOUNDSPEAKERMAP,
+                                    info->soundSpeakerMap
+                                );
                                 json.WriteFieldValueXAsset("sndFutz", bo6::T10H_ASSET_SNDFUTZ, info->sndFutz);
                                 json.WriteFieldValueXAsset("soundCone", bo6::T10H_ASSET_SOUNDCONE, info->soundCone);
-                                json.WriteFieldValueXAsset("sndOcclusionSetting", bo6::T10H_ASSET_SNDOCCLUSIONSETTING,
-                                                           info->sndOcclusionSetting);
-                                json.WriteFieldValueXAsset("sndModifier", bo6::T10H_ASSET_SNDMODIFIER,
-                                                           info->sndModifier);
+                                json.WriteFieldValueXAsset(
+                                    "sndOcclusionSetting",
+                                    bo6::T10H_ASSET_SNDOCCLUSIONSETTING,
+                                    info->sndOcclusionSetting
+                                );
+                                json.WriteFieldValueXAsset(
+                                    "sndModifier",
+                                    bo6::T10H_ASSET_SNDMODIFIER,
+                                    info->sndModifier
+                                );
 
                                 if (opt.testDump) {
                                     // vector and data shits
@@ -172,7 +184,8 @@ namespace {
                                     for (size_t i = 0; i < ACTS_ARRAYSIZE(info->__pad); i++) {
                                         json.WriteFieldValueUnknown(
                                             utils::va("alias.info.unk%02x", i * 8 + offsetof(SndAliasInfo, __pad)),
-                                            info->__pad[i]);
+                                            info->__pad[i]
+                                        );
                                     }
                                 }
                             }
@@ -249,8 +262,9 @@ namespace {
                                     os << "("
                                        << "#" << hashutils::ExtractTmp("hash", alias->name) << "/#"
                                        << hashutils::ExtractTmp(
-                                              "hash", GetXAssetName(bo6::T10HashAssetType::T10H_ASSET_SNDASSET,
-                                                                    alias->sndAsset))
+                                              "hash",
+                                              GetXAssetName(bo6::T10HashAssetType::T10H_ASSET_SNDASSET, alias->sndAsset)
+                                          )
                                        << ") " << opt.GetTranslation(alias->text->character) << " : "
                                        << opt.GetTranslation(alias->text->subtitles) << "\n";
                                 }

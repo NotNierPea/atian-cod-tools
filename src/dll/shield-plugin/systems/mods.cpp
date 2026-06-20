@@ -208,15 +208,22 @@ namespace systems::mods {
         constexpr bool forceHook = true;
 
         void PMem_EndAlloc2_Stub(PMemStack stack, XHash* name, void* a3) {
-            LOG_TRACE("PMem_EndAlloc2({}, {})  {}", (int)stack, core::hashes::ExtractTmp("hash", name ? name->name : 0),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "PMem_EndAlloc2({}, {})  {}",
+                (int)stack,
+                core::hashes::ExtractTmp("hash", name ? name->name : 0),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             PMem_EndAlloc2_Detour.Call(stack, name, a3);
         }
 
         void PMem_BeginAlloc_Stub(XHash* name, PMemStack stack, void* a3) {
-            LOG_TRACE("PMem_BeginAlloc({}, {})  {}", (int)stack,
-                      core::hashes::ExtractTmp("hash", name ? name->name : 0),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "PMem_BeginAlloc({}, {})  {}",
+                (int)stack,
+                core::hashes::ExtractTmp("hash", name ? name->name : 0),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             PMem_BeginAlloc_Detour.Call(name, stack, a3);
         }
 
@@ -227,8 +234,9 @@ namespace systems::mods {
         }
 
         const char* AddCustomZone(const char* zone) {
-            auto it{ std::find_if(zoneHooks.zoneNames.begin(), zoneHooks.zoneNames.end(),
-                                  [zone](const char* zn) { return !_strcmpi(zone, zn); }) };
+            auto it{ std::find_if(zoneHooks.zoneNames.begin(), zoneHooks.zoneNames.end(), [zone](const char* zn) {
+                return !_strcmpi(zone, zn);
+            }) };
             if (it != zoneHooks.zoneNames.end()) {
                 return *it;
             }
@@ -291,8 +299,9 @@ namespace systems::mods {
             return true; // redirected or valid
         }
 
-        int DB_ExpandZoneList_Stub(XZoneInfo* input, int inputCount, str64_t* names, XZoneInfo* output,
-                                   int maxOutputCount) {
+        int DB_ExpandZoneList_Stub(
+            XZoneInfo* input, int inputCount, str64_t* names, XZoneInfo* output, int maxOutputCount
+        ) {
             int count{ DB_ExpandZoneList_Detour.Call<int>(input, inputCount, names, output, maxOutputCount) };
 
             // expand dbg_ zones
@@ -325,13 +334,22 @@ namespace systems::mods {
             XZoneInfo* valid{ output };
             XZoneInfo* current{ output };
 
-            LOG_TRACE("DB_ExpandZoneList({}) -> {} {}", inputCount, count,
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "DB_ExpandZoneList({}) -> {} {}",
+                inputCount,
+                count,
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             for (size_t i = 0; i < count; i++) {
                 XZoneInfo* c{ current++ };
                 bool zoneValid{ DB_ValidateXZoneInfo(c) };
-                LOG_TRACE("- {}(allocFlags=0x{:x} freeFlags=0x{:x}) {}", (c->name ? c->name : "<null>"), c->allocFlags,
-                          c->freeFlags, (zoneValid ? "" : " -> removed"));
+                LOG_TRACE(
+                    "- {}(allocFlags=0x{:x} freeFlags=0x{:x}) {}",
+                    (c->name ? c->name : "<null>"),
+                    c->allocFlags,
+                    c->freeFlags,
+                    (zoneValid ? "" : " -> removed")
+                );
 
                 if (c->name) {
                     core::hashes::AddPrecomputed(hash::Hash64(c->name), c->name, true);
@@ -402,31 +420,44 @@ namespace systems::mods {
 
             for (size_t i = 0; i < zoneCount; i++) {
                 XZoneInfo* nfo{ zoneInfo + i };
-                LOG_TRACE("- {} 0x{:x}/0x{:x} 0x{:x}/0x{:x} ({}, 0x{:x})", nfo->name ? nfo->name : "null",
-                          nfo->allocFlags, nfo->freeFlags, nfo->allocSlot, nfo->freeSlot, (void*)nfo->fileBuffer.data,
-                          nfo->fileBuffer.dataSize);
+                LOG_TRACE(
+                    "- {} 0x{:x}/0x{:x} 0x{:x}/0x{:x} ({}, 0x{:x})",
+                    nfo->name ? nfo->name : "null",
+                    nfo->allocFlags,
+                    nfo->freeFlags,
+                    nfo->allocSlot,
+                    nfo->freeSlot,
+                    (void*)nfo->fileBuffer.data,
+                    nfo->fileBuffer.dataSize
+                );
             }
             DB_LoadXAssets_Detour.Call(zoneInfo, zoneCount, sync);
         }
 
         bool loadFakeFastFile{};
 
-        bool DB_LoadXFile(const char* path, DBFile f, XZoneBuffer* fileBuffer, const char* filename, void* assetList,
-                          void* blocks, void* interrupt, byte* buf, PMemStack side, int flags) {
+        bool DB_LoadXFile(
+            const char* path, DBFile f, XZoneBuffer* fileBuffer, const char* filename, void* assetList, void* blocks,
+            void* interrupt, byte* buf, PMemStack side, int flags
+        ) {
             if (path)
                 LOG_INFO("DB_LoadXFile({}, 0x{:x}) {}", path, flags, hook::library::CodePointer{ _ReturnAddress() });
             loadFakeFastFile = flags & DB_FLAG_CUSTOM;
 
-            bool v{ DB_LoadXFile_Detour.Call<bool>(path, f, fileBuffer, filename, assetList, blocks, interrupt, buf,
-                                                   side, flags) };
+            bool v{ DB_LoadXFile_Detour
+                        .Call<bool>(path, f, fileBuffer, filename, assetList, blocks, interrupt, buf, side, flags) };
             loadFakeFastFile = false;
             return v;
         }
 
-        void DB_AllocXBlocksStub(size_t* blockSize, const char* f1, const char* f2, void* blocks, int side,
-                                 int* loaded) {
-            LOG_INFO("DB_AllocXBlocks({},{},...) {}", f1 ? f1 : "null", f2 ? f2 : "null",
-                     hook::library::CodePointer{ _ReturnAddress() });
+        void
+        DB_AllocXBlocksStub(size_t* blockSize, const char* f1, const char* f2, void* blocks, int side, int* loaded) {
+            LOG_INFO(
+                "DB_AllocXBlocks({},{},...) {}",
+                f1 ? f1 : "null",
+                f2 ? f2 : "null",
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             DB_AllocXBlocks_Detour.Call(blockSize, f1, f2, blocks, side, loaded);
         }
 
@@ -462,11 +493,17 @@ namespace systems::mods {
             void* entry{ DB_LinkXAssetEntry_Detour.Call<void*>(newEntry, allowOverride) };
 
             if (loadFakeFastFile) {
-                LOG_DEBUG("DB_LinkXAssetEntry({}={}, {}, allowOverride={}) -> {}",
-                          games::bo4::pool::XAssetNameFromId(newEntry->type), (int)newEntry->type,
-                          core::hashes::ExtractTmp(
-                              "hash", games::bo4::pool::GetAssetName(newEntry->type, newEntry->header)->name),
-                          allowOverride, entry);
+                LOG_DEBUG(
+                    "DB_LinkXAssetEntry({}={}, {}, allowOverride={}) -> {}",
+                    games::bo4::pool::XAssetNameFromId(newEntry->type),
+                    (int)newEntry->type,
+                    core::hashes::ExtractTmp(
+                        "hash",
+                        games::bo4::pool::GetAssetName(newEntry->type, newEntry->header)->name
+                    ),
+                    allowOverride,
+                    entry
+                );
             }
             return entry;
         }
@@ -518,8 +555,10 @@ namespace systems::mods {
                     auto itHooks{ cfg.main.FindMember("fastfile_hook") };
 
                     if (itHooks != cfg.main.MemberEnd() && itHooks->value.IsArray()) {
-                        LOG_WARNING("fastfile_hook config is a deprecated feature, please consider moving to fastfiles "
-                                    "instead");
+                        LOG_WARNING(
+                            "fastfile_hook config is a deprecated feature, please consider moving to fastfiles "
+                            "instead"
+                        );
 
                         for (rapidjson::Value& hook : itHooks->value.GetArray()) {
                             if (!hook.IsObject()) {
@@ -563,8 +602,12 @@ namespace systems::mods {
                             customZone.info.emplace_back(info);
                             zoneHooks.hooks[hash::Hash64(hook)] = &customZone;
 
-                            LOG_INFO("Loaded fastfile hook {}->{} (iscommon={})", hook, ffname,
-                                     isCommon ? "true" : "false");
+                            LOG_INFO(
+                                "Loaded fastfile hook {}->{} (iscommon={})",
+                                hook,
+                                ffname,
+                                isCommon ? "true" : "false"
+                            );
                         }
                     }
 
@@ -580,8 +623,9 @@ namespace systems::mods {
                             customZone.name = ffname;
 
                             const char* hook{ cfg.GetCString(utils::va("fastfiles.%s.hook", ffname)) };
-                            const char* defaultLanguage{ cfg.GetCString(
-                                utils::va("fastfiles.%s.default_language", ffname)) };
+                            const char* defaultLanguage{
+                                cfg.GetCString(utils::va("fastfiles.%s.default_language", ffname))
+                            };
 
                             if (defaultLanguage) {
                                 customZone.defaultLanguage = zoneHooks.alloc.CloneStr(defaultLanguage);
@@ -605,9 +649,11 @@ namespace systems::mods {
                                 continue;
                             }
 
-                            int32_t flags{ cfg.GetEnumVal<int32_t>(utils::va("fastfiles.%s.type", ffname),
-                                                                   fastfileTypeConfig,
-                                                                   ACTS_ARRAYSIZE(fastfileTypeConfig)) };
+                            int32_t flags{ cfg.GetEnumVal<int32_t>(
+                                utils::va("fastfiles.%s.type", ffname),
+                                fastfileTypeConfig,
+                                ACTS_ARRAYSIZE(fastfileTypeConfig)
+                            ) };
                             if (!flags) {
                                 LOG_WARNING("Invalid or missing zone type for {}", ffname);
                                 continue;
@@ -666,8 +712,14 @@ namespace systems::mods {
                             uint64_t hdest{ hash::Hash64Pattern(dest) };
 
                             zoneHooks.nameHooks[type][horigin] = hdest;
-                            LOG_INFO("Loaded redirect {} {}(0x{:x})->{}(0x{:x})",
-                                     games::bo4::pool::XAssetNameFromId(type), origin, horigin, dest, hdest);
+                            LOG_INFO(
+                                "Loaded redirect {} {}(0x{:x})->{}(0x{:x})",
+                                games::bo4::pool::XAssetNameFromId(type),
+                                origin,
+                                horigin,
+                                dest,
+                                hdest
+                            );
                         }
                     }
 
@@ -680,8 +732,9 @@ namespace systems::mods {
             }
         }
 
-        int Stream_OpenFileInternal_Stub(const char* name, int flags, uint8_t* key, size_t keyLen, uint8_t* iv,
-                                         size_t ivLen) {
+        int Stream_OpenFileInternal_Stub(
+            const char* name, int flags, uint8_t* key, size_t keyLen, uint8_t* iv, size_t ivLen
+        ) {
             static std::filesystem::path bo4zoneDir{ std::filesystem::absolute("zone") };
             std::filesystem::path path{ std::filesystem::absolute(name) };
             if (path.has_extension() && utils::IsSubDir(bo4zoneDir, path)) {
@@ -696,8 +749,13 @@ namespace systems::mods {
                     // hooked, we need to redirect them to the acts/zone dir
                     fname = zonedir / path;
                     zoneName = fname.string();
-                    LOG_INFO("[Stream_OpenFileInternal({}) {}] -> {} ({})", name,
-                             hook::library::CodePointer{ _ReturnAddress() }, zoneName, (void*)zoneName.data());
+                    LOG_INFO(
+                        "[Stream_OpenFileInternal({}) {}] -> {} ({})",
+                        name,
+                        hook::library::CodePointer{ _ReturnAddress() },
+                        zoneName,
+                        (void*)zoneName.data()
+                    );
                     return Stream_OpenFileInternal_Detour.Call<int>(zoneName.data(), flags, key, keyLen, iv, ivLen);
                 }
             }
@@ -705,8 +763,11 @@ namespace systems::mods {
             // LOG_TRACE("[Stream_OpenFileInternal({}) {}]", name, hook::library::CodePointer{ _ReturnAddress() });
             int r{ Stream_OpenFileInternal_Detour.Call<int>(name, flags, key, keyLen, iv, ivLen) };
             if (r < 0 && path.extension() != ".xpak") {
-                LOG_TRACE("[Stream_OpenFileInternal({}) {}] Not found", name,
-                          hook::library::CodePointer{ _ReturnAddress() });
+                LOG_TRACE(
+                    "[Stream_OpenFileInternal({}) {}] Not found",
+                    name,
+                    hook::library::CodePointer{ _ReturnAddress() }
+                );
             }
             return r;
         }

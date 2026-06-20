@@ -8,11 +8,14 @@ namespace tool::cordycep::dump {
       public:
         virtual const char* AddString(const char* str) = 0;
     };
-    int ForEachEntry(Process& proc, compatibility::scobalula::csi::XAssetPool64& pool,
-                     std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)> func);
+    int ForEachEntry(
+        Process& proc, compatibility::scobalula::csi::XAssetPool64& pool,
+        std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)> func
+    );
 
-    typedef int (*dumpfunc)(Process& proc, compatibility::scobalula::csi::CordycepProc& cordycep, int argc,
-                            const char* argv[]);
+    typedef int (*dumpfunc)(
+        Process& proc, compatibility::scobalula::csi::CordycepProc& cordycep, int argc, const char* argv[]
+    );
     struct CordycepDumper {
         compatibility::scobalula::csi::CordycepGame game;
         dumpfunc dump;

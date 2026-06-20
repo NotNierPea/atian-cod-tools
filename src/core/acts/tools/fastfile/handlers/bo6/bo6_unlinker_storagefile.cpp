@@ -54,8 +54,12 @@ namespace {
             json.WriteFieldValueXString("ddlName", asset->ddlName);
             json.WriteFieldValueXString("category", asset->category);
             json.WriteFieldValueXString("env", asset->env);
-            json.WriteFieldValueXAssetArray("objectStoreDDLConfigs", bo6::T10H_ASSET_OBJECTSTOREDDLCONFIG,
-                                            asset->objectStoreDDLConfigsCount, asset->objectStoreDDLConfigs);
+            json.WriteFieldValueXAssetArray(
+                "objectStoreDDLConfigs",
+                bo6::T10H_ASSET_OBJECTSTOREDDLCONFIG,
+                asset->objectStoreDDLConfigsCount,
+                asset->objectStoreDDLConfigs
+            );
 
             if (asset->operators) {
                 json.WriteFieldNameString("operators");

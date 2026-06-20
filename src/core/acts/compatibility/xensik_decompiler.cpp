@@ -63,8 +63,13 @@ namespace compatibility::xensik::decompiler {
             case VMI_IW_BIN_MW22:
                 return std::make_shared<xsk::gsc::iw9::context>(inst);
             }
-            throw std::runtime_error(std::format("Can't find xensik engine for {}/{}",
-                                                 tool::gsc::opcode::VMIdFancyName(info->vm), PlatformName(info->plt)));
+            throw std::runtime_error(
+                std::format(
+                    "Can't find xensik engine for {}/{}",
+                    tool::gsc::opcode::VMIdFancyName(info->vm),
+                    PlatformName(info->plt)
+                )
+            );
         }
     } // namespace
     bool DecompileScript(ScriptFileInformation* info, std::filesystem::path fsPath) {
@@ -82,18 +87,26 @@ namespace compatibility::xensik::decompiler {
                 bufferDecomp = std::make_unique<byte[]>(info->len);
                 buffer = bufferDecomp.get();
 
-                int r{ utils::compress::Decompress2(utils::compress::COMP_ZLIB, buffer, info->len, info->buffer,
-                                                    info->compressedLen) };
+                int r{ utils::compress::Decompress2(
+                    utils::compress::COMP_ZLIB,
+                    buffer,
+                    info->len,
+                    info->buffer,
+                    info->compressedLen
+                ) };
 
                 if (r <= 0) {
                     throw std::runtime_error(
-                        std::format("Can't decompress script buffer {}", utils::compress::DecompressResultName(r)));
+                        std::format("Can't decompress script buffer {}", utils::compress::DecompressResultName(r))
+                    );
                     return false;
                 }
             }
 
-            xsk::gsc::assembly::ptr assembly{ ctx->disassembler().disassemble(
-                (xsk::u8*)info->bytecode, info->bytecodeLen, (xsk::u8*)buffer, info->len) };
+            xsk::gsc::assembly::ptr assembly{
+                ctx->disassembler()
+                    .disassemble((xsk::u8*)info->bytecode, info->bytecodeLen, (xsk::u8*)buffer, info->len)
+            };
             xsk::gsc::program::ptr program{ ctx->decompiler().decompile(*assembly) };
 
             std::filesystem::create_directories(fsPath.parent_path());

@@ -124,10 +124,12 @@ namespace ui3::config {
             requires std::same_as<Widget, QLineEdit> && std::same_as<T, QString>
         void Bind(Widget* edit) {
             PropertyContainer<T>& cc{ container };
-            QObject::connect(edit, &QLineEdit::textChanged, &container.GetNotifier(),
-                             [&cc](const QString& s) { cc.Set(s); });
-            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, edit,
-                             [&cc, edit]() { edit->setText(cc.Get()); });
+            QObject::connect(edit, &QLineEdit::textChanged, &container.GetNotifier(), [&cc](const QString& s) {
+                cc.Set(s);
+            });
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, edit, [&cc, edit]() {
+                edit->setText(cc.Get());
+            });
 
             edit->setText(Get());
         }
@@ -136,10 +138,12 @@ namespace ui3::config {
             requires std::same_as<Widget, QComboBox> && std::same_as<T, QString>
         void Bind(Widget* edit) {
             PropertyContainer<T>& cc{ container };
-            QObject::connect(edit, &QComboBox::currentTextChanged, &container.GetNotifier(),
-                             [&cc](const QString& s) { cc.Set(s); });
-            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, edit,
-                             [&cc, edit]() { edit->setCurrentText(cc.Get()); });
+            QObject::connect(edit, &QComboBox::currentTextChanged, &container.GetNotifier(), [&cc](const QString& s) {
+                cc.Set(s);
+            });
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, edit, [&cc, edit]() {
+                edit->setCurrentText(cc.Get());
+            });
 
             edit->setCurrentText(Get());
         }
@@ -150,16 +154,18 @@ namespace ui3::config {
             PropertyContainer<T>& cc{ container };
             QObject::connect(box, &QCheckBox::toggled, &container.GetNotifier(), [&cc, box](bool val) { cc.Set(val); });
 
-            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, box,
-                             [box, &cc] { box->setChecked(cc.Get()); });
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, box, [box, &cc] {
+                box->setChecked(cc.Get());
+            });
 
             box->setChecked(Get());
         }
 
         void OnUpdate(QObject* receiver, std::function<void(T)> action) {
             PropertyContainer<T>& cc{ container };
-            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, receiver,
-                             [action, &cc]() { action(cc.Get()); });
+            QObject::connect(&container.GetNotifier(), &PropertyNotifier::changed, receiver, [action, &cc]() {
+                action(cc.Get());
+            });
         }
 
         void OnUpdate(QObject* receiver, std::function<void()> action) {
@@ -182,8 +188,14 @@ namespace ui3::config {
 
             if (entry.ptr) {
                 if (*(entry.type) != typeid(T)) {
-                    throw std::runtime_error(std::format("Config path'{}' type mismatch: {} != {}", path,
-                                                         entry.type->name(), typeid(T).name()));
+                    throw std::runtime_error(
+                        std::format(
+                            "Config path'{}' type mismatch: {} != {}",
+                            path,
+                            entry.type->name(),
+                            typeid(T).name()
+                        )
+                    );
                 }
                 return *static_cast<PropertyContainer<T>*>(entry.ptr);
             }

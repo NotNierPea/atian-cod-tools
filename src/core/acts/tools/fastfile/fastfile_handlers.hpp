@@ -126,10 +126,14 @@ namespace fastfile {
         bool Compute(const char** args, size_t startIndex, size_t endIndex);
         void PrintHelp();
 
-        hook::module_mapper::Module& GetGameModule(bool crashError, bool* init = nullptr, bool needDecrypt = false,
-                                                   const char* defaultName = nullptr, const char* dumperName = nullptr);
-        inline hook::library::Library GetGame(bool crashError, bool* init = nullptr, bool needDecrypt = false,
-                                              const char* defaultName = nullptr, const char* dumperName = nullptr) {
+        hook::module_mapper::Module& GetGameModule(
+            bool crashError, bool* init = nullptr, bool needDecrypt = false, const char* defaultName = nullptr,
+            const char* dumperName = nullptr
+        );
+        inline hook::library::Library GetGame(
+            bool crashError, bool* init = nullptr, bool needDecrypt = false, const char* defaultName = nullptr,
+            const char* dumperName = nullptr
+        ) {
             return *GetGameModule(crashError, init, needDecrypt, defaultName, dumperName);
         }
         hook::module_mapper::Module& GetGameModule();
@@ -214,8 +218,9 @@ namespace fastfile {
 
         virtual void Cleanup() {}
 
-        virtual void LoadFastFile(FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, FastFileContext& ctx,
-                                  std::vector<byte>& ffdata) = 0;
+        virtual void LoadFastFile(
+            FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, FastFileContext& ctx, std::vector<byte>& ffdata
+        ) = 0;
     };
 
     class FFLinker {
@@ -255,8 +260,10 @@ namespace fastfile {
         compatibility::scobalula::csi::CordycepGame game{};
         std::vector<std::string> commonFiles{};
 
-        FFHandler(const char* name, const char* description, compatibility::scobalula::csi::CordycepGame game,
-                  bool noPatchOk = false)
+        FFHandler(
+            const char* name, const char* description, compatibility::scobalula::csi::CordycepGame game,
+            bool noPatchOk = false
+        )
             : name(name), description(description), noPatchOk(noPatchOk), game(game) {}
 
         virtual void Init(FastFileOption& opt) {}

@@ -63,8 +63,10 @@ namespace {
             if (entry.gamemodesCount) {
                 json.WriteFieldNameString("gamemodes");
                 json.BeginArray();
-                auto gamemodes{ proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(entry.gamemodes),
-                                                                  entry.gamemodesCount) };
+                auto gamemodes{ proc.ReadMemoryArrayEx<uintptr_t>(
+                    reinterpret_cast<uintptr_t>(entry.gamemodes),
+                    entry.gamemodesCount
+                ) };
 
                 for (size_t i = 0; i < entry.gamemodesCount; i++) {
                     json.WriteValueHash(proc.ReadMemory<uint64_t>(gamemodes[i]));
@@ -111,8 +113,9 @@ namespace {
             os << "id,name";
 
             if (data.projectsCount) {
-                auto projects{ proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.projects),
-                                                                 data.projectsCount) };
+                auto projects{
+                    proc.ReadMemoryArrayEx<uintptr_t>(reinterpret_cast<uintptr_t>(data.projects), data.projectsCount)
+                };
 
                 for (size_t i = 0; i < data.projectsCount; i++) {
                     os << "\n"

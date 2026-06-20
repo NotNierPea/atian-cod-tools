@@ -53,7 +53,8 @@ typedef struct {
  * @return decompiler context or INVALID_ACTS_HANDLE_VALUE if invalid
  */
 ACTS_COMMON_API ActsHandle ActsAPIGscDecompiler_CreateDecompilerContext(
-    ActsAPIGsc_Platform platform, ActsAPIGscDecompiler_OptionalConfig* ACTS_DEFAULT(optCfg, nullptr));
+    ActsAPIGsc_Platform platform, ActsAPIGscDecompiler_OptionalConfig* ACTS_DEFAULT(optCfg, nullptr)
+);
 
 /*
  * Decompile a GSC file
@@ -72,9 +73,10 @@ ACTS_COMMON_API ActsStatus ActsAPIGscDecompiler_DecompileFile(ActsHandle context
  * @param dbgSize size of debug data
  * @return status
  */
-ACTS_COMMON_API ActsStatus ActsAPIGscDecompiler_DecompileObject(ActsHandle context, uint8_t* data, size_t size,
-                                                                uint8_t* ACTS_DEFAULT(dbgData, nullptr),
-                                                                size_t ACTS_DEFAULT(dbgSize, 0));
+ACTS_COMMON_API ActsStatus ActsAPIGscDecompiler_DecompileObject(
+    ActsHandle context, uint8_t* data, size_t size, uint8_t* ACTS_DEFAULT(dbgData, nullptr),
+    size_t ACTS_DEFAULT(dbgSize, 0)
+);
 
 /*
  * Get the formatter names

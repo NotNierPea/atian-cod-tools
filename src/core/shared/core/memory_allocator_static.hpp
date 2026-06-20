@@ -12,8 +12,9 @@ namespace core::memory_allocator {
     template<size_t Len, typename DataRefType = uint32_t>
     class MemoryAllocatorStatic {
         byte data[Len + sizeof(MemoryAllocatorStaticHeader<DataRefType>)]{};
-        static_assert(sizeof(data) <= (1ull << (sizeof(DataRefType) << 3)) &&
-                      "DataRefType max size smaller than Len with header");
+        static_assert(
+            sizeof(data) <= (1ull << (sizeof(DataRefType) << 3)) && "DataRefType max size smaller than Len with header"
+        );
 
       public:
         MemoryAllocatorStatic() {

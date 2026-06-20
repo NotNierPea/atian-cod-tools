@@ -93,8 +93,10 @@ namespace tool::gsc::opcode {
         case ASCNVD_INT:
             return aa->GetIntConst() == bb->GetIntConst();
         case ASCNVD_STRING:
-            return !strcmp(dynamic_cast<ASMContextNodeValue<const char*>*>(a)->m_value,
-                           dynamic_cast<ASMContextNodeValue<const char*>*>(b)->m_value);
+            return !strcmp(
+                dynamic_cast<ASMContextNodeValue<const char*>*>(a)->m_value,
+                dynamic_cast<ASMContextNodeValue<const char*>*>(b)->m_value
+            );
         default:
             return false;
         }
@@ -135,8 +137,10 @@ namespace tool::gsc::opcode {
         case TYPE_CONST_HASH:
             return dynamic_cast<ASMContextNodeHash*>(a)->m_value == dynamic_cast<ASMContextNodeHash*>(b)->m_value;
         case TYPE_STRING:
-            return !strcmp(dynamic_cast<ASMContextNodeString*>(a)->m_value,
-                           dynamic_cast<ASMContextNodeString*>(b)->m_value);
+            return !strcmp(
+                dynamic_cast<ASMContextNodeString*>(a)->m_value,
+                dynamic_cast<ASMContextNodeString*>(b)->m_value
+            );
         case TYPE_VALUE:
         case TYPE_FLOAT:
             return IsEqualNumber(a, b);
@@ -223,14 +227,27 @@ namespace tool::gsc::opcode {
         }
         case TYPE_JUMP_ONDEFINED:
             if (reversed) {
-                return new ASMContextNodeOp1("!", true,
-                                             new ASMContextNodeFunctionOperator("isdefined", nullptr,
-                                                                                op->m_operand->Clone(),
-                                                                                TYPE_FUNC_IS_DEFINED, true),
-                                             TYPE_UNDEFINED, true);
+                return new ASMContextNodeOp1(
+                    "!",
+                    true,
+                    new ASMContextNodeFunctionOperator(
+                        "isdefined",
+                        nullptr,
+                        op->m_operand->Clone(),
+                        TYPE_FUNC_IS_DEFINED,
+                        true
+                    ),
+                    TYPE_UNDEFINED,
+                    true
+                );
             }
-            return new ASMContextNodeFunctionOperator("isdefined", nullptr, op->m_operand->Clone(),
-                                                      TYPE_FUNC_IS_DEFINED, true);
+            return new ASMContextNodeFunctionOperator(
+                "isdefined",
+                nullptr,
+                op->m_operand->Clone(),
+                TYPE_FUNC_IS_DEFINED,
+                true
+            );
         case TYPE_JUMP_ONTRUE:
         case TYPE_JUMP_ONTRUEEXPR:
             if (reversed) {
@@ -285,12 +302,14 @@ namespace tool::gsc::opcode {
 
     void ASMContextLocationOp::Run(ASMContext& context, T8GSCOBJContext& objctx) const { assert(0); }
 
-    void ASMContextNode::ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&,
-                                        ASMContext& ctx) {
+    void ASMContextNode::ApplySubBlocks(
+        const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>&, ASMContext& ctx
+    ) {
         // do nothing, no sub blocks
     }
-    void ASMContextNode::ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>&,
-                                       SubNodeContext& ctx) {
+    void ASMContextNode::ApplySubNodes(
+        const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>&, SubNodeContext& ctx
+    ) {
         // do nothing, done on top
     }
 
@@ -325,14 +344,15 @@ namespace tool::gsc::opcode {
         return n;
     }
 
-    void
-    ASMContextNodeBlock::ApplySubBlocks(const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func,
-                                        ASMContext& ctx) {
+    void ASMContextNodeBlock::ApplySubBlocks(
+        const std::function<void(ASMContextNodeBlock* block, ASMContext& ctx)>& func, ASMContext& ctx
+    ) {
         // apply to this
         func(this, ctx);
     }
-    void ASMContextNodeBlock::ApplySubNodes(const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func,
-                                            SubNodeContext& ctx) {
+    void ASMContextNodeBlock::ApplySubNodes(
+        const std::function<void(ASMContextNode*& node, SubNodeContext& ctx)>& func, SubNodeContext& ctx
+    ) {
         if (m_blockType == BLOCK_DEV) {
             ctx.devBlockDepth++;
         }
@@ -388,9 +408,10 @@ namespace tool::gsc::opcode {
 
     bool ASMContextNode::IsIntConst() const { return false; }
 
-    ASMContext::ASMContext(byte* fonctionStart, GSCOBJHandler& gscReader, T8GSCOBJContext& objctx,
-                           const GscInfoOption& opt, uint64_t nsp, GSCExportReader& exp, void* readerHandle,
-                           uint64_t vm, Platform platform)
+    ASMContext::ASMContext(
+        byte* fonctionStart, GSCOBJHandler& gscReader, T8GSCOBJContext& objctx, const GscInfoOption& opt, uint64_t nsp,
+        GSCExportReader& exp, void* readerHandle, uint64_t vm, Platform platform
+    )
         : m_fonctionStart(fonctionStart), m_bcl(fonctionStart), m_gscReader(gscReader), m_objctx(objctx), m_opt(opt),
           m_runDecompiler(opt.m_dcomp), m_lastOpCodeBase(-1), m_namespace(nsp),
           m_funcBlock(BLOCK_DEFAULT, false, false), m_exp(exp), m_readerHandle(readerHandle), m_vm(vm),
@@ -472,10 +493,14 @@ namespace tool::gsc::opcode {
                 }
             } else {
                 if (loc.rloc > min) {
-                    LOG_WARNING("{}::{} : Unhandled rloc: 0x{:x} after handled 0x{:x}, the decompiled code won't be "
-                                "100% correct",
-                                hashutils::ExtractTmp("namespace", m_exp.GetNamespace()),
-                                hashutils::ExtractTmp("function", m_exp.GetName()), min, loc.rloc);
+                    LOG_WARNING(
+                        "{}::{} : Unhandled rloc: 0x{:x} after handled 0x{:x}, the decompiled code won't be "
+                        "100% correct",
+                        hashutils::ExtractTmp("namespace", m_exp.GetNamespace()),
+                        hashutils::ExtractTmp("function", m_exp.GetName()),
+                        min,
+                        loc.rloc
+                    );
                     min = 0xFFFFFFFFFF;
                     minloc = 0;
                 }
@@ -993,8 +1018,10 @@ namespace tool::gsc::opcode {
         auto it = m_statements.begin();
         while (it != m_statements.end()) {
             auto& b = *it;
-            it->node->ApplySubBlocks([](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeDevBlocks(ctx); },
-                                     ctx);
+            it->node->ApplySubBlocks(
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeDevBlocks(ctx); },
+                ctx
+            );
             if (b.node->m_type != TYPE_JUMP_DEVBLOCK) {
                 it++;
                 continue;
@@ -1018,7 +1045,8 @@ namespace tool::gsc::opcode {
             if (it != m_statements.end() && it->location->rloc == end) {
                 // add end devblock
                 devBlock->m_statements.push_back(
-                    { new ASMContextNodeValue<const char*>("<emptypos_enddev>", TYPE_PRECODEPOS), it->location });
+                    { new ASMContextNodeValue<const char*>("<emptypos_enddev>", TYPE_PRECODEPOS), it->location }
+                );
                 // remove the dev block jump reference
                 it->location->RemoveRef(jump->m_opLoc);
             }
@@ -1033,8 +1061,9 @@ namespace tool::gsc::opcode {
         return 0;
     }
 
-    static void ReplaceSwitchBlockBreak(ASMContextNodeBlock& current, ASMContext& ctx, ASMContextLocation* endLocation,
-                                        uint64_t endCase, int64_t end) {
+    static void ReplaceSwitchBlockBreak(
+        ASMContextNodeBlock& current, ASMContext& ctx, ASMContextLocation* endLocation, uint64_t endCase, int64_t end
+    ) {
         for (ASMContextStatement& stmt : current.m_statements) {
             if (stmt.location->rloc >= endCase) {
                 break; // end of the case
@@ -1063,7 +1092,9 @@ namespace tool::gsc::opcode {
         while (it != m_statements.end()) {
             auto& b = *it;
             it->node->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeSwitchBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeSwitchBlocks(ctx); },
+                ctx
+            );
             if (b.node->m_type != TYPE_SWITCH_PRECOMPUTE) {
                 // not a switch to compute, we pass to the next pointer
                 it++;
@@ -1080,10 +1111,13 @@ namespace tool::gsc::opcode {
 
             // sort the cases by their locations, we know a default won't be reordered
             // because it was parsed during the precompute node creation.
-            std::sort(cases.begin(), cases.end(),
-                      [](const ASMContextSwitchPreComputeCase& e1, const ASMContextSwitchPreComputeCase& e2) {
-                          return e1.jumpLocation < e2.jumpLocation;
-                      });
+            std::sort(
+                cases.begin(),
+                cases.end(),
+                [](const ASMContextSwitchPreComputeCase& e1, const ASMContextSwitchPreComputeCase& e2) {
+                    return e1.jumpLocation < e2.jumpLocation;
+                }
+            );
             // first node
             it++;
 
@@ -1119,7 +1153,8 @@ namespace tool::gsc::opcode {
                                                                                                         : BLOCK_PADDING;
                     ASMContextNodeBlock* block = new ASMContextNodeBlock(blockType);
                     switchBlock->m_cases.push_back(
-                        { cases[cid].casenode ? cases[cid].casenode->Clone() : nullptr, block });
+                        { cases[cid].casenode ? cases[cid].casenode->Clone() : nullptr, block }
+                    );
                     // we pass this case to fetch the end
                     cid++;
 
@@ -1138,8 +1173,13 @@ namespace tool::gsc::opcode {
                         }
 
                         if (it->node->m_type == TYPE_BLOCK) {
-                            ReplaceSwitchBlockBreak(*static_cast<ASMContextNodeBlock*>(it->node), ctx, endLocation,
-                                                    endCase, end);
+                            ReplaceSwitchBlockBreak(
+                                *static_cast<ASMContextNodeBlock*>(it->node),
+                                ctx,
+                                endLocation,
+                                endCase,
+                                end
+                            );
                         } else if (it->node->m_type == TYPE_JUMP || it->node->m_type == TYPE_JUMP_ENDSWITCH) {
                             auto* jump = static_cast<ASMContextNodeJumpOperator*>(it->node);
                             // convert this to a break statement
@@ -1162,7 +1202,8 @@ namespace tool::gsc::opcode {
                         // not for the last one because it has an endswitch at the end
                         block->m_statements.push_back(
                             { new ASMContextNodeValue<const char*>("<emptypos_switchnext>", TYPE_PRECODEPOS),
-                              it->location });
+                              it->location }
+                        );
                     }
                 } while (cid < cases.size());
             } else if (it->node->m_type == TYPE_JUMP_ENDSWITCH) {
@@ -1180,7 +1221,9 @@ namespace tool::gsc::opcode {
             }
 
             switchBlock->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeSwitchBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeSwitchBlocks(ctx); },
+                ctx
+            );
 
             // delete the precompute operator
             delete switchPreCompute;
@@ -1189,8 +1232,10 @@ namespace tool::gsc::opcode {
         return 0;
     }
 
-    void ApplySubStatement(ASMContextStatement& stmt, ASMContext& ctx,
-                           std::function<void(ASMContextStatement& stmt)> func, bool endOnReturn = false) {
+    void ApplySubStatement(
+        ASMContextStatement& stmt, ASMContext& ctx, std::function<void(ASMContextStatement& stmt)> func,
+        bool endOnReturn = false
+    ) {
         if (stmt.node->m_type != TYPE_BLOCK) {
             if (endOnReturn && stmt.node && (stmt.node->m_type == TYPE_RETURN || stmt.node->m_type == TYPE_END)) {
                 func(stmt);
@@ -1202,7 +1247,8 @@ namespace tool::gsc::opcode {
                         ApplySubStatement(stmt, ctx, func, endOnReturn);
                     }
                 },
-                ctx);
+                ctx
+            );
             func(stmt);
             return;
         }
@@ -1217,7 +1263,8 @@ namespace tool::gsc::opcode {
                     }
                 }
             },
-            ctx);
+            ctx
+        );
     }
 
     namespace {
@@ -1257,7 +1304,9 @@ namespace tool::gsc::opcode {
         while (index < m_statements.size()) {
             ASMContextStatement& arrayRefLoc{ m_statements[index] };
             arrayRefLoc.node->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); },
+                ctx
+            );
             const size_t startIndex{ index };
             int moveDelta{ 1 };
 
@@ -1490,7 +1539,8 @@ namespace tool::gsc::opcode {
                 ASMContextStatement& stmt = m_statements[i];
 
                 ApplySubStatement(
-                    stmt, ctx,
+                    stmt,
+                    ctx,
                     [&ctx, &breakLoc, &endNodeLocation, &incrementLoc, &incPPStmt](ASMContextStatement& stmt) {
                         if (!IsJumpType(stmt.node->m_type)) {
                             return;
@@ -1510,7 +1560,8 @@ namespace tool::gsc::opcode {
                             j->m_special_op = SPECIAL_JUMP_CONTINUE;
                             incPPStmt.location->RemoveRef(j->m_opLoc);
                         }
-                    });
+                    }
+                );
             }
 
             ASMContextNodeBlock* block = new ASMContextNodeBlock();
@@ -1531,7 +1582,8 @@ namespace tool::gsc::opcode {
                 it = m_statements.erase(it);
             }
             block->m_statements.push_back(
-                { new ASMContextNodeValue<const char*>("<emptypos_foreachcontinue>", TYPE_PRECODEPOS), it->location });
+                { new ASMContextNodeValue<const char*>("<emptypos_foreachcontinue>", TYPE_PRECODEPOS), it->location }
+            );
             for (size_t i = endNodeIndex; i < index; i++) {
                 // remove component statement
                 delete it->node;
@@ -1539,7 +1591,9 @@ namespace tool::gsc::opcode {
             }
 
             forEachNode->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); },
+                ctx
+            );
             // go back to the first index
             index = startIndex;
         }
@@ -1632,7 +1686,9 @@ namespace tool::gsc::opcode {
         while (index < m_statements.size()) {
             ASMContextStatement& arrayRefLoc = m_statements[index];
             arrayRefLoc.node->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); },
+                ctx
+            );
             const auto startIndex = index;
             int moveDelta = 1;
 
@@ -1887,7 +1943,8 @@ namespace tool::gsc::opcode {
                 ASMContextStatement& stmt = m_statements[i];
 
                 ApplySubStatement(
-                    stmt, ctx,
+                    stmt,
+                    ctx,
                     [&ctx, &endLoc, &endNodeLocation, &incrementLoc, &setNextKeyStmt](ASMContextStatement& stmt) {
                         if (!IsJumpType(stmt.node->m_type)) {
                             return;
@@ -1907,7 +1964,8 @@ namespace tool::gsc::opcode {
                             j->m_special_op = SPECIAL_JUMP_CONTINUE;
                             setNextKeyStmt.location->RemoveRef(j->m_opLoc);
                         }
-                    });
+                    }
+                );
             }
 
             if (endNodeLocation) {
@@ -1928,7 +1986,11 @@ namespace tool::gsc::opcode {
             }
 
             ASMContextNodeForEach* forEachNode = new ASMContextNodeForEach(
-                setOp->m_right->Clone(), block, ctx.m_localvars_ref[keyValName] ? keyValName : 0, itemValName);
+                setOp->m_right->Clone(),
+                block,
+                ctx.m_localvars_ref[keyValName] ? keyValName : 0,
+                itemValName
+            );
 
             auto it = m_statements.begin() + startIndex;
             delete it->node;
@@ -1944,7 +2006,8 @@ namespace tool::gsc::opcode {
                 it = m_statements.erase(it);
             }
             block->m_statements.push_back(
-                { new ASMContextNodeValue<const char*>("<emptypos_foreachcontinue>", TYPE_PRECODEPOS), it->location });
+                { new ASMContextNodeValue<const char*>("<emptypos_foreachcontinue>", TYPE_PRECODEPOS), it->location }
+            );
             for (size_t i = incrementIndex; i < endNodeIndex; i++) {
                 // remove component statement
                 delete it->node;
@@ -1987,7 +2050,9 @@ namespace tool::gsc::opcode {
             }
 
             forEachNode->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForEachBlocks(ctx); },
+                ctx
+            );
             // go back to the first index
             index = startIndex;
         }
@@ -2027,7 +2092,9 @@ namespace tool::gsc::opcode {
         while (itindex < m_statements.size()) {
             auto& jumpStmtVal = m_statements[itindex];
             jumpStmtVal.node->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeWhileBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeWhileBlocks(ctx); },
+                ctx
+            );
             if (!IsJumpType(jumpStmtVal.node->m_type)) {
                 itindex++;
                 continue; // not a jump
@@ -2191,7 +2258,8 @@ namespace tool::gsc::opcode {
                                     }
                                 }
                             },
-                            ctx);
+                            ctx
+                        );
                     }
 
                     block->m_statements.push_back({ replaceNode ? replaceNode : ref->Clone(), it->location });
@@ -2199,14 +2267,17 @@ namespace tool::gsc::opcode {
                     it = m_statements.erase(it);
                 }
                 block->m_statements.push_back(
-                    { new ASMContextNodeValue<const char*>("<emptypos_inf_end>", TYPE_PRECODEPOS), it->location });
+                    { new ASMContextNodeValue<const char*>("<emptypos_inf_end>", TYPE_PRECODEPOS), it->location }
+                );
                 // it = jump
                 firstNodeLocation->RemoveRef(jumpOp->m_opLoc);
                 it->location = firstNodeLocation;
                 delete it->node;
                 it->node = node;
                 node->ApplySubBlocks(
-                    [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeWhileBlocks(ctx); }, ctx);
+                    [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeWhileBlocks(ctx); },
+                    ctx
+                );
                 itindex = startIndex;
             } else {
                 // do {} while(...);
@@ -2271,56 +2342,57 @@ namespace tool::gsc::opcode {
                             contLocation->RemoveRef(j->m_opLoc);
                         }
                     } else if (stmt.node->m_type == TYPE_SWITCH_POSTCOMPUTE || stmt.node->m_type == TYPE_BLOCK) {
-                        ApplySubStatement(stmt, ctx,
-                                          [&stmt, breakLoc, &ctx, endLocation, continueLoc, condLocation, contLocation,
-                                           continueLoc2](ASMContextStatement& refstmt) {
-                                              auto* refjump = refstmt.node;
-                                              if (IsJumpType(refjump->m_type)) {
-                                                  // replace jumps in switch (BECAUSE SOMEONE DID IT), show the jumps
-                                                  // and do not remove the ref because it's nested breaks/continues
-                                                  auto* j = static_cast<ASMContextNodeJumpOperator*>(refjump);
-                                                  if (j->m_location == breakLoc) {
-                                                      if (!j->m_special_op) {
-                                                          j->m_operatorName = ctx.m_opt.m_mark_jump_type
-                                                                                  ? "break<do_while_block2>"
-                                                                                  : "break";
-                                                          j->m_special_op = SPECIAL_JUMP_BREAK;
-                                                          // j->m_showJump = true;
-                                                          j->m_showJump = false;
-                                                      }
-                                                      if (stmt.node->m_type == TYPE_BLOCK) {
-                                                          j->m_showJump = false;
-                                                          endLocation->RemoveRef(j->m_opLoc);
-                                                      }
-                                                  } else if (j->m_location == continueLoc) {
-                                                      if (!j->m_special_op && j->m_special_op != SPECIAL_JUMP_BREAK) {
-                                                          j->m_operatorName = ctx.m_opt.m_mark_jump_type
-                                                                                  ? "continue<do_while_block3>"
-                                                                                  : "continue";
-                                                          j->m_special_op = SPECIAL_JUMP_CONTINUE;
-                                                          // j->m_showJump = true;
-                                                          j->m_showJump = false;
-                                                      }
-                                                      if (stmt.node->m_type == TYPE_BLOCK) {
-                                                          j->m_showJump = false;
-                                                          condLocation->RemoveRef(j->m_opLoc);
-                                                      }
-                                                  } else if (j->m_location == continueLoc2) {
-                                                      if (!j->m_special_op && j->m_special_op != SPECIAL_JUMP_BREAK) {
-                                                          j->m_operatorName = ctx.m_opt.m_mark_jump_type
-                                                                                  ? "continue<do_while_block4>"
-                                                                                  : "continue";
-                                                          j->m_special_op = SPECIAL_JUMP_CONTINUE;
-                                                          // j->m_showJump = true;
-                                                          j->m_showJump = false;
-                                                      }
-                                                      if (stmt.node->m_type == TYPE_BLOCK) {
-                                                          j->m_showJump = false;
-                                                          contLocation->RemoveRef(j->m_opLoc);
-                                                      }
-                                                  }
-                                              }
-                                          });
+                        ApplySubStatement(
+                            stmt,
+                            ctx,
+                            [&stmt, breakLoc, &ctx, endLocation, continueLoc, condLocation, contLocation, continueLoc2](
+                                ASMContextStatement& refstmt
+                            ) {
+                                auto* refjump = refstmt.node;
+                                if (IsJumpType(refjump->m_type)) {
+                                    // replace jumps in switch (BECAUSE SOMEONE DID IT), show the jumps
+                                    // and do not remove the ref because it's nested breaks/continues
+                                    auto* j = static_cast<ASMContextNodeJumpOperator*>(refjump);
+                                    if (j->m_location == breakLoc) {
+                                        if (!j->m_special_op) {
+                                            j->m_operatorName =
+                                                ctx.m_opt.m_mark_jump_type ? "break<do_while_block2>" : "break";
+                                            j->m_special_op = SPECIAL_JUMP_BREAK;
+                                            // j->m_showJump = true;
+                                            j->m_showJump = false;
+                                        }
+                                        if (stmt.node->m_type == TYPE_BLOCK) {
+                                            j->m_showJump = false;
+                                            endLocation->RemoveRef(j->m_opLoc);
+                                        }
+                                    } else if (j->m_location == continueLoc) {
+                                        if (!j->m_special_op && j->m_special_op != SPECIAL_JUMP_BREAK) {
+                                            j->m_operatorName =
+                                                ctx.m_opt.m_mark_jump_type ? "continue<do_while_block3>" : "continue";
+                                            j->m_special_op = SPECIAL_JUMP_CONTINUE;
+                                            // j->m_showJump = true;
+                                            j->m_showJump = false;
+                                        }
+                                        if (stmt.node->m_type == TYPE_BLOCK) {
+                                            j->m_showJump = false;
+                                            condLocation->RemoveRef(j->m_opLoc);
+                                        }
+                                    } else if (j->m_location == continueLoc2) {
+                                        if (!j->m_special_op && j->m_special_op != SPECIAL_JUMP_BREAK) {
+                                            j->m_operatorName =
+                                                ctx.m_opt.m_mark_jump_type ? "continue<do_while_block4>" : "continue";
+                                            j->m_special_op = SPECIAL_JUMP_CONTINUE;
+                                            // j->m_showJump = true;
+                                            j->m_showJump = false;
+                                        }
+                                        if (stmt.node->m_type == TYPE_BLOCK) {
+                                            j->m_showJump = false;
+                                            contLocation->RemoveRef(j->m_opLoc);
+                                        }
+                                    }
+                                }
+                            }
+                        );
                     }
 
                     newBlock->m_statements.push_back({ replaceNode ? replaceNode : stmt.node->Clone(), stmt.location });
@@ -2332,13 +2404,16 @@ namespace tool::gsc::opcode {
                 itindex = startIndex;
                 newBlock->m_statements.push_back(
                     { new ASMContextNodeValue<const char*>("<emptypos_whileend>", TYPE_PRECODEPOS),
-                      m_statements[itindex].location });
+                      m_statements[itindex].location }
+                );
                 delete m_statements[itindex].node;
                 m_statements[itindex].node = doWhile;
                 m_statements[itindex].location = doWhileLoc;
 
                 doWhile->ApplySubBlocks(
-                    [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeWhileBlocks(ctx); }, ctx);
+                    [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeWhileBlocks(ctx); },
+                    ctx
+                );
             }
         }
         return 0;
@@ -2364,7 +2439,9 @@ namespace tool::gsc::opcode {
         while (index < m_statements.size()) {
             auto& jumpStmt = m_statements[index];
             jumpStmt.node->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeIfBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeIfBlocks(ctx); },
+                ctx
+            );
 
             if (!IsJumpType(jumpStmt.node->m_type)) {
                 index++;
@@ -2438,7 +2515,8 @@ namespace tool::gsc::opcode {
                         }
                         blockElse->m_statements.push_back(
                             { new ASMContextNodeValue<const char*>("<emptypos_elselast>", TYPE_PRECODEPOS),
-                              endElseFinalLoc });
+                              endElseFinalLoc }
+                        );
                     }
                 }
             }
@@ -2456,12 +2534,14 @@ namespace tool::gsc::opcode {
             }
             if (ignoreLast) {
                 blockIf->m_statements.push_back(
-                    { new ASMContextNodeValue<const char*>("<emptypos_ifend1>", TYPE_PRECODEPOS), it->location });
+                    { new ASMContextNodeValue<const char*>("<emptypos_ifend1>", TYPE_PRECODEPOS), it->location }
+                );
                 delete it->node;
                 it = m_statements.erase(it);
             } else {
                 blockIf->m_statements.push_back(
-                    { new ASMContextNodeValue<const char*>("<emptypos_ifend2>", TYPE_PRECODEPOS), elsePartNodeLoc });
+                    { new ASMContextNodeValue<const char*>("<emptypos_ifend2>", TYPE_PRECODEPOS), elsePartNodeLoc }
+                );
             }
 
             // swap the jump with the new if statement
@@ -2475,8 +2555,10 @@ namespace tool::gsc::opcode {
             auto* ifElse = new ASMContextNodeIfElse(ifCond, blockIf, blockElse);
             delete m_statements[index].node;
             m_statements[index].node = ifElse;
-            ifElse->ApplySubBlocks([](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeIfBlocks(ctx); },
-                                   ctx);
+            ifElse->ApplySubBlocks(
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeIfBlocks(ctx); },
+                ctx
+            );
         }
 
         // LOC_0000015c:jumpiffalse(!self function_a39f313c() || self getcurrentweapon() == level.weaponnone)
@@ -2524,7 +2606,9 @@ namespace tool::gsc::opcode {
         while (index < m_statements.size()) {
             auto& whileStmt = m_statements[index];
             whileStmt.node->ApplySubBlocks(
-                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForBlocks(ctx); }, ctx);
+                [](ASMContextNodeBlock* block, ASMContext& ctx) { block->ComputeForBlocks(ctx); },
+                ctx
+            );
 
             if (index == 0 || whileStmt.node->m_type != TYPE_WHILE) {
                 index++;
@@ -2571,8 +2655,12 @@ namespace tool::gsc::opcode {
             }
 
             auto* forDeltaNode = new ASMContextNodeForDelta(
-                initValNode->Clone(), /*Already a bool*/ whileBlock->m_condition, deltaStmt.node->Clone(),
-                whileBlock->m_block, whileBlock->m_originJump->Clone());
+                initValNode->Clone(),
+                /*Already a bool*/ whileBlock->m_condition,
+                deltaStmt.node->Clone(),
+                whileBlock->m_block,
+                whileBlock->m_originJump->Clone()
+            );
             whileBlock->m_block = nullptr;
             whileBlock->m_condition = nullptr;
             delete whileStmt.node;
@@ -2661,7 +2749,8 @@ namespace tool::gsc::opcode {
             auto& stmt = m_statements[i];
 
             ApplySubStatement(
-                stmt, ctx,
+                stmt,
+                ctx,
                 [&isCandidate, &anyReturn, &ctx](ASMContextStatement& stmt) {
                     if (stmt.node->m_type == TYPE_END) {
                         isCandidate = false;
@@ -2679,7 +2768,8 @@ namespace tool::gsc::opcode {
                     }
                     // ok
                 },
-                true);
+                true
+            );
 
             if (!isCandidate) {
                 return 0;
@@ -2710,7 +2800,8 @@ namespace tool::gsc::opcode {
             auto& stmt = m_statements[i];
 
             ApplySubStatement(
-                stmt, ctx,
+                stmt,
+                ctx,
                 [&ctx](ASMContextStatement& stmt) {
                     if (stmt.node->m_type != TYPE_RETURN) {
                         return;
@@ -2720,7 +2811,8 @@ namespace tool::gsc::opcode {
 
                     ret->m_operand = ASMCNodeConvertToBool(ret->m_operand, ctx);
                 },
-                false);
+                false
+            );
         }
 
         return 0;
@@ -2772,9 +2864,12 @@ namespace tool::gsc::opcode {
             for (size_t i = 0; i < stmts.size(); i++) {
                 auto& stmt = stmts[i];
 
-                stmt.node->ApplySubBlocks([](ASMContextNodeBlock* block,
-                                             ASMContext& ctx) { ApplySpecialPatternBlock(ctx, block->m_statements); },
-                                          ctx);
+                stmt.node->ApplySubBlocks(
+                    [](ASMContextNodeBlock* block, ASMContext& ctx) {
+                        ApplySpecialPatternBlock(ctx, block->m_statements);
+                    },
+                    ctx
+                );
 
                 if (!(ctx.m_opt.m_stepskip & tool::gsc::STEPSKIP_SPECIAL_PATTERN)) {
                     ASMContextNodeLeftRightOperator* mainSet;
@@ -2852,8 +2947,11 @@ namespace tool::gsc::opcode {
                                     assert(set != nullptr);
 
                                     // use the left identifier in our array
-                                    bld->AddValue(new ASMContextNodeValue<size_t>(k - 1, TYPE_VALUE, false, true, true),
-                                                  set->m_left, false);
+                                    bld->AddValue(
+                                        new ASMContextNodeValue<size_t>(k - 1, TYPE_VALUE, false, true, true),
+                                        set->m_left,
+                                        false
+                                    );
                                     set->m_left = nullptr;
                                     delete stmts[i + (keyrefs - k)].node;
                                     stmts.erase(stmts.begin() + (i + (keyrefs - k)));
@@ -2871,8 +2969,10 @@ namespace tool::gsc::opcode {
                         stmts[i - 1].node->m_type == TYPE_SET &&
                         dynamic_cast<ASMContextNodeLeftRightOperator*>(stmts[i - 1].node)->m_right->m_type ==
                             TYPE_GET_UNDEFINED &&
-                        IsStructSimilar(dynamic_cast<ASMContextNodeLeftRightOperator*>(stmt.node)->m_left,
-                                        dynamic_cast<ASMContextNodeLeftRightOperator*>(stmts[i - 1].node)->m_left)) {
+                        IsStructSimilar(
+                            dynamic_cast<ASMContextNodeLeftRightOperator*>(stmt.node)->m_left,
+                            dynamic_cast<ASMContextNodeLeftRightOperator*>(stmts[i - 1].node)->m_left
+                        )) {
                         i--;
 
                         // remove the = undefined and apply the new location

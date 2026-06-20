@@ -218,9 +218,11 @@ namespace {
             json.WriteFieldValueNumber("lowestScoreToUnlockAllowed", asset.lowestScoreToUnlockAllowed);
             json.WriteFieldValueNumber("allocation", asset.allocation);
             json.WriteFieldValueNumber("modes", asset.modes);
-            json.WriteFieldValueString("loadoutSlotIndex", asset.loadoutSlotIndex >= ACTS_ARRAYSIZE(loadoutSlotNames)
-                                                               ? "<invalid>"
-                                                               : loadoutSlotNames[asset.loadoutSlotIndex]);
+            json.WriteFieldValueString(
+                "loadoutSlotIndex",
+                asset.loadoutSlotIndex >= ACTS_ARRAYSIZE(loadoutSlotNames) ? "<invalid>"
+                                                                           : loadoutSlotNames[asset.loadoutSlotIndex]
+            );
             json.WriteFieldValueBool("isNullItem", asset.isNullItem);
             json.WriteFieldValueBool("isPassive", asset.isPassive);
             json.WriteFieldValueBool("isValid", asset.isValid);
@@ -242,17 +244,21 @@ namespace {
             json.WriteFieldValueUnknown("unkd4", asset.unkd4);
             json.WriteFieldValueUnknown("unkf4", asset.unkf4);
 
-            json.WriteFieldValueString("itemGroupIndex", asset.itemGroupIndex >= ACTS_ARRAYSIZE(itemGroupNames)
-                                                             ? "<invalid>"
-                                                             : itemGroupNames[asset.itemGroupIndex]);
+            json.WriteFieldValueString(
+                "itemGroupIndex",
+                asset.itemGroupIndex >= ACTS_ARRAYSIZE(itemGroupNames) ? "<invalid>"
+                                                                       : itemGroupNames[asset.itemGroupIndex]
+            );
 
             if (asset.attachments) {
                 json.WriteFieldNameString("attachments");
                 json.BeginArray();
                 for (size_t i = 0; i < asset.attachmentsCount; i++) {
-                    json.WriteValueString(asset.attachments[i] >= ACTS_ARRAYSIZE(attachmentsNames)
-                                              ? "<invalid>"
-                                              : attachmentsNames[asset.attachments[i]]);
+                    json.WriteValueString(
+                        asset.attachments[i] >= ACTS_ARRAYSIZE(attachmentsNames)
+                            ? "<invalid>"
+                            : attachmentsNames[asset.attachments[i]]
+                    );
                 }
                 json.EndArray();
             }
@@ -298,10 +304,18 @@ namespace {
             json.WriteFieldValueUnknown("unk20", asset.unk20);
             json.WriteFieldValueUnknown("unk44", asset.unk44);
 
-            json.WriteFieldValueXAssetArray("elements1", XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM, asset.count1,
-                                            asset.elements1);
-            json.WriteFieldValueXAssetArray("elements2", XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM, asset.count2,
-                                            asset.elements2);
+            json.WriteFieldValueXAssetArray(
+                "elements1",
+                XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM,
+                asset.count1,
+                asset.elements1
+            );
+            json.WriteFieldValueXAssetArray(
+                "elements2",
+                XAssetType::ASSET_TYPE_UNLOCKABLE_ITEM,
+                asset.count2,
+                asset.elements2
+            );
             json.EndObject();
 
             if (!json.WriteToFile(outFile)) {

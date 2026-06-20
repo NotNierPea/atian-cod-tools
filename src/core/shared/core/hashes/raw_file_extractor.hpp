@@ -12,8 +12,10 @@ namespace core::hashes::raw_file_extractor {
         char* (*DecryptStr)(char* str);
 
       public:
-        JsonWriter(core::raw_file::json::JsonFormat format = core::raw_file::json::JFF_PRETTY,
-                   DecryptStrFunc DecryptStr = nullptr);
+        JsonWriter(
+            core::raw_file::json::JsonFormat format = core::raw_file::json::JFF_PRETTY,
+            DecryptStrFunc DecryptStr = nullptr
+        );
 
         bool WriteToFile(const std::filesystem::path& out);
     };

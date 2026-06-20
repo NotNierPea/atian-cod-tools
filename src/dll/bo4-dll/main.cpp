@@ -41,8 +41,10 @@ namespace {
     void PreInitDll() {
         auto& systems = inject::InjectedSystem::GetSystems();
         std::sort(
-            systems.begin(), systems.end(),
-            [](const inject::InjectedSystem* e1, const inject::InjectedSystem* e2) { return e1->level < e2->level; });
+            systems.begin(),
+            systems.end(),
+            [](const inject::InjectedSystem* e1, const inject::InjectedSystem* e2) { return e1->level < e2->level; }
+        );
 
         HMODULE modStart = hook::process::BaseHandle();
 
@@ -64,8 +66,10 @@ namespace {
     void PostInitDll() {
         auto& systems = inject::InjectedSystem::GetSystems();
         std::sort(
-            systems.begin(), systems.end(),
-            [](const inject::InjectedSystem* e1, const inject::InjectedSystem* e2) { return e1->level < e2->level; });
+            systems.begin(),
+            systems.end(),
+            [](const inject::InjectedSystem* e1, const inject::InjectedSystem* e2) { return e1->level < e2->level; }
+        );
         LOG_DEBUG("Postinit ACTS BO4 DLL with {} system(s)", systems.size());
 
         // post init systems
@@ -141,16 +145,26 @@ namespace {
             if (detourData->time != time) {
                 continue;
             }
-            LOG_DEBUG("detouring {}@{:x}->{:x}", detourData->title, reinterpret_cast<uintptr_t>(detourData->pointer),
-                      reinterpret_cast<uintptr_t>(detourData->detour));
+            LOG_DEBUG(
+                "detouring {}@{:x}->{:x}",
+                detourData->title,
+                reinterpret_cast<uintptr_t>(detourData->pointer),
+                reinterpret_cast<uintptr_t>(detourData->detour)
+            );
             err = DetourAttach(reinterpret_cast<PVOID*>(detourData->pointer), detourData->detour);
 
             if (err != NO_ERROR) {
                 error = true;
                 LPSTR messageBuffer = nullptr;
-                FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                                   FORMAT_MESSAGE_IGNORE_INSERTS,
-                               NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+                FormatMessageA(
+                    FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                    NULL,
+                    err,
+                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                    (LPSTR)&messageBuffer,
+                    0,
+                    NULL
+                );
                 LOG_ERROR("Error when attaching detour {}: {} ({:x})", detourData->title, messageBuffer, err);
                 LocalFree(messageBuffer);
                 break;
@@ -162,9 +176,15 @@ namespace {
             if (err != NO_ERROR) {
                 error = true;
                 LPSTR messageBuffer = nullptr;
-                FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                                   FORMAT_MESSAGE_IGNORE_INSERTS,
-                               NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+                FormatMessageA(
+                    FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                    NULL,
+                    err,
+                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                    (LPSTR)&messageBuffer,
+                    0,
+                    NULL
+                );
                 LOG_ERROR("Error when commit transaction: {} ({:x})", messageBuffer, err);
                 LocalFree(messageBuffer);
             }
@@ -196,16 +216,28 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 #ifdef CLIENT_TEST
 // call d3d11 base implementation
-EXPORT HRESULT D3D11CreateDevice(void* adapter, const uint64_t driver_type, const HMODULE software, const UINT flags,
-                                 const void* p_feature_levels, const UINT feature_levels, const UINT sdk_version,
-                                 void** device, void* feature_level, void** immediate_context) {
+EXPORT HRESULT D3D11CreateDevice(
+    void* adapter, const uint64_t driver_type, const HMODULE software, const UINT flags, const void* p_feature_levels,
+    const UINT feature_levels, const UINT sdk_version, void** device, void* feature_level, void** immediate_context
+) {
     static auto func = [] {
         return reinterpret_cast<decltype(&D3D11CreateDevice)>(
-            GetProcAddress(process::LoadSysLib("d3d11.dll"), "D3D11CreateDevice"));
+            GetProcAddress(process::LoadSysLib("d3d11.dll"), "D3D11CreateDevice")
+        );
     }();
 
-    return func(adapter, driver_type, software, flags, p_feature_levels, feature_levels, sdk_version, device,
-                feature_level, immediate_context);
+    return func(
+        adapter,
+        driver_type,
+        software,
+        flags,
+        p_feature_levels,
+        feature_levels,
+        sdk_version,
+        device,
+        feature_level,
+        immediate_context
+    );
 }
 #endif
 
@@ -217,4 +249,5 @@ EXPORT void SyncCLI(cli::clisync::CliSyncData* data) {
 
 ADD_INJECTED_SYSTEM(
     detours, "detours", inject::PRIORITY_DETOURS, []() { PathDetours(inject::PRE_INIT); },
-    []() { PathDetours(inject::POST_INIT); });
+    []() { PathDetours(inject::POST_INIT); }
+);

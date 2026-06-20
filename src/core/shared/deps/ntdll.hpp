@@ -30,11 +30,11 @@ namespace deps::ntdll {
         NTSTATUS(NTAPI* ZwContinue)(PCONTEXT Context, BOOLEAN TestAlert);
         LONG(NTAPI* NtSuspendProcess)(IN HANDLE ProcessHandle);
         LONG(NTAPI* NtResumeProcess)(IN HANDLE ProcessHandle);
-        NTSTATUS(NTAPI* NtCreateThreadEx)(_Out_ PHANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess,
-                                          _In_opt_ LPVOID ObjectAttributes, _In_ HANDLE ProcessHandle,
-                                          _In_ LPVOID StartRoutine, _In_opt_ uintptr_t Argument, _In_ ULONG CreateFlags,
-                                          _In_ SIZE_T ZeroBits, _In_ SIZE_T StackSize, _In_ SIZE_T MaximumStackSize,
-                                          _In_opt_ LPVOID AttributeList);
+        NTSTATUS(NTAPI* NtCreateThreadEx)(
+            _Out_ PHANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess, _In_opt_ LPVOID ObjectAttributes,
+            _In_ HANDLE ProcessHandle, _In_ LPVOID StartRoutine, _In_opt_ uintptr_t Argument, _In_ ULONG CreateFlags,
+            _In_ SIZE_T ZeroBits, _In_ SIZE_T StackSize, _In_ SIZE_T MaximumStackSize, _In_opt_ LPVOID AttributeList
+        );
 
         /*
          * Get the ndll instance
@@ -48,14 +48,24 @@ namespace deps::ntdll {
 
     inline LONG NtResumeProcess(IN HANDLE ProcessHandle) { return NtDll::GetInstance().NtResumeProcess(ProcessHandle); }
 
-    inline NTSTATUS NtCreateThreadEx(_Out_ PHANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess,
-                                     _In_opt_ LPVOID ObjectAttributes, _In_ HANDLE ProcessHandle,
-                                     _In_ LPVOID StartRoutine, _In_opt_ uintptr_t Argument, _In_ ULONG CreateFlags,
-                                     _In_ SIZE_T ZeroBits, _In_ SIZE_T StackSize, _In_ SIZE_T MaximumStackSize,
-                                     _In_opt_ LPVOID AttributeList) {
-        return NtDll::GetInstance().NtCreateThreadEx(ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle,
-                                                     StartRoutine, Argument, CreateFlags, ZeroBits, StackSize,
-                                                     MaximumStackSize, AttributeList);
+    inline NTSTATUS NtCreateThreadEx(
+        _Out_ PHANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess, _In_opt_ LPVOID ObjectAttributes,
+        _In_ HANDLE ProcessHandle, _In_ LPVOID StartRoutine, _In_opt_ uintptr_t Argument, _In_ ULONG CreateFlags,
+        _In_ SIZE_T ZeroBits, _In_ SIZE_T StackSize, _In_ SIZE_T MaximumStackSize, _In_opt_ LPVOID AttributeList
+    ) {
+        return NtDll::GetInstance().NtCreateThreadEx(
+            ThreadHandle,
+            DesiredAccess,
+            ObjectAttributes,
+            ProcessHandle,
+            StartRoutine,
+            Argument,
+            CreateFlags,
+            ZeroBits,
+            StackSize,
+            MaximumStackSize,
+            AttributeList
+        );
     }
 
     inline NTSTATUS ZwContinue(PCONTEXT Context, BOOLEAN TestAlert) {

@@ -17,8 +17,9 @@ namespace compatibility::acts_acef {
         utils::compress::CompressionAlgorithm alg{ compatibility::acts_acef::DEFAULT_COMPRESS };
     };
 
-    AcefBlock CreateACEFBlockHash(std::map<std::string, std::unordered_set<uint64_t>>& dataMap,
-                                  core::memory_allocator::MemoryAllocator& alloc) {
+    AcefBlock CreateACEFBlockHash(
+        std::map<std::string, std::unordered_set<uint64_t>>& dataMap, core::memory_allocator::MemoryAllocator& alloc
+    ) {
         size_t blocksize{ 8 };
         size_t numHashes{};
         for (auto& [k, v] : dataMap) {
@@ -51,8 +52,10 @@ namespace compatibility::acts_acef {
         return acefblock;
     }
 
-    void CreateACEFOpCodeBlock(int plts, const tool::gsc::opcode::VmInfo* info,
-                               core::memory_allocator::MemoryAllocator& alloc, AcefBlock* blocks, size_t* count) {
+    void CreateACEFOpCodeBlock(
+        int plts, const tool::gsc::opcode::VmInfo* info, core::memory_allocator::MemoryAllocator& alloc,
+        AcefBlock* blocks, size_t* count
+    ) {
         *count = 0;
         for (auto& [plt, opcode] : info->opcodemappltlookup) {
             if (plts && !(plts & (1 << plt)))
@@ -81,13 +84,20 @@ namespace compatibility::acts_acef {
                 }
             }
 
-            LOG_INFO("Add VM {}/{} -> {} 0x{:x} opcode(s)", info->name, tool::gsc::opcode::PlatformName(plt),
-                     tool::gsc::opcode::VMIdFancyName(info->vmMagic), numopcodes);
+            LOG_INFO(
+                "Add VM {}/{} -> {} 0x{:x} opcode(s)",
+                info->name,
+                tool::gsc::opcode::PlatformName(plt),
+                tool::gsc::opcode::VMIdFancyName(info->vmMagic),
+                numopcodes
+            );
         }
     }
 
-    void CompressACEFBlock(AcefBlock* blocks, size_t blocksCount, utils::compress::CompressionAlgorithm alg,
-                           const std::filesystem::path& outFile) {
+    void CompressACEFBlock(
+        AcefBlock* blocks, size_t blocksCount, utils::compress::CompressionAlgorithm alg,
+        const std::filesystem::path& outFile
+    ) {
         AcefHeader header{};
         header.magic = ACEF_MAGIC;
         header.version = ACEF_VERSION_LATEST;
@@ -135,8 +145,12 @@ namespace compatibility::acts_acef {
             utils::WriteValue(data, &blockHeader, sizeof(blockHeader));
             utils::WriteValue(data, tmpCompressed.data(), sizeCompressed);
 
-            LOG_DEBUG("add new block at h=0x{:x}:len=0x{:x} -> tlen=0x{:x}", blockHeader.checkLoc, data.size() - oldLen,
-                      sizeCompressed + sizeof(blockHeader));
+            LOG_DEBUG(
+                "add new block at h=0x{:x}:len=0x{:x} -> tlen=0x{:x}",
+                blockHeader.checkLoc,
+                data.size() - oldLen,
+                sizeCompressed + sizeof(blockHeader)
+            );
 
             header.decompressedSize += (uint32_t)block.size;
             header.compressedSize += (uint32_t)sizeCompressed;
@@ -151,9 +165,13 @@ namespace compatibility::acts_acef {
             throw std::runtime_error(std::format("Can't write file {}", outFile.string()));
         }
 
-        LOG_INFO("done in {} {}B -> {}B ({}% saved)", outFile.string(), utils::FancyNumber(header.decompressedSize),
-                 utils::FancyNumber(header.compressedSize),
-                 100 - (int64_t)(100 * header.compressedSize / header.decompressedSize));
+        LOG_INFO(
+            "done in {} {}B -> {}B ({}% saved)",
+            outFile.string(),
+            utils::FancyNumber(header.decompressedSize),
+            utils::FancyNumber(header.compressedSize),
+            100 - (int64_t)(100 * header.compressedSize / header.decompressedSize)
+        );
     }
 
     int acts_build_acef(int argc, const char* argv[]) {

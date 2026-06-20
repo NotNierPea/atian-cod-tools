@@ -138,7 +138,8 @@ namespace utils::data {
         constexpr size_t compBufferSize = 0x10000;
 
         void compress_test() {
-            utils::compress::CompressionAlgorithm algs[]{ utils::compress::COMP_LZ4, utils::compress::COMP_ZLIB,
+            utils::compress::CompressionAlgorithm algs[]{ utils::compress::COMP_LZ4,
+                                                          utils::compress::COMP_ZLIB,
                                                           utils::compress::COMP_NONE };
 
             for (utils::compress::CompressionAlgorithm alg : algs) {
@@ -154,13 +155,16 @@ namespace utils::data {
 
                 ASSERT_VAL(std::format("Can't decompress buffer {}", alg), dret >= 0);
 
-                ASSERT_VAL(std::format("Bad decompress {}", alg),
-                           !std::memcmp(buff.get(), decompBuff.get(), compBufferSize));
+                ASSERT_VAL(
+                    std::format("Bad decompress {}", alg),
+                    !std::memcmp(buff.get(), decompBuff.get(), compBufferSize)
+                );
             }
         }
 
         void unk_decompress_test() {
-            utils::compress::CompressionAlgorithm algs[]{ utils::compress::COMP_NONE, utils::compress::COMP_LZ4,
+            utils::compress::CompressionAlgorithm algs[]{ utils::compress::COMP_NONE,
+                                                          utils::compress::COMP_LZ4,
                                                           utils::compress::COMP_ZLIB };
 
             for (utils::compress::CompressionAlgorithm alg : algs) {
@@ -177,8 +181,10 @@ namespace utils::data {
                 ASSERT_VAL(std::format("Can't decompress buffer {}", alg), dret >= 0);
 
                 ASSERT_EQ(std::format("Bad decompress size {}", alg), compBufferSize, decompBuff.size());
-                ASSERT_VAL(std::format("Bad decompress {}", alg),
-                           !std::memcmp(buff.get(), decompBuff.data(), compBufferSize));
+                ASSERT_VAL(
+                    std::format("Bad decompress {}", alg),
+                    !std::memcmp(buff.get(), decompBuff.data(), compBufferSize)
+                );
             }
         }
 

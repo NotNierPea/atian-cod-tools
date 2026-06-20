@@ -52,10 +52,14 @@ namespace {
             json.WriteFieldValueXString("unk30", asset->unk30);
             json.WriteFieldValueXString("unk38", asset->unk38);
 
-            json.WriteFieldValueString("unk40",
-                                       std::format("{} {} {}", asset->unk40[0], asset->unk40[1], asset->unk40[2]));
-            json.WriteFieldValueString("unk4c",
-                                       std::format("{} {} {}", asset->unk4c[0], asset->unk4c[1], asset->unk4c[2]));
+            json.WriteFieldValueString(
+                "unk40",
+                std::format("{} {} {}", asset->unk40[0], asset->unk40[1], asset->unk40[2])
+            );
+            json.WriteFieldValueString(
+                "unk4c",
+                std::format("{} {} {}", asset->unk4c[0], asset->unk4c[1], asset->unk4c[2])
+            );
             json.WriteFieldValueNumber(0x34e5be4982c1723, asset->unk_34e5be4982c1723);
 
             if (opt.testDump) {
@@ -70,8 +74,11 @@ namespace {
                 for (size_t i = 0; i < asset->spawnsCount; i++) {
                     json.BeginObject();
                     json.WriteFieldValueUnknown("unk0", asset->spawns[i].unk0);
-                    json.WriteFieldValueXAsset("settings", bo6::T10HashAssetType::T10H_ASSET_PLAYERSPAWNSETTINGS,
-                                               asset->spawns[i].settings);
+                    json.WriteFieldValueXAsset(
+                        "settings",
+                        bo6::T10HashAssetType::T10H_ASSET_PLAYERSPAWNSETTINGS,
+                        asset->spawns[i].settings
+                    );
                     json.EndObject();
                 }
                 json.EndArray();

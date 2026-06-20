@@ -36,12 +36,16 @@ void HashTableWidget::LoadFile(const QString& path) {
 
     if (path.endsWith(".wni", Qt::CaseInsensitive)) {
         deps::scobalula::wni::ReadWNIFile(
-            path.toStdString(), [this](uint64_t hash, const char* str) { hashMap.emplace_back(hash, str); },
-            [this](size_t len) -> void* { return alloc.Alloc<byte>(len); });
+            path.toStdString(),
+            [this](uint64_t hash, const char* str) { hashMap.emplace_back(hash, str); },
+            [this](size_t len) -> void* { return alloc.Alloc<byte>(len); }
+        );
     } else if (path.endsWith(".cdb", Qt::CaseInsensitive)) {
         deps::dzporter::cdb::ReadCDBFile(
-            path.toStdString(), [this](uint64_t hash, const char* str) { hashMap.emplace_back(hash, str); },
-            [this](size_t len) -> void* { return alloc.Alloc<byte>(len); });
+            path.toStdString(),
+            [this](uint64_t hash, const char* str) { hashMap.emplace_back(hash, str); },
+            [this](size_t len) -> void* { return alloc.Alloc<byte>(len); }
+        );
     }
 
     setWindowTitle(QString("%1 - %2 hash(es)").arg(path).arg(hashMap.size()));

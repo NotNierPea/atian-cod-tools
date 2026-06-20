@@ -206,8 +206,8 @@ namespace hook::library {
      * @param name name
      * @return matches
      */
-    std::vector<ScanResult> ScanLibrary(void* hmod, const char* pattern, bool single = false,
-                                        const char* name = nullptr);
+    std::vector<ScanResult>
+    ScanLibrary(void* hmod, const char* pattern, bool single = false, const char* name = nullptr);
 
     /*
      * Scan the memory to find a string
@@ -217,8 +217,8 @@ namespace hook::library {
      * @param name name
      * @return matches
      */
-    std::vector<ScanResult> ScanLibraryString(void* hmod, const char* pattern, bool single = false,
-                                              const char* name = nullptr);
+    std::vector<ScanResult>
+    ScanLibraryString(void* hmod, const char* pattern, bool single = false, const char* name = nullptr);
 
     /*
      * Scan the memory to find data
@@ -262,8 +262,9 @@ namespace hook::library {
             : hmod(system ? platform::LoadSystemShared(name, flags) : platform::LoadShared(name, flags)) {}
 
         Library(const std::filesystem::path& name, bool system = false, int32_t flags = 0)
-            : hmod(system ? platform::LoadSystemShared(name.string(), flags)
-                          : platform::LoadShared(name.string(), flags)) {}
+            : hmod(
+                  system ? platform::LoadSystemShared(name.string(), flags) : platform::LoadShared(name.string(), flags)
+              ) {}
 
         Library(const Library& other) : hmod(other.hmod) {}
 
@@ -314,8 +315,8 @@ namespace hook::library {
 
         platform::ModuleInformation& ModuleInformation() const { return platform::ModuleInformationTmp(hmod); }
 
-        inline std::vector<ScanResult> Scan(const char* pattern, bool single = false,
-                                            const char* name = nullptr) const {
+        inline std::vector<ScanResult>
+        Scan(const char* pattern, bool single = false, const char* name = nullptr) const {
             return ScanLibrary(hmod, pattern, single, name);
         }
 
@@ -391,8 +392,8 @@ namespace hook::library {
             return FindAnyScan(name, args...);
         }
 
-        inline std::vector<ScanResult> ScanString(const char* str, bool single = false,
-                                                  const char* name = nullptr) const {
+        inline std::vector<ScanResult>
+        ScanString(const char* str, bool single = false, const char* name = nullptr) const {
             return ScanLibraryString(hmod, str, single, name);
         }
 
@@ -429,12 +430,16 @@ namespace hook::library {
             auto res = ScanNumber(val);
 
             if (res.empty()) {
-                throw std::runtime_error(name ? utils::va(actssec("Can't find number %s"), name)
-                                              : utils::va(actssec("Can't find number %lld"), val));
+                throw std::runtime_error(
+                    name ? utils::va(actssec("Can't find number %s"), name)
+                         : utils::va(actssec("Can't find number %lld"), val)
+                );
             }
             if (res.size() != 1) {
-                throw std::runtime_error(name ? utils::va(actssec("Too many finds for number %s"), name)
-                                              : utils::va(actssec("Too many finds for number %lld"), val));
+                throw std::runtime_error(
+                    name ? utils::va(actssec("Too many finds for number %s"), name)
+                         : utils::va(actssec("Too many finds for number %lld"), val)
+                );
             }
 
             return res[0];
@@ -445,8 +450,10 @@ namespace hook::library {
             auto res = ScanNumber(val, true);
 
             if (res.empty()) {
-                throw std::runtime_error(name ? utils::va(actssec("Can't find number %s"), name)
-                                              : utils::va(actssec("Can't find number %lld"), val));
+                throw std::runtime_error(
+                    name ? utils::va(actssec("Can't find number %s"), name)
+                         : utils::va(actssec("Can't find number %lld"), val)
+                );
             }
 
             return res[0];

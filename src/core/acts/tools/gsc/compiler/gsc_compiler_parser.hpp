@@ -9,8 +9,8 @@ namespace tool::gsc::compiler {
     std::string ParseString(TerminalNode* term, size_t start = 0);
 
     bool ParseFieldNode(ParseTree* exp, gscParser& parser, CompileObject& obj, FunctionObject& fobj);
-    bool ParseExpressionNode(ParseTree* exp, gscParser& parser, CompileObject& obj, FunctionObject& fobj,
-                             bool expressVal);
+    bool
+    ParseExpressionNode(ParseTree* exp, gscParser& parser, CompileObject& obj, FunctionObject& fobj, bool expressVal);
     bool ParseClassDef(RuleContext* func, gscParser& parser, CompileObject& obj);
     FunctionObject* ParseFunction(RuleContext* func, gscParser& parser, CompileObject& obj, byte forceFlags = 0);
     bool ParsePrecache(RuleContext* prec, gscParser& parser, CompileObject& obj);

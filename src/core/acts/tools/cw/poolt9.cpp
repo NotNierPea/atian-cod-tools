@@ -373,8 +373,9 @@ namespace {
         DDLHashTable hashTable;
     };
 
-    void ReadDDLStruct(Process& proc, std::ostream& defout, DDLDef& def, uintptr_t entry,
-                       std::unordered_set<uint64_t>& nextindexes) {
+    void ReadDDLStruct(
+        Process& proc, std::ostream& defout, DDLDef& def, uintptr_t entry, std::unordered_set<uint64_t>& nextindexes
+    ) {
         DDLStruct stct{};
         if (!proc.ReadMemory(&stct, entry, sizeof(stct))) {
             defout << "<error reading struct entry>\n";
@@ -388,8 +389,9 @@ namespace {
             defout << "<error reading members entry>\n";
         } else {
             // sort members because they don't match the internal structure (they match the hashmap)
-            std::sort(&members[0], &members[stct.memberCount],
-                      [](const DDLMember& e1, const DDLMember& e2) { return e1.offset < e2.offset; });
+            std::sort(&members[0], &members[stct.memberCount], [](const DDLMember& e1, const DDLMember& e2) {
+                return e1.offset < e2.offset;
+            });
 
             int64_t currentShift = 0;
             for (size_t i = 0; i < stct.memberCount; i++) {
@@ -417,8 +419,11 @@ namespace {
                 bool addSize = false;
                 if (mbm.type == DDL_STRUCT_TYPE) {
                     DDLStruct substct{};
-                    if (!proc.ReadMemory(&substct, def.structList + mbm.externalIndex * sizeof(substct),
-                                         sizeof(substct))) {
+                    if (!proc.ReadMemory(
+                            &substct,
+                            def.structList + mbm.externalIndex * sizeof(substct),
+                            sizeof(substct)
+                        )) {
                         defout << "<error reading sub struct entry>\n";
                         return;
                     }
@@ -426,8 +431,11 @@ namespace {
                     nextindexes.insert(utils::CatLocated(0, mbm.externalIndex));
                 } else if (mbm.type == DDL_ENUM_TYPE) {
                     DDLEnum subenum{};
-                    if (!proc.ReadMemory(&subenum, def.enumList + mbm.externalIndex * sizeof(subenum),
-                                         sizeof(subenum))) {
+                    if (!proc.ReadMemory(
+                            &subenum,
+                            def.enumList + mbm.externalIndex * sizeof(subenum),
+                            sizeof(subenum)
+                        )) {
                         defout << "<error reading sub enum entry>\n";
                         return;
                     }
@@ -745,8 +753,10 @@ namespace {
         }
     }
 
-    bool ReadSBObject(Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr,
-                      std::unordered_set<std::string>& strings) {
+    bool ReadSBObject(
+        Process& proc, std::ostream& defout, int depth, const SB_ObjectsArray& arr,
+        std::unordered_set<std::string>& strings
+    ) {
 
         if (!arr.sbObjectCount && !arr.sbSubCount) {
             defout << "{}";
@@ -992,8 +1002,11 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
             }
 
             for (size_t i = 0; i < e.rowCount; i++) {
-                if (!proc.ReadMemory(&cell[0], e.values + sizeof(cell[0]) * e.columnCount * i,
-                                     sizeof(cell[0]) * e.columnCount)) {
+                if (!proc.ReadMemory(
+                        &cell[0],
+                        e.values + sizeof(cell[0]) * e.columnCount * i,
+                        sizeof(cell[0]) * e.columnCount
+                    )) {
                     std::cerr << "can't read cells for " << dumpbuff << "\n";
                     out.close();
                     continue;
@@ -1285,8 +1298,13 @@ int cw::pool::pooltool(Process& proc, int argc, const char* argv[]) {
                 continue;
             }
 
-            tool::pool::WriteHex(defout, entry.pool + entry.itemSize * i, &raw[0] + (entry.itemSize * i),
-                                 entry.itemSize, proc);
+            tool::pool::WriteHex(
+                defout,
+                entry.pool + entry.itemSize * i,
+                &raw[0] + (entry.itemSize * i),
+                entry.itemSize,
+                proc
+            );
 
             defout.close();
         }
@@ -1471,8 +1489,11 @@ namespace {
 
             auto entries = std::make_unique<BGPoolEntry[]>(info[i].allocItems);
 
-            if (!proc.ReadMemory(&entries[0], pool + sizeof(entries[0]) * info[i].startIndex,
-                                 sizeof(entries[0]) * info[i].allocItems)) {
+            if (!proc.ReadMemory(
+                    &entries[0],
+                    pool + sizeof(entries[0]) * info[i].startIndex,
+                    sizeof(entries[0]) * info[i].allocItems
+                )) {
                 std::cerr << "Can't read cache entries\n";
                 break;
             }
@@ -1513,15 +1534,18 @@ namespace {
     }
 
     using namespace cw::pool;
-    ADD_TOOL(dpcw, "cw", " [input=pool_name] (output=pool_id)", "Black Ops Cold War dump pool", L"BlackOpsColdWar.exe",
-             pooltool);
+    ADD_TOOL(
+        dpcw, "cw", " [input=pool_name] (output=pool_id)", "Black Ops Cold War dump pool", L"BlackOpsColdWar.exe",
+        pooltool
+    );
     ADD_TOOL(wpscw, "cw", "", "write pooled scripts (cw)", L"BlackOpsColdWar.exe", dumppoolcw);
     ADD_TOOL(dpncw, "cw", "", "dump pool names (cw)", L"BlackOpsColdWar.exe", dpnamescw);
     ADD_TOOL(dfuncscw, "cw", "", "dump function names (cw)", L"BlackOpsColdWar.exe", dfuncscw);
     ADD_TOOL(dcfuncscw, "cw", "", "dump cmd names (cw)", L"BlackOpsColdWar.exe", dcfuncscw);
     ADD_TOOL(dbgcw, "cw", " [inst]", "dbg (cw)", L"BlackOpsColdWar.exe", dbgcw);
     ADD_TOOL(injectcw, "cw", " (script) (target) (replace)", "inject script (cw)", L"BlackOpsColdWar.exe", injectcw);
-    ADD_TOOL(injectcwalpha, "cw", " (script) (target) (replace)", "inject script (cw alpha)", L"COD2020.exe",
-             injectcwalpha);
+    ADD_TOOL(
+        injectcwalpha, "cw", " (script) (target) (replace)", "inject script (cw alpha)", L"COD2020.exe", injectcwalpha
+    );
     ADD_TOOL(dbgpcw, "cw", "", "dump bg pool (cw)", L"BlackOpsColdWar.exe", dbgp);
 } // namespace

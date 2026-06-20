@@ -6,7 +6,8 @@
 #include <QFileDialog>
 
 namespace {
-    const char* defaultHooks[]{ "scripts\\zm_common\\load.gsc", "scripts\\mp_common\\bb.gsc",
+    const char* defaultHooks[]{ "scripts\\zm_common\\load.gsc",
+                                "scripts\\mp_common\\bb.gsc",
                                 "scripts\\core_common\\load_shared.gsc" };
 }
 
@@ -27,8 +28,12 @@ GscInjectorWidget::GscInjectorWidget(QWidget* parent) : QWidget(parent) {
     ui.hookBox->setEditable(true);
 
     connect(ui.gsccPathButton, &QPushButton::clicked, this, [this]() {
-        QString path = QFileDialog::getOpenFileName(this, tr("Compiled GSC File"), QString(),
-                                                    tr("Compiled GSC file (*.gscc *.cscc);;All Files (*.*)"));
+        QString path = QFileDialog::getOpenFileName(
+            this,
+            tr("Compiled GSC File"),
+            QString(),
+            tr("Compiled GSC file (*.gscc *.cscc);;All Files (*.*)")
+        );
         if (!path.isEmpty()) {
             ui.gsccPathEdit->setText(path);
         }
@@ -53,10 +58,12 @@ GscInjectorWidget::GscInjectorWidget(QWidget* parent) : QWidget(parent) {
         QByteArray ps4Ip{ ui.ps4IpEdit->text().toUtf8() };
 
         ui.logLabel->setText(
-            ActsAPIGscInjection_InjectPS4(gscPath.constData(), hookPath.constData(), ps4Ip.constData()));
+            ActsAPIGscInjection_InjectPS4(gscPath.constData(), hookPath.constData(), ps4Ip.constData())
+        );
     });
-    connect(ui.patchEEButton, &QPushButton::clicked, this,
-            [this]() { ui.logLabel->setText(ActsAPIGscInjection_PatchEE()); });
+    connect(ui.patchEEButton, &QPushButton::clicked, this, [this]() {
+        ui.logLabel->setText(ActsAPIGscInjection_PatchEE());
+    });
 
     cfgUiInjectorPath.OnUpdate(this, [this] { UpdateConfig(); });
     cfgUiInjectorHook.OnUpdate(this, [this] { UpdateConfig(); });

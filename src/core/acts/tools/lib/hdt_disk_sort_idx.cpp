@@ -236,16 +236,26 @@ namespace {
             bitY.Load(buff, *this);
 
             if (seqY.GetNumEntries() != bitY.GetNumEntries()) {
-                throw std::runtime_error(std::format("Invalid num entries for seqy/bity: {} != {}",
-                                                     seqY.GetNumEntries(), bitY.GetNumEntries()));
+                throw std::runtime_error(
+                    std::format(
+                        "Invalid num entries for seqy/bity: {} != {}",
+                        seqY.GetNumEntries(),
+                        bitY.GetNumEntries()
+                    )
+                );
             }
 
             seqZ.Load(buff, *this);
             bitZ.Load(buff, *this);
 
             if (seqY.GetNumEntries() != bitY.GetNumEntries()) {
-                throw std::runtime_error(std::format("Invalid num entries for seqy/bity: {} != {}",
-                                                     seqY.GetNumEntries(), bitY.GetNumEntries()));
+                throw std::runtime_error(
+                    std::format(
+                        "Invalid num entries for seqy/bity: {} != {}",
+                        seqY.GetNumEntries(),
+                        bitY.GetNumEntries()
+                    )
+                );
             }
             LOG_DEBUG("remaining: 0x{:x}", buff.Remaining());
         }
@@ -308,8 +318,15 @@ namespace {
         if (numwords > 0) {
             size_t addBytes{ (add - 1) / 8 + 1 };
             size_t toRead{ (numwords - 1) * 8 };
-            LOG_TRACE("Loaded SequenceLog with {} bits (max 0x{:x}), {} entries ({} words) {}/{}", numBits,
-                      (1ull << numBits), numentries, numwords, add, toRead);
+            LOG_TRACE(
+                "Loaded SequenceLog with {} bits (max 0x{:x}), {} entries ({} words) {}/{}",
+                numBits,
+                (1ull << numBits),
+                numentries,
+                numwords,
+                add,
+                toRead
+            );
             if (addBytes) {
                 data = buff.ReadPtr<byte>(datasize = toRead);
                 byte* lastBytes{ buff.ReadPtr<byte>(addBytes) };

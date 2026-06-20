@@ -51,8 +51,11 @@ int mods::ee::CustomEET9(Process& proc, std::string& notif) {
 
         auto exports = std::make_unique<tool::gsc::T8GSCExport[]>(header.exports_count);
 
-        if (!proc.ReadMemory(&exports[0], entry.buffer + header.exports_tables,
-                             sizeof(tool::gsc::T8GSCExport) * header.exports_count)) {
+        if (!proc.ReadMemory(
+                &exports[0],
+                entry.buffer + header.exports_tables,
+                sizeof(tool::gsc::T8GSCExport) * header.exports_count
+            )) {
             notif = ("Can't read header");
             return tool::BASIC_ERROR;
         }

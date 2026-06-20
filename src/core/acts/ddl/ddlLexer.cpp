@@ -12,9 +12,11 @@ using namespace antlr4;
 namespace {
 
     struct DdlLexerStaticData final {
-        DdlLexerStaticData(std::vector<std::string> ruleNames, std::vector<std::string> channelNames,
-                           std::vector<std::string> modeNames, std::vector<std::string> literalNames,
-                           std::vector<std::string> symbolicNames)
+        DdlLexerStaticData(
+            std::vector<std::string> ruleNames, std::vector<std::string> channelNames,
+            std::vector<std::string> modeNames, std::vector<std::string> literalNames,
+            std::vector<std::string> symbolicNames
+        )
             : ruleNames(std::move(ruleNames)), channelNames(std::move(channelNames)), modeNames(std::move(modeNames)),
               literalNames(std::move(literalNames)), symbolicNames(std::move(symbolicNames)),
               vocabulary(this->literalNames, this->symbolicNames) {}
@@ -56,13 +58,32 @@ namespace {
                                       "T__10",     "T__11",     "T__12",    "T__13",    "T__14",
                                       "T__15",     "T__16",     "T__17",    "NEWLINE",  "WHITESPACE",
                                       "INTEGER10", "INTEGER16", "INTEGER8", "INTEGER2", "IDENTIFIER" },
-            std::vector<std::string>{ "DEFAULT_TOKEN_CHANNEL", "HIDDEN" }, std::vector<std::string>{ "DEFAULT_MODE" },
-            std::vector<std::string>{ "", "'version'", "'{'", "'}'", "'['", "']'", "'enum'", "','", "';'", "'struct'",
-                                      "'uint'", "'int'", "':'", "'string'", "'('", "')'", "'fixed'", "'<'", "'>'" },
+            std::vector<std::string>{ "DEFAULT_TOKEN_CHANNEL", "HIDDEN" },
+            std::vector<std::string>{ "DEFAULT_MODE" },
+            std::vector<std::string>{ "",
+                                      "'version'",
+                                      "'{'",
+                                      "'}'",
+                                      "'['",
+                                      "']'",
+                                      "'enum'",
+                                      "','",
+                                      "';'",
+                                      "'struct'",
+                                      "'uint'",
+                                      "'int'",
+                                      "':'",
+                                      "'string'",
+                                      "'('",
+                                      "')'",
+                                      "'fixed'",
+                                      "'<'",
+                                      "'>'" },
             std::vector<std::string>{
                 "", "",        "",           "",          "",          "",         "",         "",          "",
                 "", "",        "",           "",          "",          "",         "",         "",          "",
-                "", "NEWLINE", "WHITESPACE", "INTEGER10", "INTEGER16", "INTEGER8", "INTEGER2", "IDENTIFIER" });
+                "", "NEWLINE", "WHITESPACE", "INTEGER10", "INTEGER16", "INTEGER8", "INTEGER2", "IDENTIFIER" }
+        );
         static const int32_t serializedATNSegment[] = {
             4,   0,   25,  176, 6,   -1,  2,   0,   7,  0,   2,   1,   7,   1,   2,   2,   7,   2,   2,   3,   7,
             3,   2,   4,   7,   4,   2,   5,   7,   5,  2,   6,   7,   6,   2,   7,   7,   7,   2,   8,   7,   8,
@@ -144,7 +165,9 @@ namespace {
             173, 1,   6,   0,   0
         };
         staticData->serializedATN = antlr4::atn::SerializedATNView(
-            serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
+            serializedATNSegment,
+            sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0])
+        );
 
         antlr4::atn::ATNDeserializer deserializer;
         staticData->atn = deserializer.deserialize(staticData->serializedATN);
@@ -161,9 +184,12 @@ namespace {
 
 ddlLexer::ddlLexer(CharStream* input) : Lexer(input) {
     ddlLexer::initialize();
-    _interpreter =
-        new atn::LexerATNSimulator(this, *ddllexerLexerStaticData->atn, ddllexerLexerStaticData->decisionToDFA,
-                                   ddllexerLexerStaticData->sharedContextCache);
+    _interpreter = new atn::LexerATNSimulator(
+        this,
+        *ddllexerLexerStaticData->atn,
+        ddllexerLexerStaticData->decisionToDFA,
+        ddllexerLexerStaticData->sharedContextCache
+    );
 }
 
 ddlLexer::~ddlLexer() { delete _interpreter; }

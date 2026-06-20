@@ -74,8 +74,9 @@ namespace {
             json.WriteFieldNameString("unk30");
             json.BeginArray();
             if (data.unk30 && data.unk30_count) {
-                auto unk30{ proc.ReadMemoryArrayEx<uint64_t>(reinterpret_cast<uintptr_t>(data.unk30),
-                                                             data.unk30_count) };
+                auto unk30{
+                    proc.ReadMemoryArrayEx<uint64_t>(reinterpret_cast<uintptr_t>(data.unk30), data.unk30_count)
+                };
                 for (size_t i = 0; i < data.unk30_count; i++) {
                     json.WriteValueHash(unk30[i]);
                 }

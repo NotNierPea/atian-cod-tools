@@ -403,8 +403,14 @@ int bo3::pool::t7dp(Process& proc, int argc, const char* argv[]) {
         LOG_INFO("id,name,alloc,count,size");
         for (size_t i = 0; i < T7_ASSET_TYPE_COUNT; i++) {
             T7XAssetPool& p{ pool[i] };
-            LOG_INFO("{},{},0x{:x},0x{:x},0x{:x}", i, T7XAssetName((T7XAssetType)i), p.itemAllocCount, p.itemCount,
-                     p.itemSize);
+            LOG_INFO(
+                "{},{},0x{:x},0x{:x},0x{:x}",
+                i,
+                T7XAssetName((T7XAssetType)i),
+                p.itemAllocCount,
+                p.itemCount,
+                p.itemSize
+            );
         }
 
         return tool::OK;
@@ -977,6 +983,7 @@ namespace {
     }
 
     ADD_TOOL(dpt7, "bo3", " [pool]", "Black Ops 3 dump pool", L"BlackOps3.exe", t7dp);
-    ADD_TOOL(wpst7, "bo3", " [output=scriptparsetree_t7]", "dump pooled scripts (bo3)", L"BlackOps3.exe",
-             t7poolscripts);
+    ADD_TOOL(
+        wpst7, "bo3", " [output=scriptparsetree_t7]", "dump pooled scripts (bo3)", L"BlackOps3.exe", t7poolscripts
+    );
 } // namespace

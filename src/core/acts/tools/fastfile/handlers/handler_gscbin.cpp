@@ -7,11 +7,13 @@ namespace {
     class GscBinFFHandler : public fastfile::FFHandler {
       public:
         GscBinFFHandler()
-            : fastfile::FFHandler("gscbin", "GSC Scripts GSCBIN based",
-                                  compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {}
+            : fastfile::FFHandler(
+                  "gscbin", "GSC Scripts GSCBIN based", compatibility::scobalula::csi::CordycepGame::CG_NULL, true
+              ) {}
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& decReader,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& decReader, fastfile::FastFileContext& ctx
+        ) override {
             struct ScriptFile {
                 uint64_t name;
                 int32_t compressedLen;

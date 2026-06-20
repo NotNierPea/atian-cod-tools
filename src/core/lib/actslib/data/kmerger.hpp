@@ -12,8 +12,8 @@ namespace actslib::data {
       public:
         virtual void CreateDefaultChunk(const std::filesystem::path& chunkLocation) = 0;
         virtual bool CreateChunk(const std::filesystem::path& chunkLocation) = 0;
-        virtual void MergeChunks(const std::vector<KMergerChunk>& chunks,
-                                 const std::filesystem::path& chunkLocation) = 0;
+        virtual void
+        MergeChunks(const std::vector<KMergerChunk>& chunks, const std::filesystem::path& chunkLocation) = 0;
     };
 
     struct KMergerTask {
@@ -188,7 +188,8 @@ namespace actslib::data {
                     // create a new merge task if this one is required
                     that.PushMergeTaskIfRequired(true);
                 },
-                sync);
+                sync
+            );
         }
 
         void PushCreateChunkTask(bool sync) {
@@ -220,7 +221,8 @@ namespace actslib::data {
                     // maybe we need to merge the new chunk
                     that.PushMergeTaskIfRequired(true);
                 },
-                sync);
+                sync
+            );
         }
 
         void HandleWorker() {

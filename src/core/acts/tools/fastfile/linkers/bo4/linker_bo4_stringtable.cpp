@@ -76,8 +76,9 @@ namespace {
             table.values = (StringTableVar*)fastfile::linker::memory::POINTER_NEXT;
 
             if (table.rowCount) {
-                std::unique_ptr<StringTableCellType[]> types{ std::make_unique<StringTableCellType[]>(
-                    table.columnCount) };
+                std::unique_ptr<StringTableCellType[]> types{
+                    std::make_unique<StringTableCellType[]>(table.columnCount)
+                };
 
                 // load the type header
                 for (size_t i = 0; i < table.columnCount; i++) {

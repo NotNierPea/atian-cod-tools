@@ -6,8 +6,10 @@
 #include <tools/bo4/pool.hpp>
 
 namespace tool::cordycep::dump {
-    int ForEachEntry(Process& proc, compatibility::scobalula::csi::XAssetPool64& pool,
-                     std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)> func) {
+    int ForEachEntry(
+        Process& proc, compatibility::scobalula::csi::XAssetPool64& pool,
+        std::function<bool(const compatibility::scobalula::csi::XAsset64& asset, size_t count)> func
+    ) {
         uintptr_t curr = pool.Root;
 
         compatibility::scobalula::csi::XAsset64 asset{};
@@ -57,8 +59,11 @@ namespace tool::cordycep::dump {
 
             LOG_INFO("Loaded");
 
-            LOG_INFO("Game Id .. {} (0x{:x})", compatibility::scobalula::csi::CordycepGameName(cordycep.gameId),
-                     (uint64_t)cordycep.gameId);
+            LOG_INFO(
+                "Game Id .. {} (0x{:x})",
+                compatibility::scobalula::csi::CordycepGameName(cordycep.gameId),
+                (uint64_t)cordycep.gameId
+            );
             LOG_INFO("Pools .... 0x{:x}", cordycep.poolsAddress);
             LOG_INFO("Strings .. 0x{:x}", cordycep.stringsAddress);
             LOG_INFO("Game dir . '{}'", cordycep.gameDir);
@@ -88,8 +93,11 @@ namespace tool::cordycep::dump {
             }
 
             if (!dump) {
-                LOG_ERROR("Can't find dumper for game {} (0x{:x})", CordycepGameName(cordycep.gameId),
-                          (uint64_t)cordycep.gameId);
+                LOG_ERROR(
+                    "Can't find dumper for game {} (0x{:x})",
+                    CordycepGameName(cordycep.gameId),
+                    (uint64_t)cordycep.gameId
+                );
                 return tool::BASIC_ERROR;
             }
 
@@ -120,23 +128,31 @@ namespace tool::cordycep::dump {
             }
 
             if (!dump) {
-                LOG_ERROR("Can't find dumper for game {} (0x{:x})", CordycepGameName(cordycep.gameId),
-                          (uint64_t)cordycep.gameId);
+                LOG_ERROR(
+                    "Can't find dumper for game {} (0x{:x})",
+                    CordycepGameName(cordycep.gameId),
+                    (uint64_t)cordycep.gameId
+                );
                 return tool::BASIC_ERROR;
             }
 
-            auto pools = proc.ReadMemoryArrayEx<compatibility::scobalula::csi::XAssetPool64>(cordycep.poolsAddress,
-                                                                                             dump->numpools);
+            auto pools = proc.ReadMemoryArrayEx<compatibility::scobalula::csi::XAssetPool64>(
+                cordycep.poolsAddress,
+                dump->numpools
+            );
 
             utils::OutFileCE out{ argv[2], true };
 
             out << "type,id";
             for (size_t i = 0; i < dump->numpools; i++) {
                 cordycep::dump::ForEachEntry(
-                    proc, pools[i], [&out](const compatibility::scobalula::csi::XAsset64& asset, size_t count) -> bool {
+                    proc,
+                    pools[i],
+                    [&out](const compatibility::scobalula::csi::XAsset64& asset, size_t count) -> bool {
                         out << "\n0x" << std::hex << asset.Type << ",#" << hashutils::ExtractTmp("hash", asset.ID);
                         return true;
-                    });
+                    }
+                );
             }
 
             return tool::OK;

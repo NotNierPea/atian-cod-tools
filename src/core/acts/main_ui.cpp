@@ -23,8 +23,9 @@ namespace tool::ui {
         }
 
         const wchar_t* id = tci.pszText && *tci.pszText ? tci.pszText : nullptr;
-        std::wstring winName{ std::format(L"Atian tools {} UI{}{}", core::actsinfo::VERSIONW, (id ? L" - " : L""),
-                                          (id ? id : L"")) };
+        std::wstring winName{
+            std::format(L"Atian tools {} UI{}{}", core::actsinfo::VERSIONW, (id ? L" - " : L""), (id ? id : L""))
+        };
         SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)winName.c_str());
     }
 
@@ -36,8 +37,15 @@ namespace tool::ui {
             SetWindowPos(hwndTab, NULL, 0, 0, x, y, SWP_SHOWWINDOW);
             GetClientRect(hwndTab, &rec);
             TabCtrl_AdjustRect(hwndTab, FALSE, &rec);
-            SetWindowPos(hwndDisplay, NULL, rec.left, rec.top, rec.right - rec.left, rec.bottom - rec.top,
-                         SWP_SHOWWINDOW);
+            SetWindowPos(
+                hwndDisplay,
+                NULL,
+                rec.left,
+                rec.top,
+                rec.right - rec.left,
+                rec.bottom - rec.top,
+                SWP_SHOWWINDOW
+            );
             auto& page = pages[TabCtrl_GetCurSel(hwndTab)];
             if (page->m_resize) {
                 page->m_resize(x, y);
@@ -55,13 +63,41 @@ namespace tool::ui {
     }
 
     static HFONT titlefont = []() -> HFONT {
-        return CreateFontA(40, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
-                           DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Tahoma");
+        return CreateFontA(
+            40,
+            0,
+            0,
+            0,
+            FW_BOLD,
+            FALSE,
+            FALSE,
+            FALSE,
+            ANSI_CHARSET,
+            OUT_TT_PRECIS,
+            CLIP_DEFAULT_PRECIS,
+            DEFAULT_QUALITY,
+            DEFAULT_PITCH | FF_DONTCARE,
+            "Tahoma"
+        );
     }();
 
     static HFONT deffont = []() -> HFONT {
-        return CreateFontA(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS,
-                           CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Tahoma");
+        return CreateFontA(
+            20,
+            0,
+            0,
+            0,
+            FW_DONTCARE,
+            FALSE,
+            FALSE,
+            FALSE,
+            ANSI_CHARSET,
+            OUT_TT_PRECIS,
+            CLIP_DEFAULT_PRECIS,
+            DEFAULT_QUALITY,
+            DEFAULT_PITCH | FF_DONTCARE,
+            "Tahoma"
+        );
     }();
 
     bool CALLBACK SetFont(HWND child, LPARAM font) {
@@ -84,8 +120,20 @@ namespace tool::ui {
         }
 
         auto* item = pages[TabCtrl_GetCurSel(hwndTab)];
-        hwndDisplay = CreateWindowExW(0, PAGE_CLASS_NAME, L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 0, 0, 0, 0,
-                                      hwndTab, NULL, hinst, NULL);
+        hwndDisplay = CreateWindowExW(
+            0,
+            PAGE_CLASS_NAME,
+            L"",
+            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
+            0,
+            0,
+            0,
+            0,
+            hwndTab,
+            NULL,
+            hinst,
+            NULL
+        );
         UpdateWindowName();
         // render page
         item->m_func(hwndDisplay, hinst);
@@ -139,20 +187,41 @@ namespace tool::ui {
         RegisterClassW(&wc2);
 
         // Create the window.
-        actsWindow.hwnd =
-            CreateWindowExW(0, CLASS_NAME, L"Menu",
-                            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_SIZEBOX | WS_MAXIMIZEBOX,
+        actsWindow.hwnd = CreateWindowExW(
+            0,
+            CLASS_NAME,
+            L"Menu",
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_SIZEBOX | WS_MAXIMIZEBOX,
 
-                            // Size and position
-                            CW_USEDEFAULT, CW_USEDEFAULT, actsWindow.width, actsWindow.height,
+            // Size and position
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            actsWindow.width,
+            actsWindow.height,
 
-                            NULL, NULL, hInstance, NULL);
+            NULL,
+            NULL,
+            hInstance,
+            NULL
+        );
 
         if (actsWindow.hwnd == NULL) {
             return -1;
         }
-        actsWindow.hwndLogTab = CreateWindowExW(0, L"STATIC", L"", SS_CENTER | WS_CHILD | WS_VISIBLE, 0, 0, 0, 0,
-                                                actsWindow.hwnd, NULL, hInstance, NULL);
+        actsWindow.hwndLogTab = CreateWindowExW(
+            0,
+            L"STATIC",
+            L"",
+            SS_CENTER | WS_CHILD | WS_VISIBLE,
+            0,
+            0,
+            0,
+            0,
+            actsWindow.hwnd,
+            NULL,
+            hInstance,
+            NULL
+        );
 
         if (actsWindow.hwndLogTab == NULL) {
             return -1;
@@ -169,9 +238,20 @@ namespace tool::ui {
         DestroyWindow(actsWindow.hwndLogTab);
         actsWindow.hwndLogTab = NULL;
 
-        actsWindow.hwndTab =
-            CreateWindowExW(0, WC_TABCONTROLW, L"", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE, 0, 0, actsWindow.width,
-                            actsWindow.height, actsWindow.hwnd, NULL, hInstance, NULL);
+        actsWindow.hwndTab = CreateWindowExW(
+            0,
+            WC_TABCONTROLW,
+            L"",
+            WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
+            0,
+            0,
+            actsWindow.width,
+            actsWindow.height,
+            actsWindow.hwnd,
+            NULL,
+            hInstance,
+            NULL
+        );
 
         if (actsWindow.hwndTab == NULL) {
             DestroyWindow(actsWindow.hwnd);

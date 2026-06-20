@@ -324,8 +324,10 @@ namespace {
     };
     static_assert(sizeof(SndAssetBankHeader) == 0x800);
 
-    size_t CreateSabFile(const std::filesystem::path& path, const std::string& lang, const std::string& plt,
-                         std::vector<SndAssetBankEntryBo4>& entries) {
+    size_t CreateSabFile(
+        const std::filesystem::path& path, const std::string& lang, const std::string& plt,
+        std::vector<SndAssetBankEntryBo4>& entries
+    ) {
 
         std::vector<byte> sab{};
 
@@ -364,10 +366,16 @@ namespace {
 
         // std::snprintf(sndHeader.zoneName, sizeof(sndHeader.zoneName), "%s", zone.c_str()); // no set?
         //  cut at 2 chars fr,al,en,...
-        std::memcpy(sndHeader.language, lang.data(),
-                    lang.size() < sizeof(sndHeader.language) ? lang.size() + 1 : sizeof(sndHeader.language));
-        std::memcpy(sndHeader.platform, plt.data(),
-                    plt.size() < sizeof(sndHeader.platform) ? plt.size() + 1 : sizeof(sndHeader.platform));
+        std::memcpy(
+            sndHeader.language,
+            lang.data(),
+            lang.size() < sizeof(sndHeader.language) ? lang.size() + 1 : sizeof(sndHeader.language)
+        );
+        std::memcpy(
+            sndHeader.platform,
+            plt.data(),
+            plt.size() < sizeof(sndHeader.platform) ? plt.size() + 1 : sizeof(sndHeader.platform)
+        );
 
         sndHeader.entrySize = 0x30;
         sndHeader.checksumSize = 0x10;
@@ -615,6 +623,7 @@ namespace {
         }
     };
 
-    utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> impl{ GetWorkers(), XAssetType::ASSET_TYPE_SOUND,
+    utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> impl{ GetWorkers(),
+                                                                      XAssetType::ASSET_TYPE_SOUND,
                                                                       true };
 } // namespace

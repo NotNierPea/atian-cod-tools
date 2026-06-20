@@ -248,14 +248,30 @@ namespace {
                     json.EndArray();
                 }
             };
-            DumpArray("reactiveVFXPackage1", bo6::T10H_ASSET_REACTIVEVFXPACKAGE, (void**)asset->reactiveVFXPackage1,
-                      asset->reactiveVFXPackage1Count);
-            DumpArray("reactiveVFXPackage2", bo6::T10H_ASSET_REACTIVEVFXPACKAGE, (void**)asset->reactiveVFXPackage2,
-                      asset->reactiveVFXPackage2Count);
-            DumpArray("reactiveAudioPackage1", bo6::T10H_ASSET_REACTIVEAUDIOPACKAGE,
-                      (void**)asset->reactiveAudioPackage1, asset->reactiveAudioPackage1Count);
-            DumpArray("reactiveAudioPackage2", bo6::T10H_ASSET_REACTIVEAUDIOPACKAGE,
-                      (void**)asset->reactiveAudioPackage2, asset->reactiveAudioPackage2Count);
+            DumpArray(
+                "reactiveVFXPackage1",
+                bo6::T10H_ASSET_REACTIVEVFXPACKAGE,
+                (void**)asset->reactiveVFXPackage1,
+                asset->reactiveVFXPackage1Count
+            );
+            DumpArray(
+                "reactiveVFXPackage2",
+                bo6::T10H_ASSET_REACTIVEVFXPACKAGE,
+                (void**)asset->reactiveVFXPackage2,
+                asset->reactiveVFXPackage2Count
+            );
+            DumpArray(
+                "reactiveAudioPackage1",
+                bo6::T10H_ASSET_REACTIVEAUDIOPACKAGE,
+                (void**)asset->reactiveAudioPackage1,
+                asset->reactiveAudioPackage1Count
+            );
+            DumpArray(
+                "reactiveAudioPackage2",
+                bo6::T10H_ASSET_REACTIVEAUDIOPACKAGE,
+                (void**)asset->reactiveAudioPackage2,
+                asset->reactiveAudioPackage2Count
+            );
             json.EndObject();
 
             std::filesystem::path outFile{ opt.m_output / gamePath / "source" / "tables" / "operator" / "reactive" /

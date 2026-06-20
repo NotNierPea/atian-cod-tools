@@ -18,7 +18,8 @@ namespace {
         core::xassetpools = pool.GetRelative<int32_t, cw::XAssetPool*>(3);
         core::DecryptString = hook::library::QueryScanContainerSinglePtr<decltype(core::DecryptString)>(
             "DecryptString",
-            "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 48 8B D9 0F B6");
+            "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 48 8B D9 0F B6"
+        );
     }
 } // namespace
 REGISTER_SYSTEM(core, Init, PostInit);

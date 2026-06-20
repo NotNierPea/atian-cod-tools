@@ -473,8 +473,9 @@ namespace {
                         oldVal = *(uint8_t*)ptr;
                     }
 
-                    const tool::gsc::opcode::OPCodeInfo* origin{ tool::gsc::opcode::LookupOpCode(nfo->vmMagic, pltIn,
-                                                                                                 oldVal) };
+                    const tool::gsc::opcode::OPCodeInfo* origin{
+                        tool::gsc::opcode::LookupOpCode(nfo->vmMagic, pltIn, oldVal)
+                    };
 
                     if (!origin || !origin->m_id) {
                         LOG_ERROR("Can't find origin value for opcodes 0x{:x}", oldVal);
@@ -523,12 +524,19 @@ namespace {
 
 ADD_TOOL(gscfreq, "gsc", "", "Frequency of opcodes", gscfreq);
 ADD_TOOL(vtdr, "dev_gsc", " [dump] [maxOpCodes] [output]", "Dump opcode vtable", vtabledumread);
-ADD_TOOL(vtdrexe, "dev_gsc", " [exe] [maxOpCodes] [loc] [output] (start)", "Dump opcode vtable from exe",
-         vtabledumreadexe);
-ADD_TOOL(vtdrexemt, "dev_gsc", " [exe] [maxOpCodes] [loc] [locmt] [output] (start)",
-         "Dump opcode vtable from exe with mt", vtabledumreadexemt);
-ADD_TOOL(vtdrrebase, "dev_gsc", " [maxOpCodes] [output] [ori] [dest] [vm] [plt] (start)",
-         "Dump opcode vtable from exe and rebase them", vtdrrebase);
-ADD_TOOL(vtdrexerebase, "dev_gsc", " [exe] [maxOpCodes] [output] [locori] [locdest] [vm] [plt] (start)",
-         "Dump opcode vtable from exe and rebase them", vtdrexerebase);
+ADD_TOOL(
+    vtdrexe, "dev_gsc", " [exe] [maxOpCodes] [loc] [output] (start)", "Dump opcode vtable from exe", vtabledumreadexe
+);
+ADD_TOOL(
+    vtdrexemt, "dev_gsc", " [exe] [maxOpCodes] [loc] [locmt] [output] (start)", "Dump opcode vtable from exe with mt",
+    vtabledumreadexemt
+);
+ADD_TOOL(
+    vtdrrebase, "dev_gsc", " [maxOpCodes] [output] [ori] [dest] [vm] [plt] (start)",
+    "Dump opcode vtable from exe and rebase them", vtdrrebase
+);
+ADD_TOOL(
+    vtdrexerebase, "dev_gsc", " [exe] [maxOpCodes] [output] [locori] [locdest] [vm] [plt] (start)",
+    "Dump opcode vtable from exe and rebase them", vtdrexerebase
+);
 ADD_TOOL(gscmap, "gsc", " [in] [out] [origin] [dest]", "Map a script from one platform to another", gscmap);

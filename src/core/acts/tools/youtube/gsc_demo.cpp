@@ -93,8 +93,12 @@ namespace {
         for (size_t i = 0; i < obj->exports_count; i++) {
             T8GSCExport& exp = exports[i];
 
-            LOG_INFO("function {}::{}({})", hashutils::ExtractTmp("namespace", exp.name_space),
-                     hashutils::ExtractTmp("function", exp.name), (int)exp.param_count);
+            LOG_INFO(
+                "function {}::{}({})",
+                hashutils::ExtractTmp("namespace", exp.name_space),
+                hashutils::ExtractTmp("function", exp.name),
+                (int)exp.param_count
+            );
 
             std::ostringstream ss;
 
@@ -114,8 +118,11 @@ namespace {
         for (size_t i = 0; i < obj->imports_count; i++) {
             T8GSCImport& imp = *imports;
 
-            LOG_INFO("import {}::{}", hashutils::ExtractTmp("namespace", imp.import_namespace),
-                     hashutils::ExtractTmp("function", imp.name));
+            LOG_INFO(
+                "import {}::{}",
+                hashutils::ExtractTmp("namespace", imp.import_namespace),
+                hashutils::ExtractTmp("function", imp.name)
+            );
 
             uint32_t* addr = (uint32_t*)(imports + 1);
 

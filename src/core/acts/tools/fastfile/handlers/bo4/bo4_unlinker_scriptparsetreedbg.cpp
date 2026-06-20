@@ -29,8 +29,12 @@ namespace {
             if (spt->gdb && spt->gdbLen) {
                 std::filesystem::path outFile{ outDir / std::format("{}gdbc", filename) };
                 std::filesystem::create_directories(outFile.parent_path());
-                LOG_OPT_INFO("Dump scriptparsetreedbg gdb {} 0x{:x} ({})", outFile.string(), spt->gdbLen,
-                             hashutils::ExtractTmpScript(spt->name));
+                LOG_OPT_INFO(
+                    "Dump scriptparsetreedbg gdb {} 0x{:x} ({})",
+                    outFile.string(),
+                    spt->gdbLen,
+                    hashutils::ExtractTmpScript(spt->name)
+                );
                 if (!utils::WriteFile(outFile, spt->gdb, spt->gdbLen)) {
                     LOG_ERROR("Error when dumping {}", outFile.string());
                     return;

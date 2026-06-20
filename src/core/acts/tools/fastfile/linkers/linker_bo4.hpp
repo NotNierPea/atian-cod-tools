@@ -71,32 +71,39 @@ namespace fastfile::linker::bo4 {
         uint64_t HashPathName(const std::filesystem::path& path);
 
         void LinkAsset(XAssetType type, const char* id, void*& ref, bool addAsset, BO4FFContext* ff);
-        size_t LinkAssetArray(XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg, void** array,
-                              size_t count, BO4FFContext* ff);
+        size_t LinkAssetArray(
+            XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg, void** array, size_t count,
+            BO4FFContext* ff
+        );
         void AddXHash(const char* val, XHash& value);
         size_t AddXHashArray(const char* id, core::config::RapidJsonGeneric& cfg, XHash* array, size_t count);
         void AddScrString(const char* val, ScrString_t& value, BO4FFContext& ff);
-        size_t AddScrStringArray(const char* id, core::config::RapidJsonGeneric& cfg, ScrString_t* array, size_t count,
-                                 BO4FFContext& ff);
+        size_t AddScrStringArray(
+            const char* id, core::config::RapidJsonGeneric& cfg, ScrString_t* array, size_t count, BO4FFContext& ff
+        );
 
         template<typename T>
         void LinkAsset(XAssetType type, const char* id, T*& ref, bool addAsset, BO4FFContext* ff) {
             LinkAsset(type, id, *(void**)&ref, addAsset, ff);
         }
         template<typename T>
-        size_t LinkAssetArray(XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg, T** ref,
-                              size_t count, BO4FFContext* ff) {
+        size_t LinkAssetArray(
+            XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg, T** ref, size_t count,
+            BO4FFContext* ff
+        ) {
             return LinkAssetArray(type, id, cfg, (void**)ref, count, ff);
         }
         template<typename T, size_t count>
-        size_t LinkAssetArray(XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg, T* (&ref)[count],
-                              BO4FFContext* ff) {
+        size_t LinkAssetArray(
+            XAssetType type, const char* id, core::config::RapidJsonGeneric& cfg, T* (&ref)[count], BO4FFContext* ff
+        ) {
             T** p{ ref };
             return LinkAssetArray(type, id, cfg, (void**)p, count, ff);
         }
         template<size_t count>
-        size_t AddScrStringArray(const char* id, core::config::RapidJsonGeneric& cfg, ScrString_t (&array)[count],
-                                 BO4FFContext& ff) {
+        size_t AddScrStringArray(
+            const char* id, core::config::RapidJsonGeneric& cfg, ScrString_t (&array)[count], BO4FFContext& ff
+        ) {
             return AddScrStringArray(id, cfg, array, count, ff);
         }
         inline void AddXHash(const std::string& str, XHash& value) { AddXHash(str.data(), value); }

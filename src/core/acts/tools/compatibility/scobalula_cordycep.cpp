@@ -70,7 +70,8 @@ namespace {
         return tool::OK;
     }
 
-    ADD_TOOL(cordycep_mapper, "dev", "[cordycep install] [handler]", "Use cordycep config to do stuff",
-             cordycep_mapper);
+    ADD_TOOL(
+        cordycep_mapper, "dev", "[cordycep install] [handler]", "Use cordycep config to do stuff", cordycep_mapper
+    );
 
 } // namespace

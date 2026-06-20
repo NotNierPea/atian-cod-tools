@@ -252,8 +252,10 @@ ActsAPIGsc_OpCode LookupOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform, A
         ->info->LookupOpCode((tool::gsc::opcode::Platform)platform, opcode)
         ->m_id;
 }
-ActsStatus GetOpCode(ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCode opcode, bool modTool,
-                     ActsAPIGsc_OpCodeValue* outValue) {
+ActsStatus GetOpCode(
+    ActsHandle gscvm, ActsAPIGsc_Platform platform, ActsAPIGsc_OpCode opcode, bool modTool,
+    ActsAPIGsc_OpCodeValue* outValue
+) {
     auto [ok, op] = ((ActsAPIGsc_GscVm*)gscvm)
                         ->info->GetOpCodeId((tool::gsc::opcode::Platform)platform, (tool::gsc::OPCode)opcode, modTool);
     if (!ok) {

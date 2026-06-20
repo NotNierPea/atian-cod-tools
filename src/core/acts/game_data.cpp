@@ -145,8 +145,12 @@ namespace acts::game_data {
         res.single = cfg.GetBool(std::format("{}.{}.single", parent, id), false);
         res.offset = (size_t)cfg.GetInteger(std::format("{}.{}.offset", parent, id), 0);
         res.postOffset = cfg.GetInteger(std::format("{}.{}.postOffset", parent, id), 0);
-        res.type = cfg.GetEnumVal<ScanType>(std::format("{}.{}.type", parent, id), scanTypeInfo,
-                                            ACTS_ARRAYSIZE(scanTypeInfo), SCT_UNKNOWN);
+        res.type = cfg.GetEnumVal<ScanType>(
+            std::format("{}.{}.type", parent, id),
+            scanTypeInfo,
+            ACTS_ARRAYSIZE(scanTypeInfo),
+            SCT_UNKNOWN
+        );
 
         if (res.path.empty()) {
             throw std::runtime_error(std::format("can't find scan path for {}::{}.{}", dirname, parent, id));
@@ -186,8 +190,12 @@ namespace acts::game_data {
                     std::vector<void*> ptr{ GetPointerArray(k.GetString(), BASE_PARENT) };
 
                     if (ptr.size()) {
-                        LOG_DEBUG("{} -> {}{}", k.GetString(), hook::library::CodePointer{ ptr[0] },
-                                  ptr.size() > 1 ? ", ..." : "");
+                        LOG_DEBUG(
+                            "{} -> {}{}",
+                            k.GetString(),
+                            hook::library::CodePointer{ ptr[0] },
+                            ptr.size() > 1 ? ", ..." : ""
+                        );
                     }
                 }
             }
@@ -204,8 +212,12 @@ namespace acts::game_data {
                         std::vector<void*> ptr{ GetPointerArray(k.GetString(), base.data()) };
 
                         if (ptr.size()) {
-                            LOG_DEBUG("{} -> {}{}", k.GetString(), hook::library::CodePointer{ ptr[0] },
-                                      ptr.size() > 1 ? ", ..." : "");
+                            LOG_DEBUG(
+                                "{} -> {}{}",
+                                k.GetString(),
+                                hook::library::CodePointer{ ptr[0] },
+                                ptr.size() > 1 ? ", ..." : ""
+                            );
                         }
                     }
                 }
@@ -241,8 +253,11 @@ namespace acts::game_data {
                     continue;
                 }
 
-                CTypeType type{ core::config::ParseEnumValue<CTypeType>(typeIt->value.GetString(), cTypeInfo,
-                                                                        ACTS_ARRAYSIZE(cTypeInfo)) };
+                CTypeType type{ core::config::ParseEnumValue<CTypeType>(
+                    typeIt->value.GetString(),
+                    cTypeInfo,
+                    ACTS_ARRAYSIZE(cTypeInfo)
+                ) };
 
                 if (!type) {
                     LOG_WARNING("Invalid ctype in {}: bad type for {}", dirname, name);
@@ -330,8 +345,12 @@ namespace acts::game_data {
                     continue; // no found
                 }
 
-                builder.AddAddressEx(array[0], data.name.data(), "SN_CHECK | SN_NOWARN",
-                                     data.ctype.empty() ? nullptr : data.ctype.data());
+                builder.AddAddressEx(
+                    array[0],
+                    data.name.data(),
+                    "SN_CHECK | SN_NOWARN",
+                    data.ctype.empty() ? nullptr : data.ctype.data()
+                );
             } catch (std::runtime_error& err) {
                 LOG_ERROR("error with {}: {}", data.name, err.what());
             }
@@ -391,8 +410,8 @@ char* ActsAPIData_DecryptString(char* str) { return acts::decryptutils::DecryptS
 
 bool ActsAPIData_LoadDecryptModule(char* path) { return acts::decryptutils::LoadDecrypt(path); }
 
-ActsHandle ActsAPIData_NewGameData(const char* dirname, bool loadGameModule, const char* customGameModule,
-                                   bool loadDecrypt) {
+ActsHandle
+ActsAPIData_NewGameData(const char* dirname, bool loadGameModule, const char* customGameModule, bool loadDecrypt) {
     try {
         return ActsAPIImpl_New<GameDataImplInternal>(dirname, loadGameModule, customGameModule, loadDecrypt);
     } catch (std::exception& e) {

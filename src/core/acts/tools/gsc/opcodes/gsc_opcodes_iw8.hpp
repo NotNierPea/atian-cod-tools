@@ -199,11 +199,15 @@ namespace tool::gsc::opcode {
                 OP_count = 0xBE,
             };
 
-            VmInfo* gscbin = RegisterVM(VMI_IW_BIN_MW19, "Call of Duty: Modern Warfare (2019)", "iw8", "mw19",
-                                        VmFlags::VMF_GSCBIN | VmFlags::VMF_NO_MAGIC | VmFlags::VMF_VAR_ID |
-                                            VmFlags::VMF_NO_PARAM_FLAGS | VmFlags::VMF_IW_LIKE | VmFlags::VMF_IW_CALLS |
-                                            VmFlags::VMF_CALL_NO_PARAMS | VmFlags::VMF_FUNC_REF_24 |
-                                            VmFlags::VMF_FOREACH_IW | VmFlags::VMF_SWITCH_32);
+            VmInfo* gscbin = RegisterVM(
+                VMI_IW_BIN_MW19,
+                "Call of Duty: Modern Warfare (2019)",
+                "iw8",
+                "mw19",
+                VmFlags::VMF_GSCBIN | VmFlags::VMF_NO_MAGIC | VmFlags::VMF_VAR_ID | VmFlags::VMF_NO_PARAM_FLAGS |
+                    VmFlags::VMF_IW_LIKE | VmFlags::VMF_IW_CALLS | VmFlags::VMF_CALL_NO_PARAMS |
+                    VmFlags::VMF_FUNC_REF_24 | VmFlags::VMF_FOREACH_IW | VmFlags::VMF_SWITCH_32
+            );
             gscbin->RegisterVmName("iw8", "mw19", "modernwarfare19");
             gscbin->AddPlatform(PLATFORM_PC);
             // GetOpaqueStringCount / Scr_InitStringConstants =  useReducedSpGoldLimits ? 0xE2C0 : 0x1472F
@@ -265,8 +269,11 @@ namespace tool::gsc::opcode {
             gscbin->RegisterOpCode(PLATFORM_PC, OPCODE_GSCBIN_SKIP_4, 0x35);
             gscbin->RegisterOpCode(PLATFORM_PC, OPCODE_GetSelfObject, 0x36);
             gscbin->RegisterOpCode(PLATFORM_PC, OPCODE_IW_GetGame, 0x37);
-            gscbin->RegisterOpCode(PLATFORM_PC, OPCODE_IW_SetLevelFieldVariableToken,
-                                   0x38); // OP_SetLevelFieldVariableField
+            gscbin->RegisterOpCode(
+                PLATFORM_PC,
+                OPCODE_IW_SetLevelFieldVariableToken,
+                0x38
+            ); // OP_SetLevelFieldVariableField
             gscbin->RegisterOpCode(PLATFORM_PC, OPCODE_EvalArray, 0x39);
             gscbin->RegisterOpCode(PLATFORM_PC, OPCODE_GetSelf, 0x3A);
             gscbin->RegisterOpCode(PLATFORM_PC, OPCODE_End, 0x3B);

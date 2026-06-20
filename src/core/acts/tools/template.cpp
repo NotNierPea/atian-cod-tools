@@ -36,8 +36,16 @@ namespace {
                 const char* example{ tmpl.GetCString(std::format("params.{}.example", param), "") };
                 const char* defaultVal{ tmpl.GetCString(std::format("params.{}.default", param), "") };
 
-                LOG_INFO("   --{} (value) : {}{}{}{}{}{}", param, desc, *example ? " example: " : "", example,
-                         *defaultVal ? " default value: " : "", defaultVal, required ? " (required)" : "");
+                LOG_INFO(
+                    "   --{} (value) : {}{}{}{}{}{}",
+                    param,
+                    desc,
+                    *example ? " example: " : "",
+                    example,
+                    *defaultVal ? " default value: " : "",
+                    defaultVal,
+                    required ? " (required)" : ""
+                );
             }
         }
     }
@@ -134,7 +142,8 @@ namespace {
         if (!params.IsNull()) {
             if (!params.IsObject()) {
                 throw std::runtime_error(
-                    std::format("Invalid params type in {}: not an object", tmpl.configFile.string()));
+                    std::format("Invalid params type in {}: not an object", tmpl.configFile.string())
+                );
             }
             for (auto& [k, v] : params.GetObj()) {
                 const char* param{ k.GetString() };
@@ -144,8 +153,12 @@ namespace {
                 }
 
                 if (tmpl.GetBool(std::format("params.{}.required", param), true)) {
-                    LOG_ERROR("Missing parameter --{} (value), use type '{} help {}' for help", param, argv[1],
-                              argv[2]);
+                    LOG_ERROR(
+                        "Missing parameter --{} (value), use type '{} help {}' for help",
+                        param,
+                        argv[1],
+                        argv[2]
+                    );
                     err = true;
                     continue;
                 }
@@ -177,7 +190,8 @@ namespace {
                 outfile = d.GetString();
             } else {
                 throw std::runtime_error(
-                    std::format("Invalid file {} in {}: not a string", t.GetString(), tmpl.configFile.string()));
+                    std::format("Invalid file {} in {}: not a string", t.GetString(), tmpl.configFile.string())
+                );
             }
 
             std::filesystem::path out{ outBase / mstch::render(d.GetString(), context) };

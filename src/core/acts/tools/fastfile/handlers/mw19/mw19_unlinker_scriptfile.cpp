@@ -36,8 +36,9 @@ namespace {
                 } catch (...) {
                 }
                 if (id) {
-                    const char* nn{ tool::gsc::iw::GetOpaqueStringForVm(tool::gsc::opcode::VMI_IW_BIN_MW19, id,
-                                                                        false) };
+                    const char* nn{
+                        tool::gsc::iw::GetOpaqueStringForVm(tool::gsc::opcode::VMI_IW_BIN_MW19, id, false)
+                    };
                     if (nn) {
                         std::string_view nnv{ nn };
                         // for some reasons it doesn't work for some scripts

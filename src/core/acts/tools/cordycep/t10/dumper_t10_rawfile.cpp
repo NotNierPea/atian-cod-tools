@@ -54,8 +54,13 @@ namespace {
                 if (data.compressedLen) {
                     ubuff = std::make_unique<byte[]>(data.uncompressedLen + 1);
 
-                    int ret{ utils::compress::Decompress2(utils::compress::COMP_ZLIB, ubuff.get(),
-                                                          data.uncompressedLen + 1, buff.get(), readLen) };
+                    int ret{ utils::compress::Decompress2(
+                        utils::compress::COMP_ZLIB,
+                        ubuff.get(),
+                        data.uncompressedLen + 1,
+                        buff.get(),
+                        readLen
+                    ) };
                     if (ret < 0) {
                         LOG_ERROR("Can't decompress {}", loc.string());
                     } else {

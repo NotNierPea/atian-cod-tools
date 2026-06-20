@@ -14,9 +14,11 @@ namespace {
         ActsAPIFastFile_HandleHandler pHandle;
         ActsAPIFastFile_CleanupHandler pCleanup;
 
-        CustomFFHandler(ActsAPIFastFile_HandleHandler pHandle, ActsAPIFastFile_CleanupHandler pCleanup,
-                        ActsAPIFastFile_InitHandler pInit, void* ud, const char* name, const char* description,
-                        compatibility::scobalula::csi::CordycepGame game, bool noPatchOk = false)
+        CustomFFHandler(
+            ActsAPIFastFile_HandleHandler pHandle, ActsAPIFastFile_CleanupHandler pCleanup,
+            ActsAPIFastFile_InitHandler pInit, void* ud, const char* name, const char* description,
+            compatibility::scobalula::csi::CordycepGame game, bool noPatchOk = false
+        )
             : pHandle(pHandle), pCleanup(pCleanup), pInit(pInit), ud(ud),
               fastfile::FFHandler(name, description, game, noPatchOk) {}
 
@@ -40,13 +42,20 @@ namespace {
     };
 } // namespace
 
-void ActsAPIFastFile_RegisterCustomHandler(ActsAPIFastFile_InitHandler init, ActsAPIFastFile_HandleHandler handle,
-                                           ActsAPIFastFile_CleanupHandler cleanup, void* userdata, const char* name,
-                                           const char* description, ActsAPIFastFile_CordycepGame cordycepGame,
-                                           bool noPatchOk) {
+void ActsAPIFastFile_RegisterCustomHandler(
+    ActsAPIFastFile_InitHandler init, ActsAPIFastFile_HandleHandler handle, ActsAPIFastFile_CleanupHandler cleanup,
+    void* userdata, const char* name, const char* description, ActsAPIFastFile_CordycepGame cordycepGame, bool noPatchOk
+) {
     std::vector<fastfile::FFHandler*>& handlers{ fastfile::GetHandlers() };
 
     handlers.push_back(customHandlerAllocator.New<CustomFFHandler>(
-        handle, cleanup, init, userdata, name, description, (compatibility::scobalula::csi::CordycepGame)cordycepGame,
-        noPatchOk));
+        handle,
+        cleanup,
+        init,
+        userdata,
+        name,
+        description,
+        (compatibility::scobalula::csi::CordycepGame)cordycepGame,
+        noPatchOk
+    ));
 }

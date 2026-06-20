@@ -12,9 +12,11 @@ using namespace antlr4;
 namespace {
 
     struct AdlLexerStaticData final {
-        AdlLexerStaticData(std::vector<std::string> ruleNames, std::vector<std::string> channelNames,
-                           std::vector<std::string> modeNames, std::vector<std::string> literalNames,
-                           std::vector<std::string> symbolicNames)
+        AdlLexerStaticData(
+            std::vector<std::string> ruleNames, std::vector<std::string> channelNames,
+            std::vector<std::string> modeNames, std::vector<std::string> literalNames,
+            std::vector<std::string> symbolicNames
+        )
             : ruleNames(std::move(ruleNames)), channelNames(std::move(channelNames)), modeNames(std::move(modeNames)),
               literalNames(std::move(literalNames)), symbolicNames(std::move(symbolicNames)),
               vocabulary(this->literalNames, this->symbolicNames) {}
@@ -58,7 +60,8 @@ namespace {
                                       "T__24",     "T__25",    "T__26",    "T__27",      "T__28",      "T__29",
                                       "T__30",     "T__31",    "T__32",    "NEWLINE",    "WHITESPACE", "INTEGER10",
                                       "INTEGER16", "INTEGER8", "INTEGER2", "BOOL_VALUE", "IDENTIFIER", "STRING" },
-            std::vector<std::string>{ "DEFAULT_TOKEN_CHANNEL", "HIDDEN" }, std::vector<std::string>{ "DEFAULT_MODE" },
+            std::vector<std::string>{ "DEFAULT_TOKEN_CHANNEL", "HIDDEN" },
+            std::vector<std::string>{ "DEFAULT_MODE" },
             std::vector<std::string>{ "",
                                       "';'",
                                       "'#root'",
@@ -99,7 +102,8 @@ namespace {
                 "",           "",           "",        "",           "",          "",          "",         "",
                 "",           "",           "",        "",           "",          "",          "",         "",
                 "",           "",           "NEWLINE", "WHITESPACE", "INTEGER10", "INTEGER16", "INTEGER8", "INTEGER2",
-                "BOOL_VALUE", "IDENTIFIER", "STRING" });
+                "BOOL_VALUE", "IDENTIFIER", "STRING" }
+        );
         static const int32_t serializedATNSegment[] = {
             4,   0,   42,  305, 6,   -1,  2,   0,   7,   0,  2,   1,   7,   1,   2,   2,   7,   2,   2,   3,   7,
             3,   2,   4,   7,   4,   2,   5,   7,   5,   2,  6,   7,   6,   2,   7,   7,   7,   2,   8,   7,   8,
@@ -233,7 +237,9 @@ namespace {
             273, 285, 291, 298, 300, 1,   6,   0,   0
         };
         staticData->serializedATN = antlr4::atn::SerializedATNView(
-            serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
+            serializedATNSegment,
+            sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0])
+        );
 
         antlr4::atn::ATNDeserializer deserializer;
         staticData->atn = deserializer.deserialize(staticData->serializedATN);
@@ -250,9 +256,12 @@ namespace {
 
 adlLexer::adlLexer(CharStream* input) : Lexer(input) {
     adlLexer::initialize();
-    _interpreter =
-        new atn::LexerATNSimulator(this, *adllexerLexerStaticData->atn, adllexerLexerStaticData->decisionToDFA,
-                                   adllexerLexerStaticData->sharedContextCache);
+    _interpreter = new atn::LexerATNSimulator(
+        this,
+        *adllexerLexerStaticData->atn,
+        adllexerLexerStaticData->decisionToDFA,
+        adllexerLexerStaticData->sharedContextCache
+    );
 }
 
 adlLexer::~adlLexer() { delete _interpreter; }

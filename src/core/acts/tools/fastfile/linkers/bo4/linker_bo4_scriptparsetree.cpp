@@ -24,8 +24,10 @@ namespace {
             }
         }
 
-        static void AddGscDBGHeader(BO4LinkContext& ctx, std::vector<byte>& buffer, std::string& preproc,
-                                    std::vector<byte>& dbgbuffer, const std::filesystem::path& path) {
+        static void AddGscDBGHeader(
+            BO4LinkContext& ctx, std::vector<byte>& buffer, std::string& preproc, std::vector<byte>& dbgbuffer,
+            const std::filesystem::path& path
+        ) {
             BO4FFContext& dbgCtx{ ctx.GetFFContext("dbg_") };
 
             if (buffer.size() < sizeof(tool::gsc::T8GSCOBJ)) {
@@ -218,15 +220,19 @@ namespace {
                 if (ff.forcedServerScripts.size()) {
                     header.gscScripts = (XHash*)fastfile::linker::memory::POINTER_NEXT;
                     ff.data.Align(8);
-                    ff.data.WriteStream(ff.forcedServerScripts.data(),
-                                        ff.forcedServerScripts.size() * sizeof(ff.forcedServerScripts[0]));
+                    ff.data.WriteStream(
+                        ff.forcedServerScripts.data(),
+                        ff.forcedServerScripts.size() * sizeof(ff.forcedServerScripts[0])
+                    );
                 }
 
                 if (ff.forcedClientScripts.size()) {
                     header.cscScripts = (XHash*)fastfile::linker::memory::POINTER_NEXT;
                     ff.data.Align(8);
-                    ff.data.WriteStream(ff.forcedClientScripts.data(),
-                                        ff.forcedClientScripts.size() * sizeof(ff.forcedClientScripts[0]));
+                    ff.data.WriteStream(
+                        ff.forcedClientScripts.data(),
+                        ff.forcedClientScripts.size() * sizeof(ff.forcedClientScripts[0])
+                    );
                 }
                 ff.data.PopStream();
 

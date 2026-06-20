@@ -6,11 +6,14 @@ namespace {
     class LuaXHashFFHandler : public fastfile::FFHandler {
       public:
         LuaXHashFFHandler()
-            : fastfile::FFHandler("LuaXHash", "Dump lua ui scripts xhash based",
-                                  compatibility::scobalula::csi::CordycepGame::CG_NULL, true) {}
+            : fastfile::FFHandler(
+                  "LuaXHash", "Dump lua ui scripts xhash based", compatibility::scobalula::csi::CordycepGame::CG_NULL,
+                  true
+              ) {}
 
-        void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff,
-                    fastfile::FastFileContext& ctx) override {
+        void Handle(
+            fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& buff, fastfile::FastFileContext& ctx
+        ) override {
             // search lua file
             {
                 std::filesystem::path out{ opt.m_output / "luafile" };

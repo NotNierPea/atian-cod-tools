@@ -117,12 +117,18 @@ namespace acts::extension {
 
                     reader.Read(sourceWindow.get(), blockHeader.blockSize);
 
-                    int r{ utils::compress::Decompress2(compress, decomp, blockHeader.decompSize, sourceWindow.get(),
-                                                        blockHeader.blockSize) };
+                    int r{ utils::compress::Decompress2(
+                        compress,
+                        decomp,
+                        blockHeader.decompSize,
+                        sourceWindow.get(),
+                        blockHeader.blockSize
+                    ) };
 
                     if (r < 0) {
                         throw std::runtime_error(
-                            std::format("can't decompress block: {}", utils::compress::DecompressResultName(r)));
+                            std::format("can't decompress block: {}", utils::compress::DecompressResultName(r))
+                        );
                     }
 
                     // add data to registry

@@ -68,9 +68,18 @@ namespace {
         // PMemStack, int).text	0000000002E0CC10	00001573	00000808	0000004C R	.	.
         // ..B	T	.
 
-        void (*DB_LoadXFile)(char const* path, int file, void* buffer, char const* filename, void* assetlist,
-                             void* xblock, DB_Interrupt inter, byte* buf, PMemStack side, int flags) =
-            (decltype(DB_LoadXFile))(*mod)[0x2E0CC1];
+        void (*DB_LoadXFile)(
+            char const* path,
+            int file,
+            void* buffer,
+            char const* filename,
+            void* assetlist,
+            void* xblock,
+            DB_Interrupt inter,
+            byte* buf,
+            PMemStack side,
+            int flags
+        ) = (decltype(DB_LoadXFile))(*mod)[0x2E0CC1];
 
         return tool::OK;
     }

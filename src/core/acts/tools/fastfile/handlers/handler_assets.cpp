@@ -59,11 +59,13 @@ namespace fastfile::handlers::assets {
         class AssetListFFHandler : public FFHandler {
           public:
             AssetListFFHandler()
-                : fastfile::FFHandler("assets", "Extract assetlist data", compatibility::scobalula::csi::CG_NULL,
-                                      true) {}
+                : fastfile::FFHandler(
+                      "assets", "Extract assetlist data", compatibility::scobalula::csi::CG_NULL, true
+                  ) {}
 
-            void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                        fastfile::FastFileContext& ctx) override {
+            void Handle(
+                fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, fastfile::FastFileContext& ctx
+            ) override {
                 opt.GetGame(false, nullptr, true);
                 if (!opt.m_gameId) {
                     throw std::runtime_error("Missing gameId, set it with --gameId [g]");
@@ -172,8 +174,12 @@ namespace fastfile::handlers::assets {
                         for (size_t i = 0; i < gcx.list.assetsCount; i++) {
                             Asset* asset{ &gcx.list.assets[i] };
 
-                            UnlinkType(AssetGameRef(opt.m_gameId, opt.m_gameRevId, asset->type), opt, reader,
-                                       &asset->handle);
+                            UnlinkType(
+                                AssetGameRef(opt.m_gameId, opt.m_gameRevId, asset->type),
+                                opt,
+                                reader,
+                                &asset->handle
+                            );
                         }
 
                         for (auto& [k, v] : workers) {
@@ -185,8 +191,8 @@ namespace fastfile::handlers::assets {
         };
     } // namespace
 
-    bool UnlinkTypeRef(uint64_t ref, fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader,
-                       void** handle) {
+    bool
+    UnlinkTypeRef(uint64_t ref, fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& reader, void** handle) {
         if (!*handle) {
             return true;
         }

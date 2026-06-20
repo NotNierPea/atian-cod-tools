@@ -344,8 +344,10 @@ namespace {
                 json.WriteFieldValueNumber("aliasLpf", duck->aliasLpf);
 
                 if (duck->attenuation)
-                    json.WriteFieldValueString("attenuation",
-                                               utils::data::ArrayAsString(duck->attenuation, 64, " ", "", ""));
+                    json.WriteFieldValueString(
+                        "attenuation",
+                        utils::data::ArrayAsString(duck->attenuation, 64, " ", "", "")
+                    );
                 if (duck->filter)
                     json.WriteFieldValueString("filter", utils::data::ArrayAsString(duck->filter, 64, " ", "", ""));
                 if (duck->unk98)

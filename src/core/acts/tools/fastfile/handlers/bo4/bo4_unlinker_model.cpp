@@ -100,8 +100,11 @@ namespace {
 
             json.BeginObject();
             json.WriteFieldValueXHash("name", asset->name);
-            json.WriteFieldValueXAsset("physConstraints", games::bo4::pool::XAssetType::ASSET_TYPE_PHYSCONSTRAINTS,
-                                       asset->physConstraints);
+            json.WriteFieldValueXAsset(
+                "physConstraints",
+                games::bo4::pool::XAssetType::ASSET_TYPE_PHYSCONSTRAINTS,
+                asset->physConstraints
+            );
             json.WriteFieldValueNumber("numCosmeticBones", (int)asset->numCosmeticBones);
             json.WriteFieldValueNumber("unk146", (int)asset->unk146);
             json.WriteFieldValueNumber("unk148", (int)asset->unk148);
@@ -113,8 +116,12 @@ namespace {
             json.WriteFieldValueNumber("unk14e", (int)asset->unk14e);
             json.WriteFieldValueNumber("unk14f", (int)asset->unk14f);
 
-            json.WriteFieldValueXAssetArray("meshes", games::bo4::pool::XAssetType::ASSET_TYPE_XMODELMESH,
-                                            ACTS_ARRAYSIZE(asset->meshes), asset->meshes);
+            json.WriteFieldValueXAssetArray(
+                "meshes",
+                games::bo4::pool::XAssetType::ASSET_TYPE_XMODELMESH,
+                ACTS_ARRAYSIZE(asset->meshes),
+                asset->meshes
+            );
 
             json.WriteFieldNameString("bones");
             json.BeginArray();
@@ -134,10 +141,14 @@ namespace {
                 json.BeginObject();
                 json.WriteFieldValueXAsset("model", games::bo4::pool::XAssetType::ASSET_TYPE_XMODEL, sub->model);
                 json.WriteFieldValueScrString("boneName", sub->boneName);
-                json.WriteFieldValueString("translation",
-                                           std::format("({}, {}, {})", sub->trans[0], sub->trans[1], sub->trans[2]));
-                json.WriteFieldValueString("rotation",
-                                           std::format("({}, {}, {})", sub->rot[0], sub->rot[1], sub->rot[2]));
+                json.WriteFieldValueString(
+                    "translation",
+                    std::format("({}, {}, {})", sub->trans[0], sub->trans[1], sub->trans[2])
+                );
+                json.WriteFieldValueString(
+                    "rotation",
+                    std::format("({}, {}, {})", sub->rot[0], sub->rot[1], sub->rot[2])
+                );
                 json.EndObject();
             }
             json.EndArray();
@@ -149,8 +160,11 @@ namespace {
                 json.BeginArray();
                 for (size_t j = 0; j < mat->numMaterials; j++) {
                     json.BeginObject();
-                    json.WriteFieldValueXAsset("material", games::bo4::pool::XAssetType::ASSET_TYPE_MATERIAL,
-                                               mat->materials[j]);
+                    json.WriteFieldValueXAsset(
+                        "material",
+                        games::bo4::pool::XAssetType::ASSET_TYPE_MATERIAL,
+                        mat->materials[j]
+                    );
                     json.WriteFieldValueNumber("himipInvSqRadii", mat->himipInvSqRadii[j]);
                     json.EndObject();
                 }

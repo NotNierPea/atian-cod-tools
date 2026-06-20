@@ -166,8 +166,17 @@ namespace {
             glMatrixMode(GL_MODELVIEW);
             glLoadIdentity();
 
-            gluLookAt(cameraX, cameraY, cameraZ, cameraX + normalLookX, cameraY + normalLookY, cameraZ + normalLookZ, 0,
-                      1, 0);
+            gluLookAt(
+                cameraX,
+                cameraY,
+                cameraZ,
+                cameraX + normalLookX,
+                cameraY + normalLookY,
+                cameraZ + normalLookZ,
+                0,
+                1,
+                0
+            );
             // floor
             glBegin(GL_QUADS);
             glColor3f(0.2f, 0.2f, 0.2f);

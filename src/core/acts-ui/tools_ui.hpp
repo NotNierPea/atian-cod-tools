@@ -13,8 +13,10 @@ namespace ui3::tools {
         bool needsInitialization;
         QAction* action{ nullptr };
 
-        AbstractUITool(const char* id, const char* name, const char* path, const char* extensions = nullptr,
-                       bool allowDupe = false, bool needsInitialization = false)
+        AbstractUITool(
+            const char* id, const char* name, const char* path, const char* extensions = nullptr,
+            bool allowDupe = false, bool needsInitialization = false
+        )
             : path(path), name(name), extensions(extensions), allowDupe(allowDupe),
               needsInitialization(needsInitialization) {
             SetId(id);
@@ -36,8 +38,10 @@ namespace ui3::tools {
     template<typename WidgetType>
     class UITool : public AbstractUITool {
       public:
-        UITool(const char* id, const char* name, const char* path, const char* extensions = nullptr,
-               bool allowDupe = false, bool needsInitialization = false)
+        UITool(
+            const char* id, const char* name, const char* path, const char* extensions = nullptr,
+            bool allowDupe = false, bool needsInitialization = false
+        )
             : AbstractUITool(id, name, path, extensions, allowDupe, needsInitialization) {}
 
         void Activate() override { GetMainArea()->LoadToolUi<WidgetType>(allowDupe); }

@@ -20,7 +20,8 @@ namespace fastfile::flexible {
         }
         if (chunksCount > ACTS_ARRAYSIZE(chunks)) {
             throw std::runtime_error(
-                std::format("too many flexible data chunks 0x{:x} > 0x{:x}", chunksCount, ACTS_ARRAYSIZE(chunks)));
+                std::format("too many flexible data chunks 0x{:x} > 0x{:x}", chunksCount, ACTS_ARRAYSIZE(chunks))
+            );
         }
 
         FlexibleFastFileChunk* chunk{ chunks };
@@ -39,7 +40,8 @@ namespace fastfile::flexible {
 
             if (endData->magic != MAGIC_V2) {
                 throw std::runtime_error(
-                    std::format("invalid flexible data pre-signature magic: {:x} != {:x}", endData->magic, MAGIC_V2));
+                    std::format("invalid flexible data pre-signature magic: {:x} != {:x}", endData->magic, MAGIC_V2)
+                );
             }
 
             if (!secureInfo) {
@@ -76,13 +78,20 @@ namespace fastfile::flexible {
             sha256.getHash(endHash);
 
             if (std::memcmp(endHash, endData->hash, sizeof(endHash))) {
-                throw std::runtime_error(std::format("Invalid hash value: \n{}\n{}",
-                                                     utils::data::AsHex(endHash, sizeof(endHash)),
-                                                     utils::data::AsHex(endData->hash, sizeof(endData->hash))));
+                throw std::runtime_error(
+                    std::format(
+                        "Invalid hash value: \n{}\n{}",
+                        utils::data::AsHex(endHash, sizeof(endHash)),
+                        utils::data::AsHex(endData->hash, sizeof(endData->hash))
+                    )
+                );
             }
 
-            LOG_TRACE("flexible header sha256 hash validated {} at 0x{:x}",
-                      utils::data::AsHex(endHash, sizeof(endHash)), reader.Loc());
+            LOG_TRACE(
+                "flexible header sha256 hash validated {} at 0x{:x}",
+                utils::data::AsHex(endHash, sizeof(endHash)),
+                reader.Loc()
+            );
 
             // todo: handle signature
         }

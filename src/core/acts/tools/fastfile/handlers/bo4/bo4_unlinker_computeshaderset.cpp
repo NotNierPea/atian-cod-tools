@@ -113,9 +113,12 @@ namespace {
                     }
                     json.BeginObject();
                     json.WriteFieldValueXHash("name", method->name);
-                    const char* codeFileName{ utils::va("%s_%s_%s.dxbc", hashutils::ExtractTmp("hash", asset->name),
-                                                        hashutils::ExtractTmp("hash", shader->name),
-                                                        hashutils::ExtractTmp("hash", method->name)) };
+                    const char* codeFileName{ utils::va(
+                        "%s_%s_%s.dxbc",
+                        hashutils::ExtractTmp("hash", asset->name),
+                        hashutils::ExtractTmp("hash", shader->name),
+                        hashutils::ExtractTmp("hash", method->name)
+                    ) };
                     std::filesystem::path outCode{ outDir / codeFileName };
 
                     if (!utils::WriteFile(outCode, method->code, method->codeSize)) {

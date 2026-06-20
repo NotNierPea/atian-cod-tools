@@ -37,7 +37,8 @@ namespace fastfile::handlers::bo6sp {
         void ErrorStub() {
             hook::error::DumpStackTraceFrom();
             throw std::runtime_error(
-                std::format("{} ErrorStub<0x{:x}>", hook::library::CodePointer{ _ReturnAddress() }, offset));
+                std::format("{} ErrorStub<0x{:x}>", hook::library::CodePointer{ _ReturnAddress() }, offset)
+            );
         }
         template<size_t offset = 0, typename T, T value>
         T ReturnStub() {
@@ -106,7 +107,8 @@ namespace fastfile::handlers::bo6sp {
         bool LoadStreamImpl(LoadStreamObjectData* that, bool* atStreamStart, void** data, int64_t* len);
         void ErrorStub(LoadStreamObjectData* that) {
             throw std::runtime_error(
-                std::format("Error loadstream {}", hook::library::CodePointer{ _ReturnAddress() }));
+                std::format("Error loadstream {}", hook::library::CodePointer{ _ReturnAddress() })
+            );
         }
         void AllocStreamPos(int align);
         void PushStreamPos(int type);
@@ -161,8 +163,13 @@ namespace fastfile::handlers::bo6sp {
         }
 
         void LoadXFileData(void* ptr, int64_t len) {
-            LOG_TRACE("LoadXFileData({}, 0x{:x}/0x{:x}) {}", ptr, len, gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadXFileData({}, 0x{:x}/0x{:x}) {}",
+                ptr,
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (!gcx.reader->CanRead(len)) {
                 hook::error::DumpStackTraceFrom();
             }
@@ -182,8 +189,14 @@ namespace fastfile::handlers::bo6sp {
         }
 
         bool LoadStream(bool atStreamStart, void* ptr, int64_t len) {
-            LOG_TRACE("LoadStream({}, {}, 0x{:x}/0x{:x}) {}", atStreamStart, ptr, len, gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "LoadStream({}, {}, 0x{:x}/0x{:x}) {}",
+                atStreamStart,
+                ptr,
+                len,
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (!atStreamStart || !len) {
                 return true;
             }
@@ -203,8 +216,13 @@ namespace fastfile::handlers::bo6sp {
         }
 
         void Load_String(char** pstr) {
-            LOG_TRACE("Load_String({}/0x{:x}:0x{:x}) {}", (void*)pstr, gcx.reader->Loc(), gcx.reader->Remaining(),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "Load_String({}/0x{:x}:0x{:x}) {}",
+                (void*)pstr,
+                gcx.reader->Loc(),
+                gcx.reader->Remaining(),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             char* str{ *pstr };
             do {
                 if (!gcx.reader->CanRead(1)) {
@@ -248,8 +266,11 @@ namespace fastfile::handlers::bo6sp {
         }
 
         void PreAssetRead(T10AssetType type) {
-            LOG_TRACE("PreAssetRead({}) {}", PoolName(GetHashType(type)),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "PreAssetRead({}) {}",
+                PoolName(GetHashType(type)),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (gcx.assetLoadStackTop == ACTS_ARRAYSIZE(gcx.assetLoadStack)) {
                 throw std::runtime_error("PreAssetRead stack overflow");
             }
@@ -257,9 +278,11 @@ namespace fastfile::handlers::bo6sp {
         }
 
         void PostAssetRead() {
-            LOG_TRACE("PostAssetRead({}) {}",
-                      gcx.assetLoadStackTop ? PoolName(gcx.assetLoadStack[gcx.assetLoadStackTop - 1]) : "invalid",
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_TRACE(
+                "PostAssetRead({}) {}",
+                gcx.assetLoadStackTop ? PoolName(gcx.assetLoadStack[gcx.assetLoadStackTop - 1]) : "invalid",
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             if (!gcx.assetLoadStackTop) {
                 throw std::runtime_error("PostAssetRead stack underflow");
             }
@@ -293,8 +316,13 @@ namespace fastfile::handlers::bo6sp {
                 auto it{ map.find(hashType) };
                 if (it != map.end()) {
                     if (it->second->assetSize != itemSize) {
-                        LOG_ERROR("Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
-                                  gcx.assetNames.GetTypeName(type), (int)type, it->second->assetSize, itemSize);
+                        LOG_ERROR(
+                            "Can't check size of asset entry {}({}): 0x{:x} != 0x{:x}",
+                            gcx.assetNames.GetTypeName(type),
+                            (int)type,
+                            it->second->assetSize,
+                            itemSize
+                        );
                     } else {
                         if constexpr (!hasRelativeLoads) {
                             if (!it->second->requiresRelativeLoads) {
@@ -311,8 +339,12 @@ namespace fastfile::handlers::bo6sp {
         }
 
         void* DB_AddAssetRef(T10AssetType type, uint64_t name, void* handle) {
-            LOG_DEBUG("DB_AddAssetRef({}, '{}') {}", PoolName(GetHashType(type)), hashutils::ExtractTmp("hash", name),
-                      hook::library::CodePointer{ _ReturnAddress() });
+            LOG_DEBUG(
+                "DB_AddAssetRef({}, '{}') {}",
+                PoolName(GetHashType(type)),
+                hashutils::ExtractTmp("hash", name),
+                hook::library::CodePointer{ _ReturnAddress() }
+            );
             T10HashAssetType hashType{ GetHashType(type) };
             if (handle) {
                 gcx.linkedAssets[hashType][name] = handle;
@@ -357,16 +389,18 @@ namespace fastfile::handlers::bo6sp {
           public:
             // -w "((mp|zm)_t10|ingame|code|global).*"
             BO6FFHandler()
-                : fastfile::FFHandler("bo6sp", "Black Ops 6 Campaign",
-                                      compatibility::scobalula::csi::CordycepGame::CG_BO6) {
+                : fastfile::FFHandler(
+                      "bo6sp", "Black Ops 6 Campaign", compatibility::scobalula::csi::CordycepGame::CG_BO6
+                  ) {
                 gcx.handler = this;
             }
 
             void Init(fastfile::FastFileOption& opt) override {
                 acts::game_data::GameData game{ "bo6sp" };
                 commonFiles = game.GetCommonFastFiles();
-                hook::module_mapper::Module& mod{ opt.GetGameModule(true, nullptr, false, game.GetModuleName(),
-                                                                    "bo6sp") };
+                hook::module_mapper::Module& mod{
+                    opt.GetGameModule(true, nullptr, false, game.GetModuleName(), "bo6sp")
+                };
                 hook::scan_container::ScanContainer& scan{ mod.GetScanContainer() };
                 game.SetScanContainer(&scan);
                 scan.Sync();
@@ -442,8 +476,12 @@ namespace fastfile::handlers::bo6sp {
                     } else {
                         size_t trueLen{ gcx.poolInfo[type].itemSize };
                         if (worker->assetSize != trueLen) {
-                            LOG_WARNING("type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
-                                        PoolName(hashType), worker->assetSize, trueLen);
+                            LOG_WARNING(
+                                "type {} doesn't have the expected size: acts:0x{:x} != exe:0x{:x}",
+                                PoolName(hashType),
+                                worker->assetSize,
+                                trueLen
+                            );
                         }
                     }
                     worker->PreLoadWorker(nullptr);
@@ -465,8 +503,9 @@ namespace fastfile::handlers::bo6sp {
                 }
             }
 
-            void Handle(fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& ffData,
-                        fastfile::FastFileContext& ctx) override {
+            void Handle(
+                fastfile::FastFileOption& opt, core::bytebuffer::ByteBuffer& ffData, fastfile::FastFileContext& ctx
+            ) override {
                 gcx.ctx = &ctx;
                 gcx.streamLocations.clear();
 
@@ -604,8 +643,12 @@ namespace fastfile::handlers::bo6sp {
                         for (assetId = 0; assetId < gcx.assets.assetsCount; assetId++) {
                             Asset* asset{ gcx.assets.assets + assetId };
 
-                            LOG_DEBUG("load #{} -> {}({})", assetId, PoolName(bo6sp::GetHashType(asset->type)),
-                                      (int)asset->type);
+                            LOG_DEBUG(
+                                "load #{} -> {}({})",
+                                assetId,
+                                PoolName(bo6sp::GetHashType(asset->type)),
+                                (int)asset->type
+                            );
                             gcx.Load_Asset(false, asset);
                         }
 
@@ -613,8 +656,12 @@ namespace fastfile::handlers::bo6sp {
                         LOG_ERROR("can't dump ff {}", e.what());
                     }
                     if (gcx.assetLoadStackTop && assetId != gcx.assets.assetsCount) {
-                        LOG_ERROR("Asset load stack ({}) - asset:#{}/{}", gcx.assetLoadStackTop, assetId + 1,
-                                  gcx.assets.assetsCount);
+                        LOG_ERROR(
+                            "Asset load stack ({}) - asset:#{}/{}",
+                            gcx.assetLoadStackTop,
+                            assetId + 1,
+                            gcx.assets.assetsCount
+                        );
                         for (size_t i = gcx.assetLoadStackTop; i; i--) {
                             LOG_ERROR("- {} - {}", i, PoolName(gcx.assetLoadStack[i - 1]));
                         }
