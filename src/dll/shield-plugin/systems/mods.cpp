@@ -184,7 +184,7 @@ namespace systems::mods {
 
         struct {
             std::unordered_map<uint64_t, CustomZone> zones{};
-            std::unordered_map<uint64_t, CustomZone*> hooks{};
+            std::unordered_map<uint64_t, std::vector<CustomZone*>> hooks{};
             std::vector<const char*> zoneNames{};
             std::unordered_map<uint64_t, uint64_t> nameHooks[bo4::XAssetType::ASSET_TYPE_COUNT];
             core::memory_allocator::MemoryAllocator alloc{};
@@ -396,18 +396,19 @@ namespace systems::mods {
                 }
 
                 // add hook zones
-                LOG_INFO("Hook {} -> {} fast file(s)", zoneInfo[i].name, it->second->info.size());
-
                 bool isPreloadLevel{ (zoneInfo[i].allocFlags & DB_ZONE_PRELOAD_LEVEL) != 0 };
 
-                for (XZoneInfo& nfo : it->second->info) {
-                    LOG_DEBUG("- {}", nfo.name ? nfo.name : "null");
+                LOG_INFO("Hook {} -> {} fast file(s)", zoneInfo[i].name, it->second.size());
+                for (CustomZone* cz : it->second) {
+                    for (XZoneInfo& nfo : cz->info) {
+                        LOG_DEBUG("- {}", nfo.name ? nfo.name : "null");
 
-                    // ignore in preloading
-                    if (isPreloadLevel && (nfo.allocFlags & DB_ZONE_LEVEL) != 0) {
-                        continue;
+                        // ignore in preloading
+                        if (isPreloadLevel && (nfo.allocFlags & DB_ZONE_LEVEL) != 0) {
+                            continue;
+                        }
+                        any.emplace_back(nfo);
                     }
-                    any.emplace_back(nfo);
                 }
             }
 
@@ -600,7 +601,7 @@ namespace systems::mods {
                                 info.freeFlags |= DB_ZONE_COMMON;
                             }
                             customZone.info.emplace_back(info);
-                            zoneHooks.hooks[hash::Hash64(hook)] = &customZone;
+                            zoneHooks.hooks[hash::Hash64(hook)].push_back(&customZone);
 
                             LOG_INFO(
                                 "Loaded fastfile hook {}->{} (iscommon={})",
@@ -664,7 +665,7 @@ namespace systems::mods {
                             info.allocFlags = flags | DB_FLAG_CUSTOM;
                             info.freeFlags = flags;
                             customZone.info.emplace_back(info);
-                            zoneHooks.hooks[hash::Hash64(hook)] = &customZone;
+                            zoneHooks.hooks[hash::Hash64(hook)].push_back(&customZone);
 
                             LOG_INFO("Loaded fastfile hook {}->{} (allocFlags=0x{:x})", hook, ffname, info.allocFlags);
                         }
