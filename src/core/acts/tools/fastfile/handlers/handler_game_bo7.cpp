@@ -86,7 +86,7 @@ namespace fastfile::handlers::bo7 {
         };
 
         struct XZoneTemporaryLoadData {
-            byte __pad[0x14ce8 + 0x20];
+            byte __pad[0x18d18];
             XBlock xblocks[16];
             uint64_t unk14dc8;
             DBLoadCtxRewind* rewind;
@@ -94,7 +94,7 @@ namespace fastfile::handlers::bo7 {
             uint64_t unk14de0;
             uint64_t unk14de8;
         };
-        static_assert(sizeof(XZoneTemporaryLoadData) == 0x14e30);
+        static_assert(sizeof(XZoneTemporaryLoadData) == 0x18e40);
 
         constexpr size_t numHashBlocks = 0x100;
         constexpr size_t numHashBlocksAlloc = numHashBlocks * 0x400;
