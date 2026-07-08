@@ -1,5 +1,7 @@
 {
     "module": "BlackOps4_dump.exe",
+    "firstAssetName": "physpreset",
+    "endAssetName": "assetlist",
     "commonFastFiles": [
         "zone/core_common.ff",
         "zone/mp_common.ff",
@@ -12,102 +14,145 @@
         "zone/zm_common_all.ff",
         "zone/zm_common_script.ff"
     ],
+    "cdecls": [
+        "struct XAsset;",
+        "struct XBlock;",
+        "struct XHash;",
+        "struct XAssetEntryPoolEntry;"
+    ],
     "scans": {
-        "Load_XAsset": {
-            "scan": "E8 ?? ?? ?? ?? 48 83 C3 10 80 3D ?? ?? ?? ?? ?? 75 07",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "Load_Stream": {
-            "scan": "E8 ?? ?? ?? ?? 8B FE 45 85 FF 7E 22",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_PopStreamPos": {
-            "scan": "E8 ?? ?? ?? ?? 8B 05 ?? ?? ?? ?? FF C8 89 05 ?? ?? ?? ?? F6 05",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_PushStreamPos": {
-            "scan": "E8 ?? ?? ?? ?? 48 8B 7C 24 60 48 8B D7 33 C9 E8 ?? ?? ?? ?? E8",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_IncStreamPos": {
-            "scan": "E8 ?? ?? ?? ?? 0F B6 C3 48 83 C4 20 5B C3 B0 01",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_AllocStreamPos": {
-            "scan": "E8 ?? ?? ?? ?? 48 89 47 18 48 8B CF",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_ConvertOffsetToPointer": {
-            "scan": "E8 ?? ?? ?? ?? 48 8D 4B 18 E8 ?? ?? ?? ?? 45 33 F6 48 8D 7B 38 33 C9",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_ConvertOffsetToAlias": {
-            "scan": "4C 8B 01 49 FF C8 49 8B C0 48 C1 E8 3C 48 8D 14 40 48 B8 FF FF FF FF FF FF FF 0F 4C 23 C0 48 8B 05 ?? ?? ?? ?? 48",
-            "type": "Absolute",
-            "single": true
-        },
-        "DB_GetOffsetData": {
-            "scan": "E8 ?? ?? ?? ?? 48 89 44 24 28 0F 10 44 24 20 0F 11 46 20 33 C9",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_InsertPointer": {
-            "scan": "48 89 5C 24 08 48 63 15",
-            "type": "Absolute",
-            "single": true
-        },
-        "DB_AllocXBlocks": {
-            "scan": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 83 EC 50 4C 8B",
-            "type": "Absolute",
-            "single": true
-        },
-        "DB_InitStreams": {
-            "scan": "33 D2 48 89 0D ?? ?? ?? ?? 48",
-            "type": "Absolute",
-            "single": true
-        },
-        "DB_LoadXFileData": {
-            "scan": "85 D2 0F 8E 56 01 00 00 41 54 41 56 48 83 EC 38 48 89 5C 24",
-            "type": "Absolute",
-            "single": true
-        },
-        "Load_XStringCustom": {
-            "scan": "E8 ?? ?? ?? ?? EB 09 48 8D 4F 48 E8 ?? ?? ?? ?? 33 C9",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_LinkXAssetEntry": {
-            "scan": "E8 ?? ?? ?? ?? 48 8B 50 08 48 89 13",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "DB_FindXAssetHeader": {
-            "scan": "E8 ?? ?? ?? ?? 48 85 C0 75 1B 48 8B CB E8",
-            "type": "Relative",
-            "offset": 1,
-            "single": true
-        },
-        "Load_XHash": {
-            "scan": "E8 ?? ?? ?? ?? 48 8B CE E8 ?? ?? ?? ?? 48 83 7E 10 00 74 1F B9 1F 00 00 00",
-            "type": "Relative",
-            "offset": 9
+        "fastfile": {
+            "type": "Group",
+            "__comment__": "Fast Files functions",
+            "Load_XAsset": {
+                "scan": "E8 ?? ?? ?? ?? 48 83 C3 10 80 3D ?? ?? ?? ?? ?? 75 07",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void (bool atStreamStart, XAsset *asset)",
+                "__comment__": "Load an XAsset of the loaded XFile"
+            },
+            "Load_Stream": {
+                "scan": "E8 ?? ?? ?? ?? 8B FE 45 85 FF 7E 22",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "bool (bool atStreamStart, void *ptr, size_t size)",
+                "__comment__": "Load a stream of the loaded XFile"
+            },
+            "DB_PopStreamPos": {
+                "scan": "E8 ?? ?? ?? ?? 8B 05 ?? ?? ?? ?? FF C8 89 05 ?? ?? ?? ?? F6 05",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void ()",
+                "__comment__": "Pop XFile loading stream block"
+            },
+            "DB_PushStreamPos": {
+                "scan": "E8 ?? ?? ?? ?? 48 8B 7C 24 60 48 8B D7 33 C9 E8 ?? ?? ?? ?? E8",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void (int index)",
+                "__comment__": "Push XFile loading stream block"
+            },
+            "DB_IncStreamPos": {
+                "scan": "E8 ?? ?? ?? ?? 0F B6 C3 48 83 C4 20 5B C3 B0 01",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void (size_t size)",
+                "__comment__": "Move XFile loading stream"
+            },
+            "DB_AllocStreamPos": {
+                "scan": "E8 ?? ?? ?? ?? 48 89 47 18 48 8B CF",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void* (int alignment)",
+                "__comment__": "Allocate XFile loading pointer"
+            },
+            "DB_ConvertOffsetToPointer": {
+                "scan": "E8 ?? ?? ?? ?? 48 8D 4B 18 E8 ?? ?? ?? ?? 45 33 F6 48 8D 7B 38 33 C9",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void (void** data)",
+                "__comment__": "Convert XFile offset to pointer"
+            },
+            "DB_ConvertOffsetToAlias": {
+                "scan": "4C 8B 01 49 FF C8 49 8B C0 48 C1 E8 3C 48 8D 14 40 48 B8 FF FF FF FF FF FF FF 0F 4C 23 C0 48 8B 05 ?? ?? ?? ?? 48",
+                "type": "Absolute",
+                "single": true,
+                "reftype": "void (void** data)",
+                "__comment__": "Convert XFile offset to alias"
+            },
+            "DB_GetOffsetData": {
+                "scan": "E8 ?? ?? ?? ?? 48 89 44 24 28 0F 10 44 24 20 0F 11 46 20 33 C9",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void* (uint64_t ref)",
+                "__comment__": "Get XFile offset data"
+            },
+            "DB_InsertPointer": {
+                "scan": "48 89 5C 24 08 48 63 15",
+                "type": "Absolute",
+                "single": true,
+                "reftype": "const void** ()",
+                "__comment__": "Insert file to loading stream"
+            },
+            "DB_AllocXBlocks": {
+                "scan": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 83 EC 50 4C 8B",
+                "type": "Absolute",
+                "single": true,
+                "reftype": "void (size_t *blockSize, const char *filename, const char *filename2, XBlock *blocks, int side, int *loaded)",
+                "__comment__": "Alloc the XBlock buffers"
+            },
+            "DB_InitStreams": {
+                "scan": "33 D2 48 89 0D ?? ?? ?? ?? 48",
+                "type": "Absolute",
+                "single": true,
+                "reftype": "void (XBlock *blocks)",
+                "__comment__": "Init the XFile streams with XBlock buffers"
+            },
+            "DB_LoadXFileData": {
+                "scan": "85 D2 0F 8E 56 01 00 00 41 54 41 56 48 83 EC 38 48 89 5C 24",
+                "type": "Absolute",
+                "single": true,
+                "reftype": "void (byte *pos, int size)",
+                "__comment__": "Load data from XFile"
+            },
+            "Load_XStringCustom": {
+                "scan": "E8 ?? ?? ?? ?? EB 09 48 8D 4F 48 E8 ?? ?? ?? ?? 33 C9",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "void (const char** str)",
+                "__comment__": "Load an XString"
+            },
+            "Load_XHash": {
+                "scan": "E8 ?? ?? ?? ?? 48 8B CE E8 ?? ?? ?? ?? 48 83 7E 10 00 74 1F B9 1F 00 00 00",
+                "type": "Relative",
+                "offset": 9,
+                "reftype": "void (XHash* hash)",
+                "__comment__": "Load an XHash"
+            },
+            "DB_LinkXAssetEntry": {
+                "scan": "E8 ?? ?? ?? ?? 48 8B 50 08 48 89 13",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "reftype": "XAssetEntryPoolEntry* (XAsset *newEntry, bool allowOverride)",
+                "__comment__": "Link an XAsset entry"
+            },
+            "DB_FindXAssetHeader": {
+                "scan": "E8 ?? ?? ?? ?? 48 85 C0 75 1B 48 8B CB E8",
+                "type": "Relative",
+                "offset": 1,
+                "single": true,
+                "__comment__": "Find a XAsset header"
+            }
         }
     },
     "nullscans": {

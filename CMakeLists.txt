@@ -93,6 +93,12 @@ configure_file(
     "${CMAKE_SOURCE_DIR}/deps/gsc-tool/include/xsk/version.hpp"
 )
 
+set(EXCLUDED_FORMAT_FILE
+    "${CMAKE_SOURCE_DIR}/src/core/shared/core/updater_endpoint.hpp"
+    "${CMAKE_SOURCE_DIR}/src/core/shared/core/actsinfo.hpp"
+    "${CMAKE_SOURCE_DIR}/include/acts_api/version_info.h"
+)
+
 # Load solution projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -165,8 +171,6 @@ endmacro()
 
 
 
-
-
 macro(load_dir_recurse id)
     file(GLOB DEP_SCRIPTS "${CMAKE_SOURCE_DIR}/cmake/${id}/*.cmake")
 
@@ -183,6 +187,10 @@ macro(load_dir_recurse id)
         message(STATUS "Loading ${script}")
         include(${script})
     endforeach()
+endmacro()
+
+macro(add_format_excluded path)
+    list(APPEND EXCLUDED_FORMAT_FILE "${path}")
 endmacro()
 
 load_dir_recurse(deps)

@@ -18,14 +18,6 @@ file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
     "tools/*.hpp"
 )
 
-set(EXCLUDED_FORMAT_FILE 
-    "${CMAKE_SOURCE_DIR}/src/core/shared/games/bo6/t10_errors_generated.hpp"
-    "${CMAKE_SOURCE_DIR}/src/core/shared/games/bo4/t8_errors_generated.hpp"
-    "${CMAKE_SOURCE_DIR}/src/core/shared/core/updater_endpoint.hpp"
-    "${CMAKE_SOURCE_DIR}/src/core/shared/core/actsinfo.hpp"
-    "${CMAKE_SOURCE_DIR}/include/acts_api/version_info.h"
-)
-
 list(REMOVE_ITEM ALL_CXX_SOURCE_FILES ${EXCLUDED_FORMAT_FILE})
 
 

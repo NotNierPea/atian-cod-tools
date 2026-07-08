@@ -572,27 +572,27 @@ namespace fastfile::handlers::bo4 {
 
                 scan.ignoreMissing = true;
 
-                game.Get("Load_XAsset", &gcx.Load_XAsset);
+                game.Get("fastfile.Load_XAsset", &gcx.Load_XAsset);
                 void* Load_XHash{};
                 if (opt.dumpXHash) {
-                    game.Get("Load_XHash", &Load_XHash);
+                    game.Get("fastfile.Load_XHash", &Load_XHash);
                 }
 
-                game.Redirect("Load_Stream", Load_Stream);
-                game.Redirect("DB_PopStreamPos", DB_PopStreamPos);
-                game.Redirect("DB_PushStreamPos", DB_PushStreamPos);
-                game.Redirect("DB_IncStreamPos", DB_IncStreamPos);
-                game.Redirect("DB_AllocStreamPos", DB_AllocStreamPos);
-                game.Redirect("DB_ConvertOffsetToPointer", DB_ConvertOffsetToPointer);
-                game.Redirect("DB_ConvertOffsetToAlias", DB_ConvertOffsetToAlias);
-                game.Redirect("DB_GetOffsetData", DB_GetOffsetData);
-                game.Redirect("DB_InsertPointer", DB_InsertPointer);
-                game.Redirect("DB_AllocXBlocks", DB_AllocXBlocks);
-                game.Redirect("DB_InitStreams", DB_InitStreams);
-                game.Redirect("DB_LoadXFileData", DB_LoadXFileData);
-                game.Redirect("Load_XStringCustom", Load_XStringCustom);
-                game.Redirect("DB_LinkXAssetEntry", DB_LinkXAssetEntry);
-                game.Redirect("DB_FindXAssetHeader", DB_FindXAssetHeader);
+                game.Redirect("fastfile.Load_Stream", Load_Stream);
+                game.Redirect("fastfile.DB_PopStreamPos", DB_PopStreamPos);
+                game.Redirect("fastfile.DB_PushStreamPos", DB_PushStreamPos);
+                game.Redirect("fastfile.DB_IncStreamPos", DB_IncStreamPos);
+                game.Redirect("fastfile.DB_AllocStreamPos", DB_AllocStreamPos);
+                game.Redirect("fastfile.DB_ConvertOffsetToPointer", DB_ConvertOffsetToPointer);
+                game.Redirect("fastfile.DB_ConvertOffsetToAlias", DB_ConvertOffsetToAlias);
+                game.Redirect("fastfile.DB_GetOffsetData", DB_GetOffsetData);
+                game.Redirect("fastfile.DB_InsertPointer", DB_InsertPointer);
+                game.Redirect("fastfile.DB_AllocXBlocks", DB_AllocXBlocks);
+                game.Redirect("fastfile.DB_InitStreams", DB_InitStreams);
+                game.Redirect("fastfile.DB_LoadXFileData", DB_LoadXFileData);
+                game.Redirect("fastfile.Load_XStringCustom", Load_XStringCustom);
+                game.Redirect("fastfile.DB_LinkXAssetEntry", DB_LinkXAssetEntry);
+                game.Redirect("fastfile.DB_FindXAssetHeader", DB_FindXAssetHeader);
 
                 game.ApplyNullScans("fastfile");
 
