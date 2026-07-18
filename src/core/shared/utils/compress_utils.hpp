@@ -79,6 +79,8 @@ namespace utils::compress {
     deps::oodle::OodleCompressor GetOodleCompressor(CompressionAlgorithm c);
     std::unique_ptr<byte[]> Compress(CompressionAlgorithm alg, const void* src, size_t srcSize, size_t* compressSize);
 
+    bool CompressZlibStored(const void* src, size_t srcSize, std::vector<byte>& out);
+
     bool CompressBuffer(CompressionAlgorithm alg, const void* src, size_t srcSize, std::vector<byte>& out);
     inline bool CompressBuffer(CompressionAlgorithm alg, const std::vector<byte>& data, std::vector<byte>& out) {
         return CompressBuffer(alg, data.data(), data.size(), out);

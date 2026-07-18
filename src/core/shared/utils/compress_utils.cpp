@@ -254,6 +254,20 @@ namespace utils::compress {
         return res;
     }
 
+#ifdef __ACTS_COMPRESS_HAS_ZLIB
+    bool CompressZlibStored(const void* src, size_t srcSize, std::vector<byte>& out) {
+        out.resize(
+            srcSize + 11
+        ); // exact, 2-byte header + 5-byte stored-block header + data + 4-byte Adler32
+        uLongf destSizef{ (uLongf)out.size() };
+        if (compress2((Bytef*)out.data(), &destSizef, (const Bytef*)src, (uLongf)srcSize, Z_NO_COMPRESSION) != Z_OK) {
+            return false;
+        }
+        out.resize(destSizef);
+        return true;
+    }
+#endif
+
     size_t GetCompressSize(CompressionAlgorithm alg, size_t srcSize) {
         switch (GetCompressionType(alg)) {
         case COMP_NONE:
