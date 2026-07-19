@@ -17,11 +17,11 @@ namespace {
         int32_t len;
         byte* buffer;
         uint32_t unk50_count;
+        uint32_t unk58_count;
         void* unk50;
-        uint32_t unk60_count;
-        void* unk60;
+        void* unk58;
     };
-    static_assert(sizeof(LuaFile) == 0x68);
+    static_assert(sizeof(LuaFile) == 0x60);
 
     class ImplWorker : public Worker {
         using Worker::Worker;

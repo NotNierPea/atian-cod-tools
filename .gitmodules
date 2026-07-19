@@ -109,3 +109,6 @@
 [submodule "deps/magic_enum"]
 	path = deps/magic_enum
 	url = https://github.com/Neargye/magic_enum
+[submodule "deps/inja"]
+	path = deps/inja
+	url = https://github.com/pantor/inja.git

@@ -22,9 +22,9 @@ namespace {
         uint64_t unk28;
         SndModifier* sndModifier;
         XHash64 type;
-        uint64_t __pad[27];
+        uint64_t __pad[28];
     };
-    static_assert(sizeof(SndAliasInfo) == 0x118);
+    static_assert(sizeof(SndAliasInfo) == 0x120);
 
     struct SndBankAliasText {
         XHash64 subtitles;
@@ -51,13 +51,14 @@ namespace {
         SndBankAlias* aliases;
         XHash64 name;
         uint64_t unk20;
-        uint32_t unk28;
+        uint64_t unk28;
+        uint32_t unk30;
         uint16_t count;
-        uint16_t unk2e;
-        uint64_t unk30;
+        uint16_t unk3a;
         uint64_t unk38;
+        uint64_t unk40;
     };
-    static_assert(sizeof(SndBankAliases) == 0x40);
+    static_assert(sizeof(SndBankAliases) == 0x48);
 
     struct SndBank {
         XHash64 name;
@@ -190,14 +191,6 @@ namespace {
                         }
 
                         json.EndArray();
-                    }
-
-                    if (opt.testDump) {
-                        json.WriteFieldValueUnknown("aliases:unk20", aliases->unk20);
-                        json.WriteFieldValueUnknown("aliases:unk28", aliases->unk28);
-                        json.WriteFieldValueUnknown("aliases:unk2e", aliases->unk2e);
-                        json.WriteFieldValueUnknown("aliases:unk30", aliases->unk30);
-                        json.WriteFieldValueUnknown("aliases:unk38", aliases->unk38);
                     }
 
                     json.EndObject();

@@ -3,6 +3,9 @@
 #include <tools/bo3/pools.hpp>
 #include <tools/gsc/data/gsc_data_t7.hpp>
 #include <core/bytebuffer.hpp>
+#define LTC_BASE64
+#define LTC_NO_PROTOTYPES
+#include <tomcrypt.h>
 
 namespace bo3 {
     int InjectScriptBO3(Process& proc, const char* script, const char* replaced, std::string& notify) {
@@ -241,6 +244,59 @@ namespace {
 
         return tool::OK;
     }
+
+    int bo3moviedecrypt(int argc, const char* argv[]) {
+        if (tool::NotEnoughParam(argc, 3)) {
+            return tool::BAD_USAGE;
+        }
+        const char* in{ argv[2] };
+        const char* keyData{ argv[3] };
+        const char* out{ argv[4] };
+
+        std::vector<byte> buff{ utils::ReadFile<std::vector<byte>>(in) };
+
+        constexpr size_t keySize = 0x20;
+        constexpr size_t ivSize = 8;
+
+        byte keyIv[keySize + ivSize];
+
+        unsigned long outSize{ sizeof(keyIv) };
+
+        base64_decode(keyData, std::strlen(keyData), keyIv, &outSize);
+
+        byte* key{ keyIv };
+        byte* iv{ &keyIv[keySize] };
+
+        salsa20_state st{};
+
+        byte* r{ buff.data() };
+        size_t rem{ buff.size() };
+
+        std::ofstream os{ out, std::ios::binary };
+        if (!os) {
+            LOG_ERROR("Can't open {}", out);
+            return tool::BASIC_ERROR;
+        }
+
+        LOG_INFO("write into {}...", out);
+
+        size_t block{};
+        while (rem) {
+            size_t b{ std::min<size_t>(rem, 0x40) };
+            salsa20_setup(&st, key, keySize, 20);
+            salsa20_ivctr64(&st, iv, ivSize, block++);
+            salsa20_crypt(&st, r, b, r);
+            os.write((const char*)r, b);
+            rem -= b;
+            r += b;
+        }
+
+        os.close();
+
+        return tool::OK;
+    }
+
 } // namespace
 ADD_TOOL(injectbo3, "bo3", " (script) (replace)", "inject script (bo3)", L"BlackOps3.exe", injectbo3);
 ADD_TOOL(clumpdump, "bo3", " (file) (output)", "dump clump container", clumpdump);
+ADD_TOOL(bo3moviedecrypt, "bo3", " (file) (key)", "decrypt bo3 movie", bo3moviedecrypt);

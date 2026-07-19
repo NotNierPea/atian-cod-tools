@@ -797,6 +797,7 @@ namespace platform {
     } // namespace
 
     static bool ResolveFileLine(uintptr_t address, const char** file, DWORD* line) {
+        return false;
         static std::once_flag of;
         std::call_once(of, [] {
             SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);

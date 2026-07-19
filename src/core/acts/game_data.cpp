@@ -176,6 +176,37 @@ namespace acts::game_data {
             Nulled(k.GetString(), parent.data());
         }
     }
+    void GameData::ValidateScan(const char* id, const char* parent) {
+        const char* type{ cfg.GetCString(std::format("{}.{}.type", parent, id)) };
+
+        if (type && !_strcmpi(type, "Group")) {
+            // group, we go deeper
+            std::string base{ std::format("{}.{}", parent, id) };
+            rapidjson::Value& group{ cfg.GetVal(base.data(), 0, cfg.main) };
+            if (group.IsObject()) {
+                for (auto& [k, v] : group.GetObj()) {
+                    const char* key{ k.GetString() };
+                    if (!_strcmpi(key, "type") || !_strcmpi(key, "__comment__")) {
+                        continue;
+                    }
+                    ValidateScan(k.GetString(), base.data());
+                }
+            }
+            return;
+        }
+
+        std::vector<void*> ptr{ GetPointerArray(id, parent) };
+
+        if (ptr.size()) {
+            LOG_DEBUG(
+                "{}::{} -> {}{}",
+                parent,
+                id,
+                hook::library::CodePointer{ ptr[0] },
+                ptr.size() > 1 ? ", ..." : ""
+            );
+        }
+    }
     // validate all scans
     bool GameData::ValidateScans() {
         hook::scan_container::ScanContainer& scan{ GetScanContainer() };
@@ -183,20 +214,12 @@ namespace acts::game_data {
         bool oldIgnoreMissing{ scan.foundMissing };
         scan.foundMissing = false;
         scan.ignoreMissing = true;
+
         {
             rapidjson::Value& scansVal{ cfg.GetVal(BASE_PARENT, 0, cfg.main) };
             if (scansVal.IsObject()) {
                 for (auto& [k, v] : scansVal.GetObj()) {
-                    std::vector<void*> ptr{ GetPointerArray(k.GetString(), BASE_PARENT) };
-
-                    if (ptr.size()) {
-                        LOG_DEBUG(
-                            "{} -> {}{}",
-                            k.GetString(),
-                            hook::library::CodePointer{ ptr[0] },
-                            ptr.size() > 1 ? ", ..." : ""
-                        );
-                    }
+                    ValidateScan(k.GetString(), BASE_PARENT);
                 }
             }
         }
@@ -209,16 +232,7 @@ namespace acts::game_data {
                 rapidjson::Value& scansVal{ cfg.GetVal(base.data(), 0, cfg.main) };
                 if (scansVal.IsObject()) {
                     for (auto& [k, v] : scansVal.GetObj()) {
-                        std::vector<void*> ptr{ GetPointerArray(k.GetString(), base.data()) };
-
-                        if (ptr.size()) {
-                            LOG_DEBUG(
-                                "{} -> {}{}",
-                                k.GetString(),
-                                hook::library::CodePointer{ ptr[0] },
-                                ptr.size() > 1 ? ", ..." : ""
-                            );
-                        }
+                        ValidateScan(k.GetString(), base.data());
                     }
                 }
             }

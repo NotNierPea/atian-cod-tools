@@ -139,7 +139,7 @@
             "ctype": "void DB_ReadXFile(DBLoadCtx *ctx, void* ptr, int64_t len)"
         },
         "DB_SkipXFile": {
-            "scan": "E8 ?? ?? ?? ?? 48 8B 55 D0 45 85 F6",
+            "scan": "E8 ?? ?? ?? ?? E9 B6 00 00 00 48 8B 0F",
             "type": "Relative",
             "offset": 1,
             "single": true,
@@ -158,9 +158,8 @@
             "ctype": "void DB_RewindSetData(DBLoadCtx *ctx, DBRewind *rewind, void *data)"
         },
         "DB_LoadRewindRef": {
-            "scan": "E8 ?? ?? ?? ?? 48 8B 55 D0 0F B6 4D 58",
-            "type": "Relative",
-            "offset": 1,
+            "scan": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC 20 48 8B 3D ?? ?? ?? ?? 48",
+            "type": "Absolute",
             "single": true
         },
         "DB_AllocRewindRef": {
@@ -170,9 +169,8 @@
             "single": true
         },
         "DB_SaveRewindRef": {
-            "scan": "E8 ?? ?? ?? ?? 48 8B 45 50 48 89 45 E8",
-            "type": "Relative",
-            "offset": 1,
+            "scan": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 54 41 56 41 57 48 83 EC 20 48 8B 35 ?? ?? ?? ?? 48",
+            "type": "Absolute",
             "single": true
         },
         "DB_InitLoadStreams": {
@@ -325,7 +323,7 @@
                 "single": true
             },
             "$LoadModel": {
-                "scan": "40 53 48 83 EC ?? 81 61",
+                "scan": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC 20 81",
                 "type": "Absolute",
                 "single": true
             },

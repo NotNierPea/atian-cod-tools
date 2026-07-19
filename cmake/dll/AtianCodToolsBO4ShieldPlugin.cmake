@@ -15,6 +15,8 @@ set_target_properties(AtianCodToolsBO4ShieldPlugin PROPERTIES
     FOLDER "Game DLLs"
 )
 
+add_game_pack_target(AtianCodToolsBO4ShieldPluginGame bo4 "${CMAKE_SOURCE_DIR}/src/dll/shield-plugin/data/bo4_generated")
+
 target_include_directories(AtianCodToolsBO4ShieldPlugin PRIVATE
     "${CMAKE_SOURCE_DIR}/src/dll/shield-plugin"
     "${CMAKE_SOURCE_DIR}/src/core/shared"
@@ -42,4 +44,5 @@ add_dependencies(AtianCodToolsBO4ShieldPlugin
     asmjit
     libcurl
     libtomcrypt
+    AtianCodToolsBO4ShieldPluginGame
 )

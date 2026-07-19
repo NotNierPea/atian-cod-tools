@@ -82,6 +82,7 @@ jobs:
         shell: pwsh
         run: scripts/package.ps1 -deployQt
       - name: Upload dev release
+        if: github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
         with:
           commit: ${{ github.sha }}
@@ -96,7 +97,7 @@ jobs:
           name: "Dev build ${{ steps.get_version.outputs.version }}"
           body: "Latest dev build, [get the latest release build here](https://github.com/${{ github.repository }}/releases/latest)."
       - name: Upload release
-        if: inputs.release
+        if: inputs.release && github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
         with:
           commit: ${{ github.sha }}

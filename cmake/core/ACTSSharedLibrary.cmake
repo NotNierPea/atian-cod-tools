@@ -16,6 +16,17 @@ set_target_properties(ACTSSharedLibrary PROPERTIES
 )
 target_precompile_headers(ACTSSharedLibrary PRIVATE "${CMAKE_SOURCE_DIR}/src/core/shared/includes_shared.hpp")
 
+add_error_gen_target(T89Errors 
+    ${CMAKE_SOURCE_DIR}/config/errors_t89.tsv 
+    ${CMAKE_SOURCE_DIR}/src/core/shared/games/bo4/t8_errors_generated.hpp
+)
+
+add_error_gen_target(T10Errors 
+    ${CMAKE_SOURCE_DIR}/config/errors_t10.tsv 
+    ${CMAKE_SOURCE_DIR}/src/core/shared/games/bo6/t10_errors_generated.hpp
+)
+
+
 if(ALL_PLATFORM_ACTS)
     target_include_directories(ACTSSharedLibrary PRIVATE
         "${CMAKE_SOURCE_DIR}/src/core/shared"
@@ -41,8 +52,8 @@ if(ALL_PLATFORM_ACTS)
         lz4
         zstd
         zlib
-        t89_generate_errors
-        t10_generate_errors
+        T89Errors
+        T10Errors
     )
 else()
     target_include_directories(ACTSSharedLibrary PRIVATE
@@ -78,8 +89,8 @@ else()
         lz4
         zstd
         zlib
-        t89_generate_errors
-        t10_generate_errors
+        T89Errors
+        T10Errors
     )
 endif()
 

@@ -55,6 +55,8 @@ namespace acts::game_data {
 
         // validate all scans
         bool ValidateScans();
+        // validate a scan
+        void ValidateScan(const char* id, const char* parent);
         // add all types to idc builder
         void AddTypesToIdc(deps::idc_builder::IdcBuilder& builder);
         // add all scans to idc builder
