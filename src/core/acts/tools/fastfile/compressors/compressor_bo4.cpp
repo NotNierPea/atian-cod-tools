@@ -301,7 +301,7 @@ namespace {
 
                 // blocks load data
                 for (size_t i = 0; i < fastfile::linker::bo4::XFILE_BLOCK_COUNT; i++) {
-                    header.blockSize[i] = (uint64_t)ff.blockSizes[i] * 2;
+                    header.blockSize[i] = (uint64_t)ff.blockSizes[i];
                 }
 
                 // todo: write other data
