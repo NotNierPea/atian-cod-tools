@@ -179,7 +179,8 @@ namespace core::config {
 
         operator bool() const {
 #ifdef __ACTS_COMPRESS_HAS_RAPIDJSON
-            return base.IsNull();
+            // true when there is a value, like ConfigGenericRefs (the vec loaders return on !sub)
+            return !base.IsNull();
 #else
             return false;
 #endif

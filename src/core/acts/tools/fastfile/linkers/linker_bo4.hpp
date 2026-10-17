@@ -209,4 +209,7 @@ namespace fastfile::linker::bo4 {
     };
 
     std::unordered_map<XAssetType, XAssetLinker*>& GetWorkers();
+
+    // adds an entry to the xpak of a fastfile, written with its keyvaluepairs by the image linker
+    void AddXPakItem(BO4FFContext& ff, uint64_t key, std::vector<byte>&& data);
 } // namespace fastfile::linker::bo4

@@ -35,10 +35,23 @@ namespace {
     } hashLookup;
 
     const char* LookupHash(uint32_t hash) {
+        hashLookup.Init();
         auto it{ hashLookup.map.find(hash) };
         if (it == hashLookup.map.end())
             return nullptr;
         return it->second;
+    }
+
+    std::string Hex(const void* data, size_t len) {
+        static const char* digits{ "0123456789abcdef" };
+        std::string out{};
+        out.reserve(len * 2);
+        for (size_t i = 0; i < len; i++) {
+            byte b{ ((const byte*)data)[i] };
+            out += digits[b >> 4];
+            out += digits[b & 0xF];
+        }
+        return out;
     }
 
     using namespace fastfile::handlers::bo4;
@@ -63,11 +76,13 @@ namespace {
             }
         }
         void Unlink(fastfile::FastFileOption& opt, void* ptr) override {
-            struct MaterialTechnique;
             struct MaterialTechniqueSet;
-            struct MaterialTextureDef;
-            struct MaterialSamplerDef;
-            struct MaterialUnkA040;
+
+            // 8 blocks of 0x40 bytes
+            struct MaterialConstantSub {
+                byte* blocks[8];
+            };
+            static_assert(sizeof(MaterialConstantSub) == 0x40);
 
             struct MaterialUnkA0 {
                 uint64_t unk0;
@@ -76,7 +91,7 @@ namespace {
                 uint64_t unk18;
                 uint64_t unk20;
                 uint64_t unk28;
-                MaterialUnkA040* unk30[12];
+                MaterialConstantSub* unk30[12];
                 uint64_t datalen;
                 byte* data;
             };
@@ -93,6 +108,19 @@ namespace {
             };
             static_assert(sizeof(MaterialTextureDef) == 0x20);
 
+            struct MaterialBindingImage {
+                GfxImage* image;
+                uint64_t unk8;
+            };
+
+            struct MaterialBinding {
+                uint32_t* data;
+                MaterialBindingImage* images;
+                uint32_t dataCount;
+                uint32_t imageCount;
+            };
+            static_assert(sizeof(MaterialBinding) == 0x18);
+
             struct Material {
                 XHash name;
                 uint64_t unk10;
@@ -101,16 +129,9 @@ namespace {
                 uint64_t unk28;
                 MaterialTechniqueSet* techniqueSet;
                 MaterialTextureDef* textureTable;
-                MaterialSamplerDef* samplerTable;
+                uint64_t* samplerTable;
                 uint64_t unk48;
-                uint64_t unk50;
-                uint64_t unk58;
-                uint64_t unk60;
-                uint64_t unk68;
-                uint64_t unk70;
-                uint64_t unk78;
-                uint64_t unk80;
-                uint64_t unk88;
+                MaterialBinding* bindings[8];
                 MaterialUnkA0 unk90;
                 byte textureCount;
                 byte samplerCount;
@@ -118,7 +139,6 @@ namespace {
                 byte unk133;
             };
             static_assert(sizeof(Material) == 0x138);
-            sizeof(Material);
 
             Material* asset{ (Material*)ptr };
 
@@ -129,6 +149,13 @@ namespace {
 
             LOG_OPT_INFO("Dump material {}", outFile.string());
 
+            auto WriteImage = [&json](const char* name, GfxImage* img) {
+                if (img) {
+                    json.WriteFieldValueXAsset(name, games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE, img);
+                }
+            };
+
+            // a template for the bo4 material linker: the blocks as they are, the assets by name
             json.BeginObject();
             json.WriteFieldValueXHash("name", asset->name);
             json.WriteFieldValueXAsset(
@@ -136,37 +163,80 @@ namespace {
                 games::bo4::pool::XAssetType::ASSET_TYPE_TECHNIQUE_SET,
                 asset->techniqueSet
             );
+            json.WriteFieldValueString("header", Hex(asset, sizeof(*asset)));
 
             json.WriteFieldNameString("textureTable");
             json.BeginArray();
             for (size_t i = 0; i < asset->textureCount; i++) {
                 MaterialTextureDef* def{ asset->textureTable + i };
                 json.BeginObject();
-                json.WriteFieldValueXAsset("image", games::bo4::pool::XAssetType::ASSET_TYPE_IMAGE, def->image);
+                WriteImage("image", def->image);
                 const char* h{ LookupHash(def->nameHash) };
                 if (!h) {
                     unktypes.insert(def->nameHash);
                     h = utils::va("unk_%x", def->nameHash);
                 }
                 json.WriteFieldValueString("type", h);
-                json.WriteFieldValueString("uvScale", std::format("({}, {})", def->uvScale[0], def->uvScale[1]));
-                json.WriteFieldValueString(
-                    "texSizeShift",
-                    std::format("({}, {})", (int)def->texSizeShift[0], (int)def->texSizeShift[1])
-                );
-                json.WriteFieldValueString(
-                    "uvOffset",
-                    std::format("({}, {})", (int)def->uvOffset[0], (int)def->uvOffset[1])
-                );
-                json.WriteFieldValueNumber("usage", def->usage);
-                json.WriteFieldValueBool("isMatureContent", def->isMatureContent);
+                json.WriteFieldValueString("def", Hex(def, sizeof(*def)));
+                json.EndObject();
+            }
+            json.EndArray();
+
+            if (asset->samplerTable && asset->samplerCount) {
+                json.WriteFieldValueString("samplers", Hex(asset->samplerTable, 8ull * asset->samplerCount));
+            }
+
+            json.WriteFieldNameString("constants");
+            json.BeginObject();
+            json.WriteFieldNameString("subs");
+            json.BeginArray();
+            for (MaterialConstantSub* sub : asset->unk90.unk30) {
+                if (!sub) {
+                    json.WriteValueNull();
+                    continue;
+                }
+                json.BeginArray();
+                for (byte* block : sub->blocks) {
+                    if (block) {
+                        json.WriteValueString(Hex(block, 0x40));
+                    } else {
+                        json.WriteValueNull();
+                    }
+                }
+                json.EndArray();
+            }
+            json.EndArray();
+            if (asset->unk90.data && asset->unk90.datalen) {
+                json.WriteFieldValueString("data", Hex(asset->unk90.data, asset->unk90.datalen));
+            }
+            json.EndObject();
+
+            json.WriteFieldNameString("bindings");
+            json.BeginArray();
+            for (MaterialBinding* bind : asset->bindings) {
+                if (!bind) {
+                    json.WriteValueNull();
+                    continue;
+                }
+                json.BeginObject();
+                json.WriteFieldValueString("block", Hex(bind, sizeof(*bind)));
+                if (bind->data && bind->dataCount) {
+                    json.WriteFieldValueString("data", Hex(bind->data, 4ull * bind->dataCount));
+                }
+                json.WriteFieldNameString("images");
+                json.BeginArray();
+                for (size_t i = 0; bind->images && i < bind->imageCount; i++) {
+                    json.BeginObject();
+                    WriteImage("image", bind->images[i].image);
+                    json.WriteFieldValueString("entry", Hex(&bind->images[i], sizeof(bind->images[i])));
+                    json.EndObject();
+                }
+                json.EndArray();
                 json.EndObject();
             }
             json.EndArray();
 
             json.EndObject();
-
-            return;
 
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());

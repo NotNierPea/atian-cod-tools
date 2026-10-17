@@ -142,9 +142,13 @@ namespace fastfile::linker::bo4 {
                     assetlist.assetCount = (int)ff.data.assets.size();
                     assetlist.assets = fastfile::linker::memory::POINTER_NEXT;
                 }
-                ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
-
+                // DB_LoadXFile copies the list in a local, it takes no room in the virtual block: the offset
+                // pointers into it (data chunk refs) would be 0x20 too far
+                ff.data.PushStream(XFILE_BLOCK_TEMP);
                 ff.data.WriteStream(assetlist);
+                ff.data.PopStream();
+
+                ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
                 ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
                 // write string ref array

@@ -48,9 +48,9 @@ namespace {
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
+            table.numVariables = (int32_t)doc.GetRowCount();
             if (table.numVariables) {
                 ff.data.Align(8);
-                table.numVariables = (int32_t)doc.GetRowCount();
                 table.keyValuePairs = (KeyValuePair*)fastfile::linker::memory::POINTER_NEXT;
 
                 KeyValuePair* array{ ff.data.AllocStreamPtr<KeyValuePair>(doc.GetRowCount()) };
@@ -60,7 +60,7 @@ namespace {
                     std::string k{ doc.GetCell<std::string>(0, i) };
                     std::string v{ doc.GetCell<std::string>(1, i) };
 
-                    if (hash::TryHashPattern(k.data(), kvp.keyHash)) {
+                    if (!hash::TryHashPattern(k.data(), kvp.keyHash)) {
                         kvp.keyHash = hash::HashKVP(k.data());
                     }
                     ff.data.AddXString(kvp.value, v.data());

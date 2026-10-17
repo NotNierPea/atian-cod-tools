@@ -233,7 +233,7 @@ namespace tool::vscode {
             const char* method{ request.GetCString("method") };
 
             if (!method || !*method) {
-                if (!id) {
+                if (id) {
                     SendError(&id, lsp::RPC_InvalidRequest, "Invalid request");
                 }
                 continue;
