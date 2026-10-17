@@ -2,9 +2,9 @@
 #include <tools/fastfile/linkers/linker_bo4.hpp>
 
 /*
- * Rigid single bone xmodels from an obj, on the templates the bo4 unlinker dumps (acts ff ... -a xmodel,xmodelmesh)
+ * Rigid single bone xmodels from obj files, on the templates the bo4 unlinker dumps (acts ff ... -a xmodel,xmodelmesh)
  * of a game model with one bone, one lod and one rigid surface (shared flags 8 or 9): what the geometry does not
- * give is kept from them. The mesh (<name>_lod0) is linked in place, resident or streamed from the xpak.
+ * give is kept from them. The meshes (<name>_lod<k>) are linked in place, resident or streamed from the xpak.
  *
  * {
  *     "name": "my_model",
@@ -14,10 +14,22 @@
  *     "upAxis": "z",            // "y" for obj files with y up
  *     "scale": 1.0,
  *     "bone": "tag_origin",
- *     "material": "materials/my_material.json" or "#game_material",
- *     "stream": false,          // mesh data in the xpak
- *     "collision": "box"        // "box", "mesh" (bullets hit the triangles) or "none"
+ *     "material": "materials/my_material.json" or "#game_material",   // the surfaces without their own
+ *     "materials": { "usemtl_name": "materials/other.json" },        // a surface per usemtl of the obj
+ *     "normals": "obj",         // "obj" (smoothed by smoothAngle where it has none), "smooth", "flat", "angle"
+ *     "smoothAngle": 60,
+ *     "vertexColors": true,     // the colors of the obj vertices (v x y z r g b) when it has them
+ *     "lods": [ { "obj": "models/my_model_lod1.obj", "threshold": 2.5, "materials": { } } ],  // less detailed each
+ *     "lodScale": 0.42,         // the lod distances of the model (areaScale), the template's by default
+ *     "stream": false,          // mesh data in the xpak, per lod too
+ *     "collision": "box",       // "box", "mesh" (bullets hit the triangles) or "none"
+ *     "physics": false,         // true (the preset of the game's props) or "#preset": physicslaunch works on it
+ *     "playerClip": true        // the collmap blocks the players, false by default on a physics model (jitter)
  * }
+ *
+ * Surfaces: one per material, cut at 0xFFFF vertices or 0x7FFF triangles, all in one buffer per lod. Lods: the game keeps the
+ * least detailed first (meshes[0], the streamer falls back up) and switches by the projected size of the triangles:
+ * each lod's average triangle area, or its "threshold".
  *
  * Collision, the values of the solid props of core_common: a collision surface for the bullets (script models are
  * traced against it, DObjGeomTraceline) and a collmap with a box brush of the bounds for the players
@@ -124,7 +136,7 @@ namespace {
         XPakEntryInfo xpakEntry;
         float avgRenderTriArea;
         uint16_t numSurfs;
-        uint16_t unk4e;
+        uint16_t lodIndex; // 0 the most detailed (the last slot)
         uint64_t unk50;
     };
     static_assert(sizeof(XModelMesh) == 0x58);
@@ -210,7 +222,6 @@ namespace {
     // the player clip props of the game: the players move with the mask 0x2818011 (ClientThink_real), 0x400
     // (the other common collmap) isn't in it
     constexpr uint32_t COLLMAP_CONTENTS = 0x20010000;
-    constexpr uint64_t COLLMAP_LIST_ENTRY = 0x20010000000440A0ull;
     constexpr float COLLSURF_BOUNDS_PADDING = 0.001f;
 
     constexpr size_t XSURFACE_SHARED_SIZE = 0x200;
@@ -273,35 +284,59 @@ namespace {
         }
     };
 
+    // triangles of a surface: 0xFFFF drew nothing in game (a signed count), the game's own stay under 0x8000
+    constexpr size_t MAX_SURFACE_TRIS = 0x7FFF;
+
     struct MeshVertex {
         Vec3 pos;
         float u, v;
         Vec3 normal;
+        uint32_t color;
         Vec3 tangent;
     };
 
-    struct ObjMesh {
+    // a surface of the game: one material, at most 0xFFFF vertices, 16 bits indices, clockwise
+    struct MeshSurface {
+        std::string material;
         std::vector<MeshVertex> verts{};
         std::vector<uint16_t> indices{};
     };
 
-    // triangulated, deduplicated, in the game's space and winding
-    bool ReadObj(const std::filesystem::path& path, bool yUp, float scale, ObjMesh& mesh) {
+    // what an obj has, the faces in the game's space and winding (triangles, clockwise)
+    struct ObjCorner {
+        int pos;
+        int uv;
+        int normal;
+    };
+    struct ObjTri {
+        ObjCorner c[3];
+        uint32_t group;
+    };
+    struct ObjData {
+        std::vector<Vec3> positions{};
+        std::vector<uint32_t> colors{}; // per position, 0 when the obj has none
+        std::vector<std::pair<float, float>> uvs{};
+        std::vector<Vec3> normals{};
+        std::vector<ObjTri> tris{};
+        std::vector<std::string> groups{}; // usemtl names
+        bool hasColors{};
+    };
+
+    uint32_t PackColor(float r, float g, float b, float a) {
+        auto c = [](float f) { return (uint32_t)std::lround(std::clamp(f, 0.0f, 1.0f) * 255.0f); };
+        return c(r) | (c(g) << 8) | (c(b) << 16) | (c(a) << 24);
+    }
+
+    bool ReadObj(const std::filesystem::path& path, bool yUp, float scale, ObjData& obj) {
         std::string data{};
         if (!utils::ReadFile(path, data)) {
             LOG_ERROR("Can't read {}", path.string());
             return false;
         }
-
-        std::vector<Vec3> positions{};
-        std::vector<std::pair<float, float>> uvs{};
-        std::vector<Vec3> normals{};
-        // position, uv, normal
-        using VertexKey = std::array<uint32_t, 8>;
-        std::map<VertexKey, uint16_t> known{};
-
         auto Convert = [yUp, scale](Vec3 v) { return (yUp ? Vec3{ v.x, -v.z, v.y } : v) * scale; };
         auto Resolve = [](int idx, size_t count) { return idx < 0 ? (int)count + idx : idx - 1; };
+        uint32_t group{};
+        obj.groups.emplace_back();
 
         std::istringstream is{ data };
         std::string line;
@@ -314,17 +349,36 @@ namespace {
             if (op == "v") {
                 Vec3 v{};
                 ls >> v.x >> v.y >> v.z;
-                positions.push_back(Convert(v));
+                obj.positions.push_back(Convert(v));
+                // vertex colors as blender and others write them: v x y z r g b
+                float r, g, b;
+                if (ls >> r >> g >> b) {
+                    obj.colors.push_back(PackColor(r, g, b, 1));
+                    obj.hasColors = true;
+                } else {
+                    obj.colors.push_back(0xFFFFFFFF);
+                }
             } else if (op == "vt") {
                 float u{}, v{};
                 ls >> u >> v;
-                uvs.emplace_back(u, v);
+                obj.uvs.emplace_back(u, v);
             } else if (op == "vn") {
                 Vec3 n{};
                 ls >> n.x >> n.y >> n.z;
-                normals.push_back(Convert(n).Normalized());
+                obj.normals.push_back(Convert(n).Normalized());
+            } else if (op == "usemtl") {
+                std::string name{};
+                std::getline(ls >> std::ws, name);
+                while (!name.empty() && (name.back() == '\r' || name.back() == ' ')) {
+                    name.pop_back();
+                }
+                auto it{ std::find(obj.groups.begin(), obj.groups.end(), name) };
+                group = (uint32_t)(it - obj.groups.begin());
+                if (it == obj.groups.end()) {
+                    obj.groups.push_back(name);
+                }
             } else if (op == "f") {
-                std::vector<uint16_t> face{};
+                std::vector<ObjCorner> face{};
                 std::string token;
                 while (ls >> token) {
                     int vi{}, ti{ 0 }, ni{ 0 };
@@ -339,80 +393,137 @@ namespace {
                         if (s2 != std::string::npos)
                             ni = std::atoi(token.substr(s2 + 1).c_str());
                     }
-                    int p{ Resolve(vi, positions.size()) };
-                    int t{ ti ? Resolve(ti, uvs.size()) : -1 };
-                    int n{ ni ? Resolve(ni, normals.size()) : -1 };
-                    if (p < 0 || p >= (int)positions.size() || t >= (int)uvs.size() || n >= (int)normals.size()) {
+                    ObjCorner c{ Resolve(vi, obj.positions.size()), ti ? Resolve(ti, obj.uvs.size()) : -1,
+                                 ni ? Resolve(ni, obj.normals.size()) : -1 };
+                    if (c.pos < 0 || c.pos >= (int)obj.positions.size() || c.uv >= (int)obj.uvs.size() ||
+                        c.normal >= (int)obj.normals.size()) {
                         LOG_ERROR("{}:{}: bad face index", path.string(), lineIdx);
                         return false;
                     }
-                    MeshVertex vert{};
-                    vert.pos = positions[p];
-                    // obj v goes up, the game's goes down
-                    vert.u = t >= 0 ? uvs[t].first : 0;
-                    vert.v = t >= 0 ? 1.0f - uvs[t].second : 0;
-                    vert.normal = n >= 0 ? normals[n] : Vec3{};
-
-                    // welded by value, exporters like wraith write 3 vertices per triangle
-                    VertexKey key{};
-                    std::memcpy(key.data(), &vert, sizeof(float) * key.size());
-                    auto it{ known.find(key) };
-                    if (it == known.end()) {
-                        if (mesh.verts.size() >= 0xFFFF) {
-                            LOG_ERROR("{}: too many vertices", path.string());
-                            return false;
-                        }
-                        mesh.verts.push_back(vert);
-                        it = known.emplace(key, (uint16_t)(mesh.verts.size() - 1)).first;
-                    }
-                    face.push_back(it->second);
+                    face.push_back(c);
                 }
                 // obj faces are counter clockwise, the game's clockwise
                 for (size_t i = 2; i < face.size(); i++) {
-                    mesh.indices.push_back(face[0]);
-                    mesh.indices.push_back(face[i]);
-                    mesh.indices.push_back(face[i - 1]);
+                    obj.tris.push_back({ { face[0], face[i], face[i - 1] }, group });
+                }
+            }
+        }
+        if (obj.tris.empty()) {
+            LOG_ERROR("{}: no faces", path.string());
+            return false;
+        }
+        return true;
+    }
+
+    /*
+     * The surfaces of an obj: a group per usemtl, cut in surfaces of 0xFFFF vertices. Normals: "obj" (the file's,
+     * smoothed by angle where it has none), "smooth", "flat", or smoothed between faces within smoothAngle degrees.
+     */
+    void BuildSurfaces(const ObjData& obj, const std::string& normalsMode, float smoothAngle, bool colors,
+                       std::vector<MeshSurface>& out) {
+        size_t triCount{ obj.tris.size() };
+        // face normals, area weighted (clockwise: the cross product of e2, e1 points out)
+        std::vector<Vec3> faceNormals(triCount);
+        for (size_t t = 0; t < triCount; t++) {
+            const ObjTri& tri{ obj.tris[t] };
+            Vec3 a{ obj.positions[tri.c[0].pos] }, b{ obj.positions[tri.c[1].pos] }, c{ obj.positions[tri.c[2].pos] };
+            faceNormals[t] = (c - a).Cross(b - a);
+        }
+        // faces around a position, the positions welded by value (some exporters write a vertex per corner)
+        std::map<std::array<uint32_t, 3>, uint32_t> weld{};
+        std::vector<uint32_t> welded(obj.positions.size());
+        for (size_t i = 0; i < obj.positions.size(); i++) {
+            std::array<uint32_t, 3> key{};
+            std::memcpy(key.data(), &obj.positions[i], sizeof(Vec3));
+            welded[i] = weld.emplace(key, (uint32_t)weld.size()).first->second;
+        }
+        std::vector<std::vector<uint32_t>> around(weld.size());
+        for (size_t t = 0; t < triCount; t++) {
+            for (const ObjCorner& c : obj.tris[t].c) {
+                around[welded[c.pos]].push_back((uint32_t)t);
+            }
+        }
+        bool flat{ normalsMode == "flat" };
+        bool fromObj{ normalsMode == "obj" };
+        float cosLimit{ normalsMode == "smooth" ? -2.0f : std::cos(smoothAngle * 3.14159265f / 180.0f) };
+        auto CornerNormal = [&](size_t t, const ObjCorner& c) {
+            if (fromObj && c.normal >= 0) {
+                return obj.normals[c.normal];
+            }
+            Vec3 fn{ faceNormals[t].Normalized() };
+            if (flat) {
+                return fn;
+            }
+            Vec3 sum{};
+            for (uint32_t o : around[welded[c.pos]]) {
+                if (faceNormals[o].Normalized().Dot(fn) >= cosLimit) {
+                    sum = sum + faceNormals[o];
+                }
+            }
+            return sum.Normalized();
+        };
+
+        // per group, the corners deduplicated by value, cut at 0xFFFF vertices
+        for (uint32_t g = 0; g < obj.groups.size(); g++) {
+            MeshSurface* surf{};
+            std::map<std::array<uint32_t, 10>, uint16_t> known{};
+            for (size_t t = 0; t < triCount; t++) {
+                const ObjTri& tri{ obj.tris[t] };
+                if (tri.group != g) {
+                    continue;
+                }
+                // 16 bits vertex counts, the game's surfaces stay under 0x8000 triangles (31346 at most in core_common)
+                if (!surf || surf->verts.size() > 0xFFFF - 3 || surf->indices.size() / 3 >= MAX_SURFACE_TRIS) {
+                    surf = &out.emplace_back();
+                    surf->material = obj.groups[g];
+                    known.clear();
+                }
+                for (const ObjCorner& c : tri.c) {
+                    MeshVertex v{};
+                    v.pos = obj.positions[c.pos];
+                    // obj v goes up, the game's goes down
+                    v.u = c.uv >= 0 ? obj.uvs[c.uv].first : 0;
+                    v.v = c.uv >= 0 ? 1.0f - obj.uvs[c.uv].second : 0;
+                    v.normal = CornerNormal(t, c);
+                    v.color = colors ? obj.colors[c.pos] : 0xFFFFFFFF;
+                    std::array<uint32_t, 10> key{};
+                    std::memcpy(key.data(), &v, sizeof(float) * 9);
+                    key[9] = v.color;
+                    auto it{ known.find(key) };
+                    if (it == known.end()) {
+                        surf->verts.push_back(v);
+                        it = known.emplace(key, (uint16_t)(surf->verts.size() - 1)).first;
+                    }
+                    surf->indices.push_back(it->second);
                 }
             }
         }
 
-        if (mesh.indices.empty()) {
-            LOG_ERROR("{}: no faces", path.string());
-            return false;
-        }
-
-        // face normals where the obj has none, tangents from the uvs
-        std::vector<Vec3> faceNormals(mesh.verts.size());
-        std::vector<Vec3> tangents(mesh.verts.size());
-        for (size_t i = 0; i < mesh.indices.size(); i += 3) {
-            MeshVertex& a{ mesh.verts[mesh.indices[i]] };
-            MeshVertex& b{ mesh.verts[mesh.indices[i + 1]] };
-            MeshVertex& c{ mesh.verts[mesh.indices[i + 2]] };
-            Vec3 e1{ b.pos - a.pos };
-            Vec3 e2{ c.pos - a.pos };
-            // clockwise: the cross product points inside
-            Vec3 fn{ e2.Cross(e1) };
-            float du1{ b.u - a.u }, dv1{ b.v - a.v }, du2{ c.u - a.u }, dv2{ c.v - a.v };
-            float det{ du1 * dv2 - du2 * dv1 };
-            Vec3 t{ std::abs(det) > 1e-12f ? (e1 * dv2 - e2 * dv1) * (1.0f / det) : e1 };
-            for (size_t j = 0; j < 3; j++) {
-                faceNormals[mesh.indices[i + j]] = faceNormals[mesh.indices[i + j]] + fn;
-                tangents[mesh.indices[i + j]] = tangents[mesh.indices[i + j]] + t;
+        // tangents from the uvs, against the normals
+        for (MeshSurface& surf : out) {
+            std::vector<Vec3> tangents(surf.verts.size());
+            for (size_t i = 0; i < surf.indices.size(); i += 3) {
+                MeshVertex& a{ surf.verts[surf.indices[i]] };
+                MeshVertex& b{ surf.verts[surf.indices[i + 1]] };
+                MeshVertex& c{ surf.verts[surf.indices[i + 2]] };
+                Vec3 e1{ b.pos - a.pos };
+                Vec3 e2{ c.pos - a.pos };
+                float du1{ b.u - a.u }, dv1{ b.v - a.v }, du2{ c.u - a.u }, dv2{ c.v - a.v };
+                float det{ du1 * dv2 - du2 * dv1 };
+                Vec3 t{ std::abs(det) > 1e-12f ? (e1 * dv2 - e2 * dv1) * (1.0f / det) : e1 };
+                for (size_t j = 0; j < 3; j++) {
+                    tangents[surf.indices[i + j]] = tangents[surf.indices[i + j]] + t;
+                }
+            }
+            for (size_t i = 0; i < surf.verts.size(); i++) {
+                MeshVertex& v{ surf.verts[i] };
+                Vec3 t{ tangents[i] - v.normal * v.normal.Dot(tangents[i]) };
+                if (t.Dot(t) < 1e-12f) {
+                    t = std::abs(v.normal.z) < 0.9f ? Vec3{ 0, 0, 1 }.Cross(v.normal) : Vec3{ 1, 0, 0 }.Cross(v.normal);
+                }
+                v.tangent = t.Normalized();
             }
         }
-        for (size_t i = 0; i < mesh.verts.size(); i++) {
-            MeshVertex& v{ mesh.verts[i] };
-            if (v.normal.Dot(v.normal) < 0.5f) {
-                v.normal = faceNormals[i].Normalized();
-            }
-            // gram-schmidt against the normal
-            Vec3 t{ tangents[i] - v.normal * v.normal.Dot(tangents[i]) };
-            if (t.Dot(t) < 1e-12f) {
-                t = std::abs(v.normal.z) < 0.9f ? Vec3{ 0, 0, 1 }.Cross(v.normal) : Vec3{ 1, 0, 0 }.Cross(v.normal);
-            }
-            v.tangent = t.Normalized();
-        }
-        return true;
     }
 
     // R10G10B10A2_UNORM, n * 0.5 + 0.5
@@ -473,6 +584,75 @@ namespace {
     // the vertices of a box brush, in the order of the game's
     constexpr int BOX_BRUSH_VERTS[24]{ 1, 3, 2, 0, 4, 6, 7, 5, 4, 5, 1, 0, 5, 7, 3, 1, 2, 3, 7, 6, 0, 2, 6, 4 };
 
+    // the default preset of the game's physics props (hash_550b7918facda46d on 278 core_common props)
+    constexpr const char* DEFAULT_PHYS_PRESET = "hash_550b7918facda46d";
+    // what the game's physics props have in their collmaps: no player clip, a player on a moving body jitters
+    constexpr uint32_t COLLMAP_PHYSICS_CONTENTS = 0x20000400;
+    // the player clip bit of COLLMAP_CONTENTS
+    constexpr uint32_t COLLMAP_PLAYER_CLIP = 0x10000;
+    // a collmap list entry: flags, then the contents in the high dword
+    constexpr uint64_t COLLMAP_LIST_FLAGS = 0x000440A0ull;
+
+    // the asset name of a material json, for its references after the first (the material linker's name)
+    std::string MaterialAssetName(BO4LinkContext& ctx, const std::string& material) {
+        std::filesystem::path path{ ctx.linkCtx.input / material };
+        BO4Json cfg{ path };
+        std::filesystem::path stem{ path.filename() };
+        stem.replace_extension();
+        if (!cfg.SyncConfig(false)) {
+            return stem.string();
+        }
+        return cfg.GetString("name", stem.string().c_str());
+    }
+
+    // a lod of the model: its surfaces in one buffer, as XSurfaceShared wants it
+    struct LodGeom {
+        std::vector<MeshSurface> surfs{};
+        std::vector<std::string> materials{}; // per surface, json path or #name
+        std::vector<byte> data{};
+        uint32_t indicesOffset{}, posOffset{}, vertsOffset{};
+        uint32_t vertCount{}, indexCount{};
+        float triArea{};
+        float threshold{};
+        bool stream{};
+    };
+
+    // indices, positions, vertices of all the surfaces, each part on 16 bytes
+    void BuildLodData(LodGeom& lod) {
+        auto Append = [&lod](const void* ptr, size_t len) {
+            lod.data.resize(utils::Aligned<size_t>(lod.data.size(), 0x10));
+            size_t off{ lod.data.size() };
+            lod.data.insert(lod.data.end(), (const byte*)ptr, (const byte*)ptr + len);
+            return (uint32_t)off;
+        };
+        std::vector<uint16_t> indices{};
+        std::vector<float> positions{};
+        std::vector<uint32_t> packed{};
+        double area{};
+        size_t tris{};
+        for (const MeshSurface& s : lod.surfs) {
+            indices.insert(indices.end(), s.indices.begin(), s.indices.end());
+            for (const MeshVertex& v : s.verts) {
+                positions.insert(positions.end(), { v.pos.x, v.pos.y, v.pos.z });
+                packed.push_back(v.color);
+                packed.push_back(FloatToHalf(v.u) | ((uint32_t)FloatToHalf(v.v) << 16));
+                packed.push_back(PackUnitVector(v.normal));
+                packed.push_back(PackUnitVector(v.tangent));
+            }
+            for (size_t i = 0; i < s.indices.size(); i += 3) {
+                Vec3 a{ s.verts[s.indices[i]].pos }, b{ s.verts[s.indices[i + 1]].pos }, c{ s.verts[s.indices[i + 2]].pos };
+                area += (b - a).Cross(c - a).Length() * 0.5;
+                tris++;
+            }
+        }
+        lod.indicesOffset = Append(indices.data(), indices.size() * sizeof(uint16_t));
+        lod.posOffset = Append(positions.data(), positions.size() * sizeof(float));
+        lod.vertsOffset = Append(packed.data(), packed.size() * sizeof(uint32_t));
+        lod.vertCount = (uint32_t)(positions.size() / 3);
+        lod.indexCount = (uint32_t)indices.size();
+        lod.triArea = tris ? (float)(area / tris) : 0;
+    }
+
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -496,7 +676,6 @@ namespace {
 
             std::string templateModelPath{ cfg.GetString("templateModel", "") };
             std::string templateMeshPath{ cfg.GetString("templateMesh", "") };
-            std::string objPath{ cfg.GetString("obj", "") };
             BO4Json tmodel{ dir / templateModelPath };
             BO4Json tmesh{ dir / templateMeshPath };
             if (templateModelPath.empty() || !tmodel.SyncConfig(false)) {
@@ -514,20 +693,90 @@ namespace {
             const rapidjson::Value* streamCfg{ Member(cfg.main, "stream") };
             bool stream{ streamCfg && streamCfg->IsBool() && streamCfg->GetBool() };
             std::string boneName{ cfg.GetString("bone", "tag_origin") };
-            std::string material{ cfg.GetString("material", "") };
             std::string collision{ cfg.GetString("collision", "box") };
+            std::string normalsMode{ cfg.GetString("normals", "obj") };
+            float smoothAngle{ (float)cfg.GetDouble("smoothAngle", 60.0) };
+            const rapidjson::Value* colorsCfg{ Member(cfg.main, "vertexColors") };
+            bool vertexColors{ !colorsCfg || !colorsCfg->IsBool() || colorsCfg->GetBool() };
             if (collision != "box" && collision != "mesh" && collision != "none") {
                 Fail(std::format("unknown collision '{}'", collision));
                 return;
             }
-
-            ObjMesh obj{};
-            if (objPath.empty() || !ReadObj(dir / objPath, upAxis == "y", scale, obj)) {
-                Fail("can't read obj");
+            if (normalsMode != "obj" && normalsMode != "smooth" && normalsMode != "flat" && normalsMode != "angle") {
+                Fail(std::format("unknown normals '{}', obj, smooth, flat or angle (smoothAngle)", normalsMode));
+                return;
+            }
+            // physics: true for the default preset of the game's props, or "#preset"
+            const rapidjson::Value* physicsCfg{ Member(cfg.main, "physics") };
+            std::string physPreset{};
+            if (physicsCfg && physicsCfg->IsBool() && physicsCfg->GetBool()) {
+                physPreset = DEFAULT_PHYS_PRESET;
+            } else if (physicsCfg && physicsCfg->IsString()) {
+                physPreset = physicsCfg->GetString();
+            }
+            if (!physPreset.empty() && collision == "none") {
+                Fail("physics needs a collision");
                 return;
             }
 
-            std::vector<byte> buff{};
+            // the lods: the model's obj, then "lods", from the most detailed to the least
+            std::vector<const rapidjson::Value*> lodCfgs{ &cfg.main };
+            const rapidjson::Value* lodsCfg{ Member(cfg.main, "lods") };
+            if (lodsCfg && lodsCfg->IsArray()) {
+                for (const rapidjson::Value& l : lodsCfg->GetArray()) {
+                    lodCfgs.push_back(&l);
+                }
+            }
+            if (lodCfgs.size() > 8) {
+                Fail("at most 8 lods");
+                return;
+            }
+
+            std::vector<LodGeom> lods(lodCfgs.size());
+            for (size_t k = 0; k < lodCfgs.size(); k++) {
+                const rapidjson::Value& lc{ *lodCfgs[k] };
+                LodGeom& lod{ lods[k] };
+                const rapidjson::Value* objCfg{ Member(lc, "obj") };
+                ObjData obj{};
+                if (!objCfg || !objCfg->IsString() || !ReadObj(dir / objCfg->GetString(), upAxis == "y", scale, obj)) {
+                    Fail(std::format("lod {}: can't read obj", k));
+                    return;
+                }
+                BuildSurfaces(obj, normalsMode, normalsMode == "smooth" ? 180.0f : smoothAngle, vertexColors && obj.hasColors, lod.surfs);
+                if (lod.surfs.size() > 0xFF) {
+                    Fail(std::format("lod {}: too many surfaces", k));
+                    return;
+                }
+                // materials: "materials" { usemtl: material } of the lod then of the model, "material" for the rest
+                for (const MeshSurface& s : lod.surfs) {
+                    std::string mat{};
+                    for (const rapidjson::Value* src : { &lc, static_cast<const rapidjson::Value*>(&cfg.main) }) {
+                        const rapidjson::Value* mats{ Member(*src, "materials") };
+                        const rapidjson::Value* m{ mats ? Member(*mats, s.material.data()) : nullptr };
+                        const rapidjson::Value* m1{ Member(*src, "material") };
+                        if (m && m->IsString()) {
+                            mat = m->GetString();
+                        } else if (m1 && m1->IsString()) {
+                            mat = m1->GetString();
+                        }
+                        if (!mat.empty()) {
+                            break;
+                        }
+                    }
+                    if (mat.empty()) {
+                        Fail(std::format("lod {}: no material for '{}'", k, s.material));
+                        return;
+                    }
+                    lod.materials.push_back(mat);
+                }
+                const rapidjson::Value* lstream{ Member(lc, "stream") };
+                lod.stream = lstream && lstream->IsBool() ? lstream->GetBool() : stream;
+                BuildLodData(lod);
+                const rapidjson::Value* threshold{ Member(lc, "threshold") };
+                lod.threshold = threshold && threshold->IsNumber() && k ? (float)threshold->GetDouble() : lod.triArea;
+            }
+            const LodGeom& lod0{ lods[0] };
+
             std::vector<byte> modelHeader{}, meshHeader{}, sharedHeader{}, surfHeader{};
             std::vector<byte> meshPartBits{}, surfPartBits{}, partClassification{}, baseMat{}, boneInfo{}, unkC0{};
             std::vector<byte> meshMaterialsEntry{};
@@ -560,53 +809,21 @@ namespace {
                 return;
             }
 
-            // indices, positions, vertices, each on 16 bytes
-            std::vector<byte> data{};
-            auto Append = [&data](const void* ptr, size_t len) {
-                data.resize(utils::Aligned<size_t>(data.size(), 0x10));
-                size_t off{ data.size() };
-                data.insert(data.end(), (const byte*)ptr, (const byte*)ptr + len);
-                return (uint32_t)off;
-            };
-            uint32_t indicesOffset{ Append(obj.indices.data(), obj.indices.size() * sizeof(uint16_t)) };
-            std::vector<float> positions{};
-            for (const MeshVertex& v : obj.verts) {
-                positions.insert(positions.end(), { v.pos.x, v.pos.y, v.pos.z });
-            }
-            uint32_t posOffset{ Append(positions.data(), positions.size() * sizeof(float)) };
-            std::vector<uint32_t> packed{};
-            for (const MeshVertex& v : obj.verts) {
-                packed.push_back(0xFFFFFFFF); // color
-                packed.push_back(FloatToHalf(v.u) | ((uint32_t)FloatToHalf(v.v) << 16));
-                packed.push_back(PackUnitVector(v.normal));
-                packed.push_back(PackUnitVector(v.tangent));
-            }
-            uint32_t vertsOffset{ Append(packed.data(), packed.size() * sizeof(uint32_t)) };
-
-            // bounds
-            Vec3 mins{ obj.verts[0].pos }, maxs{ obj.verts[0].pos };
-            for (const MeshVertex& v : obj.verts) {
-                mins = { std::min(mins.x, v.pos.x), std::min(mins.y, v.pos.y), std::min(mins.z, v.pos.z) };
-                maxs = { std::max(maxs.x, v.pos.x), std::max(maxs.y, v.pos.y), std::max(maxs.z, v.pos.z) };
+            // bounds of the most detailed lod
+            Vec3 mins{ lod0.surfs[0].verts[0].pos }, maxs{ mins };
+            for (const MeshSurface& s : lod0.surfs) {
+                for (const MeshVertex& v : s.verts) {
+                    mins = { std::min(mins.x, v.pos.x), std::min(mins.y, v.pos.y), std::min(mins.z, v.pos.z) };
+                    maxs = { std::max(maxs.x, v.pos.x), std::max(maxs.y, v.pos.y), std::max(maxs.z, v.pos.z) };
+                }
             }
             Vec3 extent{ std::max(std::abs(mins.x), std::abs(maxs.x)), std::max(std::abs(mins.y), std::abs(maxs.y)),
-                      std::max(std::abs(mins.z), std::abs(maxs.z)) };
+                         std::max(std::abs(mins.z), std::abs(maxs.z)) };
             float radius{ extent.Length() };
             Vec3 center{ (mins + maxs) * 0.5f };
             Vec3 half{ (maxs - mins) * 0.5f };
-            float triArea{};
-            for (size_t i = 0; i < obj.indices.size(); i += 3) {
-                Vec3 a{ obj.verts[obj.indices[i]].pos };
-                Vec3 b{ obj.verts[obj.indices[i + 1]].pos };
-                Vec3 c{ obj.verts[obj.indices[i + 2]].pos };
-                triArea += (b - a).Cross(c - a).Length() * 0.5f;
-            }
-            triArea /= (float)(obj.indices.size() / 3);
 
-            uint16_t vertCount{ (uint16_t)obj.verts.size() };
-            uint16_t triCount{ (uint16_t)(obj.indices.size() / 3) };
-
-            // collision triangles: the box of the bounds or the triangles of the mesh
+            // collision triangles: the box of the bounds or the triangles of the most detailed lod
             std::vector<XModelCollTri> collTris{};
             float collArea{};
             auto AddCollTri = [&collTris, &collArea](const Vec3& a, const Vec3& b, const Vec3& c) {
@@ -627,17 +844,21 @@ namespace {
                 }
             } else if (collision == "mesh") {
                 // the mesh is clockwise
-                for (size_t i = 0; i < obj.indices.size(); i += 3) {
-                    AddCollTri(
-                        obj.verts[obj.indices[i]].pos, obj.verts[obj.indices[i + 2]].pos,
-                        obj.verts[obj.indices[i + 1]].pos
-                    );
+                for (const MeshSurface& s : lod0.surfs) {
+                    for (size_t i = 0; i < s.indices.size(); i += 3) {
+                        AddCollTri(s.verts[s.indices[i]].pos, s.verts[s.indices[i + 2]].pos, s.verts[s.indices[i + 1]].pos);
+                    }
                 }
             }
             bool hasCollision{ !collTris.empty() };
             if (hasCollision) {
                 collArea /= (float)collTris.size();
             }
+            // a static prop blocks the players, a physics prop has the game's props' contents ("playerClip" to block)
+            const rapidjson::Value* playerClipCfg{ Member(cfg.main, "playerClip") };
+            bool playerClip{ playerClipCfg && playerClipCfg->IsBool() ? playerClipCfg->GetBool() : physPreset.empty() };
+            uint32_t collmapContents{ (physPreset.empty() ? COLLMAP_CONTENTS : COLLMAP_PHYSICS_CONTENTS) |
+                                      (playerClip ? COLLMAP_PLAYER_CLIP : 0) };
 
             // Load_XModel: header, bones, meshes, materials, collision surfaces, bone info, unkC0, collmaps
             ff.data.PushStream(XFILE_BLOCK_TEMP);
@@ -653,7 +874,6 @@ namespace {
             // the average area of the collision triangles, a trace skips a model under a minimum
             std::memcpy(&model.unk128, &collArea, sizeof(model.unk128));
             model.numSubmodels = 0;
-            model.numLods = 1;
             model.parentList = nullptr;
             model.quats = nullptr;
             model.trans = nullptr;
@@ -665,6 +885,21 @@ namespace {
             std::memcpy(model.mins, &mins, sizeof(model.mins));
             std::memcpy(model.maxs, &maxs, sizeof(model.maxs));
             model.radius = radius;
+
+            // lods: the least detailed first (the game's order, the streamer falls back up), the triangle area of each
+            // as the size it switches at (GfxLodModelParams), areaScale the model's lod distance scale
+            size_t numLods{ lods.size() };
+            model.numLods = (uint32_t)numLods;
+            float* lodParams{ (float*)model.lodParams };
+            for (size_t slot = 0; slot < 8; slot++) {
+                lodParams[slot] = slot < numLods ? lods[numLods - 1 - slot].threshold : 0;
+            }
+            const rapidjson::Value* lodScale{ Member(cfg.main, "lodScale") };
+            if (lodScale && lodScale->IsNumber()) {
+                lodParams[8] = (float)lodScale->GetDouble();
+            }
+            model.highestRenderLod = (int8_t)(numLods - 1);
+            model.highestShadowLod = (int8_t)(numLods - 1);
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
@@ -687,20 +922,23 @@ namespace {
             ff.data.Align(0x10);
             ff.data.WriteStream(baseMat.data(), baseMat.size());
 
-            // meshes, the mesh of the lod 0 in place
-            for (size_t i = 0; i < std::size(model.meshes); i++) {
-                if (i) {
-                    model.meshes[i] = nullptr;
+            // meshes in place, slot s the lod numLods - 1 - s, named <name>_lod<k>
+            for (size_t slot = 0; slot < std::size(model.meshes); slot++) {
+                if (slot >= numLods) {
+                    model.meshes[slot] = nullptr;
                     continue;
                 }
-                model.meshes[i] = (void*)fastfile::linker::memory::POINTER_NEXT;
+                size_t k{ numLods - 1 - slot };
+                const LodGeom& lod{ lods[k] };
+                model.meshes[slot] = (void*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.PushStream(XFILE_BLOCK_TEMP);
                 ff.data.Align(8);
                 XModelMesh& mesh{ ff.data.AllocStreamRef<XModelMesh>() };
                 std::memcpy(&mesh, meshHeader.data(), sizeof(mesh));
-                mesh.name.name = ctx.HashXHash(std::format("{}_lod0", assetName), true);
-                mesh.numSurfs = 1;
-                mesh.avgRenderTriArea = triArea;
+                mesh.name.name = ctx.HashXHash(std::format("{}_lod{}", assetName, k), true);
+                mesh.numSurfs = (uint16_t)lod.surfs.size();
+                mesh.avgRenderTriArea = lod.triArea;
+                mesh.lodIndex = (uint16_t)k;
                 mesh.xpakEntry = {};
 
                 ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
@@ -713,95 +951,112 @@ namespace {
                     mesh.partBits = nullptr;
                 }
 
-                // shared block, the surface points to it
+                // shared block of all the surfaces, they point to it
                 mesh.shared = (XSurfaceShared*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.Align(0x10);
                 fastfile::linker::memory::LinkerDataChunk* sharedChunk{};
                 byte* shared{ ff.data.AllocStreamPtr<byte>(XSURFACE_SHARED_SIZE, &sharedChunk) };
                 std::memcpy(shared, sharedHeader.data(), XSURFACE_SHARED_SIZE);
                 XSurfaceSharedHeader& sh{ *(XSurfaceSharedHeader*)shared };
-                sh.flags = (sh.flags & ~SHARED_STREAMED) | (stream ? SHARED_STREAMED : 0);
-                sh.vertCount = vertCount;
+                sh.flags = (sh.flags & ~SHARED_STREAMED) | (lod.stream ? SHARED_STREAMED : 0);
+                sh.vertCount = lod.vertCount;
                 sh.skinVertCount = 0;
-                sh.indexCount = (uint32_t)obj.indices.size();
+                sh.indexCount = lod.indexCount;
                 sh.blendTargetVertCount = 0;
-                sh.dataSize = (uint32_t)data.size();
-                sh.posOffset = posOffset;
-                sh.vertsOffset = vertsOffset;
-                sh.indicesOffset = indicesOffset;
+                sh.dataSize = (uint32_t)lod.data.size();
+                sh.posOffset = lod.posOffset;
+                sh.vertsOffset = lod.vertsOffset;
+                sh.indicesOffset = lod.indicesOffset;
                 sh.skinWeightsOffset = 0;
                 sh.data = (byte*)fastfile::linker::memory::POINTER_NEXT;
                 // no blend targets
                 std::memset(shared + SHARED_BLEND_COUNT_OFFSET, 0, XSURFACE_SHARED_SIZE - SHARED_BLEND_COUNT_OFFSET);
 
-                if (stream) {
-                    mesh.xpakEntry.key = ::hash::Hash64(std::format("{}/mesh_lod0", assetName).data());
+                if (lod.stream) {
+                    // the xpak keys of the game's streamed meshes all have the top bit
+                    mesh.xpakEntry.key = ::hash::Hash64(std::format("{}/mesh_lod{}", assetName, k).data()) | 0x8000000000000000ull;
                     ff.data.PushStream(XFILE_BLOCK_STREAMER);
                     ff.data.Align(0x100);
-                    ff.data.AllocRuntime(data.size());
+                    ff.data.AllocRuntime(lod.data.size());
                     ff.data.PopStream();
-                    AddXPakItem(ff, mesh.xpakEntry.key, std::vector<byte>{ data });
+                    AddXPakItem(ff, mesh.xpakEntry.key, std::vector<byte>{ lod.data });
                 } else {
                     ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
                     ff.data.Align(0x100);
-                    ff.data.WriteStream(data.data(), data.size());
+                    ff.data.WriteStream(lod.data.data(), lod.data.size());
                     ff.data.PopStream();
                 }
 
-                // surface
+                // surfaces, then for each its part bits and vertex list
                 mesh.surfs = (XSurface*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.Align(8);
-                XSurface& surf{ ff.data.AllocStreamRef<XSurface>() };
-                std::memcpy(&surf, surfHeader.data(), sizeof(surf));
-                surf.vertListCount = 1;
-                surf.vertCount = vertCount;
-                surf.triCount = triCount;
-                surf.baseVertIndex = 0;
-                surf.baseIndexOffset = 0;
-                surf.unk20 = 0;
-                // offset of the shared block in the virtual block, set at link
-                surf.shared = nullptr;
-                sharedChunk->refs.push_back((void**)&surf.shared);
-
-                if (surfPartBits.size() == PART_BITS_SIZE) {
-                    surf.partBits = (byte*)fastfile::linker::memory::POINTER_NEXT;
-                    ff.data.Align(4);
-                    ff.data.WriteStream(surfPartBits.data(), surfPartBits.size());
-                } else {
-                    surf.partBits = nullptr;
+                XSurface* surfs{ ff.data.AllocStreamPtr<XSurface>(lod.surfs.size()) };
+                uint32_t baseVert{}, baseIndex{};
+                for (size_t i = 0; i < lod.surfs.size(); i++) {
+                    XSurface& surf{ surfs[i] };
+                    std::memcpy(&surf, surfHeader.data(), sizeof(surf));
+                    surf.vertListCount = 1;
+                    surf.vertCount = (uint16_t)lod.surfs[i].verts.size();
+                    surf.triCount = (uint16_t)(lod.surfs[i].indices.size() / 3);
+                    surf.baseVertIndex = baseVert;
+                    surf.baseIndexOffset = baseIndex;
+                    surf.unk20 = 0;
+                    baseVert += surf.vertCount;
+                    baseIndex += (uint32_t)lod.surfs[i].indices.size();
+                    // offset of the shared block in the virtual block, set at link
+                    surf.shared = nullptr;
+                    sharedChunk->refs.push_back((void**)&surf.shared);
+                    surf.partBits = surfPartBits.size() == PART_BITS_SIZE ? (byte*)fastfile::linker::memory::POINTER_NEXT : nullptr;
+                    surf.vertList = (XRigidVertList*)fastfile::linker::memory::POINTER_NEXT;
+                }
+                for (size_t i = 0; i < lod.surfs.size(); i++) {
+                    if (surfs[i].partBits) {
+                        ff.data.Align(4);
+                        ff.data.WriteStream(surfPartBits.data(), surfPartBits.size());
+                    }
+                    ff.data.Align(2);
+                    XRigidVertList& vertList{ ff.data.AllocStreamRef<XRigidVertList>() };
+                    vertList = { 0, surfs[i].vertCount, 0, surfs[i].triCount };
                 }
 
-                surf.vertList = (XRigidVertList*)fastfile::linker::memory::POINTER_NEXT;
-                ff.data.Align(2);
-                XRigidVertList& vertList{ ff.data.AllocStreamRef<XRigidVertList>() };
-                vertList = { 0, vertCount, 0, triCount };
-
                 ff.data.PopStream();
                 ff.data.PopStream();
             }
 
-            // materials of the lod 0
+            // materials per lod, in the slots' order: the pointers, the materials, their himip radii
             model.meshMaterials = (XModelMeshMaterials*)fastfile::linker::memory::POINTER_NEXT;
             ff.data.Align(8);
-            XModelMeshMaterials& mm{ ff.data.AllocStreamRef<XModelMeshMaterials>() };
-            std::memcpy(&mm, meshMaterialsEntry.data(), sizeof(mm));
-            mm.numMaterials = 1;
-            mm.materials = (void**)fastfile::linker::memory::POINTER_NEXT;
-            ff.data.Align(8);
-            void*& mat{ ff.data.AllocStreamRef<void*>() };
-            if (material.empty()) {
-                Fail("no material");
-                return;
+            XModelMeshMaterials* mms{ ff.data.AllocStreamPtr<XModelMeshMaterials>(numLods) };
+            for (size_t slot = 0; slot < numLods; slot++) {
+                std::memcpy(&mms[slot], meshMaterialsEntry.data(), sizeof(mms[slot]));
+                mms[slot].numMaterials = (uint16_t)lods[numLods - 1 - slot].surfs.size();
+                mms[slot].materials = (void**)fastfile::linker::memory::POINTER_NEXT;
+                mms[slot].himipInvSqRadii = (float*)fastfile::linker::memory::POINTER_NEXT;
             }
-            if (material[0] == '#') {
-                std::string refId{ std::format(",{}", material.substr(1)) };
-                ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, refId.data(), mat, false, &ff);
-            } else {
-                ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, material.data(), mat, false, &ff);
+            // a material of a json once in the model, then by its name
+            std::unordered_set<std::string> linked{};
+            for (size_t slot = 0; slot < numLods; slot++) {
+                const LodGeom& lod{ lods[numLods - 1 - slot] };
+                ff.data.Align(8);
+                void** mats{ ff.data.AllocStreamPtr<void*>(lod.materials.size()) };
+                for (size_t i = 0; i < lod.materials.size(); i++) {
+                    const std::string& material{ lod.materials[i] };
+                    if (material[0] == '#') {
+                        std::string refId{ std::format(",{}", material.substr(1)) };
+                        ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, refId.data(), mats[i], false, &ff);
+                    } else if (linked.contains(material)) {
+                        std::string refId{ std::format(",{}", MaterialAssetName(ctx, material)) };
+                        ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, refId.data(), mats[i], false, &ff);
+                    } else {
+                        linked.insert(material);
+                        ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, material.data(), mats[i], false, &ff);
+                    }
+                }
+                ff.data.Align(4);
+                for (size_t i = 0; i < lod.materials.size(); i++) {
+                    ff.data.WriteStream<float>(radius > 0 ? 1.0f / (radius * radius) : 1.0f);
+                }
             }
-            mm.himipInvSqRadii = (float*)fastfile::linker::memory::POINTER_NEXT;
-            ff.data.Align(4);
-            ff.data.WriteStream<float>(radius > 0 ? 1.0f / (radius * radius) : 1.0f);
 
             // collision surface of the bullets
             if (hasCollision) {
@@ -840,6 +1095,12 @@ namespace {
                 model.unkC0 = nullptr;
             }
 
+            // the physics preset, a game asset by name
+            if (!physPreset.empty()) {
+                std::string refId{ std::format(",{}", physPreset[0] == '#' ? physPreset.substr(1) : physPreset) };
+                ctx.LinkAsset(XAssetType::ASSET_TYPE_PHYSPRESET, refId.data(), model.physPreset, false, &ff);
+            }
+
             // collmap of the players: one box brush
             if (hasCollision) {
                 model.collmaps = (void*)fastfile::linker::memory::POINTER_NEXT;
@@ -855,7 +1116,7 @@ namespace {
                 PhysGeomList& geomList{ ff.data.AllocStreamRef<PhysGeomList>() };
                 geomList = {};
                 geomList.count = 1;
-                geomList.contents = COLLMAP_CONTENTS;
+                geomList.contents = collmapContents;
                 geomList.geoms = (PhysGeomInfo*)fastfile::linker::memory::POINTER_NEXT;
 
                 ff.data.Align(8);
@@ -868,7 +1129,7 @@ namespace {
                 brush = {};
                 std::memcpy(brush.mins, &mins, sizeof(brush.mins));
                 std::memcpy(brush.maxs, &maxs, sizeof(brush.maxs));
-                brush.contents = COLLMAP_CONTENTS;
+                brush.contents = collmapContents;
                 brush.numverts = (uint16_t)std::size(BOX_BRUSH_VERTS);
                 brush.verts = (float*)fastfile::linker::memory::POINTER_NEXT;
                 std::vector<float> verts{};
@@ -880,21 +1141,25 @@ namespace {
                 ff.data.WriteStream(verts.data(), verts.size() * sizeof(float));
 
                 ff.data.Align(4);
-                ff.data.WriteStream<uint64_t>(COLLMAP_LIST_ENTRY);
+                ff.data.WriteStream<uint64_t>(((uint64_t)collmapContents << 32) | COLLMAP_LIST_FLAGS);
             }
 
             ff.data.PopStream();
 
             ff.data.PopStream();
 
+            size_t totalSurfs{};
+            for (const LodGeom& lod : lods) {
+                totalSurfs += lod.surfs.size();
+            }
             LOG_INFO(
-                "Added asset xmodel {} (hash_{:x}), {} vertices, {} triangles{}",
-                assetName,
-                model.name.name,
-                vertCount,
-                triCount,
-                stream ? ", streamed mesh" : ""
+                "Added asset xmodel {} (hash_{:x}), {} vertices, {} triangles, {} surface(s), {} lod(s){}{}", assetName,
+                model.name.name, lod0.vertCount, lod0.indexCount / 3, lod0.surfs.size(), numLods,
+                lod0.stream ? ", streamed mesh" : "", physPreset.empty() ? "" : ", physics"
             );
+            for (size_t k = 1; k < numLods; k++) {
+                LOG_INFO("  lod {}: {} vertices, {} triangles, switch at triangle area {}", k, lods[k].vertCount, lods[k].indexCount / 3, lods[k].threshold);
+            }
         }
     };
 

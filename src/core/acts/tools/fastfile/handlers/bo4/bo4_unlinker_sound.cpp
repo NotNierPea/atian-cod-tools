@@ -4,9 +4,25 @@
 #include <core/hashes/raw_file_extractor.hpp>
 #include <tools/fastfile/handlers/handler_game_bo4.hpp>
 #include <tools/fastfile/handlers/bo4/bo4_unlinker_scriptbundle.hpp>
+#include <games/bo4/sound_alias.hpp>
 
 namespace {
     using namespace fastfile::handlers::bo4;
+    using games::bo4::sound::SndAlias;
+    using games::bo4::sound::SndAliasList;
+
+    // the blocks as they are, templates for the bo4 sound linker
+    std::string Hex(const void* data, size_t len) {
+        static const char* digits{ "0123456789abcdef" };
+        std::string out{};
+        out.reserve(len * 2);
+        for (size_t i = 0; i < len; i++) {
+            byte b{ ((const byte*)data)[i] };
+            out += digits[b >> 4];
+            out += digits[b & 0xF];
+        }
+        return out;
+    }
 
     struct StreamKey;
 
@@ -23,77 +39,6 @@ namespace {
         unsigned __int16 value;
         unsigned __int16 next;
     };
-    struct SndAlias {
-        XHash name;
-        XHash subtitle;
-        XHash secondaryname;
-        XHash stopAliasName;
-        ScrString_t facialAnimation;
-        XHash assetId;
-        XHash assetFileName;
-        XHash assetIdSustain;
-        XHash assetFileNameSustain;
-        XHash assetIdRelease;
-        XHash assetFileNameRelease;
-        uint64_t flags0;
-        uint64_t flags1;
-        XHash duck;
-        XHash contextType;
-        XHash contextValue;
-        XHash contextType1;
-        XHash contextValue1;
-        XHash contextType2;
-        XHash contextValue2;
-        XHash contextType3;
-        XHash contextValue3;
-        XHash stopOnPlay;
-        XHash futzPatch;
-        XHash unk168;
-        float reverbSend;
-        float centerSend;
-        float volMin;
-        float volMax;
-        float envelopPercentage;
-        uint16_t fluxTime;
-        uint16_t startDelay;
-        uint16_t pitchMin;
-        uint16_t pitchMax;
-        uint16_t distMin;
-        uint16_t distMax;
-        uint16_t distReverbMax;
-        uint16_t envelopMin;
-        uint16_t envelopMax;
-        uint16_t distanceLpfMin;
-        uint16_t distanceLpfMax;
-        int16_t fadeIn;
-        int16_t fadeOut;
-        int16_t dopplerScale;
-        uint8_t minPriorityThreshold;
-        uint8_t maxPriorityThreshold;
-        uint8_t probability;
-        uint8_t occlusionLevel;
-        uint8_t minPriority;
-        uint8_t maxPriority;
-        uint8_t pan;
-        uint8_t limitCount;
-        uint8_t entityLimitCount;
-        uint8_t duckGroup;
-        uint8_t bus;
-        uint8_t group;
-        uint64_t unk178;
-    };
-    static_assert(sizeof(SndAlias) == 0x1c0);
-
-    struct SndAliasList {
-        XHash name;
-        SndAlias* aliases;
-        int32_t count;
-        int32_t sequence;
-        float cullDistance;
-        bool spatial;
-    };
-    static_assert(sizeof(SndAliasList) == 0x28);
-
     typedef float SndFloatAlign32;
 
     struct SndDuck {
@@ -173,8 +118,8 @@ namespace {
         uint64_t unk90;
         uint32_t unka0_count;
         uint64_t unka0;
-        uint32_t unkb0_count;
-        uint64_t unkb0;
+        uint32_t musicSetCount;
+        games::bo4::sound::SndMusicSet* musicSets;
         uint32_t unkc0_count;
         uint64_t unkc0;
         SndBankStreamKeys streamKeysSABL;
@@ -247,6 +192,7 @@ namespace {
                 json.WriteFieldValueNumber("sequence", list->sequence);
                 json.WriteFieldValueNumber("cullDistance", list->cullDistance);
                 json.WriteFieldValueNumber("spatial", list->spatial);
+                json.WriteFieldValueString("raw", Hex(list, sizeof(*list)));
 
                 json.WriteFieldNameString("aliases");
                 json.BeginArray();
@@ -256,60 +202,33 @@ namespace {
                     json.BeginObject();
                     json.WriteFieldValueXHash("name", alias->name);
                     json.WriteFieldValueXHash("subtitle", alias->subtitle);
-                    json.WriteFieldValueXHash("secondaryname", alias->secondaryname);
-                    json.WriteFieldValueXHash("stopAliasName", alias->stopAliasName);
                     json.WriteFieldValueXHash("assetId", alias->assetId);
-                    json.WriteFieldValueXHash("assetFileName", alias->assetFileName);
                     json.WriteFieldValueXHash("assetIdSustain", alias->assetIdSustain);
-                    json.WriteFieldValueXHash("assetFileNameSustain", alias->assetFileNameSustain);
                     json.WriteFieldValueXHash("assetIdRelease", alias->assetIdRelease);
+                    json.WriteFieldValueXHash("assetFileName", alias->assetFileName);
+                    json.WriteFieldValueXHash("assetFileNameSustain", alias->assetFileNameSustain);
                     json.WriteFieldValueXHash("assetFileNameRelease", alias->assetFileNameRelease);
-                    json.WriteFieldValueXHash("duck", alias->duck);
-                    json.WriteFieldValueXHash("contextType", alias->contextType);
-                    json.WriteFieldValueXHash("contextValue", alias->contextValue);
-                    json.WriteFieldValueXHash("contextType1", alias->contextType1);
-                    json.WriteFieldValueXHash("contextValue1", alias->contextValue1);
-                    json.WriteFieldValueXHash("contextType2", alias->contextType2);
-                    json.WriteFieldValueXHash("contextValue2", alias->contextValue2);
-                    json.WriteFieldValueXHash("contextType3", alias->contextType3);
-                    json.WriteFieldValueXHash("contextValue3", alias->contextValue3);
-                    json.WriteFieldValueXHash("stopOnPlay", alias->stopOnPlay);
-                    json.WriteFieldValueXHash("futzPatch", alias->futzPatch);
-                    json.WriteFieldValueXHash("unk168", alias->unk168);
-                    json.WriteFieldValueScrString("facialAnimation", alias->facialAnimation);
+                    json.WriteFieldValueXHash("revFilename", alias->revFilename);
+                    json.WriteFieldValueScrString("facialAnimation", *(ScrString_t*)&alias->facialAnimation);
 
-                    json.WriteFieldValueNumber("reverbSend", alias->reverbSend);                          // float
-                    json.WriteFieldValueNumber("centerSend", alias->centerSend);                          // float
-                    json.WriteFieldValueNumber("volMin", alias->volMin);                                  // float
-                    json.WriteFieldValueNumber("volMax", alias->volMax);                                  // float
-                    json.WriteFieldValueNumber("envelopPercentage", alias->envelopPercentage);            // float
-                    json.WriteFieldValueNumber("fluxTime", alias->fluxTime);                              // uint16_t
-                    json.WriteFieldValueNumber("startDelay", alias->startDelay);                          // uint16_t
-                    json.WriteFieldValueNumber("pitchMin", alias->pitchMin);                              // uint16_t
-                    json.WriteFieldValueNumber("pitchMax", alias->pitchMax);                              // uint16_t
-                    json.WriteFieldValueNumber("distMin", alias->distMin);                                // uint16_t
-                    json.WriteFieldValueNumber("distMax", alias->distMax);                                // uint16_t
-                    json.WriteFieldValueNumber("distReverbMax", alias->distReverbMax);                    // uint16_t
-                    json.WriteFieldValueNumber("envelopMin", alias->envelopMin);                          // uint16_t
-                    json.WriteFieldValueNumber("envelopMax", alias->envelopMax);                          // uint16_t
-                    json.WriteFieldValueNumber("distanceLpfMin", alias->distanceLpfMin);                  // uint16_t
-                    json.WriteFieldValueNumber("distanceLpfMax", alias->distanceLpfMax);                  // uint16_t
-                    json.WriteFieldValueNumber("fadeIn", alias->fadeIn);                                  // int16_t
-                    json.WriteFieldValueNumber("fadeOut", alias->fadeOut);                                // int16_t
-                    json.WriteFieldValueNumber("dopplerScale", alias->dopplerScale);                      // int16_t
-                    json.WriteFieldValueNumber<int>("minPriorityThreshold", alias->minPriorityThreshold); // uint8_t
-                    json.WriteFieldValueNumber<int>("maxPriorityThreshold", alias->maxPriorityThreshold); // uint8_t
-                    json.WriteFieldValueNumber<int>("probability", alias->probability);                   // uint8_t
-                    json.WriteFieldValueNumber<int>("occlusionLevel", alias->occlusionLevel);             // uint8_t
-                    json.WriteFieldValueNumber<int>("minPriority", alias->minPriority);                   // uint8_t
-                    json.WriteFieldValueNumber<int>("maxPriority", alias->maxPriority);                   // uint8_t
-                    json.WriteFieldValueNumber<int>("pan", alias->pan);                                   // uint8_t
-                    json.WriteFieldValueNumber<int>("limitCount", alias->limitCount);                     // uint8_t
-                    json.WriteFieldValueNumber<int>("entityLimitCount", alias->entityLimitCount);         // uint8_t
-                    json.WriteFieldValueNumber<int>("duckGroup", alias->duckGroup);                       // uint8_t
-                    json.WriteFieldValueNumber<int>("bus", alias->bus);                                   // uint8_t
-                    json.WriteFieldValueNumber<int>("group", alias->group);                               // uint8_t
-                    json.WriteFieldValueHash("unk178", alias->unk178);
+                    // the fields as the bo4 sound linker takes them: game names and units (dB, cents, units)
+                    json.WriteFieldNameString("settings");
+                    json.BeginObject();
+                    for (const games::bo4::sound::SndAliasField& field : games::bo4::sound::ALIAS_FIELDS) {
+                        if (field.type == games::bo4::sound::SAF_HASH) {
+                            XHash& h{ *(XHash*)((byte*)alias + field.offset) };
+                            if (h) {
+                                json.WriteFieldValueXHash(field.name, h);
+                            }
+                        } else if (field.names) {
+                            json.WriteFieldValueString(field.name, games::bo4::sound::GetAliasFieldName(*alias, field));
+                        } else {
+                            // dB and cents to 1/100
+                            json.WriteFieldValueNumber(field.name, std::round(games::bo4::sound::GetAliasField(*alias, field) * 100) / 100);
+                        }
+                    }
+                    json.EndObject();
+                    json.WriteFieldValueString("raw", Hex(alias, sizeof(*alias)));
 
                     json.EndObject();
                 }
@@ -425,6 +344,69 @@ namespace {
                 json.WriteFieldValueNumber("fileLen", bnk->fileLen);
                 json.EndObject();
             };
+
+            auto WriteMusicAsset = [&json](const char* name, games::bo4::sound::SndMusicAsset& a) {
+                json.WriteFieldNameString(name);
+                json.BeginObject();
+                json.WriteFieldValueString("alias", std::string{ a.aliasName, strnlen(a.aliasName, sizeof(a.aliasName)) });
+                json.WriteFieldValueXHash("aliasId", a.aliasId);
+                json.WriteFieldValueBool("looping", a.looping);
+                json.WriteFieldValueBool("completeLoop", a.completeLoop);
+                json.WriteFieldValueBool("removeAfterPlay", a.removeAfterPlay);
+                json.WriteFieldValueBool("playAsFirstRandom", a.playAsFirstRandom);
+                json.WriteFieldValueBool("startSync", a.startSync);
+                json.WriteFieldValueBool("stopSync", a.stopSync);
+                json.WriteFieldValueBool("completeOnStop", a.completeOnStop);
+                json.WriteFieldValueNumber("loopStartOffset", a.loopStartOffset);
+                json.WriteFieldValueNumber("bpm", a.bpm);
+                json.WriteFieldValueNumber("assetType", a.assetType);
+                json.WriteFieldValueNumber("loopNumber", a.loopNumber);
+                json.WriteFieldValueNumber("order", a.order);
+                json.WriteFieldValueNumber("startDelayBeats", a.startDelayBeats);
+                json.WriteFieldValueNumber("startFadeBeats", a.startFadeBeats);
+                json.WriteFieldValueNumber("stopDelayBeats", a.stopDelayBeats);
+                json.WriteFieldValueNumber("stopFadeBeats", a.stopFadeBeats);
+                json.WriteFieldValueNumber("startOffsetFrames", a.startOffsetFrames);
+                json.WriteFieldValueNumber("meter", a.meter);
+                json.EndObject();
+            };
+
+            // music: sets of states, each an intro, loops and an exit of aliases (soundsetmusicstate)
+            json.WriteFieldNameString("musicSets");
+            json.BeginArray();
+            for (size_t i = 0; i < asset->musicSetCount; i++) {
+                games::bo4::sound::SndMusicSet& set{ asset->musicSets[i] };
+                json.BeginObject();
+                json.WriteFieldValueString("name", std::string{ set.name, strnlen(set.name, sizeof(set.name)) });
+                json.WriteFieldValueXHash("id", set.id);
+                json.WriteFieldNameString("states");
+                json.BeginArray();
+                for (size_t j = 0; j < set.stateCount; j++) {
+                    games::bo4::sound::SndMusicState& state{ set.states[j] };
+                    json.BeginObject();
+                    json.WriteFieldValueString("name", std::string{ state.name, strnlen(state.name, sizeof(state.name)) });
+                    json.WriteFieldValueXHash("id", state.id);
+                    json.WriteFieldValueNumber("order", state.order);
+                    json.WriteFieldValueBool("isRandom", state.isRandom);
+                    json.WriteFieldValueBool("isSequential", state.isSequential);
+                    json.WriteFieldValueBool("skipPreviousExit", state.skipPreviousExit);
+                    json.WriteFieldValueNumber("status", state.status);
+                    WriteMusicAsset("intro", state.intro);
+                    WriteMusicAsset("exit", state.exit);
+                    json.WriteFieldNameString("loops");
+                    json.BeginArray();
+                    for (size_t k = 0; k < state.loopCount; k++) {
+                        json.BeginObject();
+                        WriteMusicAsset("loop", state.loops[k]);
+                        json.EndObject();
+                    }
+                    json.EndArray();
+                    json.EndObject();
+                }
+                json.EndArray();
+                json.EndObject();
+            }
+            json.EndArray();
 
             WriteSndStream("streamKeysSABL", &asset->streamKeysSABL);
             WriteSndStream("streamKeysSABS", &asset->streamKeysSABS);

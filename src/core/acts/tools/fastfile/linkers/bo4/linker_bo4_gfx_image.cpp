@@ -117,6 +117,8 @@ namespace {
     constexpr size_t XPAK_HEADER_SIZE = 0x200;
     // the game reads the index and the data by 0x8000
     constexpr size_t XPAK_READ_ALIGN = 0x8000;
+    // the streamer reads an entry by windows of 1 MB (sub_143713AF0)
+    constexpr size_t XPAK_READ_WINDOW = 0x100000;
     // an entry is chunk groups of 0x80 bytes headers, 30 chunks each
     constexpr size_t XPAK_GROUP_ALIGN = 0x80;
     constexpr size_t XPAK_GROUP_MAX_CHUNKS = 30;
@@ -162,13 +164,20 @@ namespace {
     // the streamed parts of a fastfile, written to its xpak in ComputeFinal
     std::unordered_map<BO4FFContext*, std::vector<XPakItem>> xpakItems{};
 
-    // one entry: the data cut in chunks, lz4 when it is smaller, raw else
+    /*
+     * One entry: the data cut in chunks, lz4 when it is smaller, raw else, 30 chunks a group. The streamer reads an entry
+     * by windows of 1 MB from its start rounded down to 0x8000 (sub_143713AF0), and the decompressor takes each window
+     * as a piece starting with a group header (sub_1422B7E50): no group may cross a window. A group that would is moved
+     * to the next window and the room left filled by a group of one raw chunk, written where that group writes after it.
+     * out is the whole xpak file, its size the file offset of the entry.
+     */
     void EncodeXPakEntry(const byte* data, size_t len, std::vector<byte>& out, bool& compressed) {
         compressed = false;
+        size_t windowBase{ out.size() & ~(XPAK_READ_ALIGN - 1) };
         size_t srcOffset{};
+        std::vector<byte> group{};
         while (srcOffset < len) {
-            size_t groupStart{ out.size() };
-            out.resize(groupStart + XPAK_GROUP_ALIGN);
+            group.assign(XPAK_GROUP_ALIGN, 0);
 
             uint32_t chunks{};
             uint32_t destOffset{ (uint32_t)srcOffset };
@@ -191,23 +200,37 @@ namespace {
                           outLen < chunkLen };
 
                 if (lz4) {
-                    out.insert(out.end(), buff.begin(), buff.begin() + outLen);
+                    group.insert(group.end(), buff.begin(), buff.begin() + outLen);
                     cmds[chunks] = (XPAK_CHUNK_LZ4 << 24) | (uint32_t)outLen;
                     compressed = true;
                 } else {
-                    out.insert(out.end(), chunk, chunk + chunkLen);
+                    group.insert(group.end(), chunk, chunk + chunkLen);
                     cmds[chunks] = (XPAK_CHUNK_RAW << 24) | (uint32_t)chunkLen;
                 }
                 srcOffset += chunkLen;
                 chunks++;
             }
 
-            uint32_t* header{ (uint32_t*)&out[groupStart] };
+            uint32_t* header{ (uint32_t*)group.data() };
             header[0] = chunks;
             header[1] = destOffset;
             std::memcpy(&header[2], cmds, sizeof(cmds));
+            group.resize(utils::Aligned<size_t>(group.size(), XPAK_GROUP_ALIGN));
 
-            out.resize(utils::Aligned<size_t>(out.size(), XPAK_GROUP_ALIGN));
+            // the next window after this position
+            size_t pos{ out.size() };
+            size_t windowEnd{ windowBase + ((pos - windowBase) / XPAK_READ_WINDOW + 1) * XPAK_READ_WINDOW };
+            if (pos + group.size() > windowEnd) {
+                // filler up to the window: a raw chunk over the place this group decompresses to, it comes after
+                size_t room{ windowEnd - pos };
+                size_t fillerStart{ out.size() };
+                out.resize(fillerStart + room);
+                uint32_t* filler{ (uint32_t*)&out[fillerStart] };
+                filler[0] = 1;
+                filler[1] = destOffset;
+                filler[2] = (XPAK_CHUNK_RAW << 24) | (uint32_t)(room - XPAK_GROUP_ALIGN);
+            }
+            out.insert(out.end(), group.begin(), group.end());
         }
     }
 
