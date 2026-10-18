@@ -1,5 +1,7 @@
 #include <includes.hpp>
 #include <tools/fastfile/linkers/linker_bo4.hpp>
+#include <tools/fastfile/linkers/bo4/gltf.hpp>
+#include <tools/fastfile/linkers/bo4/game_skeleton.hpp>
 #include <numbers>
 
 /*
@@ -11,7 +13,7 @@
  *     "name": "my_model",
  *     "templateModel": "templates/xmodel.json",
  *     "templateMesh": "templates/xmodelmesh.json",
- *     "obj": "models/my_model.obj",
+ *     "obj": "models/my_model.obj",   // or "gltf": "models/my_model.gltf" (.glb), skinned with its bones
  *     "upAxis": "z",            // "y" for obj files with y up
  *     "scale": 1.0,
  *     "bone": "tag_origin",
@@ -28,8 +30,20 @@
  *                               // piece per object (o or g) of it
  *     "hullMaxSides": 44,       // the planes of a hull past its bounds, the game's props stay under 46
  *     "physics": false,         // true (the game's props' preset), "#preset" or "physics/my_preset.json" (ours)
- *     "playerClip": true        // the collmap blocks the players, false by default on a physics model (jitter)
+ *     "playerClip": true,       // the collmap blocks the players, false by default on a physics model (jitter)
+ *     "skeleton": "skeletons/body.json",  // a game model's json of the acts dumper: its bones, for its animations
+ *     "hitboxes": "skeleton"    // with a skeleton: its bone hit boxes (boneInfo), or "mesh" (the vertices of each)
  * }
+ *
+ * glTF: the meshes at rest in the game's space (y up converted, translations times scale), skinned to the joints of
+ * the first skin (the bones, the roots first; at most 4 weights a vertex) or rigid on the closest joint above them. The
+ * bones have no rotation at rest, the xanim linker samples its animations the same way (gltf::Skeleton). Without a
+ * skin the model has one bone ("bone"). The lods take the model's bones.
+ *
+ * Game skeleton ("skeleton"): the bones of a game model, exactly (the dumper writes its glTF next to the json, a
+ * mannequin skinned to it to model on): the glTF joints are matched by name, the meshes must be at its bind pose. The
+ * game's animations then play on the model (bones by name). A mesh without a skin is rigid on "bone". The hit boxes
+ * (boneInfo, in each bone's frame, the hit locations of partClassification) are the skeleton's by default.
  *
  * Surfaces: one per material, cut at 0xFFFF vertices or 0x7FFF triangles, all in one buffer per lod. Lods: the game keeps the
  * least detailed first (meshes[0], the streamer falls back up) and switches by the projected size of the triangles:
@@ -37,8 +51,9 @@
  *
  * Collision, the values of the solid props of core_common: a collision surface for the bullets (script models are
  * traced against it, DObjGeomTraceline) and a collmap for the players (SV_TraceCapsuleToEntity) and the physics, a
- * brush per convex piece: the convex hull of the model (or of each object of collisionObj) or its box. The game's
- * memmapped block is the current one on pc.
+ * brush per convex piece: the convex hull of the model (or of each object of collisionObj) or its box. A skinned model
+ * has a collision surface per bone (the bullets follow the animation), the players collide with the rest pose (the
+ * game takes the first collmap at the entity). The game's memmapped block is the current one on pc.
  */
 namespace {
     using namespace fastfile::linker::bo4;
@@ -142,7 +157,7 @@ namespace {
         float avgRenderTriArea;
         uint16_t numSurfs;
         uint16_t lodIndex; // 0 the most detailed (the last slot)
-        uint64_t unk50;
+        uint64_t flags;    // MESH_SKINNED on 8729 of the 9300 skinned meshes of core_common, 0x10 or 0 rigid
     };
     static_assert(sizeof(XModelMesh) == 0x58);
 
@@ -228,6 +243,8 @@ namespace {
     // (the other common collmap) isn't in it
     constexpr uint32_t COLLMAP_CONTENTS = 0x20010000;
     constexpr float COLLSURF_BOUNDS_PADDING = 0.001f;
+    // the weight (of 255) a bone needs on a vertex for the vertex to be in its collision hull
+    constexpr byte COLLISION_BONE_WEIGHT = 64;
 
     constexpr size_t XSURFACE_SHARED_SIZE = 0x200;
     constexpr size_t PART_BITS_SIZE = 0x30;
@@ -235,6 +252,11 @@ namespace {
     constexpr size_t BASE_MAT_SIZE = 0x20;
     // shared flags: bit 0 streamed, bit 3 rigid, no skin weights, bits 5-8 extra streams
     constexpr uint32_t SHARED_STREAMED = 1;
+    constexpr uint32_t SHARED_RIGID = 8;
+    // XSurface::tileMode of the game's skinned surfaces (no vertex list)
+    constexpr byte SURFACE_SKINNED = 0xA2;
+    // XModelMesh::flags of the game's skinned meshes
+    constexpr uint64_t MESH_SKINNED = 8;
     constexpr uint32_t SHARED_EXTRA_STREAMS = 0x40 | 0x80 | 0x20 | 0x100;
     constexpr size_t SHARED_DATA_OFFSET = 0x20;
     constexpr size_t SHARED_BLEND_COUNT_OFFSET = 0x1E0;
@@ -298,6 +320,8 @@ namespace {
         Vec3 normal;
         uint32_t color;
         Vec3 tangent;
+        uint16_t bones[4]{};
+        uint8_t weights[4]{ 0xFF, 0, 0, 0 };
     };
 
     // a surface of the game: one material, at most 0xFFFF vertices, 16 bits indices, clockwise
@@ -327,6 +351,9 @@ namespace {
         std::vector<std::string> groups{}; // usemtl names
         uint32_t numObjects{ 1 };          // o and g lines, the convex pieces of a collision obj
         bool hasColors{};
+        // a skinned mesh: 4 bones and weights (sum 255) per position
+        std::vector<std::array<uint16_t, 4>> skinBones{};
+        std::vector<std::array<uint8_t, 4>> skinWeights{};
     };
 
     uint32_t PackColor(float r, float g, float b, float a) {
@@ -431,6 +458,232 @@ namespace {
         return true;
     }
 
+    // up to 4 weights a vertex, the biggest first, 255 in all (the rounding on the first)
+    void QuantizeSkin(std::vector<std::pair<int, double>>& in, std::array<uint16_t, 4>& bones, std::array<uint8_t, 4>& weights) {
+        std::vector<std::pair<int, double>> merged{};
+        for (const auto& [b, w] : in) {
+            auto it{ std::find_if(merged.begin(), merged.end(), [b](const auto& e) { return e.first == b; }) };
+            if (it != merged.end()) {
+                it->second += w;
+            } else if (w > 0) {
+                merged.emplace_back(b, w);
+            }
+        }
+        std::sort(merged.begin(), merged.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+        merged.resize(std::min<size_t>(merged.size(), 4));
+        double sum{};
+        for (const auto& e : merged) {
+            sum += e.second;
+        }
+        bones = {};
+        weights = {};
+        if (merged.empty() || sum <= 0) {
+            weights[0] = 0xFF;
+            return;
+        }
+        int total{};
+        for (size_t k = 0; k < merged.size(); k++) {
+            bones[k] = (uint16_t)merged[k].first;
+            weights[k] = (uint8_t)std::lround(merged[k].second / sum * 255.0);
+            total += weights[k];
+        }
+        weights[0] = (uint8_t)std::clamp(weights[0] + 255 - total, 0, 255);
+    }
+
+    // a game skeleton's bind position (the model's space)
+    Vec3 BindPosition(const gltf::GameSkeleton& game, size_t b) {
+        double q[4], t[3];
+        game.Bind(b, q, t);
+        return { (float)t[0], (float)t[1], (float)t[2] };
+    }
+
+    // a model space vector in a game skeleton bone's bind frame (the inverse of its baseMat rotation)
+    Vec3 ToBoneFrame(const gltf::GameSkeleton& game, size_t b, const Vec3& v) {
+        double q[4], t[3];
+        game.Bind(b, q, t);
+        Vec3 u{ (float)-q[0], (float)-q[1], (float)-q[2] };
+        Vec3 c{ u.Cross(v) };
+        return v + (c * (float)q[3] + u.Cross(c)) * 2.0f;
+    }
+
+    /*
+     * The meshes of a glTF at rest in the game's space: skinned to the joints of its first skin (skel, the bones) or,
+     * a mesh outside of it, rigid on the closest joint above it. A primitive's material is its group (usemtl). With a
+     * game skeleton the joints are its bones of the same name (or of the closest joint above with one).
+     */
+    bool ReadGltf(const std::filesystem::path& path, float scale, ObjData& obj, gltf::Skeleton& skel, std::string& err,
+                  const gltf::GameSkeleton* game = nullptr) {
+        gltf::Document doc{};
+        if (!doc.Load(path, err)) {
+            return false;
+        }
+        int skin{ doc.skins.empty() ? -1 : 0 };
+        skel = {};
+        if (!skel.Build(doc, skin, scale, err)) {
+            return false;
+        }
+        std::vector<int> boneMap(skel.nodes.size());
+        for (size_t b = 0; b < boneMap.size(); b++) {
+            boneMap[b] = (int)b;
+        }
+        if (game) {
+            std::vector<std::string> unmatched{};
+            float moved{};
+            std::string movedBone{};
+            for (size_t b = 0; b < skel.nodes.size(); b++) {
+                int idx{ -1 };
+                for (int p = (int)b; p >= 0 && idx < 0; p = skel.parents[p]) {
+                    idx = game->Index(skel.names[p]);
+                }
+                if (game->Index(skel.names[b]) < 0) {
+                    unmatched.push_back(skel.names[b]);
+                } else {
+                    // the joint where the game's bone is, or the mesh isn't at the bind pose
+                    double q[4], t[3];
+                    skel.ToGame(skel.restWorld[b], q, t);
+                    float d{ (Vec3{ (float)t[0], (float)t[1], (float)t[2] } - BindPosition(*game, (size_t)idx)).Length() };
+                    if (d > moved) {
+                        moved = d;
+                        movedBone = skel.names[b];
+                    }
+                }
+                boneMap[b] = std::max(0, idx);
+            }
+            if (!unmatched.empty()) {
+                std::string list{};
+                for (const std::string& n : unmatched) {
+                    list += (list.empty() ? "" : ", ") + n;
+                }
+                LOG_WARNING("{}: joints not in the skeleton, their vertices on the bone above: {}", path.filename().string(), list);
+            }
+            if (moved > 0.5f) {
+                LOG_WARNING("{}: joint {} is {} units from the skeleton's bone, is the scale right?", path.filename().string(), movedBone, moved);
+            }
+        }
+        auto Map = [&boneMap](int b) { return b >= 0 && b < (int)boneMap.size() ? boneMap[b] : 0; };
+        std::vector<gltf::Mat4> locals(doc.nodes.size());
+        for (size_t i = 0; i < doc.nodes.size(); i++) {
+            locals[i] = doc.LocalMatrix((int)i);
+        }
+        std::vector<gltf::Mat4> world{ doc.WorldMatrices(locals) };
+        auto BoneOf = [&skel](int node) {
+            auto it{ std::find(skel.nodes.begin(), skel.nodes.end(), node) };
+            return it == skel.nodes.end() ? -1 : (int)(it - skel.nodes.begin());
+        };
+        // the skinning matrix of each joint of the skin at rest
+        std::vector<gltf::Mat4> skinMats{};
+        std::vector<int> jointBone{};
+        if (skin >= 0) {
+            const gltf::Skin& sk{ doc.skins[skin] };
+            for (size_t j = 0; j < sk.joints.size(); j++) {
+                gltf::Mat4 ib{};
+                std::copy(sk.inverseBind.begin() + 16 * j, sk.inverseBind.begin() + 16 * (j + 1), ib.m);
+                skinMats.push_back(world[sk.joints[j]] * ib);
+                jointBone.push_back(BoneOf(sk.joints[j]));
+            }
+        }
+        obj = {};
+        obj.groups.emplace_back();
+        std::vector<std::pair<int, double>> influences{};
+        for (size_t n = 0; n < doc.nodes.size(); n++) {
+            const gltf::Node& node{ doc.nodes[n] };
+            if (node.mesh < 0 || node.mesh >= (int)doc.meshes.size()) {
+                continue;
+            }
+            bool skinned{ skin >= 0 && node.skin == skin };
+            int rigidBone{ 0 };
+            for (int p = (int)n; !skinned && p >= 0 && skin >= 0; p = doc.nodes[p].parent) {
+                if (BoneOf(p) >= 0) {
+                    rigidBone = BoneOf(p);
+                    break;
+                }
+            }
+            for (const gltf::Primitive& prim : doc.meshes[node.mesh].primitives) {
+                auto git{ std::find(obj.groups.begin(), obj.groups.end(), prim.material) };
+                uint32_t group{ (uint32_t)(git - obj.groups.begin()) };
+                if (git == obj.groups.end()) {
+                    obj.groups.push_back(prim.material);
+                }
+                size_t vcount{ prim.positions.size() / 3 };
+                int base{ (int)obj.positions.size() };
+                int nbase{ (int)obj.normals.size() };
+                int ubase{ (int)obj.uvs.size() };
+                bool hasNormals{ prim.normals.size() == vcount * 3 };
+                bool hasUvs{ prim.uvs.size() == vcount * 2 };
+                bool vskin{ skinned && prim.joints.size() == vcount * 4 && prim.weights.size() == vcount * 4 };
+                for (size_t i = 0; i < vcount; i++) {
+                    double p[3]{ prim.positions[i * 3], prim.positions[i * 3 + 1], prim.positions[i * 3 + 2] };
+                    double nn[3]{};
+                    if (hasNormals) {
+                        nn[0] = prim.normals[i * 3];
+                        nn[1] = prim.normals[i * 3 + 1];
+                        nn[2] = prim.normals[i * 3 + 2];
+                    }
+                    double wp[3]{}, wn[3]{};
+                    influences.clear();
+                    if (vskin) {
+                        for (int k = 0; k < 4; k++) {
+                            uint32_t j{ prim.joints[i * 4 + k] };
+                            double w{ prim.weights[i * 4 + k] };
+                            if (w <= 0 || j >= skinMats.size()) {
+                                continue;
+                            }
+                            double tp[3], tn[3];
+                            skinMats[j].Apply(p, tp);
+                            skinMats[j].Apply(nn, tn, 0);
+                            for (int c = 0; c < 3; c++) {
+                                wp[c] += tp[c] * w;
+                                wn[c] += tn[c] * w;
+                            }
+                            influences.emplace_back(Map(std::max(0, jointBone[j])), w);
+                        }
+                    }
+                    if (influences.empty()) {
+                        world[n].Apply(p, wp);
+                        world[n].Apply(nn, wn, 0);
+                        influences.emplace_back(Map(rigidBone), 1.0);
+                    }
+                    double gp[3], gn[3];
+                    skel.ToGamePoint(wp, gp);
+                    skel.ToGameVector(wn, gn);
+                    obj.positions.push_back({ (float)gp[0], (float)gp[1], (float)gp[2] });
+                    if (hasNormals) {
+                        obj.normals.push_back(Vec3{ (float)gn[0], (float)gn[1], (float)gn[2] }.Normalized());
+                    }
+                    if (hasUvs) {
+                        // glTF v goes down like the game's, the obj convention goes up
+                        obj.uvs.emplace_back(prim.uvs[i * 2], 1.0f - prim.uvs[i * 2 + 1]);
+                    }
+                    if (prim.colors.size() == vcount * 4) {
+                        obj.colors.push_back(PackColor(prim.colors[i * 4], prim.colors[i * 4 + 1], prim.colors[i * 4 + 2], prim.colors[i * 4 + 3]));
+                        obj.hasColors = true;
+                    } else {
+                        obj.colors.push_back(0xFFFFFFFF);
+                    }
+                    if (skin >= 0) {
+                        std::array<uint16_t, 4> b{};
+                        std::array<uint8_t, 4> w{};
+                        QuantizeSkin(influences, b, w);
+                        obj.skinBones.push_back(b);
+                        obj.skinWeights.push_back(w);
+                    }
+                }
+                // glTF faces are counter clockwise, the game's clockwise
+                for (size_t t = 0; t + 2 < prim.indices.size(); t += 3) {
+                    auto Corner = [&](uint32_t i) {
+                        return ObjCorner{ base + (int)i, hasUvs ? ubase + (int)i : -1, hasNormals ? nbase + (int)i : -1 };
+                    };
+                    obj.tris.push_back({ { Corner(prim.indices[t]), Corner(prim.indices[t + 2]), Corner(prim.indices[t + 1]) }, group, 0 });
+                }
+            }
+        }
+        if (obj.tris.empty()) {
+            err = "no triangles";
+            return false;
+        }
+        return true;
+    }
+
     /*
      * The surfaces of an obj: a group per usemtl, cut in surfaces of 0xFFFF vertices. Normals: "obj" (the file's,
      * smoothed by angle where it has none), "smooth", "flat", or smoothed between faces within smoothAngle degrees.
@@ -482,7 +735,7 @@ namespace {
         // per group, the corners deduplicated by value, cut at 0xFFFF vertices
         for (uint32_t g = 0; g < obj.groups.size(); g++) {
             MeshSurface* surf{};
-            std::map<std::array<uint32_t, 10>, uint16_t> known{};
+            std::map<std::array<uint32_t, 13>, uint16_t> known{};
             for (size_t t = 0; t < triCount; t++) {
                 const ObjTri& tri{ obj.tris[t] };
                 if (tri.group != g) {
@@ -502,9 +755,16 @@ namespace {
                     v.v = c.uv >= 0 ? 1.0f - obj.uvs[c.uv].second : 0;
                     v.normal = CornerNormal(t, c);
                     v.color = colors ? obj.colors[c.pos] : 0xFFFFFFFF;
-                    std::array<uint32_t, 10> key{};
+                    if (!obj.skinBones.empty()) {
+                        std::memcpy(v.bones, obj.skinBones[c.pos].data(), sizeof(v.bones));
+                        std::memcpy(v.weights, obj.skinWeights[c.pos].data(), sizeof(v.weights));
+                    }
+                    std::array<uint32_t, 13> key{};
                     std::memcpy(key.data(), &v, sizeof(float) * 9);
                     key[9] = v.color;
+                    key[10] = v.bones[0] | ((uint32_t)v.bones[1] << 16);
+                    key[11] = v.bones[2] | ((uint32_t)v.bones[3] << 16);
+                    std::memcpy(&key[12], v.weights, 4);
                     auto it{ known.find(key) };
                     if (it == known.end()) {
                         surf->verts.push_back(v);
@@ -1044,6 +1304,34 @@ namespace {
         return true;
     }
 
+    /*
+     * A rotation as the game packs it (xmodel bind quats, xanim keys): the largest component dropped, its index in bits
+     * 0-1 (x 0, w 1, z 2, y 3), the three after it (x y z w cyclic) as signed 20 bits of 1/sqrt(2) in bits 2-61, the
+     * sign of the dropped one in bit 63.
+     */
+    uint64_t PackQuat(const double qin[4]) {
+        double q[4]{ qin[0], qin[1], qin[2], qin[3] };
+        double n{ std::sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]) };
+        int a{};
+        for (int i = 0; i < 4; i++) {
+            q[i] = n > 0 ? q[i] / n : (i == 3 ? 1 : 0);
+            if (std::abs(q[i]) > std::abs(q[a])) {
+                a = i;
+            }
+        }
+        static constexpr uint64_t AXIS_INDEX[4]{ 0, 3, 2, 1 };
+        uint64_t v{ AXIS_INDEX[a] };
+        for (int k = 0; k < 3; k++) {
+            double c{ q[(a + 1 + k) % 4] * std::numbers::sqrt2 * (1 << 19) };
+            int64_t ic{ std::clamp<int64_t>(std::llround(c), -(1 << 19), (1 << 19) - 1) };
+            v |= ((uint64_t)ic & 0xFFFFF) << (2 + 20 * k);
+        }
+        if (q[a] < 0) {
+            v |= 1ull << 63;
+        }
+        return v;
+    }
+
     // the asset name of a material json, for its references after the first (the material linker's name)
     std::string MaterialAssetName(BO4LinkContext& ctx, const std::string& material) {
         std::filesystem::path path{ ctx.linkCtx.input / material };
@@ -1061,14 +1349,15 @@ namespace {
         std::vector<MeshSurface> surfs{};
         std::vector<std::string> materials{}; // per surface, json path or #name
         std::vector<byte> data{};
-        uint32_t indicesOffset{}, posOffset{}, vertsOffset{};
+        uint32_t indicesOffset{}, posOffset{}, vertsOffset{}, skinOffset{};
         uint32_t vertCount{}, indexCount{};
         float triArea{};
         float threshold{};
         bool stream{};
+        bool skinned{};
     };
 
-    // indices, positions, vertices of all the surfaces, each part on 16 bytes
+    // indices, positions, vertices of all the surfaces, the skin weights of a skinned one, each part on 16 bytes
     void BuildLodData(LodGeom& lod) {
         auto Append = [&lod](const void* ptr, size_t len) {
             lod.data.resize(utils::Aligned<size_t>(lod.data.size(), 0x10));
@@ -1099,6 +1388,17 @@ namespace {
         lod.indicesOffset = Append(indices.data(), indices.size() * sizeof(uint16_t));
         lod.posOffset = Append(positions.data(), positions.size() * sizeof(float));
         lod.vertsOffset = Append(packed.data(), packed.size() * sizeof(uint32_t));
+        if (lod.skinned) {
+            // 4 weights (sum 255), 4 model bone indices
+            std::vector<byte> skin{};
+            for (const MeshSurface& s : lod.surfs) {
+                for (const MeshVertex& v : s.verts) {
+                    skin.insert(skin.end(), v.weights, v.weights + 4);
+                    skin.insert(skin.end(), (const byte*)v.bones, (const byte*)v.bones + sizeof(v.bones));
+                }
+            }
+            lod.skinOffset = Append(skin.data(), skin.size());
+        }
         lod.vertCount = (uint32_t)(positions.size() / 3);
         lod.indexCount = (uint32_t)indices.size();
         lod.triArea = tris ? (float)(area / tris) : 0;
@@ -1176,6 +1476,23 @@ namespace {
                 return;
             }
 
+            // a game skeleton for the game's animations
+            std::string skeletonPath{ cfg.GetString("skeleton", "") };
+            std::string hitboxes{ cfg.GetString("hitboxes", "skeleton") };
+            gltf::GameSkeleton gameSkel{};
+            if (!skeletonPath.empty()) {
+                std::string err{};
+                if (!gameSkel.Load(dir / skeletonPath, err)) {
+                    Fail(std::format("skeleton {}: {}", skeletonPath, err));
+                    return;
+                }
+                if (hitboxes != "skeleton" && hitboxes != "mesh") {
+                    Fail(std::format("unknown hitboxes '{}', skeleton or mesh", hitboxes));
+                    return;
+                }
+            }
+            bool useGameSkel{ !skeletonPath.empty() };
+
             // the lods: the model's obj, then "lods", from the most detailed to the least
             std::vector<const rapidjson::Value*> lodCfgs{ &cfg.main };
             const rapidjson::Value* lodsCfg{ Member(cfg.main, "lods") };
@@ -1190,15 +1507,41 @@ namespace {
             }
 
             std::vector<LodGeom> lods(lodCfgs.size());
+            gltf::Skeleton skel{};
             for (size_t k = 0; k < lodCfgs.size(); k++) {
                 const rapidjson::Value& lc{ *lodCfgs[k] };
                 LodGeom& lod{ lods[k] };
                 const rapidjson::Value* objCfg{ Member(lc, "obj") };
+                const rapidjson::Value* gltfCfg{ Member(lc, "gltf") };
                 ObjData obj{};
-                if (!objCfg || !objCfg->IsString() || !ReadObj(dir / objCfg->GetString(), upAxis == "y", scale, obj)) {
+                if (gltfCfg && gltfCfg->IsString()) {
+                    std::string err{};
+                    gltf::Skeleton lodSkel{};
+                    if (!ReadGltf(dir / gltfCfg->GetString(), scale, obj, lodSkel, err, useGameSkel ? &gameSkel : nullptr)) {
+                        Fail(std::format("lod {}: {}: {}", k, gltfCfg->GetString(), err));
+                        return;
+                    }
+                    if (!k) {
+                        skel = lodSkel;
+                    } else if (!useGameSkel && lodSkel.names != skel.names) {
+                        Fail(std::format("lod {}: its bones aren't the model's", k));
+                        return;
+                    }
+                } else if (!objCfg || !objCfg->IsString() || !ReadObj(dir / objCfg->GetString(), upAxis == "y", scale, obj)) {
                     Fail(std::format("lod {}: can't read obj", k));
                     return;
                 }
+                if (useGameSkel && obj.skinBones.empty()) {
+                    // rigid on one of the skeleton's bones
+                    int b{ gameSkel.Index(boneName) };
+                    if (b < 0) {
+                        Fail(std::format("lod {}: bone {} isn't in the skeleton", k, boneName));
+                        return;
+                    }
+                    obj.skinBones.assign(obj.positions.size(), { (uint16_t)b, 0, 0, 0 });
+                    obj.skinWeights.assign(obj.positions.size(), { 255, 0, 0, 0 });
+                }
+                lod.skinned = !obj.skinBones.empty();
                 BuildSurfaces(obj, normalsMode, normalsMode == "smooth" ? 180.0f : smoothAngle, vertexColors && obj.hasColors, lod.surfs);
                 if (lod.surfs.size() > 0xFF) {
                     Fail(std::format("lod {}: too many surfaces", k));
@@ -1328,35 +1671,109 @@ namespace {
                 }
             }
 
-            // collision triangles of the bullets: the pieces' faces or the triangles of the most detailed lod
-            std::vector<XModelCollTri> collTris{};
+            /*
+             * Collision surfaces of the bullets, in the model's space at rest, each on a bone the trace follows
+             * (XModelTraceLineAnimated): the pieces' faces or the triangles of the most detailed lod on bone 0, or for a
+             * skinned model (without collisionObj) one per bone, of the vertices it moves the most (their hull, box or
+             * triangles). The players collide with the collmap at the entity only (SV_TraceCapsuleToEntity takes the
+             * first collmap), it doesn't follow the bones.
+             */
+            struct CollGroup {
+                uint32_t bone{};
+                std::vector<XModelCollTri> tris{};
+                Vec3 mins{}, maxs{};
+            };
+            std::vector<CollGroup> collGroups{};
             float collArea{};
-            Vec3 collMins{ mins }, collMaxs{ maxs };
-            auto AddCollTri = [&](const Vec3& a, const Vec3& b, const Vec3& c) {
+            size_t collTriCount{};
+            auto AddCollTri = [&](CollGroup& g, const Vec3& a, const Vec3& b, const Vec3& c) {
                 XModelCollTri tri;
                 if (MakeCollTri(a, b, c, tri)) {
-                    collTris.push_back(tri);
+                    if (g.tris.empty()) {
+                        g.mins = g.maxs = a;
+                    }
+                    g.tris.push_back(tri);
                     collArea += (b - a).Cross(c - a).Length() * 0.5f;
+                    collTriCount++;
                     for (const Vec3& p : { a, b, c }) {
-                        GrowBounds(collMins, collMaxs, p);
+                        GrowBounds(g.mins, g.maxs, p);
                     }
                 }
             };
-            if (collision == "mesh") {
-                // the mesh is clockwise
+            auto Dominant = [](const MeshVertex& v) {
+                int k{};
+                for (int i = 1; i < 4; i++) {
+                    if (v.weights[i] > v.weights[k]) {
+                        k = i;
+                    }
+                }
+                return (uint32_t)v.bones[k];
+            };
+            bool perBone{ lod0.skinned && collisionObj.empty() && collision != "none" };
+            if (perBone) {
+                std::map<uint32_t, std::vector<Vec3>> bonePoints{};
+                std::map<uint32_t, CollGroup> groups{};
                 for (const MeshSurface& s : lod0.surfs) {
-                    for (size_t i = 0; i < s.indices.size(); i += 3) {
-                        AddCollTri(s.verts[s.indices[i]].pos, s.verts[s.indices[i + 2]].pos, s.verts[s.indices[i + 1]].pos);
+                    if (collision == "mesh") {
+                        for (size_t i = 0; i < s.indices.size(); i += 3) {
+                            const MeshVertex& a{ s.verts[s.indices[i]] };
+                            const MeshVertex& b{ s.verts[s.indices[i + 1]] };
+                            const MeshVertex& c{ s.verts[s.indices[i + 2]] };
+                            uint32_t ba{ Dominant(a) }, bb{ Dominant(b) }, bc{ Dominant(c) };
+                            uint32_t bone{ bb == bc ? bb : ba };
+                            CollGroup& g{ groups[bone] };
+                            g.bone = bone;
+                            AddCollTri(g, a.pos, c.pos, b.pos);
+                        }
+                    } else {
+                        // each bone moving a vertex enough has it, the hulls of the bones overlap where they blend
+                        for (const MeshVertex& v : s.verts) {
+                            bonePoints[Dominant(v)].push_back(v.pos);
+                            for (int i = 0; i < 4; i++) {
+                                if (v.weights[i] >= COLLISION_BONE_WEIGHT && v.bones[i] != Dominant(v)) {
+                                    bonePoints[v.bones[i]].push_back(v.pos);
+                                }
+                            }
+                        }
+                    }
+                }
+                for (auto& [bone, points] : bonePoints) {
+                    CollisionPiece bp{};
+                    if (collision == "box" || !HullPiece(points, (size_t)hullMaxSides, bp)) {
+                        bp = BoxPiece(points);
+                    }
+                    CollGroup& g{ groups[bone] };
+                    g.bone = bone;
+                    for (const std::array<Vec3, 3>& t : bp.tris) {
+                        AddCollTri(g, t[0], t[1], t[2]);
+                    }
+                }
+                for (auto& [bone, g] : groups) {
+                    if (!g.tris.empty()) {
+                        collGroups.push_back(std::move(g));
                     }
                 }
             } else {
-                for (const CollisionPiece& piece : pieces) {
-                    for (const std::array<Vec3, 3>& t : piece.tris) {
-                        AddCollTri(t[0], t[1], t[2]);
+                CollGroup& g{ collGroups.emplace_back() };
+                if (collision == "mesh") {
+                    // the mesh is clockwise
+                    for (const MeshSurface& s : lod0.surfs) {
+                        for (size_t i = 0; i < s.indices.size(); i += 3) {
+                            AddCollTri(g, s.verts[s.indices[i]].pos, s.verts[s.indices[i + 2]].pos, s.verts[s.indices[i + 1]].pos);
+                        }
+                    }
+                } else {
+                    for (const CollisionPiece& piece : pieces) {
+                        for (const std::array<Vec3, 3>& t : piece.tris) {
+                            AddCollTri(g, t[0], t[1], t[2]);
+                        }
                     }
                 }
+                if (g.tris.empty()) {
+                    collGroups.clear();
+                }
             }
-            bool hasCollision{ !collTris.empty() && !pieces.empty() };
+            bool hasCollision{ !collGroups.empty() && !pieces.empty() };
             // the model holds its collision (a collisionObj bigger than the mesh)
             for (const CollisionPiece& piece : pieces) {
                 GrowBounds(mins, maxs, piece.mins);
@@ -1368,7 +1785,7 @@ namespace {
             center = (mins + maxs) * 0.5f;
             half = (maxs - mins) * 0.5f;
             if (hasCollision) {
-                collArea /= (float)collTris.size();
+                collArea /= (float)collTriCount;
             }
             // a static prop blocks the players, a physics prop has the game's props' contents ("playerClip" to block)
             const rapidjson::Value* playerClipCfg{ Member(cfg.main, "playerClip") };
@@ -1381,10 +1798,16 @@ namespace {
             XModel& model{ ff.data.AllocStreamRef<XModel>() };
             std::memcpy(&model, modelHeader.data(), sizeof(model));
             model.name.name = ctx.HashXHash(assetName, true);
-            model.numBones = 1;
-            model.numRootBones = 1;
-            model.numCosmeticBones = 0;
-            model.numCollSurfs = hasCollision ? 1 : 0;
+            // the bones: the glTF skin's or one
+            size_t numBones{ useGameSkel ? gameSkel.numMain : skel.nodes.empty() ? 1 : skel.nodes.size() };
+            if (numBones > 0xFF) {
+                Fail("more than 255 bones");
+                return;
+            }
+            model.numBones = (byte)numBones;
+            model.numRootBones = (byte)(useGameSkel ? gameSkel.numRoots : skel.nodes.empty() ? 1 : skel.numRoots);
+            model.numCosmeticBones = (uint16_t)(useGameSkel ? gameSkel.numCosmetic : 0);
+            model.numCollSurfs = hasCollision ? (int32_t)collGroups.size() : 0;
             model.numCollmaps = hasCollision ? 1 : 0;
             model.contents = hasCollision ? COLLSURF_CONTENTS : 0;
             // the average area of the collision triangles, a trace skips a model under a minimum
@@ -1419,24 +1842,100 @@ namespace {
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
-            // bones
+            // bones (Load_XModel: names, name indices sorted at load, parents, quats, trans, classification, baseMat)
+            std::vector<std::string> boneNames{ useGameSkel ? gameSkel.names : skel.nodes.empty() ? std::vector<std::string>{ boneName } : skel.names };
+            size_t allBones{ boneNames.size() };
+            std::vector<std::array<double, 3>> boneWorld(allBones);
+            for (size_t b = 0; b < allBones; b++) {
+                if (useGameSkel) {
+                    Vec3 p{ BindPosition(gameSkel, b) };
+                    boneWorld[b] = { p.x, p.y, p.z };
+                } else if (b < skel.nodes.size()) {
+                    double q[4], t[3];
+                    skel.ToGame(skel.restWorld[b], q, t);
+                    boneWorld[b] = { t[0], t[1], t[2] };
+                }
+            }
             model.boneNames = (ScrString_t*)fastfile::linker::memory::POINTER_NEXT;
             ff.data.Align(4);
-            ScrString_t& bone{ ff.data.AllocStreamRef<ScrString_t>() };
-            ctx.AddScrString(boneName, bone, ff);
-
+            ScrString_t* boneStrs{ ff.data.AllocStreamPtr<ScrString_t>(allBones) };
+            for (size_t b = 0; b < allBones; b++) {
+                ctx.AddScrString(boneNames[b], boneStrs[b], ff);
+            }
             model.boneNameIndices = (XModelBoneNameIndex*)fastfile::linker::memory::POINTER_NEXT;
             ff.data.Align(4);
-            XModelBoneNameIndex& boneIndex{ ff.data.AllocStreamRef<XModelBoneNameIndex>() };
-            boneIndex = {};
-            ctx.AddScrString(boneName, boneIndex.name, ff);
+            XModelBoneNameIndex* boneIndices{ ff.data.AllocStreamPtr<XModelBoneNameIndex>(numBones) };
+            for (size_t b = 0; b < numBones; b++) {
+                boneIndices[b] = {};
+                boneIndices[b].index = (uint16_t)b;
+                ctx.AddScrString(boneNames[b], boneIndices[b].name, ff);
+            }
+            size_t numChildren{ allBones - model.numRootBones };
+            if (useGameSkel && numChildren) {
+                // the skeleton's as they are
+                model.parentList = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                ff.data.WriteStream(gameSkel.parentList.data(), gameSkel.parentList.size());
+                model.quats = (uint64_t*)fastfile::linker::memory::POINTER_NEXT;
+                ff.data.Align(8);
+                ff.data.WriteStream(gameSkel.quats.data(), gameSkel.quats.size());
+                model.trans = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                ff.data.Align(4);
+                ff.data.WriteStream(gameSkel.trans.data(), gameSkel.trans.size());
+            } else if (numChildren) {
+                // the parent as the distance back, the bind pose local to the parent (no rotation at rest)
+                model.parentList = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                std::vector<byte> parentList{};
+                for (size_t b = model.numRootBones; b < numBones; b++) {
+                    parentList.push_back((byte)(b - skel.parents[b]));
+                }
+                ff.data.WriteStream(parentList.data(), parentList.size());
+                model.quats = (uint64_t*)fastfile::linker::memory::POINTER_NEXT;
+                ff.data.Align(8);
+                double identity[4]{ 0, 0, 0, 1 };
+                for (size_t b = model.numRootBones; b < numBones; b++) {
+                    ff.data.WriteStream<uint64_t>(PackQuat(identity));
+                }
+                // packed float3 per bone, the 16 bytes a bone the loader reads padded with zeros
+                model.trans = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                ff.data.Align(4);
+                std::vector<float> trans(4 * numChildren);
+                for (size_t b = model.numRootBones; b < numBones; b++) {
+                    const auto& w{ boneWorld[b] };
+                    const auto& pw{ boneWorld[skel.parents[b]] };
+                    size_t i{ 3 * (b - model.numRootBones) };
+                    trans[i] = (float)(w[0] - pw[0]);
+                    trans[i + 1] = (float)(w[1] - pw[1]);
+                    trans[i + 2] = (float)(w[2] - pw[2]);
+                }
+                ff.data.WriteStream(trans.data(), trans.size() * sizeof(float));
+            }
 
             model.partClassification = (byte*)fastfile::linker::memory::POINTER_NEXT;
-            ff.data.WriteStream(partClassification.data(), partClassification.size());
+            if (useGameSkel) {
+                ff.data.WriteStream(gameSkel.partClassification.data(), gameSkel.partClassification.size());
+            } else {
+                for (size_t b = 0; b < numBones; b++) {
+                    ff.data.WriteStream(partClassification.data(), partClassification.size());
+                }
+            }
 
+            // the bind pose in the model's space: quat, trans, transWeight
             model.baseMat = (byte*)fastfile::linker::memory::POINTER_NEXT;
             ff.data.Align(0x10);
-            ff.data.WriteStream(baseMat.data(), baseMat.size());
+            if (useGameSkel) {
+                ff.data.WriteStream(gameSkel.baseMat.data(), gameSkel.baseMat.size());
+            }
+            for (size_t b = 0; !useGameSkel && b < numBones; b++) {
+                std::vector<byte> bm{ baseMat };
+                float* f{ (float*)bm.data() };
+                f[0] = f[1] = f[2] = 0;
+                f[3] = 1;
+                f[4] = (float)boneWorld[b][0];
+                f[5] = (float)boneWorld[b][1];
+                f[6] = (float)boneWorld[b][2];
+                f[7] = 2;
+                ff.data.WriteStream(bm.data(), bm.size());
+            }
 
             // meshes in place, slot s the lod numLods - 1 - s, named <name>_lod<k>
             for (size_t slot = 0; slot < std::size(model.meshes); slot++) {
@@ -1455,14 +1954,39 @@ namespace {
                 mesh.numSurfs = (uint16_t)lod.surfs.size();
                 mesh.avgRenderTriArea = lod.triArea;
                 mesh.lodIndex = (uint16_t)k;
+                if (lod.skinned) {
+                    mesh.flags = MESH_SKINNED;
+                }
                 mesh.xpakEntry = {};
 
                 ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
-                if (meshPartBits.size() == PART_BITS_SIZE) {
+                // the bones used, msb first in 32 bits words, the root always
+                auto PartBits = [](const MeshSurface& surf, std::vector<byte>& bits) {
+                    if (bits.size() != PART_BITS_SIZE) {
+                        bits.assign(PART_BITS_SIZE, 0);
+                    }
+                    auto Set = [&bits](uint32_t b) { ((uint32_t*)bits.data())[b >> 5] |= 0x80000000u >> (b & 31); };
+                    Set(0);
+                    for (const MeshVertex& v : surf.verts) {
+                        for (int i = 0; i < 4; i++) {
+                            if (v.weights[i]) {
+                                Set(v.bones[i]);
+                            }
+                        }
+                    }
+                };
+                std::vector<byte> lodPartBits{ meshPartBits };
+                if (lod.skinned) {
+                    lodPartBits.assign(PART_BITS_SIZE, 0);
+                    for (const MeshSurface& surf : lod.surfs) {
+                        PartBits(surf, lodPartBits);
+                    }
+                }
+                if (lodPartBits.size() == PART_BITS_SIZE) {
                     mesh.partBits = (byte*)fastfile::linker::memory::POINTER_NEXT;
                     ff.data.Align(4);
-                    ff.data.WriteStream(meshPartBits.data(), meshPartBits.size());
+                    ff.data.WriteStream(lodPartBits.data(), lodPartBits.size());
                 } else {
                     mesh.partBits = nullptr;
                 }
@@ -1475,15 +1999,19 @@ namespace {
                 std::memcpy(shared, sharedHeader.data(), XSURFACE_SHARED_SIZE);
                 XSurfaceSharedHeader& sh{ *(XSurfaceSharedHeader*)shared };
                 sh.flags = (sh.flags & ~SHARED_STREAMED) | (lod.stream ? SHARED_STREAMED : 0);
+                // a skinned mesh has no rigid flag and a weight per vertex
+                if (lod.skinned) {
+                    sh.flags &= ~SHARED_RIGID;
+                }
                 sh.vertCount = lod.vertCount;
-                sh.skinVertCount = 0;
+                sh.skinVertCount = lod.skinned ? lod.vertCount : 0;
                 sh.indexCount = lod.indexCount;
                 sh.blendTargetVertCount = 0;
                 sh.dataSize = (uint32_t)lod.data.size();
                 sh.posOffset = lod.posOffset;
                 sh.vertsOffset = lod.vertsOffset;
                 sh.indicesOffset = lod.indicesOffset;
-                sh.skinWeightsOffset = 0;
+                sh.skinWeightsOffset = lod.skinned ? lod.skinOffset : 0;
                 sh.data = (byte*)fastfile::linker::memory::POINTER_NEXT;
                 // no blend targets
                 std::memset(shared + SHARED_BLEND_COUNT_OFFSET, 0, XSURFACE_SHARED_SIZE - SHARED_BLEND_COUNT_OFFSET);
@@ -1511,7 +2039,10 @@ namespace {
                 for (size_t i = 0; i < lod.surfs.size(); i++) {
                     XSurface& surf{ surfs[i] };
                     std::memcpy(&surf, surfHeader.data(), sizeof(surf));
-                    surf.vertListCount = 1;
+                    surf.vertListCount = lod.skinned ? 0 : 1;
+                    if (lod.skinned) {
+                        surf.tileMode = SURFACE_SKINNED;
+                    }
                     surf.vertCount = (uint16_t)lod.surfs[i].verts.size();
                     surf.triCount = (uint16_t)(lod.surfs[i].indices.size() / 3);
                     surf.baseVertIndex = baseVert;
@@ -1522,17 +2053,24 @@ namespace {
                     // offset of the shared block in the virtual block, set at link
                     surf.shared = nullptr;
                     sharedChunk->refs.push_back((void**)&surf.shared);
-                    surf.partBits = surfPartBits.size() == PART_BITS_SIZE ? (byte*)fastfile::linker::memory::POINTER_NEXT : nullptr;
-                    surf.vertList = (XRigidVertList*)fastfile::linker::memory::POINTER_NEXT;
+                    surf.partBits = lod.skinned || surfPartBits.size() == PART_BITS_SIZE ? (byte*)fastfile::linker::memory::POINTER_NEXT : nullptr;
+                    surf.vertList = lod.skinned ? nullptr : (XRigidVertList*)fastfile::linker::memory::POINTER_NEXT;
                 }
                 for (size_t i = 0; i < lod.surfs.size(); i++) {
                     if (surfs[i].partBits) {
+                        std::vector<byte> bits{ surfPartBits };
+                        if (lod.skinned) {
+                            bits.clear();
+                            PartBits(lod.surfs[i], bits);
+                        }
                         ff.data.Align(4);
-                        ff.data.WriteStream(surfPartBits.data(), surfPartBits.size());
+                        ff.data.WriteStream(bits.data(), bits.size());
                     }
-                    ff.data.Align(2);
-                    XRigidVertList& vertList{ ff.data.AllocStreamRef<XRigidVertList>() };
-                    vertList = { 0, surfs[i].vertCount, 0, surfs[i].triCount };
+                    if (surfs[i].vertList) {
+                        ff.data.Align(2);
+                        XRigidVertList& vertList{ ff.data.AllocStreamRef<XRigidVertList>() };
+                        vertList = { 0, surfs[i].vertCount, 0, surfs[i].triCount };
+                    }
                 }
 
                 ff.data.PopStream();
@@ -1574,35 +2112,102 @@ namespace {
                 }
             }
 
-            // collision surface of the bullets
+            // collision surfaces of the bullets: the array, then the triangles of each
             if (hasCollision) {
                 model.collSurfs = (void*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.Align(8);
-                XModelCollSurf& cs{ ff.data.AllocStreamRef<XModelCollSurf>() };
-                cs = {};
-                cs.collTris = (XModelCollTri*)fastfile::linker::memory::POINTER_NEXT;
-                cs.numCollTris = (uint32_t)collTris.size();
-                Vec3 csMins{ collMins - Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
-                Vec3 csMaxs{ collMaxs + Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
-                std::memcpy(cs.mins, &csMins, sizeof(cs.mins));
-                std::memcpy(cs.maxs, &csMaxs, sizeof(cs.maxs));
-                cs.boneIdx = 0;
-                cs.contents = COLLSURF_CONTENTS;
-                // DB_PushStreamPos(XFILE_BLOCK_MEMMAPPED) keeps the current block on pc (DB_EnableMemMappedData)
-                ff.data.Align(4);
-                ff.data.WriteStream(collTris.data(), collTris.size() * sizeof(collTris[0]));
+                XModelCollSurf* css{ ff.data.AllocStreamPtr<XModelCollSurf>(collGroups.size()) };
+                for (size_t i = 0; i < collGroups.size(); i++) {
+                    XModelCollSurf& cs{ css[i] };
+                    const CollGroup& g{ collGroups[i] };
+                    cs = {};
+                    cs.collTris = (XModelCollTri*)fastfile::linker::memory::POINTER_NEXT;
+                    cs.numCollTris = (uint32_t)g.tris.size();
+                    Vec3 csMins{ g.mins - Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
+                    Vec3 csMaxs{ g.maxs + Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
+                    std::memcpy(cs.mins, &csMins, sizeof(cs.mins));
+                    std::memcpy(cs.maxs, &csMaxs, sizeof(cs.maxs));
+                    cs.boneIdx = g.bone;
+                    cs.contents = COLLSURF_CONTENTS;
+                }
+                for (const CollGroup& g : collGroups) {
+                    // DB_PushStreamPos(XFILE_BLOCK_MEMMAPPED) keeps the current block on pc (DB_EnableMemMappedData)
+                    ff.data.Align(4);
+                    ff.data.WriteStream(g.tris.data(), g.tris.size() * sizeof(g.tris[0]));
+                }
             }
 
             // bone info: mins, maxs, center, radius squared, the rest from the template
             model.boneInfo = (byte*)fastfile::linker::memory::POINTER_NEXT;
             ff.data.Align(4);
-            float* bi{ (float*)boneInfo.data() };
-            std::memcpy(&bi[0], &mins, sizeof(mins));
-            std::memcpy(&bi[3], &maxs, sizeof(maxs));
-            std::memcpy(&bi[6], &center, sizeof(center));
-            bi[9] = half.Dot(half);
-            ff.data.WriteStream(boneInfo.data(), boneInfo.size());
+            if (useGameSkel && hitboxes == "skeleton") {
+                // the skeleton's hit boxes, no collmap per bone (the last byte)
+                for (size_t b = 0; b < numBones; b++) {
+                    std::vector<byte> info{ gameSkel.boneInfo.begin() + BONE_INFO_SIZE * b, gameSkel.boneInfo.begin() + BONE_INFO_SIZE * (b + 1) };
+                    info[BONE_INFO_SIZE - 1] = 0xFF;
+                    ff.data.WriteStream(info.data(), info.size());
+                }
+            } else if (!lod0.skinned) {
+                float* bi{ (float*)boneInfo.data() };
+                std::memcpy(&bi[0], &mins, sizeof(mins));
+                std::memcpy(&bi[3], &maxs, sizeof(maxs));
+                std::memcpy(&bi[6], &center, sizeof(center));
+                bi[9] = half.Dot(half);
+                for (size_t b = 0; b < numBones; b++) {
+                    ff.data.WriteStream(boneInfo.data(), boneInfo.size());
+                }
+            } else {
+                // the vertices a bone moves, in its frame (the game skeleton's bones are rotated)
+                std::vector<Vec3> bmins(numBones, Vec3{ 1e30f, 1e30f, 1e30f }), bmaxs(numBones, Vec3{ -1e30f, -1e30f, -1e30f });
+                for (const MeshSurface& surf : lod0.surfs) {
+                    for (const MeshVertex& v : surf.verts) {
+                        for (int i = 0; i < 4; i++) {
+                            if (v.weights[i] && v.bones[i] < numBones) {
+                                const auto& w{ boneWorld[v.bones[i]] };
+                                Vec3 rel{ v.pos - Vec3{ (float)w[0], (float)w[1], (float)w[2] } };
+                                if (useGameSkel) {
+                                    rel = ToBoneFrame(gameSkel, v.bones[i], rel);
+                                }
+                                GrowBounds(bmins[v.bones[i]], bmaxs[v.bones[i]], rel);
+                            }
+                        }
+                    }
+                }
+                for (size_t b = 0; b < numBones; b++) {
+                    std::vector<byte> info{ boneInfo };
+                    float* bi{ (float*)info.data() };
+                    Vec3 bmin{ bmins[b] }, bmax{ bmaxs[b] };
+                    if (bmin.x > bmax.x) {
+                        bmin = bmax = {};
+                    }
+                    Vec3 c{ (bmin + bmax) * 0.5f };
+                    Vec3 h{ (bmax - bmin) * 0.5f };
+                    std::memcpy(&bi[0], &bmin, sizeof(bmin));
+                    std::memcpy(&bi[3], &bmax, sizeof(bmax));
+                    std::memcpy(&bi[6], &c, sizeof(c));
+                    bi[9] = h.Dot(h);
+                    ff.data.WriteStream(info.data(), info.size());
+                }
+            }
 
+            // the part bits of the bones the meshes use (the union of the meshes' on all the game's models), the root
+            // always: the template's has only the root
+            if (lod0.skinned) {
+                unkC0.assign(PART_BITS_SIZE, 0);
+                auto Set = [&unkC0](uint32_t b) { ((uint32_t*)unkC0.data())[b >> 5] |= 0x80000000u >> (b & 31); };
+                Set(0);
+                for (const LodGeom& lod : lods) {
+                    for (const MeshSurface& surf : lod.surfs) {
+                        for (const MeshVertex& v : surf.verts) {
+                            for (int i = 0; i < 4; i++) {
+                                if (v.weights[i]) {
+                                    Set(v.bones[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             if (unkC0.size() == 0x30) {
                 model.unkC0 = (byte*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.Align(4);
@@ -1687,9 +2292,9 @@ namespace {
                 totalSurfs += lod.surfs.size();
             }
             LOG_INFO(
-                "Added asset xmodel {} (hash_{:x}), {} vertices, {} triangles, {} surface(s), {} lod(s){}{}", assetName,
-                model.name.name, lod0.vertCount, lod0.indexCount / 3, lod0.surfs.size(), numLods,
-                lod0.stream ? ", streamed mesh" : "", physPreset.empty() ? "" : ", physics"
+                "Added asset xmodel {} (hash_{:x}), {} vertices, {} triangles, {} surface(s), {} lod(s), {} bone(s){}{}{}", assetName,
+                model.name.name, lod0.vertCount, lod0.indexCount / 3, lod0.surfs.size(), numLods, numBones,
+                lod0.skinned ? ", skinned" : "", lod0.stream ? ", streamed mesh" : "", physPreset.empty() ? "" : ", physics"
             );
             for (size_t i = 0; i < pieces.size(); i++) {
                 LOG_INFO("  collision piece {}: {} plane(s), {} vertices", i, pieces[i].planes.size(), pieces[i].verts.size());

@@ -1,10 +1,12 @@
 #include <includes.hpp>
 #include <tools/fastfile/handlers/handler_game_bo4.hpp>
 #include <utils/data_utils.hpp>
+#include <numbers>
 
 /*
  * xmodel and xmodelmesh templates for the bo4 linkers (acts ff ... -a xmodel,xmodelmesh): the blocks as they are,
- * the assets by name, the script strings as strings.
+ * the assets by name, the script strings as strings. A model of several bones also gets its skeleton as a glTF (a
+ * mannequin skinned to it) to model on, the xmodel linker's "skeleton" taking the json.
  */
 namespace {
     using namespace fastfile::handlers::bo4;
@@ -110,6 +112,296 @@ namespace {
 
     constexpr size_t XSURFACE_SHARED_SIZE = 0x200;
     constexpr size_t PART_BITS_SIZE = 0x30;
+
+    // the 64-bit bind quats: the index of the dropped largest axis, the three 20-bit axes after it, its sign at bit 63
+    void UnpackQuat(uint64_t v, double q[4]) {
+        static constexpr int INDEX_AXIS[4]{ 0, 3, 2, 1 };
+        int a{ INDEX_AXIS[v & 3] };
+        double sum{};
+        for (int k = 0; k < 3; k++) {
+            int64_t c{ (int64_t)((v >> (2 + 20 * k)) & 0xFFFFF) };
+            if (c & 0x80000) {
+                c -= 0x100000;
+            }
+            double f{ c / (double)(1 << 19) / std::numbers::sqrt2 };
+            q[(a + 1 + k) % 4] = f;
+            sum += f * f;
+        }
+        double big{ std::sqrt(std::max(0.0, 1 - sum)) };
+        q[a] = (v >> 63) ? -big : big;
+    }
+
+    struct Frame {
+        double q[4]{ 0, 0, 0, 1 };
+        double t[3]{};
+
+        void Rotate(const double v[3], double out[3]) const {
+            // v + 2w (u x v) + 2 u x (u x v)
+            const double* u{ q };
+            double c[3]{ u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0] };
+            double cc[3]{ u[1] * c[2] - u[2] * c[1], u[2] * c[0] - u[0] * c[2], u[0] * c[1] - u[1] * c[0] };
+            for (int i = 0; i < 3; i++) {
+                out[i] = v[i] + 2 * (q[3] * c[i] + cc[i]);
+            }
+        }
+    };
+
+    // game space (z up) to glTF (y up): x y z is x z -y
+    void GameToGltf(const double in[3], double out[3]) {
+        out[0] = in[0];
+        out[1] = in[2];
+        out[2] = -in[1];
+    }
+
+    std::string Base64(const std::vector<byte>& data) {
+        static const char* chars{ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
+        std::string out{};
+        out.reserve((data.size() + 2) / 3 * 4);
+        for (size_t i = 0; i < data.size(); i += 3) {
+            uint32_t v{ (uint32_t)data[i] << 16 };
+            if (i + 1 < data.size()) v |= (uint32_t)data[i + 1] << 8;
+            if (i + 2 < data.size()) v |= data[i + 2];
+            out += chars[(v >> 18) & 63];
+            out += chars[(v >> 12) & 63];
+            out += i + 1 < data.size() ? chars[(v >> 6) & 63] : '=';
+            out += i + 2 < data.size() ? chars[v & 63] : '=';
+        }
+        return out;
+    }
+
+    /*
+     * The skeleton of a model as a glTF for modelling on it: every bone (cosmetic ones too) as a joint in its bind
+     * pose, local to its parent (the cosmetic bones' parent list entries are absolute indices), the inverse bind
+     * matrices of baseMat, and a mannequin skinned to it (a spike from each j_ bone to the next, a stub on the ends) to
+     * see it move. Game units, glTF axes (the xmodel linker's "scale": 1). The xmodel linker's "skeleton" takes the
+     * model's json to rebuild the bones exactly, the glTF joints are only matched by name.
+     */
+    void WriteSkeletonGltf(const std::filesystem::path& outFile, XModel* asset) {
+        size_t numMain{ asset->numBones };
+        size_t count{ numMain + asset->numCosmeticBones };
+        size_t roots{ asset->numRootBones };
+        if (count < 2 || !asset->boneNames || !asset->baseMat || roots > count) {
+            return;
+        }
+        std::vector<int> parents(count, -1);
+        std::vector<Frame> local(count), world(count);
+        for (size_t b = 0; b < count; b++) {
+            const float* bm{ (const float*)(asset->baseMat + 0x20 * b) };
+            for (int i = 0; i < 4; i++) world[b].q[i] = bm[i];
+            for (int i = 0; i < 3; i++) world[b].t[i] = bm[4 + i];
+            if (b < roots) {
+                local[b] = world[b];
+                continue;
+            }
+            size_t i{ b - roots };
+            byte p{ asset->parentList ? asset->parentList[i] : (byte)0 };
+            parents[b] = b < numMain ? (int)(b - p) : (int)p;
+            if (parents[b] < 0 || parents[b] >= (int)b) {
+                parents[b] = 0;
+            }
+            if (asset->quats) UnpackQuat(asset->quats[i], local[b].q);
+            if (asset->trans) {
+                const float* t{ (const float*)(asset->trans + 12 * i) };
+                for (int k = 0; k < 3; k++) local[b].t[k] = t[k];
+            }
+        }
+        std::vector<std::string> names(count);
+        for (size_t b = 0; b < count; b++) {
+            names[b] = GetScrString(asset->boneNames[b]);
+        }
+
+        // the mannequin, game space: flat shaded spikes, each on one bone
+        std::vector<float> positions{}, normals{};
+        std::vector<uint16_t> joints{};
+        std::vector<float> weights{};
+        auto Tri = [&](const double* a, const double* b, const double* c, const double* inside, size_t bone) {
+            double e1[3]{ b[0] - a[0], b[1] - a[1], b[2] - a[2] }, e2[3]{ c[0] - a[0], c[1] - a[1], c[2] - a[2] };
+            double n[3]{ e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0] };
+            double out[3]{ a[0] - inside[0], a[1] - inside[1], a[2] - inside[2] };
+            const double* v[3]{ a, b, c };
+            if (n[0] * out[0] + n[1] * out[1] + n[2] * out[2] < 0) {
+                std::swap(v[1], v[2]);
+                for (double& x : n) x = -x;
+            }
+            double len{ std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]) };
+            if (len <= 0) {
+                return;
+            }
+            double gn[3], gp[3], nn[3]{ n[0] / len, n[1] / len, n[2] / len };
+            GameToGltf(nn, gn);
+            for (const double* p : v) {
+                GameToGltf(p, gp);
+                positions.insert(positions.end(), { (float)gp[0], (float)gp[1], (float)gp[2] });
+                normals.insert(normals.end(), { (float)gn[0], (float)gn[1], (float)gn[2] });
+                joints.insert(joints.end(), { (uint16_t)bone, 0, 0, 0 });
+                weights.insert(weights.end(), { 1.0f, 0, 0, 0 });
+            }
+        };
+        auto Spike = [&](const double a[3], const double b[3], double radius, size_t bone) {
+            double d[3]{ b[0] - a[0], b[1] - a[1], b[2] - a[2] };
+            double len{ std::sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]) };
+            if (len < 0.25) {
+                return;
+            }
+            for (double& x : d) x /= len;
+            double up[3]{ 0, 0, 1 };
+            if (std::abs(d[2]) > 0.9) {
+                up[0] = 1;
+                up[2] = 0;
+            }
+            double u[3]{ d[1] * up[2] - d[2] * up[1], d[2] * up[0] - d[0] * up[2], d[0] * up[1] - d[1] * up[0] };
+            double ul{ std::sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]) };
+            for (double& x : u) x /= ul;
+            double w[3]{ d[1] * u[2] - d[2] * u[1], d[2] * u[0] - d[0] * u[2], d[0] * u[1] - d[1] * u[0] };
+            double ring[4][3];
+            double mid[3];
+            for (int i = 0; i < 3; i++) mid[i] = a[i] + d[i] * len * 0.2;
+            for (int k = 0; k < 4; k++) {
+                double s{ k == 0 ? 1.0 : k == 2 ? -1.0 : 0.0 }, c{ k == 1 ? 1.0 : k == 3 ? -1.0 : 0.0 };
+                for (int i = 0; i < 3; i++) ring[k][i] = mid[i] + (u[i] * s + w[i] * c) * radius;
+            }
+            for (int k = 0; k < 4; k++) {
+                Tri(a, ring[k], ring[(k + 1) % 4], mid, bone);
+                Tri(b, ring[(k + 1) % 4], ring[k], mid, bone);
+            }
+        };
+        auto IsBody = [&](size_t b) { return b < numMain && names[b].starts_with("j_"); };
+        std::vector<bool> hasChild(count);
+        for (size_t b = roots; b < count; b++) {
+            int p{ parents[b] };
+            if (!IsBody(b) || p < 0 || !IsBody((size_t)p)) {
+                continue;
+            }
+            double len{ std::hypot(world[b].t[0] - world[p].t[0], world[b].t[1] - world[p].t[1], world[b].t[2] - world[p].t[2]) };
+            Spike(world[p].t, world[b].t, std::clamp(len * 0.15, 0.3, 2.5), (size_t)p);
+            hasChild[p] = true;
+        }
+        for (size_t b = 0; b < count; b++) {
+            bool body{ IsBody(b) };
+            bool head{ names[b] == "j_head" };
+            if ((body && hasChild[b] && !head) || (!body && !positions.empty())) {
+                continue;
+            }
+            // the ends along the bone's x, the head a bigger one
+            double len{ head ? 9.0 : 1.5 };
+            double x[3]{ len, 0, 0 }, dx[3], end[3];
+            world[b].Rotate(x, dx);
+            for (int i = 0; i < 3; i++) end[i] = world[b].t[i] + dx[i];
+            Spike(world[b].t, end, head ? 3.5 : 0.4, b);
+        }
+        if (positions.empty()) {
+            // no j_ bones: a stub on each bone
+            for (size_t b = 0; b < numMain; b++) {
+                double x[3]{ 2, 0, 0 }, dx[3], end[3];
+                world[b].Rotate(x, dx);
+                for (int i = 0; i < 3; i++) end[i] = world[b].t[i] + dx[i];
+                Spike(world[b].t, end, 0.4, b);
+            }
+        }
+        size_t vertCount{ positions.size() / 3 };
+
+        // the buffer: inverse binds, positions, normals, joints, weights
+        std::vector<byte> buffer{};
+        auto Put = [&buffer](const void* data, size_t len) {
+            size_t off{ buffer.size() };
+            buffer.insert(buffer.end(), (const byte*)data, (const byte*)data + len);
+            return off;
+        };
+        std::vector<float> ibm(16 * count);
+        for (size_t b = 0; b < count; b++) {
+            // the inverse of the rigid bind matrix, glTF axes, column major: rotation transposed, -R^T t
+            Frame g{};
+            double gq[3]{ world[b].q[0], world[b].q[1], world[b].q[2] }, gqo[3];
+            GameToGltf(gq, gqo);
+            g.q[0] = gqo[0];
+            g.q[1] = gqo[1];
+            g.q[2] = gqo[2];
+            g.q[3] = world[b].q[3];
+            GameToGltf(world[b].t, g.t);
+            double r[3][3];
+            for (int c = 0; c < 3; c++) {
+                double axis[3]{ c == 0 ? 1.0 : 0.0, c == 1 ? 1.0 : 0.0, c == 2 ? 1.0 : 0.0 };
+                g.Rotate(axis, r[c]);  // r[c] = column c of R
+            }
+            float* m{ &ibm[16 * b] };
+            for (int col = 0; col < 3; col++) {
+                for (int row = 0; row < 3; row++) {
+                    m[col * 4 + row] = (float)r[row][col];  // (R^T)[row][col] = R[col][row] = column row of R, entry col
+                }
+                m[col * 4 + 3] = 0;
+            }
+            for (int row = 0; row < 3; row++) {
+                m[12 + row] = (float)-(r[row][0] * g.t[0] + r[row][1] * g.t[1] + r[row][2] * g.t[2]);
+            }
+            m[15] = 1;
+        }
+        size_t ibmOff{ Put(ibm.data(), ibm.size() * 4) };
+        size_t posOff{ Put(positions.data(), positions.size() * 4) };
+        size_t nrmOff{ Put(normals.data(), normals.size() * 4) };
+        size_t jntOff{ Put(joints.data(), joints.size() * 2) };
+        size_t wgtOff{ Put(weights.data(), weights.size() * 4) };
+
+        float mins[3]{ 1e30f, 1e30f, 1e30f }, maxs[3]{ -1e30f, -1e30f, -1e30f };
+        for (size_t i = 0; i < positions.size(); i++) {
+            mins[i % 3] = std::min(mins[i % 3], positions[i]);
+            maxs[i % 3] = std::max(maxs[i % 3], positions[i]);
+        }
+
+        std::string nodes{}, rootList{};
+        for (size_t b = 0; b < count; b++) {
+            double lt[3], lq[3]{ local[b].q[0], local[b].q[1], local[b].q[2] }, gq[3];
+            GameToGltf(local[b].t, lt);
+            GameToGltf(lq, gq);
+            std::string children{};
+            for (size_t c = b + 1; c < count; c++) {
+                if (parents[c] == (int)b) {
+                    children += std::format("{}{}", children.empty() ? "" : ",", c);
+                }
+            }
+            if (parents[b] < 0) {
+                rootList += std::format("{},", b);
+            }
+            nodes += std::format("{{\"name\":\"{}\",\"translation\":[{},{},{}],\"rotation\":[{},{},{},{}]{}}},\n",
+                                 names[b], lt[0], lt[1], lt[2], gq[0], gq[1], gq[2], local[b].q[3],
+                                 children.empty() ? "" : std::format(",\"children\":[{}]", children));
+        }
+        std::string jointList{};
+        for (size_t b = 0; b < count; b++) {
+            jointList += std::format("{}{}", b ? "," : "", b);
+        }
+        std::string modelName{ outFile.stem().string() };
+        nodes += std::format("{{\"name\":\"{}_mannequin\",\"mesh\":0,\"skin\":0}}", modelName);
+
+        std::string gltf{ std::format(
+            "{{\"asset\":{{\"version\":\"2.0\",\"generator\":\"acts xmodel skeleton\"}},\n"
+            "\"scene\":0,\"scenes\":[{{\"nodes\":[{}{}]}}],\n"
+            "\"nodes\":[\n{}],\n"
+            "\"skins\":[{{\"name\":\"{}\",\"joints\":[{}],\"inverseBindMatrices\":0}}],\n"
+            "\"materials\":[{{\"name\":\"mannequin\"}}],\n"
+            "\"meshes\":[{{\"name\":\"{}_mannequin\",\"primitives\":[{{\"attributes\":{{\"POSITION\":1,\"NORMAL\":2,\"JOINTS_0\":3,\"WEIGHTS_0\":4}},\"material\":0}}]}}],\n"
+            "\"accessors\":[\n"
+            "{{\"bufferView\":0,\"componentType\":5126,\"count\":{},\"type\":\"MAT4\"}},\n"
+            "{{\"bufferView\":1,\"componentType\":5126,\"count\":{},\"type\":\"VEC3\",\"min\":[{},{},{}],\"max\":[{},{},{}]}},\n"
+            "{{\"bufferView\":2,\"componentType\":5126,\"count\":{},\"type\":\"VEC3\"}},\n"
+            "{{\"bufferView\":3,\"componentType\":5123,\"count\":{},\"type\":\"VEC4\"}},\n"
+            "{{\"bufferView\":4,\"componentType\":5126,\"count\":{},\"type\":\"VEC4\"}}],\n"
+            "\"bufferViews\":[\n"
+            "{{\"buffer\":0,\"byteOffset\":{},\"byteLength\":{}}},\n"
+            "{{\"buffer\":0,\"byteOffset\":{},\"byteLength\":{}}},\n"
+            "{{\"buffer\":0,\"byteOffset\":{},\"byteLength\":{}}},\n"
+            "{{\"buffer\":0,\"byteOffset\":{},\"byteLength\":{}}},\n"
+            "{{\"buffer\":0,\"byteOffset\":{},\"byteLength\":{}}}],\n"
+            "\"buffers\":[{{\"byteLength\":{},\"uri\":\"data:application/octet-stream;base64,{}\"}}]}}\n",
+            rootList, count, nodes, modelName, jointList, modelName,
+            count, vertCount, mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2], vertCount, vertCount, vertCount,
+            ibmOff, ibm.size() * 4, posOff, positions.size() * 4, nrmOff, normals.size() * 4,
+            jntOff, joints.size() * 2, wgtOff, weights.size() * 4,
+            buffer.size(), Base64(buffer)
+        ) };
+        if (!utils::WriteFile(outFile, gltf)) {
+            LOG_ERROR("Error when dumping {}", outFile.string());
+        }
+    }
 
     class ModelWorker : public Worker {
         using Worker::Worker;
@@ -275,6 +567,12 @@ namespace {
 
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());
+            }
+            // the skeleton to model on
+            if (asset->numBones > 1) {
+                std::filesystem::path gltfFile{ outFile };
+                gltfFile.replace_extension(".gltf");
+                WriteSkeletonGltf(gltfFile, asset);
             }
         }
     };

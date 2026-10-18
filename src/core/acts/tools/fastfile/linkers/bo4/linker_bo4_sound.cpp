@@ -715,6 +715,15 @@ namespace {
         return true;
     }
 
+    // frames [start, end) of a pcm entry
+    SndAssetBankEntryBo4 CutPcm(const SndAssetBankEntryBo4& e, size_t start, size_t end) {
+        SndAssetBankEntryBo4 out{ e };
+        size_t frameSize{ 2ull * e.channelCount };
+        out.buffer = e.buffer.substr(start * frameSize, (end - start) * frameSize);
+        out.frameCount = (uint32_t)(end - start);
+        return out;
+    }
+
     int HexDigit(char c) {
         if (c >= '0' && c <= '9')
             return c - '0';
@@ -854,7 +863,8 @@ namespace {
             const char* key{ m.name.GetString() };
             const rapidjson::Value& v{ m.value };
             if (!_strcmpi(key, "name") || !_strcmpi(key, "file") || !_strcmpi(key, "type") || !_strcmpi(key, "settings") ||
-                !_strcmpi(key, "source") || !_strcmpi(key, "variants") || !_strcmpi(key, "format")) {
+                !_strcmpi(key, "source") || !_strcmpi(key, "variants") || !_strcmpi(key, "format") ||
+                !_strcmpi(key, "sustain") || !_strcmpi(key, "release") || !_strcmpi(key, "loopStart") || !_strcmpi(key, "loopEnd")) {
                 continue;
             }
             auto Set = [&](const char* fieldName) {
@@ -1144,7 +1154,9 @@ namespace {
      *         { "name": "my_sound", "file": "my_sound.wav", "type": "3d", "volume": 0.8, "maxDist": 1500,
      *           "loop": true, "FadeIn": 200, "PitchMin": -100, "PitchMax": 100, "RandomizeType": "pitch" },
      *         { "name": "my_hit", "type": "3d", "file": [ "hit1.wav", "hit2.wav" ] },       // variants, random
-     *         { "name": "my_step", "type": "3d", "variants": [ { "file": "a.wav" }, { "file": "b.flac", "volume": 0.5 } ] }
+     *         { "name": "my_step", "type": "3d", "variants": [ { "file": "a.wav" }, { "file": "b.flac", "volume": 0.5 } ] },
+     *         { "name": "my_engine", "type": "3d", "file": "start.wav", "sustain": "run.wav", "release": "stop.wav" },
+     *         { "name": "my_drill", "type": "3d", "file": "drill.wav", "loopStart": 0.8, "loopEnd": 2.4 }
      *     ]
      * }
      *
@@ -1156,6 +1168,12 @@ namespace {
      * the streamed bank (sabs) is an empty header in the first key, in the fastfile. The game adds the bank once its
      * keys are in (sub_144083E90, sub_144084060) and finds an alias by name % count in the index (sub_144084FE0).
      * A sound played on an entity (playsound, playloopsound) needs its alias in the bgcache (soundalias,<name>).
+     *
+     * Intro, loop and outro (the alias's attack, sustain and release assets, sd_voice's decode states): the file plays
+     * once, then "sustain" loops until the sound is stopped (stopsound(s), stoploopsound: SND_Stop soft stops an alias
+     * with a sustain), then "release" plays out. Or "loopStart" / "loopEnd" (seconds) cut the file in the three (no
+     * outro without loopEnd, a loopStart of 0 plays the loop once as the intro: the game needs one). As the game's: wav
+     * (pcm) parts of the same channels and rate, in the loaded bank, the sustain entry looping, the alias not.
      */
     class XAssetLinkerImpl : public XAssetLinker {
       public:
@@ -1296,17 +1314,97 @@ namespace {
                     }
                     bool flac{ vformat && !_strcmpi(vformat->GetString(), "flac") };
 
+                    // intro, loop and outro: "sustain" / "release" files or "loopStart" / "loopEnd", of the variant or the alias
+                    auto Part = [&](const char* key) {
+                        const rapidjson::Value* v{ vset ? Member(*vset, key) : nullptr };
+                        return v ? v : Member(a, key);
+                    };
+                    const rapidjson::Value* sustainCfg{ Part("sustain") };
+                    const rapidjson::Value* releaseCfg{ Part("release") };
+                    const rapidjson::Value* loopStartCfg{ Part("loopStart") };
+                    const rapidjson::Value* loopEndCfg{ Part("loopEnd") };
+                    bool looping{ GetAliasField(sa, *FindAliasField("Looping")) != 0 };
+                    bool asr{ sustainCfg || loopStartCfg };
+                    if (asr) {
+                        if ((sustainCfg && !sustainCfg->IsString()) || (releaseCfg && !releaseCfg->IsString()) ||
+                            (loopStartCfg && !loopStartCfg->IsNumber()) || (loopEndCfg && !loopEndCfg->IsNumber()) ||
+                            (sustainCfg && loopStartCfg) || (!sustainCfg && releaseCfg) || (!loopStartCfg && loopEndCfg)) {
+                            Fail(std::format("{}: an intro/loop/outro takes \"sustain\" (and \"release\") files or \"loopStart\" (and \"loopEnd\") seconds", alias.name));
+                            return;
+                        }
+                        if (streamedAsset) {
+                            Fail(std::format("{}: an intro/loop/outro is played from the loaded bank, not streamed", alias.name));
+                            return;
+                        }
+                        if (looping) {
+                            Fail(std::format("{}: an intro/loop/outro alias isn't Looping itself (its sustain loops), a type without loop", alias.name));
+                            return;
+                        }
+                        if (flac) {
+                            LOG_WARNING("{}: an intro/loop/outro is pcm (flac frames are 1024 samples, the loop wouldn't be seamless)", alias.name);
+                            flac = false;
+                        }
+                    }
+
                     // the asset of the variant, its id is the one of the entry
-                    SndAssetBankEntryBo4& entry{ (streamedAsset ? streamed : entries).emplace_back() };
+                    SndAssetBankEntryBo4 entry{};
                     if (!ReadSound(path.parent_path() / files[k].first, entry, flac)) {
                         ctx.error = true;
                         return;
                     }
-                    entry.id = ctx.HashXHash(k ? std::format("{}/{}/{}", name, alias.name, k) : std::format("{}/{}", name, alias.name)) &
-                               0x7FFFFFFFFFFFFFFFull;
-                    entry.order = (uint32_t)((streamedAsset ? streamed : entries).size() - 1);
-                    bool looping{ GetAliasField(sa, *FindAliasField("Looping")) != 0 };
+                    std::string entryName{ k ? std::format("{}/{}/{}", name, alias.name, k) : std::format("{}/{}", name, alias.name) };
+                    entry.id = ctx.HashXHash(entryName) & 0x7FFFFFFFFFFFFFFFull;
                     entry.looping = looping ? 1 : 0;
+                    std::vector<SndAssetBankEntryBo4> parts{};
+                    if (asr) {
+                        SndAssetBankEntryBo4 sustain{}, release{};
+                        bool hasRelease{};
+                        if (entry.format != SND_ASSET_FORMAT_PCMS16) {
+                            Fail(std::format("{}: an intro/loop/outro takes wav files", alias.name));
+                            return;
+                        }
+                        if (sustainCfg) {
+                            if (!ReadSound(path.parent_path() / sustainCfg->GetString(), sustain, false) ||
+                                (releaseCfg && !ReadSound(path.parent_path() / releaseCfg->GetString(), release, false))) {
+                                ctx.error = true;
+                                return;
+                            }
+                            hasRelease = releaseCfg != nullptr;
+                        } else {
+                            // the file cut at the loop points
+                            double rate{ (double)SND_FRAME_RATES[entry.frameRateIndex] };
+                            long long start{ std::llround(loopStartCfg->GetDouble() * rate) };
+                            long long end{ loopEndCfg ? std::llround(loopEndCfg->GetDouble() * rate) : (long long)entry.frameCount };
+                            if (start < 0 || end > (long long)entry.frameCount || end - start < 1) {
+                                Fail(std::format("{}: the loop {}..{} isn't in the file's {} seconds", alias.name, start / rate, end / rate, entry.frameCount / rate));
+                                return;
+                            }
+                            sustain = CutPcm(entry, (size_t)start, (size_t)end);
+                            hasRelease = end < (long long)entry.frameCount;
+                            if (hasRelease) {
+                                release = CutPcm(entry, (size_t)end, entry.frameCount);
+                            }
+                            entry = start ? CutPcm(entry, 0, (size_t)start) : CutPcm(entry, (size_t)start, (size_t)end);
+                        }
+                        for (const SndAssetBankEntryBo4* e : { &sustain, &release }) {
+                            if ((e == &release && !hasRelease)) {
+                                continue;
+                            }
+                            if (e->format != SND_ASSET_FORMAT_PCMS16 || e->channelCount != entry.channelCount ||
+                                e->frameRateIndex != entry.frameRateIndex || !e->frameCount) {
+                                Fail(std::format("{}: the intro, loop and outro must be wav files of the same channels and rate", alias.name));
+                                return;
+                            }
+                        }
+                        sustain.id = ctx.HashXHash(entryName + "/sustain") & 0x7FFFFFFFFFFFFFFFull;
+                        sustain.looping = 1;
+                        parts.push_back(std::move(sustain));
+                        if (hasRelease) {
+                            release.id = ctx.HashXHash(entryName + "/release") & 0x7FFFFFFFFFFFFFFFull;
+                            release.looping = 0;
+                            parts.push_back(std::move(release));
+                        }
+                    }
 
                     sa.name = {};
                     sa.name.name = ctx.HashXHash(alias.name);
@@ -1316,6 +1414,12 @@ namespace {
                     sa.assetId.name = entry.id;
                     sa.assetIdSustain = {};
                     sa.assetIdRelease = {};
+                    if (!parts.empty()) {
+                        sa.assetIdSustain.name = parts[0].id;
+                    }
+                    if (parts.size() > 1) {
+                        sa.assetIdRelease.name = parts[1].id;
+                    }
                     sa.assetFileName = {};
                     sa.assetFileName.name = bankHash;
                     sa.assetFileNameSustain = sa.assetFileName;
@@ -1329,14 +1433,24 @@ namespace {
                     );
 
                     LOG_INFO(
-                        "Added sound alias {}{} ({}, {}{}{}{}, {:.1f} dB, {} Hz, {} channel(s), {} frames, 0x{:x} bytes)",
+                        "Added sound alias {}{} ({}, {}{}{}{}{}, {:.1f} dB, {} Hz, {} channel(s), {} frames, 0x{:x} bytes)",
                         alias.name, files.size() > 1 ? std::format(" variant {}", k) : "", type,
                         GetAliasField(sa, *FindAliasField("PanType")) ? "3d" : "2d", looping ? ", looping" : "",
                         streamedAsset ? ", streamed" : "",
                         flac || entry.format == SND_ASSET_FORMAT_FLAC ? ", flac" : "",
+                        parts.empty() ? "" : std::format(", intro {} + loop {}{} frames", entry.frameCount, parts[0].frameCount,
+                                                         parts.size() > 1 ? std::format(" + outro {}", parts[1].frameCount) : ""),
                         GetAliasField(sa, *FindAliasField("VolMax")), SND_FRAME_RATES[entry.frameRateIndex],
                         entry.channelCount, entry.frameCount, entry.buffer.size()
                     );
+                    // the entries in the bank, their order the one of the bank
+                    std::vector<SndAssetBankEntryBo4>& bank{ streamedAsset ? streamed : entries };
+                    entry.order = (uint32_t)bank.size();
+                    bank.push_back(std::move(entry));
+                    for (SndAssetBankEntryBo4& part : parts) {
+                        part.order = (uint32_t)bank.size();
+                        bank.push_back(std::move(part));
+                    }
                 }
 
                 // as the game's lists: the name of its aliases, cut at their farthest distance, spatial when 3d
