@@ -2,15 +2,25 @@
 #include <tools/fastfile/linkers/linker_bo4.hpp>
 
 /*
- * Materials, from a template dumped by the bo4 material unlinker (acts ff ... -a material): the blocks of a game
- * material as they are, the technique set and the images by name. Images are references ("#name") or images of
- * the zone ("file.png[,stream]", from the images directory), "replace" swaps them everywhere:
+ * Materials, from a game material dumped by the bo4 material unlinker (acts ff ... -a material): its blocks as they
+ * are, the technique set and the images by name, in the json or in a "template" json. Images are references
+ * ("#name") or images of the zone ("file.png[,stream]", from the images directory).
  *
  * {
  *     "name": "my_material",
- *     "replace": { "#old_image": "my_image.png,stream" },
- *     ... the dumped template ...
+ *     "template": "../templates/material_model.json",   // the dumped material, or its keys in this json
+ *     "textures": { "colorMap": "my_color.png,stream", "normalMap": "#$identitynormalmap" },  // by slot (type)
+ *     "replace": { "#old_image": "my_image.png" },      // an image everywhere it is used
+ *     "values": { "colorTint": [1, 0.5, 0.5], "glossRange": [0, 8] },  // the constants of the template's techniques
+ *     "samplerStates": { "colorSampler": { "filter": "nearest", "wrap": "clamp" }, "*": "0x13" },
+ *     "cameraRegion": "gbuffer"                          // the pass, lit_trans for blending
  * }
+ *
+ * Names are hashed (h = 33h ^ (c | 0x20)), unk_<hex> or #<hex> are hashes as the dump writes them. The constants are
+ * the technique arguments of type 0x81 the dump lists in "constantDefs": a float array at an offset in the constant
+ * buffer of each technique that has it (the data of subs[technique].blocks[2]). Sampler states are GfxSamplerState:
+ * filter bits 0-2 (disabled, nearest, linear, aniso2x, 4x, 8x, 16x, compare), mipmap 3-4 (disabled, nearest,
+ * linear), wrap u 5-6, v 7-8, w 9-10 (wrap, clamp, border, mirror), border color 11 (black, white).
  */
 namespace {
     using namespace fastfile::linker::bo4;
@@ -69,6 +79,51 @@ namespace {
     static_assert(sizeof(Material) == 0x138);
 
     constexpr size_t CONSTANT_BLOCK_SIZE = 0x40;
+    // the block of a technique's constants in its sub, the pixel shader's
+    constexpr size_t CONSTANT_BLOCK_INDEX = 2;
+    constexpr uint16_t SAMPLER_FILTER_MASK = 0x7;
+    constexpr uint16_t SAMPLER_MIPMAP_SHIFT = 3;
+    constexpr uint16_t SAMPLER_MIPMAP_MASK = 0x18;
+    constexpr uint16_t SAMPLER_WRAP_U_SHIFT = 5;
+    constexpr uint16_t SAMPLER_WRAP_V_SHIFT = 7;
+    constexpr uint16_t SAMPLER_WRAP_W_SHIFT = 9;
+    constexpr uint16_t SAMPLER_BORDER_WHITE = 0x800;
+
+    constexpr const char* SAMPLER_FILTERS[]{ "disabled", "nearest", "linear", "aniso2x", "aniso4x", "aniso8x", "aniso16x", "compare" };
+    constexpr const char* SAMPLER_MIPMAPS[]{ "disabled", "nearest", "linear" };
+    constexpr const char* SAMPLER_WRAPS[]{ "wrap", "clamp", "border", "mirror" };
+    constexpr const char* CAMERA_REGIONS[]{
+        "gbuffer_depth_hack", "gbuffer_depth_hack_decal", "gbuffer", "gbuffer_decal", "gbuffer_no_volume_decal",
+        "lit_opaque", "lit_trans", "lit_trans_post_resolve", "lit_post_resolve", "water", "emissive_fx",
+        "depth_hack_sss", "forward_sss", "depth_hack", "depth_hack_trans", "depth_hack_post_blur", "sonar",
+        "oit", "depth_prime", "underwater",
+    };
+
+    // the hash of the names of textures, samplers and constants
+    uint32_t MaterialHash(std::string_view name) {
+        // unk_<hex> and #<hex> as the dump writes the unknown ones
+        for (std::string_view prefix : { "unk_", "#" }) {
+            if (name.starts_with(prefix)) {
+                return (uint32_t)std::strtoul(std::string{ name.substr(prefix.size()) }.c_str(), nullptr, 16);
+            }
+        }
+        uint32_t h{};
+        for (char c : name) {
+            h = (33 * h) ^ ((byte)c | 0x20);
+        }
+        return h;
+    }
+
+    // the index of a name in a list, -1 when it isn't in it
+    template<size_t N>
+    int NameIndex(const char* const (&names)[N], std::string_view name) {
+        for (size_t i = 0; i < N; i++) {
+            if (name == names[i]) {
+                return (int)i;
+            }
+        }
+        return -1;
+    }
 
     int HexDigit(char c) {
         if (c >= '0' && c <= '9')
@@ -126,13 +181,21 @@ namespace {
                 ctx.error = true;
                 return;
             }
-            rapidjson::Value& root{ cfg.main };
-
             std::vector<byte> buff{};
-            auto Fail = [&ctx, &path](const char* what) {
+            auto Fail = [&ctx, &path](const std::string& what) {
                 LOG_ERROR("Invalid material {}: {}", path.string(), what);
                 ctx.error = true;
             };
+
+            // the blocks of the game material: the template's or this json's
+            std::string templatePath{ cfg.GetString("template", "") };
+            BO4Json tcfg{ path.parent_path() / templatePath };
+            if (!templatePath.empty() && !tcfg.SyncConfig(false)) {
+                Fail(std::format("can't read template {}", templatePath));
+                return;
+            }
+            rapidjson::Value& root{ templatePath.empty() ? cfg.main : tcfg.main };
+            const rapidjson::Value& user{ cfg.main };
 
             if (!ReadHex(Member(root, "header"), buff) || buff.size() != sizeof(Material)) {
                 Fail("bad header");
@@ -140,7 +203,7 @@ namespace {
             }
 
             std::unordered_map<std::string, std::string> replace{};
-            if (const rapidjson::Value* rep{ Member(root, "replace") }; rep && rep->IsObject()) {
+            if (const rapidjson::Value* rep{ Member(user, "replace") }; rep && rep->IsObject()) {
                 for (auto it{ rep->MemberBegin() }; it != rep->MemberEnd(); ++it) {
                     if (it->value.IsString()) {
                         replace[it->name.GetString()] = it->value.GetString();
@@ -148,14 +211,28 @@ namespace {
                 }
             }
 
+            // the images of the slots by name
+            std::unordered_map<uint32_t, std::string> slotImages{};
+            if (const rapidjson::Value* tex{ Member(user, "textures") }; tex && tex->IsObject()) {
+                for (auto it{ tex->MemberBegin() }; it != tex->MemberEnd(); ++it) {
+                    if (it->value.IsString()) {
+                        slotImages[MaterialHash(it->name.GetString())] = it->value.GetString();
+                    }
+                }
+            }
+
             // images of the zone are linked in place once, then referenced by name
             std::unordered_set<std::string> linkedImages{};
+            std::function<void(std::string, void*&)> LinkImageName{};
             auto LinkImage = [&](const rapidjson::Value* ref, void*& ptr) {
                 if (!ref || !ref->IsString() || !*ref->GetString()) {
                     ptr = nullptr;
                     return;
                 }
                 std::string val{ ref->GetString() };
+                LinkImageName(val, ptr);
+            };
+            LinkImageName = [&](std::string val, void*& ptr) {
                 if (auto it{ replace.find(val) }; it != replace.end()) {
                     val = it->second;
                 }
@@ -181,6 +258,14 @@ namespace {
             std::memcpy(&mat, buff.data(), sizeof(mat));
 
             std::string assetName{ cfg.GetString("name", rfpath.string().c_str()) };
+            if (const rapidjson::Value* region{ Member(user, "cameraRegion") }; region && region->IsString()) {
+                int idx{ NameIndex(CAMERA_REGIONS, region->GetString()) };
+                if (idx < 0) {
+                    Fail(std::format("unknown cameraRegion {}", region->GetString()));
+                    return;
+                }
+                mat.unk133 = (byte)idx;
+            }
             mat.name.name = ctx.HashXHash(assetName, true);
             mat.unk48 = 0;
 
@@ -218,6 +303,57 @@ namespace {
                 }
             }
             if (constants && ReadHex(Member(*constants, "data"), buff) && !buff.empty()) {
+                // the named values on the data, in each technique that has them
+                if (const rapidjson::Value* values{ Member(user, "values") }; values && values->IsObject()) {
+                    const rapidjson::Value* defs{ Member(root, "constantDefs") };
+                    for (auto it{ values->MemberBegin() }; it != values->MemberEnd(); ++it) {
+                        uint32_t hash{ MaterialHash(it->name.GetString()) };
+                        std::vector<float> vals{};
+                        if (it->value.IsNumber()) {
+                            vals.push_back((float)it->value.GetDouble());
+                        } else if (it->value.IsArray()) {
+                            for (const rapidjson::Value& v : it->value.GetArray()) {
+                                vals.push_back(v.IsNumber() ? (float)v.GetDouble() : 0.0f);
+                            }
+                        }
+                        size_t found{};
+                        for (size_t d = 0; defs && defs->IsArray() && d < defs->Size(); d++) {
+                            const rapidjson::Value& def{ (*defs)[(rapidjson::SizeType)d] };
+                            const rapidjson::Value* dname{ Member(def, "name") };
+                            if (!dname || !dname->IsString() || MaterialHash(dname->GetString()) != hash) {
+                                continue;
+                            }
+                            size_t tech{ (size_t)def["technique"].GetUint() };
+                            size_t offset{ (size_t)def["offset"].GetUint() };
+                            size_t size{ (size_t)def["size"].GetUint() };
+                            const rapidjson::Value* sub{ subs && subs->IsArray() && tech < subs->Size() ? &(*subs)[(rapidjson::SizeType)tech] : nullptr };
+                            const rapidjson::Value* block{ sub && sub->IsArray() && CONSTANT_BLOCK_INDEX < sub->Size() ? &(*sub)[(rapidjson::SizeType)CONSTANT_BLOCK_INDEX] : nullptr };
+                            std::vector<byte> bh{};
+                            if (!block || !ReadHex(block, bh) || bh.size() < 8) {
+                                continue;
+                            }
+                            uint32_t bufOffset{ *(uint32_t*)bh.data() };
+                            uint32_t bufSize{ *(uint32_t*)(bh.data() + 4) };
+                            if (offset + size > bufSize || bufOffset + bufSize > buff.size()) {
+                                Fail(std::format("constant {} out of its buffer", it->name.GetString()));
+                                return;
+                            }
+                            std::memcpy(&buff[bufOffset + offset], vals.data(), std::min(size, vals.size() * sizeof(float)));
+                            found++;
+                        }
+                        if (!found) {
+                            std::string names{};
+                            for (size_t d = 0; defs && defs->IsArray() && d < defs->Size(); d++) {
+                                const rapidjson::Value* dname{ Member((*defs)[(rapidjson::SizeType)d], "name") };
+                                if (dname && dname->IsString() && names.find(dname->GetString()) == std::string::npos) {
+                                    names += std::format(" {}", dname->GetString());
+                                }
+                            }
+                            Fail(std::format("no constant {} in the techniques (constantDefs:{})", it->name.GetString(), names.empty() ? " none, dump the template again" : names));
+                            return;
+                        }
+                    }
+                }
                 mat.constants.datalen = buff.size();
                 mat.constants.data = (byte*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
@@ -268,7 +404,22 @@ namespace {
                     std::memcpy(&defs[i], buff.data(), sizeof(defs[i]));
                 }
                 for (size_t i = 0; i < textureCount; i++) {
-                    LinkImage(Member((*textures)[(rapidjson::SizeType)i], "image"), defs[i].image);
+                    uint32_t slot{ *(uint32_t*)((byte*)&defs[i] + 8) };
+                    if (auto it{ slotImages.find(slot) }; it != slotImages.end()) {
+                        LinkImageName(it->second, defs[i].image);
+                        slotImages.erase(it);
+                    } else {
+                        LinkImage(Member((*textures)[(rapidjson::SizeType)i], "image"), defs[i].image);
+                    }
+                }
+                if (!slotImages.empty()) {
+                    std::string names{};
+                    for (size_t i = 0; i < textureCount; i++) {
+                        const rapidjson::Value* type{ Member((*textures)[(rapidjson::SizeType)i], "type") };
+                        names += std::format(" {}", type && type->IsString() ? type->GetString() : "?");
+                    }
+                    Fail(std::format("a texture isn't a slot of the template (slots:{})", names));
+                    return;
                 }
             } else {
                 mat.textureTable = nullptr;
@@ -281,6 +432,59 @@ namespace {
                     return;
                 }
                 mat.samplerCount = (byte)(buff.size() / 8);
+                // the states by name, "*" for all
+                if (const rapidjson::Value* states{ Member(user, "samplerStates") }; states && states->IsObject()) {
+                    for (auto it{ states->MemberBegin() }; it != states->MemberEnd(); ++it) {
+                        std::string_view sname{ it->name.GetString() };
+                        uint32_t hash{ MaterialHash(sname) };
+                        size_t found{};
+                        for (size_t i = 0; i < mat.samplerCount; i++) {
+                            uint32_t& shash{ *(uint32_t*)&buff[i * 8] };
+                            uint16_t& state{ *(uint16_t*)&buff[i * 8 + 4] };
+                            if (sname != "*" && shash != hash) {
+                                continue;
+                            }
+                            found++;
+                            const rapidjson::Value& v{ it->value };
+                            if (v.IsString() || v.IsNumber()) {
+                                state = (uint16_t)(v.IsNumber() ? v.GetUint() : std::strtoul(v.GetString(), nullptr, 0));
+                                continue;
+                            }
+                            if (!v.IsObject()) {
+                                continue;
+                            }
+                            auto Field = [&](const char* field, const auto& names, uint16_t mask, uint16_t shift) {
+                                const rapidjson::Value* f{ Member(v, field) };
+                                if (!f || !f->IsString()) {
+                                    return true;
+                                }
+                                int idx{ NameIndex(names, f->GetString()) };
+                                if (idx < 0) {
+                                    Fail(std::format("sampler {}: unknown {} {}", sname, field, f->GetString()));
+                                    return false;
+                                }
+                                state = (uint16_t)((state & ~mask) | (idx << shift));
+                                return true;
+                            };
+                            if (!Field("filter", SAMPLER_FILTERS, SAMPLER_FILTER_MASK, 0) ||
+                                !Field("mipmap", SAMPLER_MIPMAPS, SAMPLER_MIPMAP_MASK, SAMPLER_MIPMAP_SHIFT) ||
+                                !Field("wrap", SAMPLER_WRAPS, 3 << SAMPLER_WRAP_U_SHIFT, SAMPLER_WRAP_U_SHIFT) ||
+                                !Field("wrap", SAMPLER_WRAPS, 3 << SAMPLER_WRAP_V_SHIFT, SAMPLER_WRAP_V_SHIFT) ||
+                                !Field("wrapU", SAMPLER_WRAPS, 3 << SAMPLER_WRAP_U_SHIFT, SAMPLER_WRAP_U_SHIFT) ||
+                                !Field("wrapV", SAMPLER_WRAPS, 3 << SAMPLER_WRAP_V_SHIFT, SAMPLER_WRAP_V_SHIFT) ||
+                                !Field("wrapW", SAMPLER_WRAPS, 3 << SAMPLER_WRAP_W_SHIFT, SAMPLER_WRAP_W_SHIFT)) {
+                                return;
+                            }
+                            if (const rapidjson::Value* b{ Member(v, "borderWhite") }; b && b->IsBool()) {
+                                state = (uint16_t)(b->GetBool() ? state | SAMPLER_BORDER_WHITE : state & ~SAMPLER_BORDER_WHITE);
+                            }
+                        }
+                        if (!found) {
+                            Fail(std::format("no sampler {} in the template (see its samplerStates)", sname));
+                            return;
+                        }
+                    }
+                }
                 mat.samplerTable = (uint64_t*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.Align(0x10);
                 ff.data.WriteStream(buff.data(), buff.size());

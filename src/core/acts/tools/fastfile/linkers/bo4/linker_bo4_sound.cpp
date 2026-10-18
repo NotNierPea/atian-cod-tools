@@ -255,10 +255,10 @@ namespace {
     };
     static_assert(sizeof(SndAssetBankHeader) == 0x800);
 
-    // a sound asset bank: header, names, checksums, the data of the assets, the entries
+    // a sound asset bank: header, names, checksums, the data of the assets (aligned on dataAlign), the entries
     std::vector<byte> CreateSab(
         const std::string& zone, const std::string& lang, const std::string& plt,
-        std::vector<SndAssetBankEntryBo4>& entries
+        std::vector<SndAssetBankEntryBo4>& entries, size_t dataAlign = 1
     ) {
         std::vector<byte> sab{};
 
@@ -278,6 +278,7 @@ namespace {
         for (size_t i = 0; i < entries.size(); i++) {
             SndAssetBankEntryBo4& entry{ entries[i] };
             // write entry
+            sab.resize(utils::Aligned<size_t>(sab.size(), dataAlign));
             entry.offset = (uint64_t)utils::WriteValue(sab, entry.buffer.data(), entry.buffer.size());
             entry.size = (uint32_t)entry.buffer.size();
         }
@@ -328,6 +329,9 @@ namespace {
 
         return sab;
     }
+
+    // the data of the streamed sounds in their file, on sectors
+    constexpr size_t SABS_DATA_ALIGN = 0x800;
 
     // frame rates of SndAssetBankEntry::frameRateIndex
     constexpr uint32_t SND_FRAME_RATES[]{ 8000, 12000, 16000, 24000, 32000, 44100, 48000, 96000, 192000 };
@@ -1145,7 +1149,8 @@ namespace {
      * }
      *
      * Wav files are 16 bits pcm, made flac with "format": "flac"; flac files are taken as they are when they are what
-     * the game reads (16 bits, blocks of 1024 samples, flac -b 1024).
+     * the game reads (16 bits, blocks of 1024 samples, flac -b 1024). "Storage": "streamed" plays a sound off the disk:
+     * it goes in zone/snd/<language>/<zone>.<language>.sabs, next to the fastfile (music, long sounds).
      *
      * The wav files go in the loaded asset bank (sabl), the file key of the bank, streamed from the xpak of the zone;
      * the streamed bank (sabs) is an empty header in the first key, in the fastfile. The game adds the bank once its
@@ -1189,6 +1194,7 @@ namespace {
             };
             std::vector<Alias> aliases{};
             std::vector<SndAssetBankEntryBo4> entries{};
+            std::vector<SndAssetBankEntryBo4> streamed{};
             const rapidjson::Value* bankFormat{ Member(scfg.main, "format") };
 
             const rapidjson::Value* cfgAliases{ Member(scfg.main, "aliases") };
@@ -1272,11 +1278,13 @@ namespace {
                         Fail(std::format("{} variant {}: {}", alias.name, k, error));
                         return;
                     }
-                    // the bank only has loaded assets
-                    if (GetAliasField(sa, *FindAliasField("Storage")) != 1) {
-                        Fail(std::format("{}: Storage must be loaded", alias.name));
+                    // loaded (the sabl, in memory) or streamed (the sabs, played off the disk)
+                    double storage{ GetAliasField(sa, *FindAliasField("Storage")) };
+                    if (storage != 1 && storage != 2) {
+                        Fail(std::format("{}: Storage must be loaded or streamed", alias.name));
                         return;
                     }
+                    bool streamedAsset{ storage == 2 };
                     const rapidjson::Value* vformat{ vset ? Member(*vset, "format") : nullptr };
                     if (!vformat) {
                         vformat = aformat;
@@ -1289,14 +1297,14 @@ namespace {
                     bool flac{ vformat && !_strcmpi(vformat->GetString(), "flac") };
 
                     // the asset of the variant, its id is the one of the entry
-                    SndAssetBankEntryBo4& entry{ entries.emplace_back() };
+                    SndAssetBankEntryBo4& entry{ (streamedAsset ? streamed : entries).emplace_back() };
                     if (!ReadSound(path.parent_path() / files[k].first, entry, flac)) {
                         ctx.error = true;
                         return;
                     }
                     entry.id = ctx.HashXHash(k ? std::format("{}/{}/{}", name, alias.name, k) : std::format("{}/{}", name, alias.name)) &
                                0x7FFFFFFFFFFFFFFFull;
-                    entry.order = (uint32_t)(entries.size() - 1);
+                    entry.order = (uint32_t)((streamedAsset ? streamed : entries).size() - 1);
                     bool looping{ GetAliasField(sa, *FindAliasField("Looping")) != 0 };
                     entry.looping = looping ? 1 : 0;
 
@@ -1321,9 +1329,10 @@ namespace {
                     );
 
                     LOG_INFO(
-                        "Added sound alias {}{} ({}, {}{}{}, {:.1f} dB, {} Hz, {} channel(s), {} frames, 0x{:x} bytes)",
+                        "Added sound alias {}{} ({}, {}{}{}{}, {:.1f} dB, {} Hz, {} channel(s), {} frames, 0x{:x} bytes)",
                         alias.name, files.size() > 1 ? std::format(" variant {}", k) : "", type,
                         GetAliasField(sa, *FindAliasField("PanType")) ? "3d" : "2d", looping ? ", looping" : "",
+                        streamedAsset ? ", streamed" : "",
                         flac || entry.format == SND_ASSET_FORMAT_FLAC ? ", flac" : "",
                         GetAliasField(sa, *FindAliasField("VolMax")), SND_FRAME_RATES[entry.frameRateIndex],
                         entry.channelCount, entry.frameCount, entry.buffer.size()
@@ -1357,8 +1366,29 @@ namespace {
                 }
             }
 
-            std::vector<SndAssetBankEntryBo4> streamed{};
-            std::vector<byte> sabs{ CreateSab(zone, language, sndPlatform, streamed) };
+            /*
+             * The streamed bank (sabs) is a file of its own, zone/snd/<language>/<zone>.<language>.sabs, that the game opens
+             * when the first key of the bank comes in and plays its sounds from (sub_144084060, sub_1440888A0). The key is its
+             * header and its entries right after it (sub_1440865C0 takes them at the key's data + 0x800).
+             */
+            std::vector<byte> sabsFile{ CreateSab(zone, language, sndPlatform, streamed, SABS_DATA_ALIGN) };
+            std::vector<byte> sabs(sabsFile.begin(), sabsFile.begin() + sizeof(SndAssetBankHeader));
+            const SndAssetBankHeader& sabsHeader{ *(const SndAssetBankHeader*)sabsFile.data() };
+            sabs.insert(
+                sabs.end(), sabsFile.begin() + sabsHeader.entryOffset,
+                sabsFile.begin() + sabsHeader.entryOffset + sabsHeader.entryCount * sabsHeader.entrySize
+            );
+            sabs.resize(utils::Aligned<size_t>(sabs.size(), 0x80));
+            if (!streamed.empty()) {
+                std::filesystem::path sabsPath{ ctx.linkCtx.opt.m_output / "zone" / "snd" / language /
+                                                std::format("{}.{}.sabs", zone, language) };
+                std::filesystem::create_directories(sabsPath.parent_path());
+                if (!utils::WriteFile(sabsPath, sabsFile)) {
+                    Fail(std::format("can't write {}", sabsPath.string()));
+                    return;
+                }
+                LOG_INFO("Written streamed sounds {} ({} sound(s), 0x{:x} bytes)", sabsPath.string(), streamed.size(), sabsFile.size());
+            }
             std::vector<byte> sabl{ CreateSab(zone, language, sndPlatform, entries) };
 
             // alias index: name % count, the collisions chained in the free slots

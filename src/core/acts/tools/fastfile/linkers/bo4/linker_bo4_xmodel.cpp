@@ -1,5 +1,6 @@
 #include <includes.hpp>
 #include <tools/fastfile/linkers/linker_bo4.hpp>
+#include <numbers>
 
 /*
  * Rigid single bone xmodels from obj files, on the templates the bo4 unlinker dumps (acts ff ... -a xmodel,xmodelmesh)
@@ -22,8 +23,11 @@
  *     "lods": [ { "obj": "models/my_model_lod1.obj", "threshold": 2.5, "materials": { } } ],  // less detailed each
  *     "lodScale": 0.42,         // the lod distances of the model (areaScale), the template's by default
  *     "stream": false,          // mesh data in the xpak, per lod too
- *     "collision": "box",       // "box", "mesh" (bullets hit the triangles) or "none"
- *     "physics": false,         // true (the preset of the game's props) or "#preset": physicslaunch works on it
+ *     "collision": "hull",      // "hull" (convex), "box", "mesh" (a hull, the bullets hit the triangles) or "none"
+ *     "collisionObj": "models/my_model_coll.obj",  // the shape of the collision instead of the model, a convex
+ *                               // piece per object (o or g) of it
+ *     "hullMaxSides": 44,       // the planes of a hull past its bounds, the game's props stay under 46
+ *     "physics": false,         // true (the game's props' preset), "#preset" or "physics/my_preset.json" (ours)
  *     "playerClip": true        // the collmap blocks the players, false by default on a physics model (jitter)
  * }
  *
@@ -32,8 +36,9 @@
  * each lod's average triangle area, or its "threshold".
  *
  * Collision, the values of the solid props of core_common: a collision surface for the bullets (script models are
- * traced against it, DObjGeomTraceline) and a collmap with a box brush of the bounds for the players
- * (SV_TraceCapsuleToEntity). The game's memmapped block is the current one on pc.
+ * traced against it, DObjGeomTraceline) and a collmap for the players (SV_TraceCapsuleToEntity) and the physics, a
+ * brush per convex piece: the convex hull of the model (or of each object of collisionObj) or its box. The game's
+ * memmapped block is the current one on pc.
  */
 namespace {
     using namespace fastfile::linker::bo4;
@@ -311,6 +316,7 @@ namespace {
     struct ObjTri {
         ObjCorner c[3];
         uint32_t group;
+        uint32_t object;
     };
     struct ObjData {
         std::vector<Vec3> positions{};
@@ -319,6 +325,7 @@ namespace {
         std::vector<Vec3> normals{};
         std::vector<ObjTri> tris{};
         std::vector<std::string> groups{}; // usemtl names
+        uint32_t numObjects{ 1 };          // o and g lines, the convex pieces of a collision obj
         bool hasColors{};
     };
 
@@ -336,6 +343,8 @@ namespace {
         auto Convert = [yUp, scale](Vec3 v) { return (yUp ? Vec3{ v.x, -v.z, v.y } : v) * scale; };
         auto Resolve = [](int idx, size_t count) { return idx < 0 ? (int)count + idx : idx - 1; };
         uint32_t group{};
+        uint32_t object{};
+        bool objectHasFaces{};
         obj.groups.emplace_back();
 
         std::istringstream is{ data };
@@ -366,6 +375,12 @@ namespace {
                 Vec3 n{};
                 ls >> n.x >> n.y >> n.z;
                 obj.normals.push_back(Convert(n).Normalized());
+            } else if (op == "o" || op == "g") {
+                // a new object once the current one has faces
+                if (objectHasFaces) {
+                    object = obj.numObjects++;
+                    objectHasFaces = false;
+                }
             } else if (op == "usemtl") {
                 std::string name{};
                 std::getline(ls >> std::ws, name);
@@ -404,8 +419,9 @@ namespace {
                 }
                 // obj faces are counter clockwise, the game's clockwise
                 for (size_t i = 2; i < face.size(); i++) {
-                    obj.tris.push_back({ { face[0], face[i], face[i - 1] }, group });
+                    obj.tris.push_back({ { face[0], face[i], face[i - 1] }, group, object });
                 }
+                objectHasFaces = true;
             }
         }
         if (obj.tris.empty()) {
@@ -573,6 +589,223 @@ namespace {
         return true;
     }
 
+    // the default preset of the game's physics props (hash_550b7918facda46d on 278 core_common props)
+    constexpr const char* DEFAULT_PHYS_PRESET = "hash_550b7918facda46d";
+    // what the game's physics props have in their collmaps: no player clip, a player on a moving body jitters
+    constexpr uint32_t COLLMAP_PHYSICS_CONTENTS = 0x20000400;
+    // the player clip bit of COLLMAP_CONTENTS
+    constexpr uint32_t COLLMAP_PLAYER_CLIP = 0x10000;
+    // a collmap list entry: flags, then the contents in the high dword
+    constexpr uint64_t COLLMAP_LIST_FLAGS = 0x000440A0ull;
+
+    // a plane of a brush past its bounds (the type and sign bits are 0 in the game's)
+    struct BrushPlane {
+        float normal[3];
+        float dist;
+        uint32_t typeSignbits;
+    };
+    static_assert(sizeof(BrushPlane) == 0x14);
+
+    // the game's physics props stay under 46 planes, the physics hull of a brush keeps 128 points (generate_brush_chull)
+    constexpr size_t DEFAULT_HULL_MAX_SIDES = 44;
+    constexpr size_t MIN_HULL_SIDES = 4;
+    constexpr size_t MAX_HULL_SIDES = 128;
+    constexpr size_t MAX_COLLISION_PIECES = 64;
+    // the directions the points a hull is made of are picked in
+    constexpr size_t HULL_DIRECTIONS = 1024;
+    // the triangles of a hull in one plane: within ~0.5 degree
+    constexpr double HULL_COPLANAR_COS = 0.99996;
+    constexpr double HULL_AXIAL_COS = 0.99999;
+
+    /*
+     * A convex piece of the collmap, a brush: the planes of its bounds (implicit), its other planes and the windings of
+     * all its faces with an area (the axial ones first in the order -z, +z, -y, +x, +y, -x, then the planes'), clockwise
+     * from outside. The game traces the players against the planes and makes the physics shape of the points
+     * (gjk_brush_t, an aabb when there's no plane), the windings are what the game's tools write.
+     */
+    struct CollisionPiece {
+        Vec3 mins{}, maxs{};
+        std::vector<BrushPlane> planes{};
+        std::vector<Vec3> verts{};
+        std::vector<std::array<Vec3, 3>> tris{}; // the faces, counter clockwise from outside (bullets)
+    };
+
+    struct HVec {
+        double x, y, z;
+
+        HVec operator+(const HVec& o) const { return { x + o.x, y + o.y, z + o.z }; }
+        HVec operator-(const HVec& o) const { return { x - o.x, y - o.y, z - o.z }; }
+        HVec operator*(double f) const { return { x * f, y * f, z * f }; }
+        double Dot(const HVec& o) const { return x * o.x + y * o.y + z * o.z; }
+        HVec Cross(const HVec& o) const { return { y * o.z - z * o.y, z * o.x - x * o.z, x * o.y - y * o.x }; }
+        double Length() const { return std::sqrt(Dot(*this)); }
+        HVec Normalized() const {
+            double l{ Length() };
+            return l > 0 ? *this * (1.0 / l) : HVec{};
+        }
+    };
+
+    // a first tetrahedron of points: the farthest two of the axis extremes, the farthest from their line, then from
+    // their plane, the first face looking away from the fourth point; false when they are flat
+    bool InitialTetra(const std::vector<HVec>& pts, double eps, std::array<int, 4>& out) {
+        int n{ (int)pts.size() };
+        if (n < 4) {
+            return false;
+        }
+        int ext[6]{};
+        for (int i = 0; i < n; i++) {
+            const HVec& p{ pts[i] };
+            if (p.x < pts[ext[0]].x) ext[0] = i;
+            if (p.x > pts[ext[1]].x) ext[1] = i;
+            if (p.y < pts[ext[2]].y) ext[2] = i;
+            if (p.y > pts[ext[3]].y) ext[3] = i;
+            if (p.z < pts[ext[4]].z) ext[4] = i;
+            if (p.z > pts[ext[5]].z) ext[5] = i;
+        }
+        int i0{ ext[0] }, i1{ ext[1] };
+        double best{ -1 };
+        for (int a = 0; a < 6; a++) {
+            for (int b = a + 1; b < 6; b++) {
+                double d{ (pts[ext[a]] - pts[ext[b]]).Length() };
+                if (d > best) {
+                    best = d;
+                    i0 = ext[a];
+                    i1 = ext[b];
+                }
+            }
+        }
+        if (best <= eps) {
+            return false;
+        }
+        HVec line{ (pts[i1] - pts[i0]).Normalized() };
+        int i2{ -1 };
+        best = eps;
+        for (int i = 0; i < n; i++) {
+            double d{ (pts[i] - pts[i0]).Cross(line).Length() };
+            if (d > best) {
+                best = d;
+                i2 = i;
+            }
+        }
+        if (i2 < 0) {
+            return false;
+        }
+        HVec pn{ (pts[i1] - pts[i0]).Cross(pts[i2] - pts[i0]).Normalized() };
+        int i3{ -1 };
+        best = eps;
+        for (int i = 0; i < n; i++) {
+            double d{ std::abs(pn.Dot(pts[i] - pts[i0])) };
+            if (d > best) {
+                best = d;
+                i3 = i;
+            }
+        }
+        if (i3 < 0) {
+            return false;
+        }
+        if (pn.Dot(pts[i3] - pts[i0]) > 0) {
+            std::swap(i1, i2);
+        }
+        out = { i0, i1, i2, i3 };
+        return true;
+    }
+
+    // triangles of the convex hull of points (incremental), counter clockwise from outside; empty when they are flat
+    std::vector<std::array<int, 3>> ConvexHull(const std::vector<HVec>& pts, double eps) {
+        struct Face {
+            std::array<int, 3> v;
+            HVec n;
+            double d;
+            bool alive;
+        };
+        std::vector<Face> faces{};
+        auto MakeFace = [&](int a, int b, int c) {
+            HVec n{ (pts[b] - pts[a]).Cross(pts[c] - pts[a]).Normalized() };
+            faces.push_back({ { a, b, c }, n, n.Dot(pts[a]), true });
+        };
+        std::array<int, 4> tetra{};
+        if (!InitialTetra(pts, eps, tetra)) {
+            return {};
+        }
+        int i0{ tetra[0] }, i1{ tetra[1] }, i2{ tetra[2] }, i3{ tetra[3] };
+        int n{ (int)pts.size() };
+        MakeFace(i0, i1, i2);
+        MakeFace(i0, i3, i1);
+        MakeFace(i1, i3, i2);
+        MakeFace(i2, i3, i0);
+
+        std::vector<size_t> visible{};
+        std::set<std::pair<int, int>> edges{};
+        for (int p = 0; p < n; p++) {
+            if (p == i0 || p == i1 || p == i2 || p == i3) {
+                continue;
+            }
+            visible.clear();
+            for (size_t f = 0; f < faces.size(); f++) {
+                if (faces[f].alive && faces[f].n.Dot(pts[p]) - faces[f].d > eps) {
+                    visible.push_back(f);
+                }
+            }
+            if (visible.empty()) {
+                continue; // inside
+            }
+            // the horizon: the edges of the visible faces without their reverse, the new faces keep their direction
+            edges.clear();
+            for (size_t f : visible) {
+                faces[f].alive = false;
+                for (size_t e = 0; e < 3; e++) {
+                    edges.emplace(faces[f].v[e], faces[f].v[(e + 1) % 3]);
+                }
+            }
+            for (const auto& [a, b] : edges) {
+                if (!edges.contains({ b, a })) {
+                    MakeFace(a, b, p);
+                }
+            }
+        }
+        std::vector<std::array<int, 3>> out{};
+        for (const Face& f : faces) {
+            if (f.alive) {
+                out.push_back(f.v);
+            }
+        }
+        return out;
+    }
+
+    // the points of pts the farthest in the directions: the axes, the diagonals and count on a fibonacci sphere
+    std::vector<HVec> SupportPoints(const std::vector<HVec>& pts, size_t count) {
+        std::vector<HVec> dirs{
+            { 0, 0, -1 }, { 0, 0, 1 }, { 0, -1, 0 }, { 0, 1, 0 }, { -1, 0, 0 }, { 1, 0, 0 },
+        };
+        for (int i = 0; i < 8; i++) {
+            dirs.push_back(HVec{ i & 1 ? 1.0 : -1.0, i & 2 ? 1.0 : -1.0, i & 4 ? 1.0 : -1.0 }.Normalized());
+        }
+        const double golden{ std::numbers::pi * (3.0 - std::sqrt(5.0)) };
+        for (size_t i = 0; i < count; i++) {
+            double z{ 1.0 - 2.0 * (i + 0.5) / count };
+            double r{ std::sqrt(std::max(0.0, 1.0 - z * z)) };
+            dirs.push_back({ std::cos(golden * i) * r, std::sin(golden * i) * r, z });
+        }
+        std::vector<bool> used(pts.size());
+        std::vector<HVec> out{};
+        for (const HVec& d : dirs) {
+            size_t bi{};
+            double bd{ -std::numeric_limits<double>::infinity() };
+            for (size_t i = 0; i < pts.size(); i++) {
+                double v{ d.Dot(pts[i]) };
+                if (v > bd) {
+                    bd = v;
+                    bi = i;
+                }
+            }
+            if (!used[bi]) {
+                used[bi] = true;
+                out.push_back(pts[bi]);
+            }
+        }
+        return out;
+    }
+
     // corner i: x max if bit 0, y if bit 1, z if bit 2
     Vec3 BoxCorner(const Vec3& mins, const Vec3& maxs, int i) {
         return { i & 1 ? maxs.x : mins.x, i & 2 ? maxs.y : mins.y, i & 4 ? maxs.z : mins.z };
@@ -584,14 +817,232 @@ namespace {
     // the vertices of a box brush, in the order of the game's
     constexpr int BOX_BRUSH_VERTS[24]{ 1, 3, 2, 0, 4, 6, 7, 5, 4, 5, 1, 0, 5, 7, 3, 1, 2, 3, 7, 6, 0, 2, 6, 4 };
 
-    // the default preset of the game's physics props (hash_550b7918facda46d on 278 core_common props)
-    constexpr const char* DEFAULT_PHYS_PRESET = "hash_550b7918facda46d";
-    // what the game's physics props have in their collmaps: no player clip, a player on a moving body jitters
-    constexpr uint32_t COLLMAP_PHYSICS_CONTENTS = 0x20000400;
-    // the player clip bit of COLLMAP_CONTENTS
-    constexpr uint32_t COLLMAP_PLAYER_CLIP = 0x10000;
-    // a collmap list entry: flags, then the contents in the high dword
-    constexpr uint64_t COLLMAP_LIST_FLAGS = 0x000440A0ull;
+    void GrowBounds(Vec3& mins, Vec3& maxs, const Vec3& p) {
+        mins = { std::min(mins.x, p.x), std::min(mins.y, p.y), std::min(mins.z, p.z) };
+        maxs = { std::max(maxs.x, p.x), std::max(maxs.y, p.y), std::max(maxs.z, p.z) };
+    }
+
+    // a box brush of the bounds of points
+    CollisionPiece BoxPiece(const std::vector<Vec3>& points) {
+        CollisionPiece piece{};
+        piece.mins = piece.maxs = points[0];
+        for (const Vec3& p : points) {
+            GrowBounds(piece.mins, piece.maxs, p);
+        }
+        for (int corner : BOX_BRUSH_VERTS) {
+            piece.verts.push_back(BoxCorner(piece.mins, piece.maxs, corner));
+        }
+        for (const int(&face)[4] : BOX_FACES) {
+            Vec3 q[4];
+            for (size_t i = 0; i < 4; i++) {
+                q[i] = BoxCorner(piece.mins, piece.maxs, face[i]);
+            }
+            piece.tris.push_back({ q[0], q[1], q[2] });
+            piece.tris.push_back({ q[0], q[2], q[3] });
+        }
+        return piece;
+    }
+
+    // the plane normals of the convex hull of points, its triangles merged by plane, without the axial ones (the bounds);
+    // SIZE_MAX when the points are flat, else their count
+    size_t HullNormals(const std::vector<HVec>& pts, double eps, std::vector<HVec>* normals) {
+        static const HVec axialNormals[6]{ { 0, 0, -1 }, { 0, 0, 1 }, { 0, -1, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { -1, 0, 0 } };
+        std::vector<std::array<int, 3>> tris{ ConvexHull(pts, eps) };
+        if (tris.empty()) {
+            return SIZE_MAX;
+        }
+        // the biggest triangles first, the others join the plane of one within HULL_COPLANAR_COS
+        auto Area = [&pts](const std::array<int, 3>& t) {
+            return (pts[t[1]] - pts[t[0]]).Cross(pts[t[2]] - pts[t[0]]).Length();
+        };
+        std::sort(tris.begin(), tris.end(), [&Area](const auto& a, const auto& b) { return Area(a) > Area(b); });
+        std::vector<HVec> groups{}; // area weighted
+        for (const std::array<int, 3>& t : tris) {
+            HVec cross{ (pts[t[1]] - pts[t[0]]).Cross(pts[t[2]] - pts[t[0]]) };
+            HVec n{ cross.Normalized() };
+            auto it{ std::find_if(groups.begin(), groups.end(), [&n](const HVec& g) { return g.Normalized().Dot(n) > HULL_COPLANAR_COS; }) };
+            if (it == groups.end()) {
+                groups.push_back(cross);
+            } else {
+                *it = *it + cross;
+            }
+        }
+        size_t count{};
+        for (const HVec& g : groups) {
+            HVec n{ g.Normalized() };
+            if (std::none_of(std::begin(axialNormals), std::end(axialNormals), [&n](const HVec& a) { return n.Dot(a) > HULL_AXIAL_COS; })) {
+                count++;
+                if (normals) {
+                    normals->push_back(n);
+                }
+            }
+        }
+        return count;
+    }
+
+    // the part of a polygon behind a plane (Sutherland-Hodgman, the points within eps kept)
+    std::vector<HVec> ClipWinding(const std::vector<HVec>& w, const HVec& n, double d, double eps) {
+        std::vector<HVec> out{};
+        for (size_t i = 0; i < w.size(); i++) {
+            const HVec& p{ w[i] };
+            const HVec& q{ w[(i + 1) % w.size()] };
+            double dp{ n.Dot(p) - d };
+            double dq{ n.Dot(q) - d };
+            if (dp <= eps) {
+                out.push_back(p);
+            }
+            if ((dp > eps && dq < -eps) || (dp < -eps && dq > eps)) {
+                out.push_back(p + (q - p) * (dp / (dp - dq)));
+            }
+        }
+        return out;
+    }
+
+    /*
+     * The brush of planes around points: the bounds of the points (the axial planes), then each normal moved to the
+     * farthest point, so the brush holds all of them and lies on them. The faces are the polygon of each plane clipped
+     * by all the others (a plane without one is left out), their corners welded.
+     */
+    void BrushOfPlanes(const std::vector<HVec>& all, const HVec& lo, const HVec& hi, const std::vector<HVec>& normals,
+                       double eps, CollisionPiece& piece) {
+        std::vector<std::pair<HVec, double>> planes{
+            { { 0, 0, -1 }, -lo.z }, { { 0, 0, 1 }, hi.z }, { { 0, -1, 0 }, -lo.y }, { { 1, 0, 0 }, hi.x },
+            { { 0, 1, 0 }, hi.y }, { { -1, 0, 0 }, -lo.x },
+        };
+        for (const HVec& n : normals) {
+            double d{ -std::numeric_limits<double>::infinity() };
+            for (const HVec& p : all) {
+                d = std::max(d, n.Dot(p));
+            }
+            planes.emplace_back(n, d);
+        }
+        HVec center{ (lo + hi) * 0.5 };
+        double size{ (hi - lo).Length() * 2 + 1 };
+        std::vector<HVec> corners{};
+        auto Weld = [&corners, eps](const HVec& p) {
+            for (const HVec& c : corners) {
+                if ((c - p).Length() <= eps * 10) {
+                    return c;
+                }
+            }
+            corners.push_back(p);
+            return p;
+        };
+
+        piece = {};
+        piece.mins = { (float)lo.x, (float)lo.y, (float)lo.z };
+        piece.maxs = { (float)hi.x, (float)hi.y, (float)hi.z };
+        for (size_t i = 0; i < planes.size(); i++) {
+            const auto& [n, d] { planes[i] };
+            // a big square on the plane, counter clockwise from outside, clipped by the other planes
+            HVec u{ (std::abs(n.x) < 0.9 ? HVec{ 1, 0, 0 } : HVec{ 0, 1, 0 }).Cross(n).Normalized() };
+            HVec v{ n.Cross(u) };
+            HVec o{ center + n * (d - n.Dot(center)) };
+            std::vector<HVec> w{ o - u * size - v * size, o + u * size - v * size, o + u * size + v * size, o - u * size + v * size };
+            for (size_t j = 0; j < planes.size() && w.size() >= 3; j++) {
+                if (j != i) {
+                    w = ClipWinding(w, planes[j].first, planes[j].second, eps);
+                }
+            }
+            std::vector<HVec> welded{};
+            for (const HVec& p : w) {
+                HVec c{ Weld(p) };
+                if (welded.empty() || (welded.back() - c).Length() > 0) {
+                    welded.push_back(c);
+                }
+            }
+            while (welded.size() > 1 && (welded.back() - welded.front()).Length() == 0) {
+                welded.pop_back();
+            }
+            HVec area{};
+            for (size_t k = 2; k < welded.size(); k++) {
+                area = area + (welded[k - 1] - welded[0]).Cross(welded[k] - welded[0]);
+            }
+            if (welded.size() < 3 || area.Length() <= eps * eps) {
+                continue; // a plane past a corner or an edge
+            }
+            // clockwise from outside
+            std::vector<Vec3> winding{};
+            for (auto it = welded.rbegin(); it != welded.rend(); it++) {
+                winding.push_back({ (float)it->x, (float)it->y, (float)it->z });
+            }
+            if (i >= 6) {
+                piece.planes.push_back({ { (float)n.x, (float)n.y, (float)n.z }, (float)d, 0 });
+            }
+            piece.verts.insert(piece.verts.end(), winding.begin(), winding.end());
+            for (size_t k = 2; k < winding.size(); k++) {
+                piece.tris.push_back({ winding[0], winding[k], winding[k - 1] });
+            }
+        }
+    }
+
+    /*
+     * The convex hull of points as a brush of at most maxSides planes past its bounds. From a tetrahedron, the point the
+     * farthest out of the hull is added while it keeps few enough planes (the points tried are the farthest ones in a
+     * set of directions), then its planes are moved out to hold all the points: a box stays a box, a round shape becomes
+     * the polyhedron around it. False when the points are flat.
+     */
+    bool HullPiece(const std::vector<Vec3>& points, size_t maxSides, CollisionPiece& piece) {
+        std::vector<HVec> all{};
+        all.reserve(points.size());
+        HVec lo{ points[0].x, points[0].y, points[0].z }, hi{ lo };
+        for (const Vec3& p : points) {
+            all.push_back({ p.x, p.y, p.z });
+            lo = { std::min(lo.x, (double)p.x), std::min(lo.y, (double)p.y), std::min(lo.z, (double)p.z) };
+            hi = { std::max(hi.x, (double)p.x), std::max(hi.y, (double)p.y), std::max(hi.z, (double)p.z) };
+        }
+        double eps{ std::max(1e-9, (hi - lo).Length() * 1e-6) };
+        std::vector<HVec> candidates{ SupportPoints(all, HULL_DIRECTIONS) };
+        std::array<int, 4> tetra{};
+        if (!InitialTetra(candidates, eps, tetra)) {
+            return false;
+        }
+        std::vector<HVec> chosen{};
+        std::vector<bool> used(candidates.size());
+        for (int i : tetra) {
+            chosen.push_back(candidates[i]);
+            used[i] = true;
+        }
+        for (;;) {
+            // the planes of the hull, the candidate the farthest out of them
+            std::vector<std::array<int, 3>> tris{ ConvexHull(chosen, eps) };
+            std::vector<std::pair<HVec, double>> planes{};
+            for (const std::array<int, 3>& t : tris) {
+                HVec n{ (chosen[t[1]] - chosen[t[0]]).Cross(chosen[t[2]] - chosen[t[0]]).Normalized() };
+                planes.emplace_back(n, n.Dot(chosen[t[0]]));
+            }
+            size_t bi{ SIZE_MAX };
+            double bd{ eps };
+            for (size_t i = 0; i < candidates.size(); i++) {
+                if (used[i]) {
+                    continue;
+                }
+                double out{ -std::numeric_limits<double>::infinity() };
+                for (const auto& [n, d] : planes) {
+                    out = std::max(out, n.Dot(candidates[i]) - d);
+                }
+                if (out > bd) {
+                    bd = out;
+                    bi = i;
+                }
+            }
+            if (bi == SIZE_MAX) {
+                break; // the whole hull
+            }
+            used[bi] = true;
+            chosen.push_back(candidates[bi]);
+            if (HullNormals(chosen, eps, nullptr) > maxSides) {
+                chosen.pop_back();
+                break;
+            }
+        }
+        std::vector<HVec> normals{};
+        if (HullNormals(chosen, eps, &normals) == SIZE_MAX) {
+            return false;
+        }
+        BrushOfPlanes(all, lo, hi, normals, eps, piece);
+        return true;
+    }
 
     // the asset name of a material json, for its references after the first (the material linker's name)
     std::string MaterialAssetName(BO4LinkContext& ctx, const std::string& material) {
@@ -693,20 +1144,26 @@ namespace {
             const rapidjson::Value* streamCfg{ Member(cfg.main, "stream") };
             bool stream{ streamCfg && streamCfg->IsBool() && streamCfg->GetBool() };
             std::string boneName{ cfg.GetString("bone", "tag_origin") };
-            std::string collision{ cfg.GetString("collision", "box") };
+            std::string collision{ cfg.GetString("collision", "hull") };
+            std::string collisionObj{ cfg.GetString("collisionObj", "") };
+            int64_t hullMaxSides{ cfg.GetInteger("hullMaxSides", (int64_t)DEFAULT_HULL_MAX_SIDES) };
             std::string normalsMode{ cfg.GetString("normals", "obj") };
             float smoothAngle{ (float)cfg.GetDouble("smoothAngle", 60.0) };
             const rapidjson::Value* colorsCfg{ Member(cfg.main, "vertexColors") };
             bool vertexColors{ !colorsCfg || !colorsCfg->IsBool() || colorsCfg->GetBool() };
-            if (collision != "box" && collision != "mesh" && collision != "none") {
-                Fail(std::format("unknown collision '{}'", collision));
+            if (collision != "hull" && collision != "box" && collision != "mesh" && collision != "none") {
+                Fail(std::format("unknown collision '{}', hull, box, mesh or none", collision));
+                return;
+            }
+            if (hullMaxSides < (int64_t)MIN_HULL_SIDES || hullMaxSides > (int64_t)MAX_HULL_SIDES) {
+                Fail(std::format("hullMaxSides must be {} to {}", MIN_HULL_SIDES, MAX_HULL_SIDES));
                 return;
             }
             if (normalsMode != "obj" && normalsMode != "smooth" && normalsMode != "flat" && normalsMode != "angle") {
                 Fail(std::format("unknown normals '{}', obj, smooth, flat or angle (smoothAngle)", normalsMode));
                 return;
             }
-            // physics: true for the default preset of the game's props, or "#preset"
+            // physics: true for the default preset of the game's props, "#preset" or a preset json
             const rapidjson::Value* physicsCfg{ Member(cfg.main, "physics") };
             std::string physPreset{};
             if (physicsCfg && physicsCfg->IsBool() && physicsCfg->GetBool()) {
@@ -823,34 +1280,93 @@ namespace {
             Vec3 center{ (mins + maxs) * 0.5f };
             Vec3 half{ (maxs - mins) * 0.5f };
 
-            // collision triangles: the box of the bounds or the triangles of the most detailed lod
+            // the convex pieces of the collmap: the most detailed lod or each object of collisionObj
+            std::vector<CollisionPiece> pieces{};
+            if (collision != "none") {
+                std::vector<std::vector<Vec3>> pieceShapes{};
+                if (!collisionObj.empty()) {
+                    ObjData cobj{};
+                    if (!ReadObj(dir / collisionObj, upAxis == "y", scale, cobj)) {
+                        Fail("can't read collisionObj");
+                        return;
+                    }
+                    pieceShapes.resize(cobj.numObjects);
+                    std::vector<bool> added(cobj.positions.size() * cobj.numObjects);
+                    for (const ObjTri& t : cobj.tris) {
+                        for (const ObjCorner& c : t.c) {
+                            if (!added[(size_t)c.pos * cobj.numObjects + t.object]) {
+                                added[(size_t)c.pos * cobj.numObjects + t.object] = true;
+                                pieceShapes[t.object].push_back(cobj.positions[c.pos]);
+                            }
+                        }
+                    }
+                    std::erase_if(pieceShapes, [](const std::vector<Vec3>& p) { return p.empty(); });
+                    if (pieceShapes.size() > MAX_COLLISION_PIECES) {
+                        Fail(std::format("collisionObj: at most {} objects", MAX_COLLISION_PIECES));
+                        return;
+                    }
+                } else {
+                    std::vector<Vec3>& shape{ pieceShapes.emplace_back() };
+                    for (const MeshSurface& s : lod0.surfs) {
+                        for (const MeshVertex& v : s.verts) {
+                            shape.push_back(v.pos);
+                        }
+                    }
+                }
+                for (size_t i = 0; i < pieceShapes.size(); i++) {
+                    CollisionPiece& piece{ pieces.emplace_back() };
+                    if (collision == "box" || !HullPiece(pieceShapes[i], (size_t)hullMaxSides, piece)) {
+                        if (collision != "box") {
+                            LOG_WARNING("{}: collision piece {} is flat, a box instead of a hull", assetName, i);
+                        }
+                        piece = BoxPiece(pieceShapes[i]);
+                    }
+                    if (piece.verts.size() > 0xFFFF) {
+                        Fail(std::format("collision piece {}: too many vertices", i));
+                        return;
+                    }
+                }
+            }
+
+            // collision triangles of the bullets: the pieces' faces or the triangles of the most detailed lod
             std::vector<XModelCollTri> collTris{};
             float collArea{};
-            auto AddCollTri = [&collTris, &collArea](const Vec3& a, const Vec3& b, const Vec3& c) {
+            Vec3 collMins{ mins }, collMaxs{ maxs };
+            auto AddCollTri = [&](const Vec3& a, const Vec3& b, const Vec3& c) {
                 XModelCollTri tri;
                 if (MakeCollTri(a, b, c, tri)) {
                     collTris.push_back(tri);
                     collArea += (b - a).Cross(c - a).Length() * 0.5f;
+                    for (const Vec3& p : { a, b, c }) {
+                        GrowBounds(collMins, collMaxs, p);
+                    }
                 }
             };
-            if (collision == "box") {
-                for (const int(&face)[4] : BOX_FACES) {
-                    Vec3 q[4];
-                    for (size_t i = 0; i < 4; i++) {
-                        q[i] = BoxCorner(mins, maxs, face[i]);
-                    }
-                    AddCollTri(q[0], q[1], q[2]);
-                    AddCollTri(q[0], q[2], q[3]);
-                }
-            } else if (collision == "mesh") {
+            if (collision == "mesh") {
                 // the mesh is clockwise
                 for (const MeshSurface& s : lod0.surfs) {
                     for (size_t i = 0; i < s.indices.size(); i += 3) {
                         AddCollTri(s.verts[s.indices[i]].pos, s.verts[s.indices[i + 2]].pos, s.verts[s.indices[i + 1]].pos);
                     }
                 }
+            } else {
+                for (const CollisionPiece& piece : pieces) {
+                    for (const std::array<Vec3, 3>& t : piece.tris) {
+                        AddCollTri(t[0], t[1], t[2]);
+                    }
+                }
             }
-            bool hasCollision{ !collTris.empty() };
+            bool hasCollision{ !collTris.empty() && !pieces.empty() };
+            // the model holds its collision (a collisionObj bigger than the mesh)
+            for (const CollisionPiece& piece : pieces) {
+                GrowBounds(mins, maxs, piece.mins);
+                GrowBounds(mins, maxs, piece.maxs);
+            }
+            extent = { std::max(std::abs(mins.x), std::abs(maxs.x)), std::max(std::abs(mins.y), std::abs(maxs.y)),
+                       std::max(std::abs(mins.z), std::abs(maxs.z)) };
+            radius = extent.Length();
+            center = (mins + maxs) * 0.5f;
+            half = (maxs - mins) * 0.5f;
             if (hasCollision) {
                 collArea /= (float)collTris.size();
             }
@@ -1066,8 +1582,8 @@ namespace {
                 cs = {};
                 cs.collTris = (XModelCollTri*)fastfile::linker::memory::POINTER_NEXT;
                 cs.numCollTris = (uint32_t)collTris.size();
-                Vec3 csMins{ mins - Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
-                Vec3 csMaxs{ maxs + Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
+                Vec3 csMins{ collMins - Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
+                Vec3 csMaxs{ collMaxs + Vec3{ 1, 1, 1 } * COLLSURF_BOUNDS_PADDING };
                 std::memcpy(cs.mins, &csMins, sizeof(cs.mins));
                 std::memcpy(cs.maxs, &csMaxs, sizeof(cs.maxs));
                 cs.boneIdx = 0;
@@ -1095,13 +1611,26 @@ namespace {
                 model.unkC0 = nullptr;
             }
 
-            // the physics preset, a game asset by name
-            if (!physPreset.empty()) {
+            // the physics preset: a json linked once in the zone, then by name, or a game asset by name
+            if (physPreset.ends_with(".json")) {
+                static std::unordered_map<std::string, std::string> linkedPresets{};
+                if (auto it{ linkedPresets.find(physPreset) }; it != linkedPresets.end()) {
+                    ctx.LinkAsset(XAssetType::ASSET_TYPE_PHYSPRESET, std::format(",{}", it->second).data(), model.physPreset, false, &ff);
+                } else {
+                    BO4Json pcfg{ ctx.linkCtx.input / physPreset };
+                    if (!pcfg.SyncConfig(false)) {
+                        Fail(std::format("can't read physics {}", physPreset));
+                        return;
+                    }
+                    linkedPresets[physPreset] = pcfg.GetString("name", std::filesystem::path{ physPreset }.stem().string().c_str());
+                    ctx.LinkAsset(XAssetType::ASSET_TYPE_PHYSPRESET, physPreset.data(), model.physPreset, false, &ff);
+                }
+            } else if (!physPreset.empty()) {
                 std::string refId{ std::format(",{}", physPreset[0] == '#' ? physPreset.substr(1) : physPreset) };
                 ctx.LinkAsset(XAssetType::ASSET_TYPE_PHYSPRESET, refId.data(), model.physPreset, false, &ff);
             }
 
-            // collmap of the players: one box brush
+            // collmap of the players and the physics: a brush per piece
             if (hasCollision) {
                 model.collmaps = (void*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.Align(8);
@@ -1115,30 +1644,35 @@ namespace {
                 ff.data.Align(8);
                 PhysGeomList& geomList{ ff.data.AllocStreamRef<PhysGeomList>() };
                 geomList = {};
-                geomList.count = 1;
+                geomList.count = (uint32_t)pieces.size();
                 geomList.contents = collmapContents;
                 geomList.geoms = (PhysGeomInfo*)fastfile::linker::memory::POINTER_NEXT;
 
+                // the geoms, then each brush with its planes and vertices
                 ff.data.Align(8);
-                PhysGeomInfo& geom{ ff.data.AllocStreamRef<PhysGeomInfo>() };
-                geom = {};
-                geom.brush = (BrushWrapper*)fastfile::linker::memory::POINTER_NEXT;
-
-                ff.data.Align(0x10);
-                BrushWrapper& brush{ ff.data.AllocStreamRef<BrushWrapper>() };
-                brush = {};
-                std::memcpy(brush.mins, &mins, sizeof(brush.mins));
-                std::memcpy(brush.maxs, &maxs, sizeof(brush.maxs));
-                brush.contents = collmapContents;
-                brush.numverts = (uint16_t)std::size(BOX_BRUSH_VERTS);
-                brush.verts = (float*)fastfile::linker::memory::POINTER_NEXT;
-                std::vector<float> verts{};
-                for (int corner : BOX_BRUSH_VERTS) {
-                    Vec3 v{ BoxCorner(mins, maxs, corner) };
-                    verts.insert(verts.end(), { v.x, v.y, v.z });
+                PhysGeomInfo* geoms{ ff.data.AllocStreamPtr<PhysGeomInfo>(pieces.size()) };
+                for (size_t i = 0; i < pieces.size(); i++) {
+                    geoms[i] = {};
+                    geoms[i].brush = (BrushWrapper*)fastfile::linker::memory::POINTER_NEXT;
                 }
-                ff.data.Align(4);
-                ff.data.WriteStream(verts.data(), verts.size() * sizeof(float));
+                for (const CollisionPiece& piece : pieces) {
+                    ff.data.Align(0x10);
+                    BrushWrapper& brush{ ff.data.AllocStreamRef<BrushWrapper>() };
+                    brush = {};
+                    std::memcpy(brush.mins, &piece.mins, sizeof(brush.mins));
+                    std::memcpy(brush.maxs, &piece.maxs, sizeof(brush.maxs));
+                    brush.contents = collmapContents;
+                    brush.numsides = (byte)piece.planes.size();
+                    brush.numverts = (uint16_t)piece.verts.size();
+                    if (!piece.planes.empty()) {
+                        brush.sides = (void*)fastfile::linker::memory::POINTER_NEXT;
+                        ff.data.Align(4);
+                        ff.data.WriteStream(piece.planes.data(), piece.planes.size() * sizeof(BrushPlane));
+                    }
+                    brush.verts = (float*)fastfile::linker::memory::POINTER_NEXT;
+                    ff.data.Align(4);
+                    ff.data.WriteStream(piece.verts.data(), piece.verts.size() * sizeof(Vec3));
+                }
 
                 ff.data.Align(4);
                 ff.data.WriteStream<uint64_t>(((uint64_t)collmapContents << 32) | COLLMAP_LIST_FLAGS);
@@ -1157,6 +1691,9 @@ namespace {
                 model.name.name, lod0.vertCount, lod0.indexCount / 3, lod0.surfs.size(), numLods,
                 lod0.stream ? ", streamed mesh" : "", physPreset.empty() ? "" : ", physics"
             );
+            for (size_t i = 0; i < pieces.size(); i++) {
+                LOG_INFO("  collision piece {}: {} plane(s), {} vertices", i, pieces[i].planes.size(), pieces[i].verts.size());
+            }
             for (size_t k = 1; k < numLods; k++) {
                 LOG_INFO("  lod {}: {} vertices, {} triangles, switch at triangle area {}", k, lods[k].vertCount, lods[k].indexCount / 3, lods[k].threshold);
             }

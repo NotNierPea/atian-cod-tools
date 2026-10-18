@@ -14,6 +14,7 @@ namespace {
 
     struct MaterialHashLookup {
         std::unordered_map<uint32_t, const char*> map{};
+        std::vector<std::string> samplerNames{};
 
         void Init() {
             if (!map.empty())
@@ -25,11 +26,24 @@ namespace {
                 "$white_diffuse", "$white_gloss",  "$white_reveal",    "detailNormal1", "detailNormal2",
                 "detailNormal3",  "detailNormal4", "detailNormalMask", "aoMap",         "lookupTexture",
                 "heatLookup",     "transGlossMap", "tintMask",         "glossBodyMap",  "thicknessMap",
-                "diffuseMap",     "edgeFadeMap",
+                "diffuseMap",     "edgeFadeMap",   "emissiveMap",
+                // constants of the techniques (cracked from the core_common technique sets)
+                "colorTint",      "colorTint1",    "colorTint2",       "glossRange",    "glossRange2",
+                "emissiveTint1",  "fresnelTint",   "fresnelHdr",       "fresnelFalloffPower", "fresnelInnerTint",
+                "backLightScatterColor", "thermalHeatmapSampler",
             };
 
+            // the sampler of a map: colorMap, colorSampler
+            samplerNames.reserve(std::size(names));
             for (const char* n : names) {
                 map[MaterialHash(n)] = n;
+                std::string_view sv{ n };
+                if (sv.ends_with("Map")) {
+                    samplerNames.push_back(std::format("{}Sampler", sv.substr(0, sv.size() - 3)));
+                }
+            }
+            for (const std::string& n : samplerNames) {
+                map[MaterialHash(n.data())] = n.data();
             }
         }
     } hashLookup;
@@ -121,6 +135,41 @@ namespace {
             };
             static_assert(sizeof(MaterialBinding) == 0x18);
 
+            // the parts of the technique set that name the constants: an argument per constant, type 0x81, its
+            // location and size in bytes in the constant buffer of the technique (subs[technique].blocks[2])
+            struct MaterialShaderArgument {
+                uint16_t type;
+                uint16_t location;
+                uint16_t size;
+                uint16_t buffer;
+                uint32_t nameHash;
+            };
+            static_assert(sizeof(MaterialShaderArgument) == 0xc);
+
+            struct MaterialDrawMethod {
+                byte pipeline;
+                byte stableArgCount;
+                byte materialArgCount;
+                byte drawMethodType;
+                byte unk4[0x14];
+                MaterialShaderArgument* args;
+                byte unk20[0x18];
+            };
+            static_assert(sizeof(MaterialDrawMethod) == 0x38);
+
+            struct MaterialTechnique {
+                XHash name;
+                MaterialDrawMethod drawMethods[4];
+            };
+
+            struct MaterialTechniqueSet {
+                XHash name;
+                XHash unk10;
+                uint64_t unk18;
+                MaterialTechnique* techniques[16];
+            };
+            static_assert(sizeof(MaterialTechniqueSet) == 0xa8);
+
             struct Material {
                 XHash name;
                 uint64_t unk10;
@@ -210,6 +259,101 @@ namespace {
                 json.WriteFieldValueString("data", Hex(asset->unk90.data, asset->unk90.datalen));
             }
             json.EndObject();
+
+            // the named constants: where each technique keeps them, their values
+            struct ConstantDef {
+                uint32_t hash;
+                size_t technique;
+                uint16_t offset;
+                uint16_t size;
+            };
+            std::vector<ConstantDef> constantDefs{};
+            MaterialTechniqueSet* techset{ asset->techniqueSet };
+            for (size_t i = 0; techset && i < ACTS_ARRAYSIZE(asset->unk90.unk30); i++) {
+                MaterialTechnique* tech{ techset->techniques[i] };
+                if (!tech) {
+                    continue;
+                }
+                for (MaterialDrawMethod& dm : tech->drawMethods) {
+                    size_t count{ (size_t)dm.stableArgCount + dm.materialArgCount };
+                    for (size_t j = 0; dm.args && j < count; j++) {
+                        MaterialShaderArgument& arg{ dm.args[j] };
+                        if (arg.type != 0x81) {
+                            continue;
+                        }
+                        bool known{};
+                        for (const ConstantDef& c : constantDefs) {
+                            known |= c.hash == arg.nameHash && c.technique == i;
+                        }
+                        if (!known) {
+                            constantDefs.push_back({ arg.nameHash, i, arg.location, arg.size });
+                        }
+                    }
+                }
+            }
+            auto HashName = [this](uint32_t hash) -> std::string {
+                const char* h{ LookupHash(hash) };
+                if (h) {
+                    return h;
+                }
+                unktypes.insert(hash);
+                return std::format("unk_{:x}", hash);
+            };
+            json.WriteFieldNameString("constantDefs");
+            json.BeginArray();
+            for (const ConstantDef& c : constantDefs) {
+                json.BeginObject();
+                json.WriteFieldValueString("name", HashName(c.hash));
+                json.WriteFieldValueNumber("technique", c.technique);
+                json.WriteFieldValueNumber("offset", c.offset);
+                json.WriteFieldValueNumber("size", c.size);
+                json.EndObject();
+            }
+            json.EndArray();
+            // the values, from the first technique with the constant
+            json.WriteFieldNameString("values");
+            json.BeginObject();
+            std::unordered_set<uint32_t> written{};
+            for (const ConstantDef& c : constantDefs) {
+                MaterialConstantSub* sub{ asset->unk90.unk30[c.technique] };
+                byte* block{ sub ? sub->blocks[2] : nullptr };
+                if (!block || !asset->unk90.data || written.contains(c.hash)) {
+                    continue;
+                }
+                uint32_t offset{ *(uint32_t*)block };
+                uint32_t size{ *(uint32_t*)(block + 4) };
+                if ((uint32_t)c.offset + c.size > size || offset + size > asset->unk90.datalen) {
+                    continue;
+                }
+                written.insert(c.hash);
+                float* vals{ (float*)(asset->unk90.data + offset + c.offset) };
+                json.WriteFieldNameString(HashName(c.hash).data());
+                json.BeginArray();
+                for (size_t k = 0; k < c.size / 4; k++) {
+                    json.WriteValueNumber(vals[k]);
+                }
+                json.EndArray();
+            }
+            json.EndObject();
+
+            // the samplers by name, GfxSamplerState: filter bits 0-2, mipmap 3-4, wrap u 5-6, v 7-8, w 9-10
+            json.WriteFieldNameString("samplerStates");
+            json.BeginObject();
+            for (size_t i = 0; asset->samplerTable && i < asset->samplerCount; i++) {
+                uint64_t sampler{ asset->samplerTable[i] };
+                json.WriteFieldValueString(HashName((uint32_t)sampler).data(), std::format("0x{:x}", (sampler >> 32) & 0xFFFF));
+            }
+            json.EndObject();
+
+            static const char* cameraRegions[]{
+                "gbuffer_depth_hack", "gbuffer_depth_hack_decal", "gbuffer", "gbuffer_decal", "gbuffer_no_volume_decal",
+                "lit_opaque", "lit_trans", "lit_trans_post_resolve", "lit_post_resolve", "water", "emissive_fx",
+                "depth_hack_sss", "forward_sss", "depth_hack", "depth_hack_trans", "depth_hack_post_blur", "sonar",
+                "oit", "depth_prime", "underwater",
+            };
+            json.WriteFieldValueString(
+                "cameraRegion", asset->unk133 < std::size(cameraRegions) ? cameraRegions[asset->unk133] : "none"
+            );
 
             json.WriteFieldNameString("bindings");
             json.BeginArray();
