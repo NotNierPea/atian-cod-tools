@@ -119,6 +119,8 @@ namespace fastfile {
         FFHandler* handler{};
         hook::module_mapper::Module gameMod{};
         std::vector<std::set<uint64_t>> assetNames{};
+        // --only: the assets to dump, by name hash (all when empty)
+        std::unordered_set<uint64_t> onlyAssets{};
         std::unordered_map<uint64_t, const char*> translationKeys{};
         core::memory_allocator::MemoryAllocator alloc{};
         const tool::gsc::formatter::FormatterInfo* gscFormatter{};

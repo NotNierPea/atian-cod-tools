@@ -83,6 +83,18 @@ namespace fastfile::handlers::bo4::scriptbundle {
     };
     static_assert(sizeof(ScriptBundleList) == 0x20);
 
+    // a hash value with its type prefix, by name only when the name hashes back to it (the linker's Hash64)
+    void WriteHash(core::hashes::raw_file_extractor::JsonWriter& json, uint64_t h, const char* type) {
+        const char* str{ h ? hashutils::ExtractPtr(h) : nullptr };
+        if (!h) {
+            json.WriteValueString(type);
+        } else if (str && hash::Hash64(str) == h) {
+            json.WriteValueString(std::format("{}{}", type, str));
+        } else {
+            json.WriteValueString(std::format("{}hash_{:x}", type, h));
+        }
+    }
+
     void WriteObject(core::hashes::raw_file_extractor::JsonWriter& json, SB_ObjectsArray& arr, bool& error) {
         json.BeginObject();
 
@@ -125,9 +137,16 @@ namespace fastfile::handlers::bo4::scriptbundle {
                 if (handles.contains(obj.keyScrName))
                     continue; // ignore sub
 
+                // a name when it gives both hashes back (the linker hashes it twice), hash_<64>:hash_<32> else
+                auto Fits = [&obj](const char* n) {
+                    return n && *n && (!obj.keyName.name || hash::Hash64(n) == obj.keyName.name) &&
+                           (!obj.keyScrName || hash::HashT89Scr(n) == obj.keyScrName);
+                };
                 const char* keyScrName{ hashutils::ExtractPtr(obj.keyScrName) }; // h32
-                if (!keyScrName || !*keyScrName)
+                if (!Fits(keyScrName))
                     keyScrName = hashutils::ExtractPtr(obj.keyName.name); // 64
+                if (!Fits(keyScrName))
+                    keyScrName = nullptr;
 
                 if (keyScrName && *keyScrName) {
                     json.WriteFieldNameString(keyScrName);
@@ -146,7 +165,7 @@ namespace fastfile::handlers::bo4::scriptbundle {
                     json.WriteValueString(GetScrString(obj.stringRef));
                     break;
                 case KVP_XHASH: // xhash
-                    json.WriteValueHash(obj.hashValue.name, "#");
+                    WriteHash(json, obj.hashValue.name, "#");
                     break;
                 case KVP_INT: // int2
                     json.WriteValueNumber(obj.value.intVal);
@@ -155,28 +174,28 @@ namespace fastfile::handlers::bo4::scriptbundle {
                     json.WriteValueNumber(obj.value.floatVal);
                     break;
                 case KVP_ANIMATION: // anim4
-                    json.WriteValueHash(obj.hashValue.name, "anim#");
+                    WriteHash(json, obj.hashValue.name, "anim#");
                     break;
                 case KVP_PLAYER_ANIMATION: // anim5
-                    json.WriteValueHash(obj.hashValue.name, "playeranim#");
+                    WriteHash(json, obj.hashValue.name, "playeranim#");
                     break;
                 case KVP_SIEGE_ANIMATION: // anim6
-                    json.WriteValueHash(obj.hashValue.name, "siegeanim#");
+                    WriteHash(json, obj.hashValue.name, "siegeanim#");
                     break;
                 case KVP_MODEL: // model
-                    json.WriteValueHash(obj.hashValue.name, "model#");
+                    WriteHash(json, obj.hashValue.name, "model#");
                     break;
                 case KVP_AITYPE: // aitype
-                    json.WriteValueHash(obj.hashValue.name, "aitype#");
+                    WriteHash(json, obj.hashValue.name, "aitype#");
                     break;
                 case KVP_CHARACTER: // character
-                    json.WriteValueHash(obj.hashValue.name, "character#");
+                    WriteHash(json, obj.hashValue.name, "character#");
                     break;
                 case KVP_FX: // fx
-                    json.WriteValueHash(obj.hashValue.name, "fx#");
+                    WriteHash(json, obj.hashValue.name, "fx#");
                     break;
                 case KVP_SURFACE_FX_TABLE: // surface_fx_table
-                    json.WriteValueHash(obj.hashValue.name, "surface_fx_table#");
+                    WriteHash(json, obj.hashValue.name, "surface_fx_table#");
                     break;
                 case KVP_RUMBLE_STR: // rumble
                     json.WriteValueString(std::format("rumble&{}", GetScrString(obj.stringRef)));
@@ -188,19 +207,19 @@ namespace fastfile::handlers::bo4::scriptbundle {
                     json.WriteValueString(std::format("xcam&{}", GetScrString(obj.stringRef)));
                     break;
                 case KVP_IMAGE: // image
-                    json.WriteValueHash(obj.hashValue.name, "image#");
+                    WriteHash(json, obj.hashValue.name, "image#");
                     break;
                 case KVP_LOCALIZED17: // localized17
-                    json.WriteValueHash(obj.hashValue.name, "localized17#");
+                    WriteHash(json, obj.hashValue.name, "localized17#");
                     break;
                 case KVP_LOCALIZED18: // localized18
-                    json.WriteValueHash(obj.hashValue.name, "localized18#");
+                    WriteHash(json, obj.hashValue.name, "localized18#");
                     break;
                 case KVP_WEAPON: // weapon
-                    json.WriteValueHash(obj.hashValue.name, "weapon#");
+                    WriteHash(json, obj.hashValue.name, "weapon#");
                     break;
                 case KVP_VEHICLE: // vehicle
-                    json.WriteValueHash(obj.hashValue.name, "vehicle#");
+                    WriteHash(json, obj.hashValue.name, "vehicle#");
                     break;
                 case KVP_ENUM_INT: // enum
                     json.WriteValueString(std::format("enum:{}", obj.value.intVal));
@@ -215,19 +234,19 @@ namespace fastfile::handlers::bo4::scriptbundle {
                     json.WriteValueString(std::format("duration:{}", obj.value.intVal));
                     break;
                 case KVP_OBJECTIVE: // objective
-                    json.WriteValueHash(obj.hashValue.name, "objective#");
+                    WriteHash(json, obj.hashValue.name, "objective#");
                     break;
                 case KVP_GESTURE: // gesture
-                    json.WriteValueHash(obj.hashValue.name, "gesture#");
+                    WriteHash(json, obj.hashValue.name, "gesture#");
                     break;
                 case KVP_RENDER_OVERRIDE_BUNDLE: // render_override_bundle
-                    json.WriteValueHash(obj.hashValue.name, "render_override_bundle#");
+                    WriteHash(json, obj.hashValue.name, "render_override_bundle#");
                     break;
                 case KVP_GESTURE_TABLE_STR: // gesture_table
                     json.WriteValueString(std::format("gesture_table&{}", GetScrString(obj.stringRef)));
                     break;
                 case KVP_IMPACT_FX_TABLE: // impact_fx_table
-                    json.WriteValueHash(obj.hashValue.name, "impact_fx_table#");
+                    WriteHash(json, obj.hashValue.name, "impact_fx_table#");
                     break;
                 case KVP_MATERIAL: // unk15
                 case KVP_UNK19:    // unk19

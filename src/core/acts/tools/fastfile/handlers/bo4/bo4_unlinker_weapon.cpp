@@ -2,9 +2,180 @@
 #include <tools/fastfile/handlers/bo4/bo4_unlinker_weapon.hpp>
 #include <core/hashes/raw_file_extractor.hpp>
 #include <tools/utils/data_utils.hpp>
+#include <tools/fastfile/bo4_weapon_slots.hpp>
 
 namespace fastfile::handlers::bo4::weapon {
     using namespace games::bo4::pool;
+
+    namespace {
+        std::string Hex(const void* data, size_t len) {
+            static const char* digits{ "0123456789abcdef" };
+            std::string out{};
+            out.reserve(len * 2);
+            for (size_t i = 0; i < len; i++) {
+                out += digits[((const byte*)data)[i] >> 4];
+                out += digits[((const byte*)data)[i] & 0xF];
+            }
+            return out;
+        }
+
+        void WriteScr(BO4JsonWriter& json, uint32_t s) {
+            if (s) {
+                json.WriteValueString(GetScrString(*(ScrString_t*)&s));
+            } else {
+                json.WriteValueNull();
+            }
+        }
+
+        // an asset by name (the top bit, a reference, off), null for none
+        void WriteAssetRef(BO4JsonWriter& json, uint32_t type, void* asset) {
+            XHash* name{ asset ? GetAssetName((XAssetType)type, asset, 0) : nullptr };
+            if (!name || !name->name) {
+                json.WriteValueNull();
+                return;
+            }
+            json.WriteValueString(std::format("#hash_{:x}", name->name & hash::MASK63));
+        }
+
+        // the tunables (sub_142E34C90): the header, its arrays and strings
+        void WriteTunables(BO4JsonWriter& json, const byte* t) {
+            json.BeginObject();
+            json.WriteFieldValueString("header", Hex(t, fastfile::bo4weapon::WEAPON_TUNABLES_SIZE));
+            auto Blob = [&](const char* key, size_t off, size_t size) {
+                const byte* d{ *(const byte* const*)(t + off) };
+                if (d) {
+                    json.WriteFieldValueString(key, Hex(d, size));
+                }
+            };
+            auto Str = [&](const char* key, size_t off) {
+                const char* d{ *(const char* const*)(t + off) };
+                if (d) {
+                    json.WriteFieldValueString(key, d);
+                }
+            };
+            Blob("data4c8", 0x4C8, 0x10ull * *(const uint64_t*)(t + 0x4C0));
+            Blob("data8", 0x8, 0xA0);
+            Blob("data10", 0x10, 0xA0);
+            Blob("data0", 0x0, 0x54);
+            Str("str18", 0x18);
+            Str("str28", 0x28);
+            Str("str20", 0x20);
+            for (uint32_t off : { 0x1FC, 0x200, 0x204, 0x208, 0x20C }) {
+                json.WriteFieldNameString(utils::va("scr%x", off));
+                WriteScr(json, *(const uint32_t*)(t + off));
+            }
+            json.EndObject();
+        }
+
+        // the pointers and strings of the slot table, by offset, for the lossless weapon linker
+        void WriteSlots(BO4JsonWriter& json, const byte* w) {
+            using namespace fastfile::bo4weapon;
+            json.WriteFieldValueBool("lossless", true);
+            json.WriteFieldNameString("slots");
+            json.BeginObject();
+            for (const Slot& s : SLOTS) {
+                const byte* v{ w + s.offset };
+                void* ptr{ *(void* const*)v };
+                uint32_t count{ SlotCount(s, w) };
+                const char* key{ utils::va("%x", s.offset) };
+                switch (s.kind) {
+                case SK_ASSET:
+                    if (ptr) {
+                        json.WriteFieldNameString(key);
+                        WriteAssetRef(json, s.type, ptr);
+                    }
+                    break;
+                case SK_ASSET_FIXED:
+                    json.WriteFieldNameString(key);
+                    json.BeginArray();
+                    for (uint32_t i = 0; i < s.count; i++) {
+                        WriteAssetRef(json, s.type, ((void* const*)v)[i]);
+                    }
+                    json.EndArray();
+                    break;
+                case SK_ASSET_ARRAY:
+                    if (ptr) {
+                        json.WriteFieldNameString(key);
+                        json.BeginArray();
+                        for (uint32_t i = 0; i < count; i++) {
+                            WriteAssetRef(json, s.type, ((void* const*)ptr)[i]);
+                        }
+                        json.EndArray();
+                    }
+                    break;
+                case SK_SCR:
+                    json.WriteFieldNameString(key);
+                    WriteScr(json, *(const uint32_t*)v);
+                    break;
+                case SK_SCR_ARRAY:
+                    if (ptr) {
+                        json.WriteFieldNameString(key);
+                        json.BeginArray();
+                        for (uint32_t i = 0; i < count; i++) {
+                            WriteScr(json, ((const uint32_t*)ptr)[i]);
+                        }
+                        json.EndArray();
+                    }
+                    break;
+                case SK_BLOB:
+                    if (ptr) {
+                        json.WriteFieldValueString(key, Hex(ptr, (size_t)count * s.elemSize));
+                    }
+                    break;
+                case SK_XSTRING:
+                    if (ptr) {
+                        json.WriteFieldValueString(key, (const char*)ptr);
+                    }
+                    break;
+                case SK_STRUCT5: {
+                    uint32_t variants{ (uint32_t)std::max(0, *(const int32_t*)(w + 0x1350)) };
+                    json.WriteFieldNameString(key);
+                    json.BeginArray();
+                    for (uint32_t i = 0; i < s.count; i++) {
+                        const byte* e{ v + 0x20 * i };
+                        json.BeginObject();
+                        void* const* models{ *(void* const* const*)e };
+                        const uint32_t* strs{ *(const uint32_t* const*)(e + 8) };
+                        if (models) {
+                            json.WriteFieldNameString("models");
+                            json.BeginArray();
+                            for (uint32_t k = 0; k < variants; k++) {
+                                WriteAssetRef(json, XAssetType::ASSET_TYPE_XMODEL, models[k]);
+                            }
+                            json.EndArray();
+                        }
+                        if (strs) {
+                            json.WriteFieldNameString("strings");
+                            json.BeginArray();
+                            for (uint32_t k = 0; k < variants; k++) {
+                                WriteScr(json, strs[k]);
+                            }
+                            json.EndArray();
+                        }
+                        for (uint32_t k = 0; k < 2; k++) {
+                            const byte* d{ *(const byte* const*)(e + 0x10 + 8 * k) };
+                            if (d) {
+                                json.WriteFieldValueString(k ? "data18" : "data10", Hex(d, 0xCull * variants));
+                            }
+                        }
+                        json.EndObject();
+                    }
+                    json.EndArray();
+                    break;
+                }
+                case SK_TUNABLES:
+                    if (ptr) {
+                        json.WriteFieldNameString(key);
+                        WriteTunables(json, (const byte*)ptr);
+                    }
+                    break;
+                case SK_UNSUPPORTED:
+                    break;
+                }
+            }
+            json.EndObject();
+        }
+    } // namespace
     class ImplWorker : public Worker {
         void Unlink(fastfile::FastFileOption& opt, void* ptr) {
             WeaponDef* asset{ (WeaponDef*)ptr };
@@ -53,6 +224,17 @@ namespace fastfile::handlers::bo4::weapon {
             LOG_OPT_INFO("Dump weapon {}", outFile.string());
 
             json.BeginObject();
+            // the header as it is, for the lossless weapon linker
+            {
+                static const char* digits{ "0123456789abcdef" };
+                std::string hex{};
+                for (size_t k = 0; k < sizeof(WeaponDef); k++) {
+                    hex += digits[((const byte*)asset)[k] >> 4];
+                    hex += digits[((const byte*)asset)[k] & 0xF];
+                }
+                json.WriteFieldValueString("header", hex);
+            }
+            WriteSlots(json, (const byte*)asset);
             {
 
                 json.WriteFieldValueXHash("name", asset->name);

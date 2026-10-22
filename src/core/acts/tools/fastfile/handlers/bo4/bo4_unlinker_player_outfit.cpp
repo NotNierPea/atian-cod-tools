@@ -146,6 +146,64 @@ namespace {
                 }
                 json.EndArray();
             }
+            // the 0x88 items (0x78, sub_142E14F70): an image at 0x28, a model alias at 0x30, 7 models from 0x38
+            if (asset.unk88) {
+                json.WriteFieldNameString("unk88");
+                json.BeginArray();
+                for (size_t i = 0; i < asset.unk88_count; i++) {
+                    byte* obj{ (byte*)asset.unk88 + 0x78 * i };
+                    json.BeginObject();
+                    json.WriteFieldValueXHash("desc", *(XHash*)obj);
+                    json.WriteFieldValueXAsset("image", ASSET_TYPE_IMAGE, *(GfxImage**)(obj + 0x28));
+                    void* alias{ *(void**)(obj + 0x30) };
+                    if (alias) {
+                        json.WriteFieldValueXHash("alias", *(XHash*)alias);
+                    }
+                    json.WriteFieldNameString("models");
+                    json.BeginArray();
+                    for (size_t k = 0; k < 7; k++) {
+                        void* m{ *(void**)(obj + 0x38 + 8 * k) };
+                        if (m) {
+                            json.WriteValueString(std::format("#hash_{:x}", *(uint64_t*)m & 0x7FFFFFFFFFFFFFFFull));
+                        } else {
+                            json.WriteValueNull();
+                        }
+                    }
+                    json.EndArray();
+                    json.EndObject();
+                }
+                json.EndArray();
+            }
+            // the 0x98 items (0xA8, sub_142E14F70): an image at 0x28, 14 models from 0x30
+            // the 0xA8 items (0x78): like the 0x88 ones, an image at 0x28, 7 models from 0x38
+            auto writeModels = [&json](const char* field, void* items, uint32_t count, size_t size, size_t models, size_t nmodels) {
+                if (!items) {
+                    return;
+                }
+                json.WriteFieldNameString(field);
+                json.BeginArray();
+                for (size_t i = 0; i < count; i++) {
+                    byte* obj{ (byte*)items + size * i };
+                    json.BeginObject();
+                    json.WriteFieldValueXHash("desc", *(XHash*)obj);
+                    json.WriteFieldValueXAsset("image", ASSET_TYPE_IMAGE, *(GfxImage**)(obj + 0x28));
+                    json.WriteFieldNameString("models");
+                    json.BeginArray();
+                    for (size_t k = 0; k < nmodels; k++) {
+                        void* m{ *(void**)(obj + models + 8 * k) };
+                        if (m) {
+                            json.WriteValueString(std::format("#hash_{:x}", *(uint64_t*)m & 0x7FFFFFFFFFFFFFFFull));
+                        } else {
+                            json.WriteValueNull();
+                        }
+                    }
+                    json.EndArray();
+                    json.EndObject();
+                }
+                json.EndArray();
+            };
+            writeModels("unk98", asset.unk98, asset.unk98_count, 0xA8, 0x30, 14);
+            writeModels("unka8", asset.unka8, asset.unka8_count, 0x78, 0x38, 7);
             json.EndObject();
 
             if (!json.WriteToFile(outFile)) {

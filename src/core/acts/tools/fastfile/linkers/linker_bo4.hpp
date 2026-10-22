@@ -212,4 +212,7 @@ namespace fastfile::linker::bo4 {
 
     // adds an entry to the xpak of a fastfile, written with its keyvaluepairs by the image linker
     void AddXPakItem(BO4FFContext& ff, uint64_t key, std::vector<byte>&& data);
+
+    // a KLF (lens flare) as the fx dumper writes it, inline the first time in the fastfile, by name after (linker_bo4_fx.cpp)
+    bool LinkKlf(BO4LinkContext& ctx, BO4FFContext& ff, const rapidjson::Value& klf, void*& ref);
 } // namespace fastfile::linker::bo4

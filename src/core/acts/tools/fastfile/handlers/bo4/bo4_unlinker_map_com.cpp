@@ -87,6 +87,20 @@ namespace fastfile::handlers::bo4::map {
             if (asset.isInUse)
                 json.WriteFieldValueBool("isInUse", asset.isInUse);
             json.WriteFieldValueNumber("primaryLights", asset.primaryLightCount); // todo
+            // the first ones raw (0x258 each), for the com_map linker
+            if (asset.primaryLights) {
+                json.WriteFieldNameString("primaryLightsRaw");
+                json.BeginArray();
+                for (size_t i = 0; i < asset.primaryLightCount && i < 4; i++) {
+                    const byte* light{ (const byte*)asset.primaryLights + 0x258 * i };
+                    std::string hex{};
+                    for (size_t j = 0; j < 0x258; j++) {
+                        hex += std::format("{:02x}", light[j]);
+                    }
+                    json.WriteValueString(hex);
+                }
+                json.EndArray();
+            }
             if (asset.lightExploders) {
                 json.WriteFieldNameString("lightExploders");
                 json.BeginArray();

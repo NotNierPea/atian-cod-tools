@@ -342,6 +342,13 @@ namespace {
                 json.WriteFieldValueNumber("dataSize1", bnk->len1);
                 json.WriteFieldValueXAsset("fileKey", games::bo4::pool::ASSET_TYPE_STREAMKEY, bnk->fileKey);
                 json.WriteFieldValueNumber("fileLen", bnk->fileLen);
+                // the keys as they are (0x48: xpak entry 0x10, data 0x30, size 0x40, 0x44, owner 0x46, flags 0x47)
+                if (bnk->streamKey1) {
+                    json.WriteFieldValueString("streamKey1Raw", Hex(bnk->streamKey1, 0x48));
+                }
+                if (bnk->fileKey) {
+                    json.WriteFieldValueString("fileKeyRaw", Hex(bnk->fileKey, 0x48));
+                }
                 json.EndObject();
             };
 

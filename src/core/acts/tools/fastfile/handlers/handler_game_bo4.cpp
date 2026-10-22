@@ -484,6 +484,9 @@ namespace fastfile::handlers::bo4 {
 
         if (gcx.opt->noAssetDump || (!gcx.handleList.Empty() && !gcx.handleList[xasset->type]))
             return xasset; // ignore
+        if (!gcx.opt->onlyAssets.empty() && !gcx.opt->onlyAssets.contains(name)) {
+            return xasset;
+        }
         if (xasset->header && !defaultAsset) {
             auto& workers{ fastfile::handlers::bo4::GetWorkers() };
             auto it{ workers.find(xasset->type) };
@@ -507,6 +510,16 @@ namespace fastfile::handlers::bo4 {
     namespace {
 
         void* DB_FindXAssetHeader(XAssetType type, XHash* name, bool errorIfMissing, int waitTime) {
+            // an effect by name (the nested effects, sub_142EBB5C0): a zeroed stub with its name, for the fx dumper
+            if (type == XAssetType::ASSET_TYPE_FX && name && name->name) {
+                static std::unordered_map<uint64_t, std::unique_ptr<uint64_t[]>> fxStubs{};
+                std::unique_ptr<uint64_t[]>& stub{ fxStubs[name->name] };
+                if (!stub) {
+                    stub = std::make_unique<uint64_t[]>(0x20);
+                    stub[0] = name->name;
+                }
+                return stub.get();
+            }
             if (!name || name->name)
                 return nullptr;
             auto it{ gcx.linkedAssets[type].find(name->name) };
@@ -862,4 +875,4 @@ namespace fastfile::handlers::bo4 {
     }
 } // namespace fastfile::handlers::bo4
 
-std::ostream& operator<<(std::ostream& os, const fastfile::handlers::bo4::ScrString_t& scr) { return os << scr.id; }
+std::ostream& operator<<(std::ostream& os, const fastfile::handlers::bo4::ScrString_t& scr) { return os << scr.id; }

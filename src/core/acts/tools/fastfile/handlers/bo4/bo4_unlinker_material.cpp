@@ -351,8 +351,9 @@ namespace {
                 "depth_hack_sss", "forward_sss", "depth_hack", "depth_hack_trans", "depth_hack_post_blur", "sonar",
                 "oit", "depth_prime", "underwater",
             };
+            // a region past the named ones by its number
             json.WriteFieldValueString(
-                "cameraRegion", asset->unk133 < std::size(cameraRegions) ? cameraRegions[asset->unk133] : "none"
+                "cameraRegion", asset->unk133 < std::size(cameraRegions) ? std::string{ cameraRegions[asset->unk133] } : std::to_string(asset->unk133)
             );
 
             json.WriteFieldNameString("bindings");

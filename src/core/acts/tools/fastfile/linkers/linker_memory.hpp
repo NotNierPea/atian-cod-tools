@@ -101,6 +101,8 @@ namespace fastfile::linker::memory {
         void WriteLinkedData(std::vector<byte>& data);
         // add a scr string
         uint32_t AddScrString(const char* value);
+        // add a scr string, "" as a string (not 0)
+        uint32_t AddScrStringKeepEmpty(const char* value);
         // add an asset
         AssetData* AddAsset(size_t type, LinkerDataChunk* align);
         // add a string

@@ -286,6 +286,9 @@ namespace fastfile::handlers::bo4 {
             JsonWriter::EndArray();
         }
     };
+
+    // a KLF (lens flare, 0xD8) as the fx dumper writes it, for linker_bo4_fx.cpp's LinkKlf (bo4_unlinker_fx.cpp)
+    void WriteKlfJson(BO4JsonWriter& json, const byte* klf);
 } // namespace fastfile::handlers::bo4
 
 std::ostream& operator<<(std::ostream& os, const fastfile::handlers::bo4::ScrString_t& scr);

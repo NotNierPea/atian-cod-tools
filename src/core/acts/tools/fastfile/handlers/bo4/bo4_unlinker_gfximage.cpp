@@ -2,9 +2,27 @@
 #include <core/raw_file_json.hpp>
 #include <core/hashes/raw_file_extractor.hpp>
 #include <tools/fastfile/handlers/handler_game_bo4.hpp>
+#include <tools/fastfile/handlers/bo4/bo4_xpak_reader.hpp>
 
+/*
+ * Images: a json a image for the linker's lossless mode (linker_bo4_gfx_image.cpp), the header (0x88) and the pixels,
+ * of a resident image (totalSize bytes) or of each streamed part from the game's xpak (part k the bytes it adds:
+ * its cumulative size minus the part before's). -t (test dump) writes the old csv of the headers instead.
+ */
 namespace {
     using namespace fastfile::handlers::bo4;
+
+    std::string Hex(const void* data, size_t len) {
+        static const char* digits{ "0123456789abcdef" };
+        std::string out{};
+        out.reserve(len * 2);
+        for (size_t i = 0; i < len; i++) {
+            byte b{ ((const byte*)data)[i] };
+            out += digits[b >> 4];
+            out += digits[b & 0xF];
+        }
+        return out;
+    }
 
     class ImageWorker : public Worker {
         struct GfxImageUnk0 {
@@ -70,11 +88,54 @@ namespace {
         std::vector<GfxImage*> keys{};
 
         void Unlink(fastfile::FastFileOption& opt, void* ptr) override {
-            if (!opt.testDump)
+            if (opt.testDump) {
+                keys.push_back((GfxImage*)ptr);
                 return;
-            keys.push_back((GfxImage*)ptr);
+            }
+            GfxImage* asset{ (GfxImage*)ptr };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "graphics" / "image" /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", asset->name)) };
+            std::filesystem::create_directories(outFile.parent_path());
+            LOG_OPT_INFO("Dump image {}", outFile.string());
+
+            BO4JsonWriter json{};
+            json.BeginObject();
+            json.WriteFieldValueXHash("name", asset->name);
+            json.WriteFieldValueBool("lossless", true);
+            json.WriteFieldValueString("header", Hex(asset, sizeof(*asset)));
+            if (asset->streaming && asset->streamedParts) {
+                byte* parts{ (byte*)asset->streamedParts };
+                json.WriteFieldNameString("parts");
+                json.BeginArray();
+                uint32_t last{};
+                for (size_t k = 0; k < asset->streamedParts_count; k++) {
+                    byte* part{ parts + 0x28 * k };
+                    uint64_t key{ *(uint64_t*)part };
+                    uint32_t cumulative{ *(uint32_t*)(part + 0x20) >> 4 };
+                    json.BeginObject();
+                    json.WriteFieldValueString("header", Hex(part, 0x28));
+                    std::vector<byte> data{};
+                    if (cumulative > last && xpak::ReadEntry(opt, key, cumulative - last, data)) {
+                        json.WriteFieldValueString("data", Hex(data.data(), data.size()));
+                    } else {
+                        LOG_WARNING("image {}: no xpak entry 0x{:x}", hashutils::ExtractTmp("hash", asset->name), key);
+                    }
+                    json.EndObject();
+                    last = cumulative;
+                }
+                json.EndArray();
+            } else if (asset->pixels && asset->totalSize) {
+                json.WriteFieldValueString("pixels", Hex(asset->pixels, asset->totalSize));
+            }
+            json.EndObject();
+            if (!json.WriteToFile(outFile)) {
+                LOG_ERROR("Error when dumping {}", outFile.string());
+            }
         }
-        void PreXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) override { keys.clear(); }
+        void PreXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) override {
+            keys.clear();
+            xpak::AddHint(ctx.ffname);
+        }
         void PostXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) override {
             if (keys.empty())
                 return; // nothing to dump

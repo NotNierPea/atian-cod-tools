@@ -21,6 +21,7 @@
  *     "materials": { "usemtl_name": "materials/other.json" },        // a surface per usemtl of the obj
  *     "normals": "obj",         // "obj" (smoothed by smoothAngle where it has none), "smooth", "flat", "angle"
  *     "smoothAngle": 60,
+ *     "skeletonPositions": "gltf", // with "skeleton": its bones where the glTF's joints are, their orientations kept
  *     "vertexColors": true,     // the colors of the obj vertices (v x y z r g b) when it has them
  *     "lods": [ { "obj": "models/my_model_lod1.obj", "threshold": 2.5, "materials": { } } ],  // less detailed each
  *     "lodScale": 0.42,         // the lod distances of the model (areaScale), the template's by default
@@ -1332,6 +1333,12 @@ namespace {
         return v;
     }
 
+    // the material jsons linked in each fastfile: a json once a zone, by name after (two models on one material linked it
+    // twice, two assets of a name: the game unloaded one and streamed into the other's freed parts)
+    std::unordered_map<BO4FFContext*, std::unordered_set<std::string>> linkedMaterials{};
+    // the lossless models' meshes linked in a zone (by name)
+    std::unordered_map<BO4FFContext*, std::unordered_set<std::string>> linkedMeshes{};
+
     // the asset name of a material json, for its references after the first (the material linker's name)
     std::string MaterialAssetName(BO4LinkContext& ctx, const std::string& material) {
         std::filesystem::path path{ ctx.linkCtx.input / material };
@@ -1404,6 +1411,397 @@ namespace {
         lod.triArea = tris ? (float)(area / tris) : 0;
     }
 
+    /*
+     * Stock models as the bo4 dumper writes them ("lossless": true), in the loaders' order (Load_XModel sub_142E366B0,
+     * Load_XModelMesh sub_142E36F90, XSurfaceShared sub_142E37470): the blocks as they were, the meshes inline from
+     * their json (../xmodelmesh/<name>.json), the materials, physpreset and physconstraints by name (the common zones'),
+     * the script strings by name. A pointer is written when the dumped one wasn't null. A streamed mesh's data goes in
+     * the zone's xpak under its key.
+     */
+    namespace lossless {
+        auto Next = [](byte* p, size_t off) { *(uintptr_t*)(p + off) = fastfile::linker::memory::POINTER_NEXT; };
+
+        std::vector<byte> Hex(const rapidjson::Value& v, const char* key) {
+            std::vector<byte> out{};
+            ReadHex(Member(v, key), out);
+            return out;
+        }
+
+        uint32_t Scr(BO4FFContext& ff, const rapidjson::Value* v) {
+            return v && v->IsString() ? ff.data.AddScrStringKeepEmpty(v->GetString()) : 0;
+        }
+
+        void Write(BO4FFContext& ff, const std::vector<byte>& data, size_t align, size_t size) {
+            std::vector<byte> d{ data };
+            d.resize(size);
+            ff.data.Align(align);
+            if (size) {
+                ff.data.WriteStream(d.data(), d.size());
+            }
+        }
+
+        // a "#name" or "#hash_x" of the dumper, the top bit (a default reference) off
+        std::string RefName(const rapidjson::Value* v) {
+            if (!v || !v->IsString()) {
+                return {};
+            }
+            std::string s{ v->GetString() };
+            if (!s.empty() && s[0] == '#') {
+                s = s.substr(1);
+            }
+            if (s.rfind("hash_", 0) == 0) {
+                s = std::format("hash_{:x}", std::strtoull(s.data() + 5, nullptr, 16) & hash::MASK63);
+            }
+            return s;
+        }
+
+        // the file of a dumped asset: file_<hash> or its name
+        std::string FileName(const std::string& ref) {
+            return ref.rfind("hash_", 0) == 0 ? "file_" + ref.substr(5) : ref;
+        }
+
+        // the 0x1E0 strings of a shared block, after it (count at 0x1E0)
+        void SharedStrings(BO4FFContext& ff, byte* sh, const rapidjson::Value& m) {
+            uint32_t count{ *(uint32_t*)(sh + 0x1E0) };
+            *(uint32_t*)(sh + 0x1E4) = Scr(ff, Member(m, "sharedStr"));
+            const rapidjson::Value* l4{ Member(m, "sharedStrings") };
+            *(uint64_t*)(sh + 0x1E8) = 0;
+            if (l4 && l4->IsArray()) {
+                Next(sh, 0x1E8);
+                ff.data.Align(4);
+                uint32_t* out{ ff.data.AllocStreamPtr<uint32_t>(count) };
+                for (uint32_t i = 0; i < count; i++) {
+                    out[i] = i < l4->Size() ? Scr(ff, &(*l4)[i]) : 0;
+                }
+            }
+            std::vector<byte> l8{ Hex(m, "sharedEntries") };
+            const rapidjson::Value* l8s{ Member(m, "sharedEntryStrings") };
+            *(uint64_t*)(sh + 0x1F0) = 0;
+            if (!l8.empty()) {
+                Next(sh, 0x1F0);
+                l8.resize(count * 8ull);
+                for (uint32_t i = 0; i < count; i++) {
+                    *(uint32_t*)&l8[i * 8ull] = l8s && l8s->IsArray() && i < l8s->Size() ? Scr(ff, &(*l8s)[i]) : 0;
+                }
+                Write(ff, l8, 4, l8.size());
+            }
+        }
+
+        // a shared block: header, data (physical, or the streamer for a streamed mesh), strings
+        fastfile::linker::memory::LinkerDataChunk* Shared(BO4FFContext& ff, const std::vector<byte>& raw, const std::vector<byte>& data, const rapidjson::Value& m) {
+            ff.data.Align(0x10);
+            fastfile::linker::memory::LinkerDataChunk* chunk{};
+            byte* sh{ ff.data.AllocStreamPtr<byte>(XSURFACE_SHARED_SIZE, &chunk) };
+            std::memcpy(sh, raw.data(), std::min(raw.size(), XSURFACE_SHARED_SIZE));
+            uint32_t flags{ *(uint32_t*)sh };
+            uint32_t dataSize{ *(uint32_t*)(sh + 0x28) };
+            bool had{ *(uint64_t*)(sh + SHARED_DATA_OFFSET) != 0 };
+            *(uint64_t*)(sh + SHARED_DATA_OFFSET) = had ? fastfile::linker::memory::POINTER_NEXT : 0;
+            if (had) {
+                if (flags & SHARED_STREAMED) {
+                    ff.data.PushStream(XFILE_BLOCK_STREAMER);
+                    ff.data.Align(0x100);
+                    ff.data.AllocRuntime(dataSize);
+                    ff.data.PopStream();
+                } else {
+                    ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
+                    Write(ff, data, 0x100, dataSize);
+                    ff.data.PopStream();
+                }
+            }
+            SharedStrings(ff, sh, m);
+            return chunk;
+        }
+
+        void Mesh(BO4LinkContext& ctx, BO4FFContext& ff, const std::filesystem::path& file, void*& ref) {
+            BO4Json cfg{ file };
+            if (!cfg.SyncConfig(false)) {
+                LOG_ERROR("Can't read xmodelmesh {}", file.string());
+                ctx.error = true;
+                ref = nullptr;
+                return;
+            }
+            const rapidjson::Value& m{ cfg.main };
+            std::vector<byte> header{ Hex(m, "header") };
+            header.resize(sizeof(XModelMesh));
+
+            ref = (void*)fastfile::linker::memory::POINTER_NEXT;
+            ff.data.PushStream(XFILE_BLOCK_TEMP);
+            ff.data.Align(8);
+            byte* mesh{ ff.data.AllocStreamPtr<byte>(sizeof(XModelMesh)) };
+            std::memcpy(mesh, header.data(), sizeof(XModelMesh));
+            *(uint64_t*)(mesh + 8) = 0;
+            auto Had = [&header](size_t off) { return *(uint64_t*)&header[off] != 0; };
+            for (size_t off : { 0x10, 0x18, 0x20 }) {
+                *(uint64_t*)(mesh + off) = 0;
+            }
+            // the xpak entry: its key only, the game finds the rest
+            uint64_t key{ *(uint64_t*)(mesh + 0x28) };
+            std::memset(mesh + 0x30, 0, 0x18);
+            uint16_t numSurfs{ *(uint16_t*)(mesh + 0x4C) };
+
+            ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
+            if (Had(0x20)) {
+                Next(mesh, 0x20);
+                Write(ff, Hex(m, "partBits"), 4, PART_BITS_SIZE);
+            }
+            fastfile::linker::memory::LinkerDataChunk* sharedChunk{};
+            std::vector<byte> sharedRaw{ Hex(m, "shared") };
+            if (Had(0x18) && !sharedRaw.empty()) {
+                Next(mesh, 0x18);
+                std::vector<byte> data{ Hex(m, "data") };
+                sharedChunk = Shared(ff, sharedRaw, data, m);
+                uint32_t flags{ *(uint32_t*)sharedRaw.data() };
+                if (flags & SHARED_STREAMED) {
+                    std::vector<byte> streamed{ Hex(m, "streamData") };
+                    if (streamed.empty() || !key) {
+                        LOG_ERROR("xmodelmesh {}: streamed without its data", file.string());
+                        ctx.error = true;
+                    } else {
+                        AddXPakItem(ff, key, std::move(streamed));
+                    }
+                }
+            }
+            const rapidjson::Value* surfs{ Member(m, "surfs") };
+            if (Had(0x10) && surfs && surfs->IsArray()) {
+                Next(mesh, 0x10);
+                ff.data.Align(8);
+                byte* out{ ff.data.AllocStreamPtr<byte>(sizeof(XSurface) * numSurfs) };
+                std::memset(out, 0, sizeof(XSurface) * numSurfs);
+                for (size_t i = 0; i < numSurfs && i < surfs->Size(); i++) {
+                    std::vector<byte> h{ Hex((*surfs)[(rapidjson::SizeType)i], "header") };
+                    std::memcpy(out + sizeof(XSurface) * i, h.data(), std::min(h.size(), sizeof(XSurface)));
+                }
+                for (size_t i = 0; i < numSurfs && i < surfs->Size(); i++) {
+                    const rapidjson::Value& sv{ (*surfs)[(rapidjson::SizeType)i] };
+                    byte* surf{ out + sizeof(XSurface) * i };
+                    bool hadShared{ *(uint64_t*)(surf + 0x10) != 0 };
+                    bool hadVerts{ *(uint64_t*)(surf + 0x18) != 0 };
+                    bool hadBits{ *(uint64_t*)(surf + 0x28) != 0 };
+                    *(uint64_t*)(surf + 0x10) = 0;
+                    *(uint64_t*)(surf + 0x18) = 0;
+                    *(uint64_t*)(surf + 0x20) = 0;
+                    *(uint64_t*)(surf + 0x28) = 0;
+                    const rapidjson::Value* meshShared{ Member(sv, "meshShared") };
+                    if (hadShared) {
+                        if (meshShared && meshShared->IsBool() && meshShared->GetBool() && sharedChunk) {
+                            // an offset to the mesh's shared block
+                            sharedChunk->refs.push_back((void**)(surf + 0x10));
+                        } else {
+                            Next(surf, 0x10);
+                            Shared(ff, Hex(sv, "shared"), {}, sv);
+                        }
+                    }
+                    if (hadBits) {
+                        Next(surf, 0x28);
+                        Write(ff, Hex(sv, "partBits"), 4, PART_BITS_SIZE);
+                    }
+                    if (hadVerts) {
+                        Next(surf, 0x18);
+                        Write(ff, Hex(sv, "vertList"), 2, surf[2] * 8ull);
+                    }
+                }
+            }
+            ff.data.PopStream();
+            ff.data.PopStream();
+        }
+
+        void Model(BO4LinkContext& ctx, BO4FFContext& ff, const rapidjson::Value& root, const std::filesystem::path& path, const std::string& assetName) {
+            std::vector<byte> header{ Hex(root, "header") };
+            if (header.size() != sizeof(XModel)) {
+                LOG_ERROR("xmodel {}: bad header", assetName);
+                ctx.error = true;
+                return;
+            }
+            ff.data.PushStream(XFILE_BLOCK_TEMP);
+            byte* a{ ff.data.AllocStreamPtr<byte>(sizeof(XModel)) };
+            std::memcpy(a, header.data(), sizeof(XModel));
+            auto Had = [&header](size_t off) { return *(uint64_t*)&header[off] != 0; };
+            *(uint64_t*)(a + 8) = 0;
+            for (size_t off = 0x10; off <= 0xC0; off += 8) {
+                *(uint64_t*)(a + off) = 0;
+            }
+            size_t numBones{ a[0x14B] };
+            size_t cosmetic{ *(uint16_t*)(a + 0x144) };
+            size_t bones{ numBones + cosmetic };
+            size_t parents{ bones - a[0x14C] };
+
+            ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
+            if (Had(0x10)) {
+                Next(a, 0x10);
+                const rapidjson::Value* names{ Member(root, "boneNames") };
+                ff.data.Align(4);
+                uint32_t* out{ ff.data.AllocStreamPtr<uint32_t>(bones) };
+                for (size_t i = 0; i < bones; i++) {
+                    out[i] = names && names->IsArray() && i < names->Size() ? Scr(ff, &(*names)[(rapidjson::SizeType)i]) : 0;
+                }
+            }
+            if (Had(0x18)) {
+                Next(a, 0x18);
+                const rapidjson::Value* idx{ Member(root, "boneNameIndices") };
+                ff.data.Align(4);
+                byte* out{ ff.data.AllocStreamPtr<byte>(8 * numBones) };
+                std::memset(out, 0, 8 * numBones);
+                for (size_t i = 0; i < numBones && idx && idx->IsArray() && i < idx->Size(); i++) {
+                    const rapidjson::Value& e{ (*idx)[(rapidjson::SizeType)i] };
+                    *(uint32_t*)(out + 8 * i) = Scr(ff, Member(e, "name"));
+                    const rapidjson::Value* index{ Member(e, "index") };
+                    *(uint16_t*)(out + 8 * i + 4) = index && index->IsNumber() ? (uint16_t)index->GetUint() : 0;
+                }
+            }
+            auto Blob = [&](size_t off, const char* key, size_t align, size_t size) {
+                if (Had(off)) {
+                    Next(a, off);
+                    Write(ff, Hex(root, key), align, size);
+                }
+            };
+            Blob(0x20, "parentList", 1, parents);
+            Blob(0x28, "quats", 8, parents * 8);
+            Blob(0x30, "trans", 4, parents * 0x10);
+            Blob(0x38, "partClassification", 1, bones);
+            Blob(0x40, "baseMat", 0x10, bones * BASE_MAT_SIZE);
+
+            // the meshes, inline
+            const rapidjson::Value* meshes{ Member(root, "meshes") };
+            std::filesystem::path meshDir{ path.parent_path().parent_path() / "xmodelmesh" };
+            for (size_t i = 0; i < 8; i++) {
+                if (!Had(0x78 + 8 * i)) {
+                    continue;
+                }
+                std::string ref{ meshes && meshes->IsArray() && i < meshes->Size() ? RefName(&(*meshes)[(rapidjson::SizeType)i]) : "" };
+                void*& mref{ *(void**)(a + 0x78 + 8 * i) };
+                // a mesh once in the zone, then by its name (the game's models share them: a weapon's and its upgrade's)
+                if (!ref.empty() && linkedMeshes[&ff].contains(ref)) {
+                    std::string refId{ "," + ref };
+                    ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELMESH, refId.data(), mref, false, &ff);
+                    continue;
+                }
+                Mesh(ctx, ff, meshDir / (FileName(ref) + ".json"), mref);
+                if (!ref.empty()) {
+                    linkedMeshes[&ff].insert(ref);
+                }
+            }
+
+            // the materials of each lod: entries, then each its materials (by name) and himip floats
+            uint32_t numLods{ *(uint32_t*)(a + 0xC8) };
+            const rapidjson::Value* mms{ Member(root, "meshMaterials") };
+            if (Had(0xB8)) {
+                Next(a, 0xB8);
+                ff.data.Align(8);
+                byte* out{ ff.data.AllocStreamPtr<byte>(0x18ull * numLods) };
+                std::memset(out, 0, 0x18ull * numLods);
+                for (size_t i = 0; i < numLods && mms && mms->IsArray() && i < mms->Size(); i++) {
+                    std::vector<byte> e{ Hex((*mms)[(rapidjson::SizeType)i], "entry") };
+                    std::memcpy(out + 0x18 * i, e.data(), std::min<size_t>(e.size(), 0x18));
+                }
+                for (size_t i = 0; i < numLods && mms && mms->IsArray() && i < mms->Size(); i++) {
+                    const rapidjson::Value& mm{ (*mms)[(rapidjson::SizeType)i] };
+                    byte* e{ out + 0x18 * i };
+                    uint16_t count{ *(uint16_t*)e };
+                    bool hadMats{ *(uint64_t*)(e + 8) != 0 };
+                    bool hadHimip{ *(uint64_t*)(e + 0x10) != 0 };
+                    *(uint64_t*)(e + 8) = 0;
+                    *(uint64_t*)(e + 0x10) = 0;
+                    if (hadMats) {
+                        Next(e, 8);
+                        const rapidjson::Value* mats{ Member(mm, "materials") };
+                        ff.data.Align(8);
+                        void** arr{ ff.data.AllocStreamPtr<void*>(count) };
+                        for (size_t j = 0; j < count; j++) {
+                            arr[j] = nullptr;
+                        }
+                        for (size_t j = 0; j < count; j++) {
+                            std::string mat{ mats && mats->IsArray() && j < mats->Size() ? RefName(&(*mats)[(rapidjson::SizeType)j]) : "" };
+                            if (!mat.empty()) {
+                                ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, ("," + mat).data(), arr[j], false, &ff);
+                            }
+                        }
+                    }
+                    if (hadHimip) {
+                        Next(e, 0x10);
+                        Write(ff, Hex(mm, "himipInvSqRadii"), 4, count * 4ull);
+                    }
+                }
+            }
+            // the collision surfaces (0x38 each, the count i32 at 0x140), then the triangles of each, as the obj path's
+            if (Had(0x50)) {
+                const rapidjson::Value* css{ Member(root, "collSurfs") };
+                size_t count{ css && css->IsArray() ? css->Size() : 0 };
+                if (!count || count != (size_t)*(int32_t*)(a + 0x140)) {
+                    LOG_ERROR("xmodel {}: {} collision surfaces in the json for a count of {}", assetName, count, *(int32_t*)(a + 0x140));
+                    ctx.error = true;
+                } else {
+                    Next(a, 0x50);
+                    ff.data.Align(8);
+                    byte* out{ ff.data.AllocStreamPtr<byte>(0x38 * count) };
+                    std::vector<std::vector<byte>> tris(count);
+                    for (size_t i = 0; i < count; i++) {
+                        const rapidjson::Value& cs{ (*css)[(rapidjson::SizeType)i] };
+                        std::vector<byte> h{ Hex(cs, "header") };
+                        if (h.size() != 0x38 || Member(cs, "blob")) {
+                            LOG_ERROR("xmodel {}: collision surface {}: bad header or a blob (not supported)", assetName, i);
+                            ctx.error = true;
+                            return;
+                        }
+                        tris[i] = Hex(cs, "tris");
+                        if (tris[i].size() != *(uint32_t*)&h[0x10] * 0x30ull) {
+                            LOG_ERROR("xmodel {}: collision surface {}: {} triangle bytes for {} triangles", assetName, i, tris[i].size(), *(uint32_t*)&h[0x10]);
+                            ctx.error = true;
+                            return;
+                        }
+                        std::memcpy(out + 0x38 * i, h.data(), 0x38);
+                        *(uint64_t*)(out + 0x38 * i) = tris[i].empty() ? 0 : (uint64_t)fastfile::linker::memory::POINTER_NEXT;
+                        *(uint64_t*)(out + 0x38 * i + 8) = 0;
+                    }
+                    for (const std::vector<byte>& t : tris) {
+                        if (!t.empty()) {
+                            ff.data.Align(4);
+                            ff.data.WriteStream(t.data(), t.size());
+                        }
+                    }
+                }
+            }
+            Blob(0x48, "boneInfo", 4, numBones * BONE_INFO_SIZE);
+            Blob(0xC0, "unkC0", 4, 0x30);
+            auto Ref = [&](size_t off, XAssetType type, const char* key) {
+                std::string name{ RefName(Member(root, key)) };
+                if (Had(off) && !name.empty()) {
+                    ctx.LinkAsset(type, ("," + name).data(), *(void**)(a + off), false, &ff);
+                }
+            };
+            Ref(0x58, XAssetType::ASSET_TYPE_PHYSPRESET, "physPreset");
+            if (Had(0x60)) {
+                LOG_ERROR("xmodel {}: collmaps aren't supported in lossless models yet", assetName);
+                ctx.error = true;
+            }
+            Ref(0x68, XAssetType::ASSET_TYPE_PHYSCONSTRAINTS, "physConstraints");
+            // the submodels (0x28 each, the loader's last block): a model by name (sub_142E6B190) and its tag at 8
+            if (Had(0x70)) {
+                Next(a, 0x70);
+                size_t count{ (size_t)(int8_t)a[0x14A] };
+                const rapidjson::Value* subs{ Member(root, "submodels") };
+                ff.data.Align(8);
+                byte* out{ ff.data.AllocStreamPtr<byte>(0x28 * count) };
+                std::memset(out, 0, 0x28 * count);
+                for (size_t i = 0; i < count && subs && subs->IsArray() && i < subs->Size(); i++) {
+                    const rapidjson::Value& sub{ (*subs)[(rapidjson::SizeType)i] };
+                    std::vector<byte> raw{ Hex(sub, "raw") };
+                    byte* e{ out + 0x28 * i };
+                    std::memcpy(e, raw.data(), std::min<size_t>(raw.size(), 0x28));
+                    *(uint64_t*)e = 0;
+                    std::string model{ RefName(Member(sub, "model")) };
+                    if (!model.empty()) {
+                        ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, ("," + model).data(), *(void**)e, false, &ff);
+                    }
+                    *(uint32_t*)(e + 8) = Scr(ff, Member(sub, "str"));
+                }
+            }
+            ff.data.PopStream();
+            ff.data.PopStream();
+            LOG_INFO("Added asset xmodel {} (hash_{:x}), lossless, {} lod(s), {} bone(s)", assetName, *(uint64_t*)a, numLods, numBones);
+        }
+    } // namespace lossless
+
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -1422,6 +1820,11 @@ namespace {
             BO4Json cfg{ path };
             if (!cfg.SyncConfig(false)) {
                 Fail("can't read");
+                return;
+            }
+            // a stock model from the dumper
+            if (Member(cfg.main, "lossless")) {
+                lossless::Model(ctx, ff, cfg.main, path, cfg.GetString("name", rfpath.string().c_str()));
                 return;
             }
 
@@ -1799,6 +2202,27 @@ namespace {
             std::memcpy(&model, modelHeader.data(), sizeof(model));
             model.name.name = ctx.HashXHash(assetName, true);
             // the bones: the glTF skin's or one
+            // "skeletonPositions": "gltf": the game's bones where the glTF's joints of their names are (the model's own
+            // proportions), their orientations the game's
+            if (useGameSkel && std::string{ cfg.GetString("skeletonPositions", "game") } == "gltf") {
+                std::vector<std::optional<std::array<double, 3>>> pos(gameSkel.Count());
+                size_t placed{};
+                for (size_t b = 0; b < skel.nodes.size(); b++) {
+                    int idx{ gameSkel.Index(skel.names[b]) };
+                    if (idx < 0) {
+                        continue;
+                    }
+                    double q[4], t[3];
+                    skel.ToGame(skel.restWorld[b], q, t);
+                    pos[idx] = std::array<double, 3>{ t[0], t[1], t[2] };
+                    placed++;
+                }
+                gameSkel.Reposition(pos);
+                LOG_INFO("{}: {} of the skeleton's {} bones at the glTF's joints", assetName, placed, gameSkel.Count());
+            } else if (useGameSkel && std::string{ cfg.GetString("skeletonPositions", "game") } != "game") {
+                Fail("unknown skeletonPositions, game or gltf");
+                return;
+            }
             size_t numBones{ useGameSkel ? gameSkel.numMain : skel.nodes.empty() ? 1 : skel.nodes.size() };
             if (numBones > 0xFF) {
                 Fail("more than 255 bones");
@@ -2087,8 +2511,8 @@ namespace {
                 mms[slot].materials = (void**)fastfile::linker::memory::POINTER_NEXT;
                 mms[slot].himipInvSqRadii = (float*)fastfile::linker::memory::POINTER_NEXT;
             }
-            // a material of a json once in the model, then by its name
-            std::unordered_set<std::string> linked{};
+            // a material of a json once in the zone, then by its name
+            std::unordered_set<std::string>& linked{ linkedMaterials[&ff] };
             for (size_t slot = 0; slot < numLods; slot++) {
                 const LodGeom& lod{ lods[numLods - 1 - slot] };
                 ff.data.Align(8);

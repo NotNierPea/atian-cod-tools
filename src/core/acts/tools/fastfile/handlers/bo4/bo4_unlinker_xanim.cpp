@@ -40,6 +40,13 @@ namespace {
             BO4JsonWriter json{};
             LOG_OPT_INFO("Dump xanim {}", outFile.string());
 
+            auto Scr = [&json](ScrString_t s) {
+                if (*(uint32_t*)&s) {
+                    json.WriteValueString(GetScrString(s));
+                } else {
+                    json.WriteValueNull();
+                }
+            };
             auto Blob = [&json](const char* key, const void* data, size_t len) {
                 if (data && len) {
                     json.WriteFieldValueString(key, Hex(data, len));
@@ -53,7 +60,9 @@ namespace {
             json.WriteFieldValueString("header", Hex(a, 0x130));
             json.WriteFieldValueNumber("numBones", numBones);
             json.WriteFieldValueNumber("numframes", numframes);
-            json.WriteFieldValueString("branchName", GetScrString(At<ScrString_t>(a, 0xA8)));
+            json.WriteFieldValueBool("lossless", true);
+            json.WriteFieldNameString("branchName");
+            Scr(At<ScrString_t>(a, 0xA8));
             json.WriteFieldValueNumber("framerate", At<float>(a, 0xC0));
             json.WriteFieldValueNumber("frequency", At<float>(a, 0xC4));
 
@@ -61,7 +70,7 @@ namespace {
             json.WriteFieldNameString("names");
             json.BeginArray();
             for (size_t i = 0; names && i < numBones; i++) {
-                json.WriteValueString(GetScrString(names[i]));
+                Scr(names[i]);
             }
             json.EndArray();
 
@@ -82,10 +91,14 @@ namespace {
                     byte* n{ list + 0x28 * i };
                     json.BeginObject();
                     json.WriteFieldValueString("raw", Hex(n, 0x28));
-                    json.WriteFieldValueString("type", GetScrString(At<ScrString_t>(n, 0x10)));
-                    json.WriteFieldValueString("param1", GetScrString(At<ScrString_t>(n, 0x14)));
-                    json.WriteFieldValueString("param2", GetScrString(At<ScrString_t>(n, 0x18)));
-                    json.WriteFieldValueString("param3", GetScrString(At<ScrString_t>(n, 0x1C)));
+                    json.WriteFieldNameString("type");
+                    Scr(At<ScrString_t>(n, 0x10));
+                    json.WriteFieldNameString("param1");
+                    Scr(At<ScrString_t>(n, 0x14));
+                    json.WriteFieldNameString("param2");
+                    Scr(At<ScrString_t>(n, 0x18));
+                    json.WriteFieldNameString("param3");
+                    Scr(At<ScrString_t>(n, 0x1C));
                     json.WriteFieldValueNumber("time", At<float>(n, 0x20));
                     json.EndObject();
                 }
@@ -94,6 +107,61 @@ namespace {
             Notifies("notify", At<byte*>(a, 0x38), At<uint16_t>(a, 0x110));
             Notifies("startupNotify", At<byte*>(a, 0x40), At<byte>(a, 0x125));
             Notifies("shutdownNotify", At<byte*>(a, 0x48), At<byte>(a, 0x126));
+
+            // 0x30: 0x18 each (u8 count 0x124), script strings at 0, 0x10, 0x14
+            byte* list30{ At<byte*>(a, 0x30) };
+            json.WriteFieldNameString("list30");
+            json.BeginArray();
+            for (size_t i = 0; list30 && i < At<byte>(a, 0x124); i++) {
+                byte* e{ list30 + 0x18 * i };
+                json.BeginObject();
+                json.WriteFieldValueString("raw", Hex(e, 0x18));
+                json.WriteFieldNameString("str0");
+                Scr(At<ScrString_t>(e, 0));
+                json.WriteFieldNameString("str10");
+                Scr(At<ScrString_t>(e, 0x10));
+                json.WriteFieldNameString("str14");
+                Scr(At<ScrString_t>(e, 0x14));
+                json.EndObject();
+            }
+            json.EndArray();
+
+            // the arrays no stock anim seen uses, as they are
+            uint16_t count116{ At<uint16_t>(a, 0x116) };
+            Blob("list20", At<void*>(a, 0x20), 0x20ull * At<uint32_t>(a, 0xD4));
+            Blob("list28", At<void*>(a, 0x28), 8ull * At<uint32_t>(a, 0xD8));
+            byte* list50{ At<byte*>(a, 0x50) };
+            if (list50) {
+                Blob("list50", list50, 0x68);
+                Blob("list50Data", At<void*>(list50, 0), 0x16ull * At<int32_t>(list50, 8));
+            }
+            byte* list10{ At<byte*>(a, 0x10) };
+            if (list10) {
+                json.WriteFieldNameString("list10");
+                json.BeginArray();
+                for (size_t i = 0; i < count116; i++) {
+                    byte* e{ list10 + 0x18 * i };
+                    json.BeginObject();
+                    json.WriteFieldValueString("raw", Hex(e, 0x18));
+                    Blob("data8", At<void*>(e, 8), 2ull * At<uint16_t>(e, 0));
+                    Blob("data10", At<void*>(e, 0x10), 0xCull * At<uint16_t>(e, 0));
+                    json.EndObject();
+                }
+                json.EndArray();
+            }
+            byte* list00{ At<byte*>(a, 0) };
+            if (list00) {
+                json.WriteFieldNameString("list00");
+                json.BeginArray();
+                for (size_t i = 0; i < count116; i++) {
+                    json.BeginObject();
+                    json.WriteFieldValueString("raw", Hex(list00 + 8 * i, 8));
+                    json.WriteFieldNameString("str");
+                    Scr(At<ScrString_t>(list00 + 8 * i, 0));
+                    json.EndObject();
+                }
+                json.EndArray();
+            }
 
             /*
              * The delta part (root motion, the loader sub_142E35180): trans, quat2 (yaw), quat. Each a header (u16 key

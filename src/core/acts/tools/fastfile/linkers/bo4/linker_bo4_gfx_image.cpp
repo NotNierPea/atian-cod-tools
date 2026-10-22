@@ -11,8 +11,11 @@
 /*
  * Images, in the fastfile (resident) or streamed from an xpak written next to it.
  *
- * image,name.png          resident, one mip in the fastfile
+ * image,name.png          resident, its mips down to 1x1 in the fastfile (like the game's)
+ * image,name.png,nomips   resident, one mip (UI pictures drawn at their size)
  * image,name.png,stream   streamed, the mips are in zone/<xpak>.xpak, the fastfile only has the header
+ * image,path/name.json    a game image as acts' dumper writes it (lossless), the path from the zone's dir: its header,
+ *                         its resident pixels or its streamed parts (to the xpak, under the game's keys)
  * >image.stream=true      streams every image of the zone (",resident" keeps one in the fastfile)
  * >xpak.name=<name>       name of the xpak, the fastfile name by default
  *
@@ -237,11 +240,18 @@ namespace {
     void WriteXPak(const std::filesystem::path& path, std::vector<XPakItem>& items) {
         std::sort(items.begin(), items.end(), [](const XPakItem& a, const XPakItem& b) { return a.key < b.key; });
 
-        for (size_t i = 1; i < items.size(); i++) {
-            if (items[i].key == items[i - 1].key) {
-                throw std::runtime_error(std::format("Two streamed parts with the key 0x{:x}", items[i].key));
+        // a part the game's images share (the same pixels, the same key) once
+        std::vector<XPakItem> unique{};
+        for (XPakItem& item : items) {
+            if (!unique.empty() && unique.back().key == item.key) {
+                if (unique.back().data != item.data) {
+                    throw std::runtime_error(std::format("Two streamed parts with the key 0x{:x}", item.key));
+                }
+                continue;
             }
+            unique.emplace_back(std::move(item));
         }
+        items = std::move(unique);
 
         std::vector<byte> file(XPAK_HEADER_SIZE);
         std::vector<XPakIndexEntry> index{};
@@ -340,6 +350,131 @@ namespace {
         return out;
     }
 
+    int HexDigit(char c) {
+        if (c >= '0' && c <= '9')
+            return c - '0';
+        if (c >= 'a' && c <= 'f')
+            return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F')
+            return c - 'A' + 10;
+        return -1;
+    }
+
+    bool ReadHex(const rapidjson::Value* val, std::vector<byte>& out) {
+        out.clear();
+        if (!val || !val->IsString() || (val->GetStringLength() & 1)) {
+            return false;
+        }
+        const char* str{ val->GetString() };
+        out.reserve(val->GetStringLength() / 2);
+        for (size_t i = 0; i < val->GetStringLength(); i += 2) {
+            int hi{ HexDigit(str[i]) };
+            int lo{ HexDigit(str[i + 1]) };
+            if (hi < 0 || lo < 0) {
+                return false;
+            }
+            out.push_back((byte)((hi << 4) | lo));
+        }
+        return true;
+    }
+
+    const rapidjson::Value* Member(const rapidjson::Value& obj, const char* name) {
+        if (!obj.IsObject()) {
+            return nullptr;
+        }
+        auto it{ obj.FindMember(name) };
+        return it == obj.MemberEnd() || it->value.IsNull() ? nullptr : &it->value;
+    }
+
+    // a dumped game image: the header with its runtime pointers cleared, the pixels resident or its parts to the xpak
+    void LinkLossless(BO4LinkContext& ctx, const std::filesystem::path& path, BO4FFContext& ff) {
+        BO4Json cfg{ path };
+        if (!cfg.SyncConfig(false)) {
+            LOG_ERROR("Can't read image {}", path.string());
+            ctx.error = true;
+            return;
+        }
+        std::vector<byte> header{};
+        if (!ReadHex(Member(cfg.main, "header"), header) || header.size() != sizeof(GfxImage)) {
+            LOG_ERROR("Image {}: bad header", path.string());
+            ctx.error = true;
+            return;
+        }
+        GfxImage src{};
+        std::memcpy(&src, header.data(), sizeof(src));
+        uint64_t hash{ ctx.HashXHash(cfg.GetString("name", path.stem().string().c_str()), true) };
+
+        ff.data.PushStream(XFILE_BLOCK_TEMP);
+        GfxImage& gfx{ ff.data.AllocStreamRef<GfxImage>() };
+        gfx = src;
+        gfx.unk0 = nullptr;
+        gfx.dxgiAdapter = nullptr;
+        gfx.unk10 = 0;
+        gfx.unk38 = gfx.unk40 = gfx.unk48 = gfx.unk50 = 0;
+        gfx.name.name = hash;
+
+        const rapidjson::Value* parts{ Member(cfg.main, "parts") };
+        if (src.streaming && parts && parts->IsArray()) {
+            if (parts->Size() != src.streamedParts_count || parts->Size() > MAX_STREAMED_PARTS) {
+                LOG_ERROR("Image {}: {} parts for a count of {}", path.string(), parts->Size(), src.streamedParts_count);
+                ctx.error = true;
+                return;
+            }
+            // the pixels in the streamer block (Load_GfxImage allocates them there, the streamer maps its pages)
+            gfx.pixels = (byte*)fastfile::linker::memory::POINTER_NEXT;
+            gfx.streamedParts = (GfxStreamedPartInfo*)fastfile::linker::memory::POINTER_NEXT;
+            GfxStreamedPartInfo partInfo[MAX_STREAMED_PARTS]{};
+            for (rapidjson::SizeType k = 0; k < parts->Size(); k++) {
+                std::vector<byte> buff{};
+                if (!ReadHex(Member((*parts)[k], "header"), buff) || buff.size() != sizeof(GfxStreamedPartInfo)) {
+                    LOG_ERROR("Image {}: bad part {} header", path.string(), k);
+                    ctx.error = true;
+                    return;
+                }
+                std::memcpy(&partInfo[k], buff.data(), sizeof(partInfo[k]));
+                // the key kept, what the game sets cleared
+                partInfo[k].xpakEntry.offset = 0;
+                partInfo[k].xpakEntry.size = 0;
+                partInfo[k].xpakEntry.flags = 0;
+                if (!ReadHex(Member((*parts)[k], "data"), buff) || buff.empty()) {
+                    LOG_ERROR("Image {}: part {} has no data", path.string(), k);
+                    ctx.error = true;
+                    return;
+                }
+                XPakItem& item{ xpakItems[&ff].emplace_back() };
+                item.key = partInfo[k].xpakEntry.key;
+                item.data = std::move(buff);
+            }
+            ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
+            ff.data.PushStream(XFILE_BLOCK_STREAMER);
+            ff.data.Align(0x10000);
+            ff.data.AllocRuntime(src.totalSize);
+            ff.data.PopStream();
+            ff.data.Align(8);
+            ff.data.WriteStream(partInfo, sizeof(partInfo[0]) * parts->Size());
+            ff.data.PopStream();
+            ff.data.PopStream();
+            LOG_INFO("Added asset gfximage {} (hash_{:x}), lossless, streamed in {} parts", path.filename().string(), hash, parts->Size());
+            return;
+        }
+
+        std::vector<byte> pixels{};
+        if (!ReadHex(Member(cfg.main, "pixels"), pixels) || pixels.size() != src.totalSize) {
+            LOG_ERROR("Image {}: {} pixel bytes for a total size of {}", path.string(), pixels.size(), src.totalSize);
+            ctx.error = true;
+            return;
+        }
+        gfx.streaming = 0;
+        gfx.streamedParts = nullptr;
+        gfx.pixels = (byte*)fastfile::linker::memory::POINTER_NEXT;
+        ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
+        ff.data.Align(0x100);
+        ff.data.WriteStream(pixels.data(), pixels.size());
+        ff.data.PopStream();
+        ff.data.PopStream();
+        LOG_INFO("Added asset gfximage {} (hash_{:x}), lossless, {}x{} format {}", path.filename().string(), hash, src.width, src.height, (int)src.imageFormat);
+    }
+
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -385,9 +520,10 @@ namespace {
             if (*id == '#')
                 id++; // ignore start #
 
-            // name.png[,stream|,resident]
+            // name.png[,stream|,resident|,nomips]
             std::string idStr{ id };
             bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false) };
+            bool mips{ ctx.linkCtx.zone.GetConfigBool("image.mips", true) };
             size_t opt{ idStr.find_last_of(',') };
             if (opt != std::string::npos) {
                 std::string optName{ idStr.substr(opt + 1) };
@@ -395,12 +531,20 @@ namespace {
                     stream = true;
                 } else if (optName == "resident") {
                     stream = false;
+                } else if (optName == "nomips") {
+                    stream = false;
+                    mips = false;
                 } else {
                     LOG_ERROR("Unknown image option '{}' for {}", optName, idStr);
                     ctx.error = true;
                     return;
                 }
                 idStr.resize(opt);
+            }
+
+            if (idStr.size() > 5 && idStr.ends_with(".json")) {
+                LinkLossless(ctx, ctx.linkCtx.input / idStr, ff);
+                return;
             }
 
             std::filesystem::path path{ ctx.linkCtx.input / "images" / idStr };
@@ -448,24 +592,6 @@ namespace {
             }
             gfx.imageFormat = (GfxPixelFormat)(hasAlpha ? GFX_PF_BC3 : GFX_PF_BC1);
 
-            if (!stream) {
-                std::vector<byte> compressed{};
-                CompressBC(img, (uint32_t)x, (uint32_t)y, hasAlpha, compressed);
-
-                gfx.levelCount = 1;
-                gfx.totalSize = (uint32_t)compressed.size();
-
-                ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
-                // pixels, DB_AllocStreamPos(0xFF)
-                ff.data.Align(0x100);
-                ff.data.WriteStream(compressed.data(), gfx.totalSize);
-                ff.data.PopStream();
-
-                ff.data.PopStream();
-                LOG_INFO("Added asset gfximage {} (hash_{:x})", idStr, hash);
-                return;
-            }
-
             // the picture padded to blocks of 4, the edges repeated
             uint32_t width{ gfx.width };
             uint32_t height{ gfx.height };
@@ -476,6 +602,43 @@ namespace {
                     uint32_t sx{ std::min(px, (uint32_t)x - 1) };
                     std::memcpy(&top[(py * width + px) * 4], &img[(sy * x + sx) * 4], 4);
                 }
+            }
+
+            if (!stream) {
+                // mip 0 first, down to 1x1, a block at least each
+                std::vector<byte> compressed{};
+                uint32_t levels{ 1 };
+                if (mips) {
+                    while ((std::max(width, height) >> levels) >= 1) {
+                        levels++;
+                    }
+                }
+                std::vector<byte> level{ top };
+                uint32_t lx{ width };
+                uint32_t ly{ height };
+                for (uint32_t i = 0; i < levels; i++) {
+                    CompressBC(level.data(), lx, ly, hasAlpha, compressed);
+                    if (i + 1 < levels) {
+                        uint32_t nx{ std::max(1u, lx >> 1) };
+                        uint32_t ny{ std::max(1u, ly >> 1) };
+                        level = HalfSize(level, lx, ly, nx, ny);
+                        lx = nx;
+                        ly = ny;
+                    }
+                }
+
+                gfx.levelCount = (byte)levels;
+                gfx.totalSize = (uint32_t)compressed.size();
+
+                ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
+                // pixels, DB_AllocStreamPos(0xFF)
+                ff.data.Align(0x100);
+                ff.data.WriteStream(compressed.data(), gfx.totalSize);
+                ff.data.PopStream();
+
+                ff.data.PopStream();
+                LOG_INFO("Added asset gfximage {} (hash_{:x}), {} mip(s)", idStr, hash, levels);
+                return;
             }
 
             // mips down to 4 pixels on the small side, like the game's

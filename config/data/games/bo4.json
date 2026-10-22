@@ -1126,6 +1126,11 @@
     },
     "nullscans": {
         "fastfile": {
+            "$Techset_RemapCodeConsts": {
+                "scan": "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 48 8B 19 33 FF 48 83 C3 08 8B F2 BD 00 FF 00 00 41 BE 00 06 00 00",
+                "type": "Absolute",
+                "single": true
+            },
             "$Load_ScriptStringCustom1": {
                 "scan": "E8 ?? ?? ?? ?? 48 83 C7 60 49 83 EE 01 75 8B",
                 "type": "Relative",

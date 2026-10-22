@@ -165,6 +165,9 @@ namespace {
         return it == obj.MemberEnd() || it->value.IsNull() ? nullptr : &it->value;
     }
 
+    // the images of a fastfile linked in place by the materials, once a zone (by name after)
+    std::unordered_map<BO4FFContext*, std::unordered_set<std::string>> zoneImages{};
+
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -222,7 +225,7 @@ namespace {
             }
 
             // images of the zone are linked in place once, then referenced by name
-            std::unordered_set<std::string> linkedImages{};
+            std::unordered_set<std::string>& linkedImages{ zoneImages[&ff] };
             std::function<void(std::string, void*&)> LinkImageName{};
             auto LinkImage = [&](const rapidjson::Value* ref, void*& ptr) {
                 if (!ref || !ref->IsString() || !*ref->GetString()) {
@@ -258,8 +261,10 @@ namespace {
             std::memcpy(&mat, buff.data(), sizeof(mat));
 
             std::string assetName{ cfg.GetString("name", rfpath.string().c_str()) };
-            if (const rapidjson::Value* region{ Member(user, "cameraRegion") }; region && region->IsString()) {
-                int idx{ NameIndex(CAMERA_REGIONS, region->GetString()) };
+            // a region by name, its number past the named ones, "none" (older dumps) keeps the header's
+            if (const rapidjson::Value* region{ Member(user, "cameraRegion") }; region && region->IsString() && std::strcmp(region->GetString(), "none")) {
+                const char* r{ region->GetString() };
+                int idx{ *r >= '0' && *r <= '9' ? std::atoi(r) : NameIndex(CAMERA_REGIONS, r) };
                 if (idx < 0) {
                     Fail(std::format("unknown cameraRegion {}", region->GetString()));
                     return;

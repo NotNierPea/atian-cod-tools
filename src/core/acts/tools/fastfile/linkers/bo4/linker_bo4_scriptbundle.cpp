@@ -72,9 +72,15 @@ namespace fastfile::linker::bo4::scriptbundle {
 
                 SB_Object* sobj{ sbObjects + idxobj++ };
 
-                // not good, what if the user wants a hashed key
-                sobj->keyName.name = ctx.HashXHash(keyName);
-                sobj->keyScrName = ctx.HashScr(keyName);
+                // a name, or hash_<64>:hash_<32> as the dumper writes unknown keys
+                const char* colon{ std::strchr(keyName, ':') };
+                if (colon && !std::strncmp(keyName, "hash_", 5)) {
+                    sobj->keyName.name = std::strtoull(keyName + 5, nullptr, 16);
+                    sobj->keyScrName = ctx.HashScr(colon + 1);
+                } else {
+                    sobj->keyName.name = ctx.HashXHash(keyName);
+                    sobj->keyScrName = ctx.HashScr(keyName);
+                }
 
                 if (v.IsInt() || v.IsInt64()) {
                     sobj->type = KVP_INT;
@@ -209,18 +215,34 @@ namespace fastfile::linker::bo4::scriptbundle {
 
                 ScriptBundle& bundle{ ff.data.AllocStreamRef<ScriptBundle>() };
 
-                // add name and type to bundle
+                // a key of the json by its name or as the dumper writes an unnamed one (hash_<64>[:hash_<32>])
+                auto HasKey = [&main](const char* key) {
+                    std::string hashed{ std::format("hash_{:x}", hash::Hash64(key)) };
+                    for (auto& [k, v] : main.GetObj()) {
+                        std::string_view kn{ k.GetString() };
+                        if (kn == key || kn == hashed || kn.starts_with(hashed + ":")) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+
+                // add name and type to bundle, a dumped game bundle has its own (the scenes' name is their done flag's)
                 bundle.name.name = ctx.HashXHash(name);
-                rapidjson::Value nameValue{};
-                nameValue.SetString(name.data(), main.GetAllocator());
-                main.AddMember(rapidjson::StringRef("name"), nameValue, main.GetAllocator());
+                if (!HasKey("name")) {
+                    rapidjson::Value nameValue{};
+                    nameValue.SetString(name.data(), main.GetAllocator());
+                    main.AddMember(rapidjson::StringRef("name"), nameValue, main.GetAllocator());
+                }
 
                 if (type.size()) {
                     bundle.bundleType.name = ctx.HashXHash(type);
 
-                    rapidjson::Value typeValue{};
-                    typeValue.SetString(type.data(), main.GetAllocator());
-                    main.AddMember(rapidjson::StringRef("type"), typeValue, main.GetAllocator());
+                    if (!HasKey("type")) {
+                        rapidjson::Value typeValue{};
+                        typeValue.SetString(type.data(), main.GetAllocator());
+                        main.AddMember(rapidjson::StringRef("type"), typeValue, main.GetAllocator());
+                    }
                 }
 
                 ff.data.PushStream(XFILE_BLOCK_VIRTUAL);

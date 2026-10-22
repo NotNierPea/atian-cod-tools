@@ -1,5 +1,6 @@
 #include <includes.hpp>
 #include <tools/fastfile/handlers/handler_game_bo4.hpp>
+#include <tools/fastfile/handlers/bo4/bo4_xpak_reader.hpp>
 #include <utils/data_utils.hpp>
 #include <numbers>
 
@@ -21,6 +22,15 @@ namespace {
             out += digits[b & 0xF];
         }
         return out;
+    }
+
+    // a script string, null for none ("" is a string)
+    void WriteScr(BO4JsonWriter& json, ScrString_t s) {
+        if (*(uint32_t*)&s) {
+            json.WriteValueString(GetScrString(s));
+        } else {
+            json.WriteValueNull();
+        }
     }
 
     struct XModelMeshMaterials {
@@ -426,7 +436,7 @@ namespace {
             json.WriteFieldNameString("boneNames");
             json.BeginArray();
             for (size_t i = 0; asset->boneNames && i < bones; i++) {
-                json.WriteValueString(GetScrString(asset->boneNames[i]));
+                WriteScr(json, asset->boneNames[i]);
             }
             json.EndArray();
 
@@ -434,7 +444,8 @@ namespace {
             json.BeginArray();
             for (size_t i = 0; asset->boneNameIndices && i < asset->numBones; i++) {
                 json.BeginObject();
-                json.WriteFieldValueString("name", GetScrString(asset->boneNameIndices[i].name));
+                json.WriteFieldNameString("name");
+                WriteScr(json, asset->boneNameIndices[i].name);
                 json.WriteFieldValueNumber("index", asset->boneNameIndices[i].index);
                 json.EndObject();
             }
@@ -560,6 +571,20 @@ namespace {
                 json.EndObject();
             }
             json.EndArray();
+            // submodels, 0x28 each: an xmodel, a script string at 8
+            json.WriteFieldNameString("submodels");
+            json.BeginArray();
+            for (int i = 0; asset->submodels && i < asset->numSubmodels; i++) {
+                byte* sm{ (byte*)asset->submodels + 0x28ull * i };
+                json.BeginObject();
+                json.WriteFieldValueString("raw", Hex(sm, 0x28));
+                json.WriteFieldValueXAsset("model", games::bo4::pool::XAssetType::ASSET_TYPE_XMODEL, *(void**)sm);
+                json.WriteFieldNameString("str");
+                WriteScr(json, *(ScrString_t*)(sm + 8));
+                json.EndObject();
+            }
+            json.EndArray();
+            json.WriteFieldValueBool("lossless", true);
             json.WriteFieldValueNumber("numSubmodels", (int)asset->numSubmodels);
             json.WriteFieldValueNumber("numLods", asset->numLods);
             json.WriteFieldValueNumber("numBones", (int)asset->numBones);
@@ -579,6 +604,10 @@ namespace {
 
     class MeshWorker : public Worker {
         using Worker::Worker;
+
+        void PreXFileLoading(fastfile::FastFileOption& opt, fastfile::FastFileContext& ctx) override {
+            xpak::AddHint(ctx.ffname);
+        }
 
         void Unlink(fastfile::FastFileOption& opt, void* ptr) override {
             XModelMesh* asset{ (XModelMesh*)ptr };
@@ -605,6 +634,40 @@ namespace {
                 uint32_t dataSize{ *(uint32_t*)((byte*)asset->shared + 0x28) };
                 if (!(flags & 1) && data && dataSize) {
                     json.WriteFieldValueString("data", Hex(data, dataSize));
+                }
+                // streamed: the data from the game's xpak, by the mesh's key
+                uint64_t key{ *(uint64_t*)asset->xpakEntry };
+                if ((flags & 1) && key && dataSize) {
+                    std::vector<byte> streamed{};
+                    if (xpak::ReadEntry(opt, key, dataSize, streamed)) {
+                        json.WriteFieldValueString("streamData", Hex(streamed.data(), streamed.size()));
+                    } else {
+                        LOG_WARNING("xmodelmesh {}: no xpak entry 0x{:x}", hashutils::ExtractTmp("hash", asset->name), key);
+                    }
+                }
+                // the script strings at 0x1E0: count, a string, 4 bytes strings, 8 bytes entries (a string first)
+                byte* sh{ (byte*)asset->shared };
+                uint32_t count{ *(uint32_t*)(sh + 0x1E0) };
+                json.WriteFieldNameString("sharedStr");
+                WriteScr(json, *(ScrString_t*)(sh + 0x1E4));
+                ScrString_t* list4{ *(ScrString_t**)(sh + 0x1E8) };
+                if (list4) {
+                    json.WriteFieldNameString("sharedStrings");
+                    json.BeginArray();
+                    for (uint32_t i = 0; i < count; i++) {
+                        WriteScr(json, list4[i]);
+                    }
+                    json.EndArray();
+                }
+                byte* list8{ *(byte**)(sh + 0x1F0) };
+                if (list8) {
+                    json.WriteFieldValueString("sharedEntries", Hex(list8, count * 8ull));
+                    json.WriteFieldNameString("sharedEntryStrings");
+                    json.BeginArray();
+                    for (uint32_t i = 0; i < count; i++) {
+                        WriteScr(json, *(ScrString_t*)(list8 + 8ull * i));
+                    }
+                    json.EndArray();
                 }
             }
 

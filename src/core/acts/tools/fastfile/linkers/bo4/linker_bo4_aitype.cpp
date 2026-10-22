@@ -389,7 +389,9 @@ namespace {
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
 
-            ff.data.AddXString(aitype.animTree, assetName.data());
+            // the json's anim tree, else the name (without the hash mark the dumper puts)
+            std::string animTree{ objCfg.GetString("animTree", assetName[0] == '#' ? assetName.data() + 1 : assetName.data()) };
+            ff.data.AddXString(aitype.animTree, animTree.data());
 
             aitype.numPrimaryWeapons = (uint32_t)ctx.LinkAssetArray(
                 XAssetType::ASSET_TYPE_WEAPON,

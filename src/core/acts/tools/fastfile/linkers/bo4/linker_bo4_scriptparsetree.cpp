@@ -122,12 +122,23 @@ namespace {
             std::unordered_set<std::string> hashes{};
             cfg.hashes = &hashes;
 
-            try {
-                tool::gsc::compiler::CompileGsc(path, buffer, cfg);
-            } catch (std::runtime_error& re) {
-                LOG_ERROR("Can't compile {}: {}", path.string(), re.what());
-                ctx.error = true;
-                return;
+            // a compiled script (.gscc, .cscc: the dumper's) is linked as it is, its name from its header
+            bool precompiled{ scriptName.extension() == ".gscc" || scriptName.extension() == ".cscc" };
+            if (precompiled) {
+                isCsc = scriptName.extension() == ".cscc";
+                if (!utils::ReadFile(path, buffer)) {
+                    LOG_ERROR("Can't read {}", path.string());
+                    ctx.error = true;
+                    return;
+                }
+            } else {
+                try {
+                    tool::gsc::compiler::CompileGsc(path, buffer, cfg);
+                } catch (std::runtime_error& re) {
+                    LOG_ERROR("Can't compile {}: {}", path.string(), re.what());
+                    ctx.error = true;
+                    return;
+                }
             }
 
             for (const std::string& str : hashes) {
@@ -153,7 +164,9 @@ namespace {
                 }
             }
 
-            LOG_INFO("Compiled {} ({})", path.string(), cfg.name);
+            if (!precompiled) {
+                LOG_INFO("Compiled {} ({})", path.string(), cfg.name);
+            }
 
             if (buffer.size() < sizeof(tool::gsc::T8GSCOBJ)) {
                 LOG_ERROR("Can't read compiled gsc header for {}", path.string());

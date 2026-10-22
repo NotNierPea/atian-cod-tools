@@ -44,6 +44,53 @@ namespace fastfile::linker::bo4::gltf {
             return Mat4::FromTRS(gt, gq, s);
         }
 
+        // v turned by the quaternion q (x, y, z, w)
+        static void Rotate(const double q[4], const double v[3], double out[3]) {
+            double c[3]{ q[1] * v[2] - q[2] * v[1], q[2] * v[0] - q[0] * v[2], q[0] * v[1] - q[1] * v[0] };
+            double cc[3]{ q[1] * c[2] - q[2] * c[1], q[2] * c[0] - q[0] * c[2], q[0] * c[1] - q[1] * c[0] };
+            for (int i = 0; i < 3; i++) out[i] = v[i] + 2 * (q[3] * c[i] + cc[i]);
+        }
+
+        /*
+         * The bones at other places, their orientations kept (a model of other proportions on the game's animations,
+         * which turn the bones and move only the root and helper bones): the bind (baseMat) and the local trans from
+         * the given model space positions, a bone without one at its parent's new place plus its own offset
+         */
+        void Reposition(const std::vector<std::optional<std::array<double, 3>>>& pos) {
+            size_t n{ Count() };
+            std::vector<std::array<double, 3>> world(n);
+            std::vector<std::array<double, 4>> rots(n);
+            for (size_t b = 0; b < n; b++) {
+                double q[4], t[3];
+                Bind(b, q, t);
+                rots[b] = { q[0], q[1], q[2], q[3] };
+                if (b < pos.size() && pos[b]) {
+                    world[b] = *pos[b];
+                } else if (parents[b] >= 0) {
+                    const float* lt{ (const float*)(trans.data() + 12 * (b - numRoots)) };
+                    double local[3]{ lt[0], lt[1], lt[2] }, off[3];
+                    Rotate(rots[parents[b]].data(), local, off);
+                    for (int i = 0; i < 3; i++) world[b][i] = world[parents[b]][i] + off[i];
+                } else {
+                    world[b] = { t[0], t[1], t[2] };
+                }
+            }
+            for (size_t b = 0; b < n; b++) {
+                float* f{ (float*)(baseMat.data() + BASE_MAT_SIZE * b) };
+                for (int i = 0; i < 3; i++) f[4 + i] = (float)world[b][i];
+                int p{ parents[b] };
+                if (p < 0) {
+                    continue;
+                }
+                // the offset in the parent's bind frame (the inverse of its rotation)
+                double inv[4]{ -rots[p][0], -rots[p][1], -rots[p][2], rots[p][3] };
+                double d[3]{ world[b][0] - world[p][0], world[b][1] - world[p][1], world[b][2] - world[p][2] }, local[3];
+                Rotate(inv, d, local);
+                float* lt{ (float*)(trans.data() + 12 * (b - numRoots)) };
+                for (int i = 0; i < 3; i++) lt[i] = (float)local[i];
+            }
+        }
+
         bool Load(const std::filesystem::path& path, std::string& err) {
             BO4Json js{ path };
             if (!js.SyncConfig(false)) {

@@ -38,79 +38,59 @@ namespace hash {
         return Hash64(str.data(), start, iv);
     }
 
+    // a hashed name's pattern (var_, event_, function_, namespace_, script_, hash_, file_ then 1 to 16 hex digits), a
+    // name only starting like one (script_int, hash_table...) isn't
     constexpr bool TryHashPattern(const char* str, uint64_t& outVal) {
-        std::string_view v{ str };
-
         if (!str || !*str) {
             outVal = 0;
             return true;
         }
-
-        if (!v.rfind("var_", 0)) {
-            outVal = std::strtoull(&str[4], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind("event_", 0)) {
-            outVal = std::strtoull(&str[6], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind("function_", 0)) {
-            outVal = std::strtoull(&str[9], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind("namespace_", 0)) {
-            outVal = std::strtoull(&str[10], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind("script_", 0)) {
-            outVal = std::strtoull(&str[7], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind("hash_", 0)) {
-            outVal = std::strtoull(&str[5], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind("file_", 0)) {
-            outVal = std::strtoull(&str[5], nullptr, 16);
+        std::string_view v{ str };
+        for (std::string_view prefix : { "var_", "event_", "function_", "namespace_", "script_", "hash_", "file_" }) {
+            if (v.rfind(prefix, 0)) {
+                continue;
+            }
+            std::string_view digits{ v.substr(prefix.size()) };
+            if (digits.empty() || digits.size() > 16) {
+                return false;
+            }
+            uint64_t val{};
+            for (char c : digits) {
+                int d{ c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1 };
+                if (d < 0) {
+                    return false;
+                }
+                val = (val << 4) | (uint64_t)d;
+            }
+            outVal = val;
             return true;
         }
         return false;
     }
 
     constexpr bool TryHashPattern(const wchar_t* str, uint64_t& outVal) {
-        std::wstring_view v{ str };
-
         if (!str || !*str) {
             outVal = 0;
             return true;
         }
-
-        if (!v.rfind(L"var_", 0)) {
-            outVal = std::wcstoull(&str[4], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind(L"event_", 0)) {
-            outVal = std::wcstoull(&str[6], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind(L"function_", 0)) {
-            outVal = std::wcstoull(&str[9], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind(L"namespace_", 0)) {
-            outVal = std::wcstoull(&str[10], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind(L"script_", 0)) {
-            outVal = std::wcstoull(&str[7], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind(L"hash_", 0)) {
-            outVal = std::wcstoull(&str[5], nullptr, 16);
-            return true;
-        }
-        if (!v.rfind(L"file_", 0)) {
-            outVal = std::wcstoull(&str[5], nullptr, 16);
+        std::wstring_view v{ str };
+        for (std::wstring_view prefix : { L"var_", L"event_", L"function_", L"namespace_", L"script_", L"hash_", L"file_" }) {
+            if (v.rfind(prefix, 0)) {
+                continue;
+            }
+            std::wstring_view digits{ v.substr(prefix.size()) };
+            if (digits.empty() || digits.size() > 16) {
+                return false;
+            }
+            uint64_t val{};
+            for (wchar_t c : digits) {
+                int d{ c >= L'0' && c <= L'9' ? c - L'0' : c >= L'a' && c <= L'f' ? c - L'a' + 10 : c >= L'A' && c <= L'F' ? c - L'A' + 10 : -1 };
+                if (d < 0) {
+                    return false;
+                }
+                val = (val << 4) | (uint64_t)d;
+            }
+            outVal = val;
             return true;
         }
         return false;

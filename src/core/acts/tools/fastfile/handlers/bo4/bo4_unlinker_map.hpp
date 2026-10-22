@@ -47,6 +47,7 @@ namespace fastfile::handlers::bo4::map {
         uint32_t numSpawnVars;
         SpawnVarKeyValue* spawnVars;
         int32_t modelIndex;
+        uint32_t unk14; // retail only, the elf's origin is here
         vec3_t origin;
         vec3_t angles;
     };

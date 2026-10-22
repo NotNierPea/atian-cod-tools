@@ -882,6 +882,14 @@ namespace {
                     return false;
                 }
                 alias.volMin = alias.volMax = (float)v.GetDouble();
+            } else if (!_strcmpi(key, "subtitle")) {
+                // a localize entry's name, the text the game shows with subtitles on
+                if (!v.IsString()) {
+                    error = "subtitle: takes a localize name";
+                    return false;
+                }
+                alias.subtitle = {};
+                alias.subtitle.name = ctx.HashXHash(v.GetString());
             } else if (!_strcmpi(key, "pitch")) {
                 ok = Set("PitchMin") && Set("PitchMax");
             } else if (!_strcmpi(key, "minDist")) {
@@ -998,6 +1006,91 @@ namespace {
                 *it->i = m.value.GetInt();
             }
         }
+        return true;
+    }
+
+    /*
+     * "ambients": [ { "name": "default_outdoor", "defaultRoom": true, "reverb": "outdoor_still", "duck": "default",
+     * "loop": "alias", "reverbDryLevel": 1, "reverbWetLevel": 1, "entityContextType0": "ringoff_plr",
+     * "entityContextValue0": "outdoor", ... "globalContextType": "...", "globalContextValue": "..." } ]
+     * Ambient rooms (SND_AmbientSetEntState): the room the listener is in, else the default room of the first bank that
+     * has one, sets the listener's sound contexts. Alias variants bound to a context (water over/under, ringoff_plr
+     * indoor/outdoor: the weapons, the reloads) play nothing while it isn't set, so a map needs a default room.
+     */
+    bool ReadAmbient(BO4LinkContext& ctx, const rapidjson::Value& v, SndAmbient& a, std::string& error) {
+        a = {};
+        if (!v.IsObject() || !SetMusicName(ctx, Member(v, "name"), a.name, a.id, error)) {
+            error = "an ambient room needs a name of 1 to 63 characters";
+            return false;
+        }
+        // the names with their hashes, optional
+        auto Name = [&](const char* key, char (&name)[64], XHash& id) {
+            const rapidjson::Value* n{ Member(v, key) };
+            if (!n || (n->IsString() && !*n->GetString())) {
+                return true;
+            }
+            if (!SetMusicName(ctx, n, name, id, error)) {
+                error = std::format("{}: {}", key, error);
+                return false;
+            }
+            return true;
+        };
+        if (!Name("reverb", a.reverbName, a.reverb) || !Name("nearVerb", a.nearVerbName, a.nearVerb) ||
+            !Name("farVerb", a.farVerbName, a.farVerb) || !Name("duck", a.duck, a.duckId)) {
+            return false;
+        }
+        struct {
+            const char* key;
+            XHash* hash;
+        } hashes[]{
+            { "loop", &a.loop },
+            { "entityContextType0", &a.entityContextType0 },
+            { "entityContextValue0", &a.entityContextValue0 },
+            { "entityContextType1", &a.entityContextType1 },
+            { "entityContextValue1", &a.entityContextValue1 },
+            { "entityContextType2", &a.entityContextType2 },
+            { "entityContextValue2", &a.entityContextValue2 },
+            { "globalContextType", &a.globalContextType },
+            { "globalContextValue", &a.globalContextValue },
+        };
+        for (auto& h : hashes) {
+            const rapidjson::Value* n{ Member(v, h.key) };
+            if (!n) {
+                continue;
+            }
+            if (!n->IsString()) {
+                error = std::format("{}: takes a name", h.key);
+                return false;
+            }
+            h.hash->name = *n->GetString() ? ctx.HashXHash(n->GetString()) : 0;
+        }
+        struct {
+            const char* key;
+            float* val;
+        } floats[]{
+            { "reverbDryLevel", &a.reverbDryLevel },
+            { "reverbWetLevel", &a.reverbWetLevel },
+            { "unk230", &a.unk230 },
+            { "unk234", &a.unk234 },
+        };
+        for (auto& f : floats) {
+            const rapidjson::Value* n{ Member(v, f.key) };
+            // the game's rooms are at 1
+            *f.val = 1;
+            if (n && !n->IsNumber()) {
+                error = std::format("{}: takes a number", f.key);
+                return false;
+            }
+            if (n) {
+                *f.val = (float)n->GetDouble();
+            }
+        }
+        const rapidjson::Value* def{ Member(v, "defaultRoom") };
+        if (def && !def->IsBool()) {
+            error = "defaultRoom: takes true or false";
+            return false;
+        }
+        a.defaultRoom = def && def->GetBool();
         return true;
     }
 
@@ -1155,6 +1248,7 @@ namespace {
      *           "loop": true, "FadeIn": 200, "PitchMin": -100, "PitchMax": 100, "RandomizeType": "pitch" },
      *         { "name": "my_hit", "type": "3d", "file": [ "hit1.wav", "hit2.wav" ] },       // variants, random
      *         { "name": "my_step", "type": "3d", "variants": [ { "file": "a.wav" }, { "file": "b.flac", "volume": 0.5 } ] },
+     *         { "name": "my_shot", "type": "3d", "variants": [ { "Secondary": "my_shot_layer" } ] }, // no file, no asset
      *         { "name": "my_engine", "type": "3d", "file": "start.wav", "sustain": "run.wav", "release": "stop.wav" },
      *         { "name": "my_drill", "type": "3d", "file": "drill.wav", "loopStart": 0.8, "loopEnd": 2.4 }
      *     ]
@@ -1213,6 +1307,8 @@ namespace {
             std::vector<Alias> aliases{};
             std::vector<SndAssetBankEntryBo4> entries{};
             std::vector<SndAssetBankEntryBo4> streamed{};
+            // a file the bank has already, its entry (variants that differ only in their settings share the asset)
+            std::unordered_map<std::string, uint64_t> fileEntries{};
             const rapidjson::Value* bankFormat{ Member(scfg.main, "format") };
 
             const rapidjson::Value* cfgAliases{ Member(scfg.main, "aliases") };
@@ -1255,11 +1351,12 @@ namespace {
                 if (avariants && avariants->IsArray()) {
                     for (const rapidjson::Value& v : avariants->GetArray()) {
                         const rapidjson::Value* vfile{ Member(v, "file") };
-                        if (!vfile || !vfile->IsString()) {
-                            Fail(std::format("{}: a variant without file", alias.name));
+                        if (vfile && !vfile->IsString()) {
+                            Fail(std::format("{}: a variant file is a path", alias.name));
                             return;
                         }
-                        files.emplace_back(vfile->GetString(), &v);
+                        // without file: no asset, the variant only plays its Secondary
+                        files.emplace_back(vfile ? vfile->GetString() : nullptr, &v);
                     }
                 }
                 // MAX_VARIANTS of SND_PickSoundAliasFromList
@@ -1274,6 +1371,8 @@ namespace {
                 const rapidjson::Value* tsettings{ Member(*tmpl, "settings") };
                 const rapidjson::Value* asettings{ Member(a, "settings") };
                 SndAlias& sb{ *(SndAlias*)base.data() };
+                // the template's subtitle isn't ours, "subtitle" sets one
+                sb.subtitle = {};
                 if ((tsettings && !ApplyAliasSettings(ctx, sb, sl, listSet, *tsettings, error)) ||
                     !ApplyAliasSettings(ctx, sb, sl, listSet, a, error) ||
                     (asettings && !ApplyAliasSettings(ctx, sb, sl, listSet, *asettings, error))) {
@@ -1286,6 +1385,26 @@ namespace {
                 }
 
                 double cull{};
+                // the fields of the variant that are the alias's and the bank's, the asset ids set by the caller
+                auto SetAliasNames = [&](SndAlias& sa) {
+                    sa.name = {};
+                    sa.name.name = ctx.HashXHash(alias.name);
+                    sa.facialAnimation = 0;
+                    sa.assetId = {};
+                    sa.assetIdSustain = {};
+                    sa.assetIdRelease = {};
+                    sa.assetFileName = {};
+                    sa.assetFileName.name = bankHash;
+                    sa.assetFileNameSustain = sa.assetFileName;
+                    sa.assetFileNameRelease = sa.assetFileName;
+                    sa.revFilename = {};
+                    cull = std::max(
+                        cull, std::max(
+                                  GetAliasField(sa, *FindAliasField("DistMaxDry")),
+                                  GetAliasField(sa, *FindAliasField("DistMaxWet"))
+                              )
+                    );
+                };
                 for (size_t k = 0; k < files.size(); k++) {
                     std::vector<byte>& raw{ alias.variants.emplace_back(base) };
                     SndAlias& sa{ *(SndAlias*)raw.data() };
@@ -1313,6 +1432,12 @@ namespace {
                         return;
                     }
                     bool flac{ vformat && !_strcmpi(vformat->GetString(), "flac") };
+
+                    if (!files[k].first) {
+                        SetAliasNames(sa);
+                        LOG_INFO("Added sound alias {}{} ({}, no asset)", alias.name, files.size() > 1 ? std::format(" variant {}", k) : "", type);
+                        continue;
+                    }
 
                     // intro, loop and outro: "sustain" / "release" files or "loopStart" / "loopEnd", of the variant or the alias
                     auto Part = [&](const char* key) {
@@ -1346,6 +1471,20 @@ namespace {
                         }
                     }
 
+                    // the file already in the bank: its entry again
+                    std::string fileKey{ std::format("{}|{}|{}|{}", (path.parent_path() / files[k].first).lexically_normal().string(),
+                                                     flac, streamedAsset, looping) };
+                    if (!asr) {
+                        auto same{ fileEntries.find(fileKey) };
+                        if (same != fileEntries.end()) {
+                            SetAliasNames(sa);
+                            sa.assetId.name = same->second;
+                            LOG_INFO("Added sound alias {}{} ({}, {}, the asset of {})", alias.name, files.size() > 1 ? std::format(" variant {}", k) : "",
+                                     type, GetAliasField(sa, *FindAliasField("PanType")) ? "3d" : "2d", files[k].first);
+                            continue;
+                        }
+                    }
+
                     // the asset of the variant, its id is the one of the entry
                     SndAssetBankEntryBo4 entry{};
                     if (!ReadSound(path.parent_path() / files[k].first, entry, flac)) {
@@ -1355,6 +1494,9 @@ namespace {
                     std::string entryName{ k ? std::format("{}/{}/{}", name, alias.name, k) : std::format("{}/{}", name, alias.name) };
                     entry.id = ctx.HashXHash(entryName) & 0x7FFFFFFFFFFFFFFFull;
                     entry.looping = looping ? 1 : 0;
+                    if (!asr) {
+                        fileEntries[fileKey] = entry.id;
+                    }
                     std::vector<SndAssetBankEntryBo4> parts{};
                     if (asr) {
                         SndAssetBankEntryBo4 sustain{}, release{};
@@ -1406,31 +1548,14 @@ namespace {
                         }
                     }
 
-                    sa.name = {};
-                    sa.name.name = ctx.HashXHash(alias.name);
-                    sa.subtitle = {};
-                    sa.facialAnimation = 0;
-                    sa.assetId = {};
+                    SetAliasNames(sa);
                     sa.assetId.name = entry.id;
-                    sa.assetIdSustain = {};
-                    sa.assetIdRelease = {};
                     if (!parts.empty()) {
                         sa.assetIdSustain.name = parts[0].id;
                     }
                     if (parts.size() > 1) {
                         sa.assetIdRelease.name = parts[1].id;
                     }
-                    sa.assetFileName = {};
-                    sa.assetFileName.name = bankHash;
-                    sa.assetFileNameSustain = sa.assetFileName;
-                    sa.assetFileNameRelease = sa.assetFileName;
-                    sa.revFilename = {};
-                    cull = std::max(
-                        cull, std::max(
-                                  GetAliasField(sa, *FindAliasField("DistMaxDry")),
-                                  GetAliasField(sa, *FindAliasField("DistMaxWet"))
-                              )
-                    );
 
                     LOG_INFO(
                         "Added sound alias {}{} ({}, {}{}{}{}{}, {:.1f} dB, {} Hz, {} channel(s), {} frames, 0x{:x} bytes)",
@@ -1468,6 +1593,23 @@ namespace {
             if (aliases.size() >= 0xFFFF) {
                 Fail("too many aliases");
                 return;
+            }
+
+            std::vector<SndAmbient> ambients{};
+            const rapidjson::Value* cfgAmbients{ Member(scfg.main, "ambients") };
+            if (cfgAmbients) {
+                if (!cfgAmbients->IsArray()) {
+                    Fail("ambients is a list of rooms");
+                    return;
+                }
+                for (const rapidjson::Value& v : cfgAmbients->GetArray()) {
+                    std::string error{};
+                    if (!ReadAmbient(ctx, v, ambients.emplace_back(), error)) {
+                        Fail(std::format("ambient room {}: {}", ambients.size() - 1, error));
+                        return;
+                    }
+                    LOG_INFO("Added ambient room {}{}", ambients.back().name, ambients.back().defaultRoom ? " (default room)" : "");
+                }
             }
 
             BankMusic music{};
@@ -1566,7 +1708,13 @@ namespace {
             ff.data.Align(2);
             ff.data.WriteStream(index);
 
-            // reverbs, ducks, ambients and the lookups stay empty
+            // reverbs, ducks and the lookups stay empty; Load_SndBank reads the ambients after the ducks, before the music
+            if (!ambients.empty()) {
+                bank.ambientCount = (uint32_t)ambients.size();
+                bank.ambients = (SndAmbient*)fastfile::ALLOC_PTR;
+                ff.data.Align(8);
+                ff.data.WriteStream(ambients.data(), ambients.size() * sizeof(ambients[0]));
+            }
             WriteBankMusic(ff, bank.musicSetCount, bank.musicSets, music);
 
             // the keys of the bank, the patch zone ones (0xF8) stay empty

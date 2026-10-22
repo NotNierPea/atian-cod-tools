@@ -362,6 +362,30 @@ namespace fastfile {
                     return false;
                 }
                 assetTypes = args[++i];
+            } else if (!_strcmpi("--only", arg)) {
+                // a file of asset names (or hash_x), one a line
+                if (i + 1 == endIndex) {
+                    LOG_ERROR("Missing value for param '{}'!", arg);
+                    return false;
+                }
+                std::string list{};
+                if (!utils::ReadFile(args[++i], list)) {
+                    LOG_ERROR("Can't read {}", args[i]);
+                    return false;
+                }
+                std::istringstream is{ list };
+                std::string line{};
+                while (std::getline(is, line)) {
+                    while (!line.empty() && (line.back() == '' || line.back() == ' ')) {
+                        line.pop_back();
+                    }
+                    if (!line.empty() && line[0] == '#') {
+                        line = line.substr(1);
+                    }
+                    if (!line.empty()) {
+                        onlyAssets.insert(hash::Hash64Pattern(line.data()) & hash::MASK63);
+                    }
+                }
             } else if (!_strcmpi("--patch", arg) || !strcmp("-p", arg)) {
                 m_fd = true;
             } else if (!strcmp("-c", arg) || !_strcmpi("--fc", arg)) {

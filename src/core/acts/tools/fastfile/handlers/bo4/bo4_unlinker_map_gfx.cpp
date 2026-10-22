@@ -2,6 +2,7 @@
 #include <tools/fastfile/handlers/handler_game_bo4.hpp>
 #include <core/hashes/raw_file_extractor.hpp>
 #include <tools/utils/data_utils.hpp>
+#include <tools/fastfile/handlers/bo4/bo4_xpak_reader.hpp>
 
 namespace {
     using namespace fastfile::handlers::bo4;
@@ -846,6 +847,268 @@ namespace {
 
     static_assert(sizeof(GfxWorld) == 0x1ab0);
 
+    /*
+     * The arrays of the retail loader (sub_142E1E830) as offsets in the 0x1AB0 header: the pointer, its count (4 or 8
+     * bytes) and the size of an element. The raw dump writes the header and each of them, the templates of the linker.
+     */
+    struct GfxWorldRawArray {
+        uint32_t ptr;
+        uint32_t count;
+        uint32_t countSize;
+        uint32_t elemSize;
+    };
+    constexpr GfxWorldRawArray gfxWorldRawArrays[]{
+        { 0xC0, 0xB8, 8, 0xC }, { 0xD0, 0xC8, 8, 0x10 }, { 0x188, 0x180, 4, 0x50 }, { 0x578, 0x570, 8, 0x18 },
+        { 0x588, 0x580, 4, 0x54 }, { 0x598, 0x590, 4, 0xD8 }, { 0x5F0, 0x5E8, 4, 0xC0 }, { 0x600, 0x5F8, 4, 0xC0 },
+        { 0x1620, 0x1618, 4, 0x40 }, { 0x1630, 0x1628, 4, 0xB0 }, { 0x1640, 0x1638, 4, 0xB0 }, { 0x1660, 0x1658, 4, 0x40 },
+        { 0x1670, 0x1668, 4, 0xB0 }, { 0x1680, 0x1678, 4, 0xB0 }, { 0x1690, 0x1688, 4, 0xC4 }, { 0x16A0, 0x1698, 4, 0xC4 },
+        { 0x16B0, 0x16A8, 4, 0xB4 }, { 0x16C0, 0x16B8, 4, 0xB4 }, { 0x1760, 0x1758, 4, 0x200 }, { 0x1770, 0x1768, 4, 0xB4 },
+        { 0x1780, 0x1778, 4, 0xB4 }, { 0x1790, 0x1788, 4, 0x54 }, { 0x17A0, 0x1798, 4, 0xB4 }, { 0x17B0, 0x17A8, 4, 0xB4 },
+        { 0x17C0, 0x17B8, 4, 0xB4 }, { 0x17D0, 0x17C8, 4, 0xB4 }, { 0x17E0, 0x17D8, 4, 0x90 }, { 0x17F0, 0x17E8, 4, 0xE0 },
+        { 0x1930, 0x1928, 4, 0x48 }, { 0x1940, 0x1938, 4, 0xB8 }, { 0x1950, 0x1948, 4, 0xB8 }, { 0x1960, 0x1958, 4, 0xFD0 },
+        { 0x1A00, 0x19F8, 4, 0x48 }, { 0x1A10, 0x1A08, 4, 0xB8 }, { 0x1A20, 0x1A18, 4, 0xB8 }, { 0x1A30, 0x1A28, 4, 0x2B0 },
+        { 0x1A38, 0x1788, 4, 0x40 }, { 0x1A40, 0x17D8, 4, 0x40 }, { 0x1A48, 0x1758, 4, 0x40 }, { 0x1A50, 0x1958, 4, 0x40 },
+        { 0x1A58, 0x1A28, 4, 0x40 },
+        // in draw (0xD8): the vertex data (0xC and 0x14 by vertex), the indices
+        { 0x100, 0xF8, 4, 0xC }, { 0x128, 0xF8, 4, 0x14 }, { 0x158, 0x150, 4, 0x2 },
+    };
+
+    void DumpGfxWorldRaw(fastfile::FastFileOption& opt, const std::filesystem::path& outDir, const GfxWorld& asset) {
+        std::filesystem::path rawDir{ outDir / "gfx_map_raw" };
+        std::filesystem::create_directories(rawDir);
+        const byte* header{ (const byte*)&asset };
+        utils::WriteFile(rawDir / "header.bin", header, sizeof(asset));
+        // the surfaces (dpvs 0x240 = 0x3F8, 0x60 each, count 0x18, material at 0x48) and their materials' names
+        int32_t surfaceCount{ *(int32_t*)(header + 0x18) };
+        const byte* surfaces{ *(const byte* const*)(header + 0x3F8) };
+        if (surfaces && surfaceCount > 0) {
+            utils::WriteFile(rawDir / "surfaces.bin", surfaces, 0x60 * (size_t)surfaceCount);
+            BO4JsonWriter sj{};
+            sj.BeginArray();
+            for (int32_t i = 0; i < surfaceCount; i++) {
+                void* mat{ *(void* const*)(surfaces + 0x60 * i + 0x48) };
+                sj.BeginObject();
+                sj.WriteFieldValueXAsset("material", ASSET_TYPE_MATERIAL, mat);
+                sj.EndObject();
+            }
+            sj.EndArray();
+            sj.WriteToFile(rawDir / "surface_materials.json");
+        }
+        // the dpvs block (0x1B8, 0x2E0) as it is loaded
+        utils::WriteFile(rawDir / "dpvs.bin", header + 0x1B8, 0x2E0);
+        /*
+         * the static models (dpvs +0x04 count, sub_142E1F510): the first ones of the draw insts (+0x248, 0x38), the 0x40s
+         * at +0x250, the 8s at +0x258, the bytes at +0x2A0 (count +0x298) and their models' names; the 3 cull trees (+0x188,
+         * +0x1B8, +0x1E8, 0x30: data size 0, data 8, count 0x10, indices 0x18, count 0x20, bounds 0x28): their start
+         */
+        {
+            const byte* dpvs{ header + 0x1B8 };
+            const uint32_t smodelCount{ *(const uint32_t*)(dpvs + 4) };
+            const size_t sample{ std::min<size_t>(smodelCount, 8) };
+            auto RawAt = [&](size_t off, size_t elem, size_t count, const char* file) {
+                const byte* ptr{ *(const byte* const*)(dpvs + off) };
+                if (ptr && count) {
+                    utils::WriteFile(rawDir / file, ptr, elem * count);
+                }
+            };
+            RawAt(0x248, 0x38, sample, "smodel_drawinsts.bin");
+            RawAt(0x250, 0x40, sample, "smodel_250.bin");
+            RawAt(0x258, 0x8, sample, "smodel_258.bin");
+            RawAt(0x2A0, 1, std::min<size_t>(*(const uint64_t*)(dpvs + 0x298), 0x40), "smodel_2a0.bin");
+            RawAt(0x290, 1, std::min<size_t>(*(const uint64_t*)(dpvs + 0x288), 0x40), "smodel_290.bin");
+            const byte* insts{ *(const byte* const*)(dpvs + 0x248) };
+            if (insts) {
+                BO4JsonWriter mj{};
+                mj.BeginArray();
+                for (size_t i = 0; i < sample; i++) {
+                    mj.BeginObject();
+                    mj.WriteFieldValueXAsset("model", ASSET_TYPE_XMODEL, *(void* const*)(insts + 0x38 * i));
+                    mj.EndObject();
+                }
+                mj.EndArray();
+                mj.WriteToFile(rawDir / "smodel_models.json");
+            }
+            for (size_t t = 0; t < 3; t++) {
+                const byte* tree{ dpvs + 0x188 + 0x30 * t };
+                const byte* data{ *(const byte* const*)(tree + 8) };
+                const uint64_t dataSize{ *(const uint64_t*)tree };
+                if (data && dataSize) {
+                    utils::WriteFile(rawDir / std::format("tree{}_data.bin", t), data, std::min<size_t>(dataSize, 0x200));
+                }
+                const byte* indices{ *(const byte* const*)(tree + 0x18) };
+                if (indices) {
+                    utils::WriteFile(rawDir / std::format("tree{}_indices.bin", t), indices, 4 * std::min<size_t>(*(const uint64_t*)(tree + 0x10), 0x40));
+                }
+                const byte* bounds{ *(const byte* const*)(tree + 0x28) };
+                if (bounds) {
+                    utils::WriteFile(rawDir / std::format("tree{}_28.bin", t), bounds, std::min<size_t>(*(const uint64_t*)(tree + 0x20) * 4, 0x100));
+                }
+            }
+        }
+
+        // the lighting (0x1F8, sub_142E214B0) and the streamerworld (0x100, sub_142E2E760) it points to
+        if (asset.lighting) {
+            utils::WriteFile(rawDir / "lighting.bin", asset.lighting, 0x1F8);
+            // its images: 4 groups of 3 at 0x30, 4 at 0x178
+            BO4JsonWriter lj{};
+            lj.BeginObject();
+            lj.WriteFieldValueXAssetArray("images30", ASSET_TYPE_IMAGE, 12, (byte*)asset.lighting + 0x30, false);
+            lj.WriteFieldValueXAssetArray("images178", ASSET_TYPE_IMAGE, 4, (byte*)asset.lighting + 0x178, false);
+            lj.EndObject();
+            lj.WriteToFile(rawDir / "lighting_images.json");
+
+            // its 0x90/0x98 list (0x1D0 each: 0x10, then 4 blocks of 0x70 with an object at 0x60)
+            uint32_t list90{ *(uint32_t*)((byte*)asset.lighting + 0x90) };
+            byte* l90{ *(byte**)((byte*)asset.lighting + 0x98) };
+            for (uint32_t i = 0; l90 && i < list90; i++) {
+                utils::WriteFile(rawDir / std::format("lighting_90_{}.bin", i), l90 + 0x1D0 * i, 0x1D0);
+                for (size_t j = 0; j < 4; j++) {
+                    if (byte* obj{ *(byte**)(l90 + 0x1D0 * i + 0x10 + 0x70 * j + 0x60) }) {
+                        utils::WriteFile(rawDir / std::format("lighting_90_{}_obj{}.bin", i, j), obj, 0x70);
+                    }
+                }
+            }
+
+            // its lighting states (0x10/0x18, 0x14C0 each), with the 4 objects at 0xF10 + 0x80 * i (0x70) and their
+            // stream keys (0x48)
+            uint32_t states{ *(uint32_t*)((byte*)asset.lighting + 0x10) };
+            byte* stateList{ *(byte**)((byte*)asset.lighting + 0x18) };
+            for (uint32_t i = 0; stateList && i < states; i++) {
+                byte* state{ stateList + 0x14C0 * i };
+                utils::WriteFile(rawDir / std::format("lighting_state{}.bin", i), state, 0x14C0);
+                // the 4 records at 0x1240 (0x30: 3 images, the streamed data handle at 0x18, u32s 0x20/0x28)
+                BO4JsonWriter rj{};
+                rj.BeginObject();
+                for (size_t j = 0; j < 4; j++) {
+                    byte* rec{ state + 0x1240 + 0x30 * j };
+                    rj.WriteFieldValueXAssetArray(utils::va("images%d", (int)j), ASSET_TYPE_IMAGE, 3, rec, false);
+                    if (byte* handle{ *(byte**)(rec + 0x18) }) {
+                        utils::WriteFile(rawDir / std::format("lighting_state{}_rec{}_handle.bin", i, j), handle, 0x48);
+                        uint32_t size{ *(uint32_t*)(handle + 0x3C) };
+                        byte* data{ *(byte**)(handle + 0x40) };
+                        if (data && size && size < 0x1000000) {
+                            utils::WriteFile(rawDir / std::format("lighting_state{}_rec{}_data.bin", i, j), data, size);
+                        }
+                    }
+                    if (uint32_t* u{ *(uint32_t**)(rec + 0x28) }) {
+                        utils::WriteFile(rawDir / std::format("lighting_state{}_rec{}_u32.bin", i, j), u, 4 * *(uint64_t*)(rec + 0x20));
+                    }
+                }
+                // the 4 records at 0x10E0 (0x58: images count 0 and list 8, 0x144s at 0x10 ([0x50] + 1), 0x25Cs at 0x18
+                // ([0x54]), inline 0x30 at 0x20)
+                for (size_t j = 0; j < 4; j++) {
+                    byte* rec{ state + 0x10E0 + 0x58 * j };
+                    uint64_t count{ *(uint64_t*)rec };
+                    rj.WriteFieldValueNumber(utils::va("q%dImageCount", (int)j), count);
+                    rj.WriteFieldValueXAssetArray(utils::va("q%dImages", (int)j), ASSET_TYPE_IMAGE, count, *(void**)(rec + 8), false);
+                    rj.WriteFieldValueNumber(utils::va("q%d50", (int)j), *(uint32_t*)(rec + 0x50));
+                    rj.WriteFieldValueNumber(utils::va("q%d54", (int)j), *(uint32_t*)(rec + 0x54));
+                    if (byte* d144{ *(byte**)(rec + 0x10) }) {
+                        utils::WriteFile(rawDir / std::format("lighting_state{}_q{}_144.bin", i, j), d144, 0x144 * (*(uint32_t*)(rec + 0x50) + 1));
+                    }
+                }
+                // the 4 sky entries at 0x1308 (0x28: xmodel 0, rotation 8, distance 0xC, image 0x18, the sun's KLF 0x20,
+                // sub_142E1DED0), the KLF as the fx dumper writes it (the lighting linker's "lensFlare")
+                for (size_t j = 0; j < 4; j++) {
+                    byte* e{ state + 0x1308 + 0x28 * j };
+                    rj.WriteFieldValueXAsset(utils::va("sky%dModel", (int)j), ASSET_TYPE_XMODEL, *(void**)e);
+                    rj.WriteFieldValueXAsset(utils::va("sky%dImage", (int)j), ASSET_TYPE_IMAGE, *(void**)(e + 0x18));
+                    if (const byte* klf{ *(const byte**)(e + 0x20) }) {
+                        rj.WriteFieldValueString(utils::va("sky%dLensFlare", (int)j), std::format("#hash_{:x}", *(uint64_t*)(klf + 0x18) & 0x7FFFFFFFFFFFFFFFull));
+                        BO4JsonWriter kj{};
+                        WriteKlfJson(kj, klf);
+                        kj.WriteToFile(rawDir / std::format("lighting_state{}_sky{}_klf.json", i, j));
+                    }
+                    std::string raw{};
+                    for (size_t k = 0; k < 0x28; k++) {
+                        raw += std::format("{:02x}", e[k]);
+                    }
+                    rj.WriteFieldValueString(utils::va("sky%dRaw", (int)j), raw);
+                }
+                rj.EndObject();
+                rj.WriteToFile(rawDir / std::format("lighting_state{}_records.json", i));
+
+                for (size_t j = 0; j < 4; j++) {
+                    byte* obj{ *(byte**)(state + 0xF10 + 0x80 * j) };
+                    if (!obj) {
+                        continue;
+                    }
+                    utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}.bin", i, j), obj, 0x70);
+                    if (byte* key{ *(byte**)obj }) {
+                        utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_key.bin", i, j), key, 0x48);
+                        // its streamed data (the xpak entry of its XPakEntryInfo at 0x10), the map's paks first
+                        std::vector<byte> data{};
+                        xpak::AddHint(outDir.stem().string().c_str());
+                        if (*(uint64_t*)(key + 0x10) && xpak::ReadEntry(opt, *(uint64_t*)(key + 0x10), 0x40000000, data)) {
+                            // the read keeps the asked size: the zeros after the data out
+                            while (!data.empty() && !data.back()) {
+                                data.pop_back();
+                            }
+                            utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_data.bin", i, j), data.data(), data.size());
+                        }
+                    }
+                    // 0x8/0x10: u32s (count 0x1C); 0x58/0x68: 0x30 (u16s count 0x10 at 0x18, image 0x20); 0x60: 0x40 texture
+                    uint32_t c{ *(uint32_t*)(obj + 0x1C) };
+                    for (size_t o : { 0x8, 0x10 }) {
+                        if (byte* p{ *(byte**)(obj + o) }) {
+                            utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_{:x}.bin", i, j, o), p, 4 * c);
+                        }
+                    }
+                    for (size_t o : { 0x58, 0x68 }) {
+                        if (byte* p{ *(byte**)(obj + o) }) {
+                            utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_{:x}.bin", i, j, o), p, 0x30);
+                            if (byte* u{ *(byte**)(p + 0x18) }) {
+                                utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_{:x}_u16.bin", i, j, o), u, 2 * *(uint32_t*)(p + 0x10));
+                            }
+                            if (void* img{ *(void**)(p + 0x20) }) {
+                                BO4JsonWriter ij{};
+                                ij.BeginObject();
+                                ij.WriteFieldValueXAsset("image", ASSET_TYPE_IMAGE, img);
+                                ij.EndObject();
+                                ij.WriteToFile(rawDir / std::format("lighting_state{}_obj{}_{:x}_image.json", i, j, o));
+                                // the image itself (0x88: format 0x64, w/h/d 0x68, streamed parts 0x30)
+                                utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_{:x}_image.bin", i, j, o), img, 0x88);
+                            }
+                        }
+                    }
+                    if (byte* p{ *(byte**)(obj + 0x60) }) {
+                        utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_60.bin", i, j), p, 0x40);
+                        // its data (w x h bytes at 0x8/0xC, the shadow data's fallback while the stream isn't in)
+                        if (byte* t{ *(byte**)p }) {
+                            utils::WriteFile(rawDir / std::format("lighting_state{}_obj{}_60_data.bin", i, j), t,
+                                (size_t)*(uint32_t*)(p + 0x8) * *(uint32_t*)(p + 0xC));
+                        }
+                    }
+                }
+            }
+        }
+        if (asset.streamerworld) {
+            utils::WriteFile(rawDir / "streamerworld.bin", asset.streamerworld, 0x100);
+        }
+
+        BO4JsonWriter json{};
+        json.BeginObject();
+        for (const GfxWorldRawArray& arr : gfxWorldRawArrays) {
+            const byte* data{ *(const byte* const*)(header + arr.ptr) };
+            uint64_t count{ arr.countSize == 8 ? *(const uint64_t*)(header + arr.count) : *(const uint32_t*)(header + arr.count) };
+            if (!data && !count) {
+                continue;
+            }
+            std::string key{ std::format("{:x}", arr.ptr) };
+            json.WriteFieldNameString(key.c_str());
+            json.BeginObject();
+            json.WriteFieldValueNumber("count", count);
+            json.WriteFieldValueNumber("elemSize", arr.elemSize);
+            json.WriteFieldValueBool("data", data != nullptr);
+            json.EndObject();
+            if (data && count) {
+                utils::WriteFile(rawDir / (key + ".bin"), data, (size_t)(count * arr.elemSize));
+            }
+        }
+        json.EndObject();
+        json.WriteToFile(rawDir / "arrays.json");
+    }
+
     class GfxWorldWorker : public Worker {
 
         void Unlink(fastfile::FastFileOption& opt, void* ptr) {
@@ -859,6 +1122,7 @@ namespace {
             std::filesystem::path outDir{ opt.m_output / "bo4" / "source" / name };
 
             std::filesystem::create_directories(outDir);
+            DumpGfxWorldRaw(opt, outDir, asset);
             {
                 BO4JsonWriter json{};
                 json.BeginObject();

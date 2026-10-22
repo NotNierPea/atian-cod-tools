@@ -1443,6 +1443,83 @@ namespace {
         return res;
     }
 
+    // the files of a casc storage matching a mask, written under the output dir with their path
+    int cascextract(Process& proc, int argc, const char* argv[]) {
+        if (argc < 5) {
+            return tool::BAD_USAGE;
+        }
+
+        HANDLE storage{};
+        if (!CascOpenStorage(argv[2], 0, &storage)) {
+            LOG_ERROR("Can't open local path {}", argv[2]);
+            return tool::BASIC_ERROR;
+        }
+        utils::CloseEnd cs{ [storage] { CascCloseStorage(storage); } };
+
+        CASC_FIND_DATA data;
+        HANDLE find{ CascFindFirstFile(storage, argv[3], &data, NULL) };
+        if (!find) {
+            LOG_ERROR("No file matching {}", argv[3]);
+            return tool::BASIC_ERROR;
+        }
+        utils::CloseEnd cf{ [find] { CascFindClose(find); } };
+
+        int ret{ tool::OK };
+        do {
+            if (!data.bFileAvailable) {
+                continue;
+            }
+            HANDLE fhandle{};
+            if (!CascOpenFile(storage, data.szFileName, CASC_LOCALE_ALL, 0, &fhandle)) {
+                LOG_ERROR("Can't open {}", data.szFileName);
+                ret = tool::BASIC_ERROR;
+                continue;
+            }
+            utils::CloseEnd cfh{ [fhandle] { CascCloseFile(fhandle); } };
+            std::vector<byte> buff(data.FileSize);
+            DWORD read{};
+            if (!CascReadFile(fhandle, buff.data(), (DWORD)buff.size(), &read) || read != buff.size()) {
+                LOG_ERROR("Can't read {}", data.szFileName);
+                ret = tool::BASIC_ERROR;
+                continue;
+            }
+            std::filesystem::path out{ std::filesystem::path{ argv[4] } / data.szFileName };
+            std::filesystem::create_directories(out.parent_path());
+            if (!utils::WriteFile(out, buff)) {
+                LOG_ERROR("Can't write {}", out.string());
+                ret = tool::BASIC_ERROR;
+                continue;
+            }
+            LOG_INFO("Extracted {} (0x{:x} bytes)", out.string(), buff.size());
+        } while (CascFindNextFile(find, &data));
+
+        return ret;
+    }
+
+    // the files of a casc storage matching a mask, with their size
+    int casclist(Process& proc, int argc, const char* argv[]) {
+        if (argc < 4) {
+            return tool::BAD_USAGE;
+        }
+        HANDLE storage{};
+        if (!CascOpenStorage(argv[2], 0, &storage)) {
+            LOG_ERROR("Can't open local path {}", argv[2]);
+            return tool::BASIC_ERROR;
+        }
+        utils::CloseEnd cs{ [storage] { CascCloseStorage(storage); } };
+        CASC_FIND_DATA data;
+        HANDLE find{ CascFindFirstFile(storage, argv[3], &data, NULL) };
+        if (!find) {
+            LOG_ERROR("No file matching {}", argv[3]);
+            return tool::BASIC_ERROR;
+        }
+        utils::CloseEnd cf{ [find] { CascFindClose(find); } };
+        do {
+            LOG_INFO("{} 0x{:x}{}", data.szFileName, (uint64_t)data.FileSize, data.bFileAvailable ? "" : " (not available)");
+        } while (CascFindNextFile(find, &data));
+        return tool::OK;
+    }
+
     int h32ck(Process& proc, int argc, const char* argv[]) {
         if (argc < 3) {
             return tool::BAD_USAGE;
@@ -1521,5 +1598,7 @@ ADD_TOOL(fdtest, "fastfile", " [fd]", "test fd file", fdtest);
 ADD_TOOL(fftest, "fastfile", " [ff]", "test fastfile", fftest);
 ADD_TOOL(ffexe, "fastfile", " [ff]", "test fastfile", ffexe);
 ADD_TOOL(casctest, "fastfile", " [path]", "test casc", nullptr, casctest);
+ADD_TOOL(cascextract, "fastfile", " [path] [mask] [out]", "extract casc files", nullptr, cascextract);
+ADD_TOOL(casclist, "fastfile", " [path] [mask]", "list casc files", nullptr, casclist);
 ADD_TOOL(h32ck, "fastfile", " [path]", "hash checksum", nullptr, h32ck);
 ADD_TOOL(bdiffinst, "fastfile", " [game]", "test bdiff", bdiffinst);

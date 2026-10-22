@@ -144,6 +144,256 @@ namespace {
         out.insert(out.end(), (const byte*)&v, (const byte*)&v + sizeof(T));
     }
 
+    std::vector<byte> Unhex(const rapidjson::Value* v) {
+        std::vector<byte> out{};
+        if (!v || !v->IsString()) {
+            return out;
+        }
+        const char* s{ v->GetString() };
+        size_t n{ v->GetStringLength() / 2 };
+        out.resize(n);
+        auto Nib = [](char c) -> byte { return (byte)(c <= '9' ? c - '0' : (c | 0x20) - 'a' + 10); };
+        for (size_t i = 0; i < n; i++) {
+            out[i] = (byte)(Nib(s[2 * i]) << 4 | Nib(s[2 * i + 1]));
+        }
+        return out;
+    }
+
+    const rapidjson::Value* Member(const rapidjson::Value& v, const char* name) {
+        if (!v.IsObject()) {
+            return nullptr;
+        }
+        auto it{ v.FindMember(name) };
+        return it == v.MemberEnd() || it->value.IsNull() ? nullptr : &it->value;
+    }
+
+    /*
+     * A stock anim as the bo4 dumper writes it ("lossless": true): the header as it was, its arrays in the loader's
+     * order (sub_142E35510), the script strings by name. A pointer is written when the dumped one wasn't null.
+     */
+    void LinkLossless(BO4LinkContext& ctx, BO4FFContext& ff, const rapidjson::Value& root, const std::string& assetName) {
+        std::vector<byte> header{ Unhex(Member(root, "header")) };
+        if (header.size() != XANIM_PARTS_SIZE) {
+            LOG_ERROR("xanim {}: bad header", assetName);
+            ctx.error = true;
+            return;
+        }
+        auto Scr = [&ff](const rapidjson::Value* v) -> uint32_t {
+            if (!v || !v->IsString()) {
+                return 0;
+            }
+            // map zones (zm_towers) dump the unmanaged fx kind cut to 16 chars, the game only knows its own string
+            if (!std::strcmp(v->GetString(), "play unmanaged f")) {
+                return ff.data.AddScrStringKeepEmpty("play unmanaged fx");
+            }
+            return ff.data.AddScrStringKeepEmpty(v->GetString());
+        };
+        auto Next = [](byte* p, size_t off) { *(uintptr_t*)(p + off) = fastfile::linker::memory::POINTER_NEXT; };
+        auto Write = [&ff](const std::vector<byte>& data, size_t align) {
+            ff.data.Align(align);
+            if (!data.empty()) {
+                ff.data.WriteStream(data.data(), data.size());
+            }
+        };
+
+        ff.data.PushStream(XFILE_BLOCK_TEMP);
+        byte* a{ ff.data.AllocStreamPtr<byte>(XANIM_PARTS_SIZE) };
+        std::memcpy(a, header.data(), XANIM_PARTS_SIZE);
+        auto Had = [&header](size_t off) { return *(uint64_t*)&header[off] != 0; };
+        static constexpr size_t POINTERS[]{ 0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50,
+                                            0x58, 0x60, 0x68, 0x80, 0x88, 0x90, 0x98, 0xA0, 0xB0 };
+        for (size_t off : POINTERS) {
+            *(uint64_t*)(a + off) = 0;
+        }
+        *(uint64_t*)(a + 0x78) = 0;
+        *(uint32_t*)(a + 0xA8) = Scr(Member(root, "branchName"));
+        uint16_t numframes{ *(uint16_t*)(a + 0x114) };
+
+        ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
+        // bone names
+        if (Had(0x08)) {
+            Next(a, 0x08);
+            uint16_t count{ *(uint16_t*)(a + 0x10E) };
+            const rapidjson::Value* names{ Member(root, "names") };
+            ff.data.Align(4);
+            uint32_t* out{ ff.data.AllocStreamPtr<uint32_t>(count) };
+            for (uint16_t i = 0; i < count; i++) {
+                out[i] = names && names->IsArray() && i < names->Size() ? Scr(&(*names)[i]) : 0;
+            }
+        }
+        // notifies
+        auto Notifies = [&](size_t off, const char* key, size_t count) {
+            if (!Had(off)) {
+                return;
+            }
+            Next(a, off);
+            const rapidjson::Value* list{ Member(root, key) };
+            ff.data.Align(8);
+            byte* out{ ff.data.AllocStreamPtr<byte>(NOTIFY_SIZE * count) };
+            std::memset(out, 0, NOTIFY_SIZE * count);
+            for (size_t i = 0; i < count && list && list->IsArray() && i < list->Size(); i++) {
+                const rapidjson::Value& n{ (*list)[(rapidjson::SizeType)i] };
+                std::vector<byte> raw{ Unhex(Member(n, "raw")) };
+                byte* e{ out + NOTIFY_SIZE * i };
+                std::memcpy(e, raw.data(), std::min(raw.size(), NOTIFY_SIZE));
+                *(uint64_t*)(e + 8) = 0;
+                *(uint32_t*)(e + 0x10) = Scr(Member(n, "type"));
+                *(uint32_t*)(e + 0x14) = Scr(Member(n, "param1"));
+                *(uint32_t*)(e + 0x18) = Scr(Member(n, "param2"));
+                *(uint32_t*)(e + 0x1C) = Scr(Member(n, "param3"));
+            }
+        };
+        Notifies(0x38, "notify", *(uint16_t*)(a + 0x110));
+        Notifies(0x48, "shutdownNotify", a[0x126]);
+        Notifies(0x40, "startupNotify", a[0x125]);
+        // 0x30
+        if (Had(0x30)) {
+            Next(a, 0x30);
+            size_t count{ a[0x124] };
+            const rapidjson::Value* list{ Member(root, "list30") };
+            ff.data.Align(4);
+            byte* out{ ff.data.AllocStreamPtr<byte>(0x18 * count) };
+            std::memset(out, 0, 0x18 * count);
+            for (size_t i = 0; i < count && list && list->IsArray() && i < list->Size(); i++) {
+                const rapidjson::Value& n{ (*list)[(rapidjson::SizeType)i] };
+                std::vector<byte> raw{ Unhex(Member(n, "raw")) };
+                byte* e{ out + 0x18 * i };
+                std::memcpy(e, raw.data(), std::min<size_t>(raw.size(), 0x18));
+                *(uint32_t*)(e + 0) = Scr(Member(n, "str0"));
+                *(uint32_t*)(e + 0x10) = Scr(Member(n, "str10"));
+                *(uint32_t*)(e + 0x14) = Scr(Member(n, "str14"));
+            }
+        }
+        // the delta part (sub_142E35180): each part's header and inline data, then its keys
+        const rapidjson::Value* delta{ Member(root, "deltaPart") };
+        if (Had(0x18) && delta) {
+            Next(a, 0x18);
+            ff.data.Align(8);
+            void** dp{ ff.data.AllocStreamPtr<void*>(3) };
+            dp[0] = dp[1] = dp[2] = nullptr;
+            const char* keys[]{ "trans", "quat2", "quat" };
+            for (size_t i = 0; i < 3; i++) {
+                const rapidjson::Value* part{ Member(*delta, keys[i]) };
+                if (!part) {
+                    continue;
+                }
+                dp[i] = (void*)fastfile::linker::memory::POINTER_NEXT;
+                std::vector<byte> inl{ Unhex(Member(*part, "header")) };
+                inl.resize(8);
+                uint16_t size{ *(uint16_t*)inl.data() };
+                std::vector<byte> frames{};
+                bool hasFrames{};
+                if (!size) {
+                    std::vector<byte> f0{ Unhex(Member(*part, "frame0")) };
+                    f0.resize(i == 0 ? 12 : i == 1 ? 4 : 8);
+                    inl.insert(inl.end(), f0.begin(), f0.end());
+                } else {
+                    if (i == 0) {
+                        std::vector<byte> ms{ Unhex(Member(*part, "minsSize")) };
+                        ms.resize(0x18);
+                        inl.insert(inl.end(), ms.begin(), ms.end());
+                    }
+                    size_t framesPtr{ inl.size() };
+                    inl.resize(inl.size() + 8);
+                    std::vector<byte> idx{ Unhex(Member(*part, "indices")) };
+                    idx.resize((size + 1ull) * (numframes >= LONG_ANIM_FRAMES ? 2 : 1));
+                    inl.insert(inl.end(), idx.begin(), idx.end());
+                    const rapidjson::Value* fr{ Member(*part, "frames") };
+                    hasFrames = fr != nullptr;
+                    frames = Unhex(fr);
+                    if (hasFrames) {
+                        *(uintptr_t*)&inl[framesPtr] = fastfile::linker::memory::POINTER_NEXT;
+                    }
+                }
+                byte smallTrans{ inl[2] };
+                Write(inl, 8);
+                if (hasFrames) {
+                    // trans: 3 bytes keys (smallTrans) or 3 u16, quat2 4 bytes, quat 8
+                    Write(frames, i == 0 ? (smallTrans ? 1 : 2) : i == 1 ? 4 : 8);
+                }
+            }
+        }
+        // the data streams (DB_PushStreamPos(XFILE_BLOCK_MEMMAPPED) keeps the current block on pc)
+        auto Stream = [&](size_t off, const char* key, size_t align) {
+            if (!Had(off)) {
+                return;
+            }
+            Next(a, off);
+            Write(Unhex(Member(root, key)), align);
+        };
+        Stream(0x58, "dataByte", 1);
+        Stream(0x90, "dataShort", 2);
+        Stream(0x80, "dataInt", 4);
+        Stream(0x98, "randomDataShort", 2);
+        Stream(0x68, "randomDataByte", 1);
+        Stream(0x88, "randomDataInt", 4);
+        Stream(0x60, "extraChannelData", 1);
+        Stream(0xA0, "indices", numframes >= LONG_ANIM_FRAMES ? 2 : 1);
+        Stream(0x28, "list28", 4);
+        Stream(0x20, "list20", 4);
+        if (Had(0x50)) {
+            Next(a, 0x50);
+            std::vector<byte> l50{ Unhex(Member(root, "list50")) };
+            l50.resize(0x68);
+            bool inner{ *(uint64_t*)l50.data() != 0 };
+            *(uint64_t*)l50.data() = inner ? fastfile::linker::memory::POINTER_NEXT : 0;
+            Write(l50, 8);
+            if (inner) {
+                Write(Unhex(Member(root, "list50Data")), 2);
+            }
+        }
+        uint16_t count116{ *(uint16_t*)(a + 0x116) };
+        if (Had(0x10)) {
+            Next(a, 0x10);
+            const rapidjson::Value* list{ Member(root, "list10") };
+            ff.data.Align(8);
+            byte* out{ ff.data.AllocStreamPtr<byte>(0x18ull * count116) };
+            std::memset(out, 0, 0x18ull * count116);
+            std::vector<std::pair<std::vector<byte>, std::vector<byte>>> data(count116);
+            for (size_t i = 0; i < count116 && list && list->IsArray() && i < list->Size(); i++) {
+                const rapidjson::Value& n{ (*list)[(rapidjson::SizeType)i] };
+                std::vector<byte> raw{ Unhex(Member(n, "raw")) };
+                byte* e{ out + 0x18 * i };
+                std::memcpy(e, raw.data(), std::min<size_t>(raw.size(), 0x18));
+                for (size_t k = 0; k < 2; k++) {
+                    size_t off{ k ? 0x10ull : 8ull };
+                    bool had{ *(uint64_t*)(e + off) != 0 };
+                    *(uint64_t*)(e + off) = had ? fastfile::linker::memory::POINTER_NEXT : 0;
+                }
+                data[i] = { Unhex(Member(n, "data8")), Unhex(Member(n, "data10")) };
+            }
+            for (size_t i = 0; i < count116; i++) {
+                byte* e{ out + 0x18 * i };
+                if (*(uint64_t*)(e + 8)) {
+                    Write(data[i].first, 2);
+                }
+                if (*(uint64_t*)(e + 0x10)) {
+                    Write(data[i].second, 4);
+                }
+            }
+        }
+        if (Had(0x00)) {
+            Next(a, 0x00);
+            const rapidjson::Value* list{ Member(root, "list00") };
+            ff.data.Align(4);
+            byte* out{ ff.data.AllocStreamPtr<byte>(8ull * count116) };
+            std::memset(out, 0, 8ull * count116);
+            for (size_t i = 0; i < count116 && list && list->IsArray() && i < list->Size(); i++) {
+                const rapidjson::Value& n{ (*list)[(rapidjson::SizeType)i] };
+                std::vector<byte> raw{ Unhex(Member(n, "raw")) };
+                std::memcpy(out + 8 * i, raw.data(), std::min<size_t>(raw.size(), 8));
+                *(uint32_t*)(out + 8 * i) = Scr(Member(n, "str"));
+            }
+        }
+        if (Had(0xB0)) {
+            LOG_ERROR("xanim {}: streamed anims aren't supported", assetName);
+            ctx.error = true;
+        }
+        ff.data.PopStream();
+        ff.data.PopStream();
+        LOG_INFO("Added asset xanim {} (hash_{:x}), lossless", assetName, *(uint64_t*)(a + 0x70));
+    }
+
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -164,6 +414,11 @@ namespace {
             }
             const rapidjson::Value& root{ cfg.main };
             std::string assetName{ cfg.GetString("name", rfpath.string().c_str()) };
+            // a stock anim from the dumper
+            if (Member(root, "lossless")) {
+                LinkLossless(ctx, ff, root, assetName);
+                return;
+            }
             std::string gltfPath{ cfg.GetString("gltf", "") };
             double framerate{ cfg.GetDouble("framerate", 30.0) };
             double scale{ cfg.GetDouble("scale", 1.0) };

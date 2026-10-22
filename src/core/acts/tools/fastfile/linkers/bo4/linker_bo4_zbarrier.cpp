@@ -54,6 +54,30 @@ namespace {
     };
     static_assert(sizeof(ZBarrierDef) == 0x540);
 
+    // the dumper's key (bo4_unlinker_zbarrier) or the older p-prefixed one
+    template<typename CF>
+    const char* Key(CF& cfg, const char* key, const char* old) {
+        const char* v{ cfg.GetCString(key) };
+        return v ? v : cfg.GetCString(old);
+    }
+
+    // a vector as the dumper writes it ("x y z") or an array
+    void Vector(const rapidjson::Value& obj, const char* key, vec3_t& vec) {
+        float* out{ reinterpret_cast<float*>(&vec) };
+        out[0] = out[1] = out[2] = 0;
+        auto it{ obj.FindMember(key) };
+        if (it == obj.MemberEnd()) {
+            return;
+        }
+        if (it->value.IsString()) {
+            std::sscanf(it->value.GetString(), "%f %f %f", &out[0], &out[1], &out[2]);
+        } else if (it->value.IsArray()) {
+            for (rapidjson::SizeType i = 0; i < it->value.Size() && i < 3; i++) {
+                out[i] = it->value[i].IsNumber() ? it->value[i].GetFloat() : 0;
+            }
+        }
+    }
+
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -107,7 +131,7 @@ namespace {
 
             ctx.LinkAsset(
                 XAssetType::ASSET_TYPE_XMODEL,
-                objCfg.GetCString("pCollisionModel"),
+                Key(objCfg, "collisionModel", "pCollisionModel"),
                 zbarrier.pCollisionModel,
                 false,
                 &ff
@@ -151,26 +175,26 @@ namespace {
                     zboard.maxPause = (float)cboard.GetDouble("maxPause");
                     zboard.numRepsToPullProBoard = (uint32_t)cboard.GetInteger("numRepsToPullProBoard");
 
-                    cboard.Load("repairEffect1Offset", zboard.repairEffect1Offset);
-                    cboard.Load("repairEffect2Offset", zboard.repairEffect2Offset);
+                    Vector(board, "repairEffect1Offset", zboard.repairEffect1Offset);
+                    Vector(board, "repairEffect2Offset", zboard.repairEffect2Offset);
 
                     ctx.LinkAsset(
                         XAssetType::ASSET_TYPE_XMODEL,
-                        cboard.GetCString("pBoardModel"),
+                        Key(cboard, "boardModel", "pBoardModel"),
                         zboard.pBoardModel,
                         false,
                         &ff
                     );
                     ctx.LinkAsset(
                         XAssetType::ASSET_TYPE_XMODEL,
-                        cboard.GetCString("pAlternateBoardModel"),
+                        Key(cboard, "alternateBoardModel", "pAlternateBoardModel"),
                         zboard.pAlternateBoardModel,
                         false,
                         &ff
                     );
                     ctx.LinkAsset(
                         XAssetType::ASSET_TYPE_XMODEL,
-                        cboard.GetCString("pUpgradedBoardModel"),
+                        Key(cboard, "upgradedBoardModel", "pUpgradedBoardModel"),
                         zboard.pUpgradedBoardModel,
                         false,
                         &ff

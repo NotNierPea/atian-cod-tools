@@ -126,6 +126,19 @@ namespace fastfile::linker::memory {
         return (uint32_t)scrStrings.size();
     }
 
+    uint32_t XBlockLinker::AddScrStringKeepEmpty(const char* value) {
+        if (!value) {
+            return 0;
+        }
+        for (size_t i = 0; i < scrStrings.size(); i++) {
+            if (!std::strcmp(value, scrStrings[i])) {
+                return (uint32_t)i + 1;
+            }
+        }
+        scrStrings.push_back(alloc.CloneStr(value));
+        return (uint32_t)scrStrings.size();
+    }
+
     AssetData* XBlockLinker::AddAsset(size_t type, LinkerDataChunk* align) {
         LOG_DEBUG("XBlockLinker::AddAsset({})", type);
         AssetData* asset{ alloc.New<AssetData>() };
