@@ -7,7 +7,8 @@
 /*
  * XAnims from a glTF animation, on the bones of the xmodel linker (gltf::Skeleton: same file, same bones, same scale).
  * Every bone is sampled at the framerate: a rotation or translation that never changes is static, the others have a key
- * per frame (full quats, 16 bits translations).
+ * per frame (full quats, 16 bits translations). Translations are moves from the bone's bind translation, as the game
+ * adds them to it.
  *
  * {
  *     "name": "my_anim",
@@ -17,6 +18,8 @@
  *     "scale": 1.0,               // the model's
  *     "loop": true,
  *     "rootMotion": "tag_origin",  // a root bone whose moves (translation, yaw) move the entity instead (delta part)
+ *     "additive": false,           // type 1, the stock view model anims' (most of core_common's), instead of 6 / 7
+ *     "bones": "all",              // or "animated": only the joints the animation has channels on
  *     "skeleton": "skeletons/body.json",  // for a game skeleton (the xmodel linker's): its bones' frames
  *     "notifies": [                // time 0..1, "end" is added at 1
  *         { "name": "hit", "time": 0.5 },                           // a script notify (the notetrack)
@@ -525,6 +528,26 @@ namespace {
                 }
             }
             size_t numBones{ boneNames.size() };
+            // "bones": "animated": only the joints the animation has a channel on (the others keep the model's pose)
+            std::string bonesMode{ cfg.GetString("bones", "all") };
+            std::vector<size_t> kept{};
+            if (bonesMode == "animated") {
+                std::unordered_set<int> channelNodes{};
+                for (const gltf::Channel& ch : anim.channels) {
+                    channelNodes.insert(ch.node);
+                }
+                for (size_t b = 0; b < boneNames.size(); b++) {
+                    if (channelNodes.contains(skel.nodes[boneJoint[b]])) {
+                        kept.push_back(b);
+                    }
+                }
+            } else if (bonesMode != "all") {
+                Fail(std::format("bones {}: all or animated", bonesMode));
+                return;
+            }
+            if (bonesMode == "animated") {
+                numBones = kept.size();
+            }
             if (!numBones || numBones > 0xFF) {
                 Fail("1 to 255 bones");
                 return;
@@ -561,9 +584,9 @@ namespace {
                         frames[g] = j >= 0 ? world[skel.nodes[j]] * restInv[j] * gameBind[g] :
                                     p < 0 ? gameBind[g] : frames[p] * gameLocalBind[g];
                     }
-                    quats[f].resize(numBones);
-                    trans[f].resize(numBones);
-                    for (size_t b = 0; b < numBones; b++) {
+                    quats[f].resize(boneNames.size());
+                    trans[f].resize(boneNames.size());
+                    for (size_t b = 0; b < boneNames.size(); b++) {
                         size_t g{ boneGame[b] };
                         int p{ game.parents[g] };
                         gltf::Mat4 local{ p < 0 ? frames[g] : frames[p].Inverse() * frames[g] };
@@ -571,6 +594,58 @@ namespace {
                     }
                 } else {
                     skel.LocalFrames(world, quats[f], trans[f]);
+                }
+            }
+
+            /*
+             * The game adds a translation key to the bone's bind translation (its local offset in the model): the keys
+             * are the moves from it (stock j_mainroot keys are a few units, its bind 37 up; absolute keys came out
+             * doubled in game). The stock view arms store no offsets (all 0), so their anims hold the whole ones: a
+             * glTF of their bones at the origin (BO3's base_animated_model) gives those. The bind is the game
+             * skeleton's, or the glTF's rest as the xmodel linker writes it.
+             */
+            std::vector<std::array<double, 3>> bindTrans(boneNames.size());
+            if (game.Count()) {
+                for (size_t b = 0; b < boneNames.size(); b++) {
+                    double q[4];
+                    skel.ToGame(gameLocalBind[boneGame[b]], q, bindTrans[b].data());
+                }
+            } else {
+                std::vector<gltf::Mat4> restLocals(doc.nodes.size());
+                for (size_t i = 0; i < doc.nodes.size(); i++) {
+                    restLocals[i] = doc.LocalMatrix((int)i);
+                }
+                std::vector<std::array<double, 4>> restQuats{};
+                std::vector<std::array<double, 3>> restTrans{};
+                skel.LocalFrames(doc.WorldMatrices(restLocals), restQuats, restTrans);
+                for (size_t b = 0; b < boneNames.size(); b++) {
+                    bindTrans[b] = restTrans[boneJoint[b]];
+                }
+            }
+
+            // the kept bones only
+            if (bonesMode == "animated") {
+                auto Keep = [&kept](auto& v) {
+                    std::remove_reference_t<decltype(v)> out{};
+                    for (size_t b : kept) {
+                        out.push_back(v[b]);
+                    }
+                    v = std::move(out);
+                };
+                for (size_t f = 0; f <= numframes; f++) {
+                    Keep(quats[f]);
+                    Keep(trans[f]);
+                }
+                Keep(bindTrans);
+                Keep(boneNames);
+                Keep(boneJoint);
+                std::vector<bool> roots{};
+                for (size_t b : kept) {
+                    roots.push_back(boneIsRoot[b]);
+                }
+                boneIsRoot = std::move(roots);
+                if (!boneGame.empty()) {
+                    Keep(boneGame);
                 }
             }
 
@@ -607,6 +682,14 @@ namespace {
                 for (size_t f = 1; f <= numframes; f++) {
                     quats[f][rb] = quats[0][rb];
                     trans[f][rb] = trans[0][rb];
+                }
+            }
+
+            for (auto& frame : trans) {
+                for (size_t b = 0; b < numBones; b++) {
+                    for (int i = 0; i < 3; i++) {
+                        frame[b][i] -= bindTrans[b][i];
+                    }
                 }
             }
 
@@ -808,7 +891,17 @@ namespace {
             *(uint16_t*)At(0x112) = (uint16_t)numBones;
             *(uint16_t*)At(0x114) = (uint16_t)numframes;
             *At(0x11E) = loop ? 1 : 0;
-            *At(0x120) = 1;
+            *At(0x11F) = loop ? 1 : 0;
+            /*
+             * The anim's type (0x120), as the game's: 1 additive (the keys are added to the model's bind pose: the bind
+             * translations came out doubled in game), 6 absolute, never with root motion, 2 relative (characters) and 7
+             * delta (props), always with root motion: 0x118 the yaw delta part, 0x119 a 3D one (sub_143DA39A0 reads the
+             * part at 0x18 without a null check when either is set). 0x123 bit 0 is set on the game's 2 and 7, 0x11F
+             * equals 0x11E on all of them.
+             */
+            bool additive{ cfg.GetBool("additive", false) };
+            *At(0x120) = additive ? 1 : !deltaTrans.empty() ? 7 : 6;
+            *At(0x123) = !additive && !deltaTrans.empty() ? 1 : 0;
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
             *(void**)At(0x08) = (void*)fastfile::linker::memory::POINTER_NEXT;

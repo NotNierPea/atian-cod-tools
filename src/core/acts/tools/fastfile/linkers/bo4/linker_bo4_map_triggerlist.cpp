@@ -15,6 +15,8 @@
  *     ]
  * }
  * "box" (relative to the origin, axial) and "contents" (0x20000001 as the game's volumes) aren't key values.
+ * The byte at 0x1A of a key value: set, the script field takes the type the game declares for the key (undefined for a
+ * key it doesn't know); clear, the value's own. SCRIPT_KEYS (keys only scripts read, the game's are clear) are clear.
  */
 namespace {
     using namespace fastfile::linker::bo4;
@@ -77,6 +79,9 @@ namespace {
     static_assert(sizeof(TriggerList) == 0x50);
 
     constexpr uint32_t VOLUME_CONTENTS = 0x20000001;
+
+    // the keys the game's triggers never flag (zm_mansion's triggerlist): zm_crafting's blueprint_list read undefined
+    const char* SCRIPT_KEYS[]{ "blueprint_list", "objectid", "script_index", "script_flag_zone_wait" };
 
     struct KeyValue {
         std::string key{};
@@ -222,7 +227,7 @@ namespace {
                     for (size_t j = 0; j < ent.kvs.size(); j++) {
                         out[j] = {};
                         out[j].key = (const char*)fastfile::linker::memory::POINTER_NEXT;
-                        out[j].unk1a = true;
+                        out[j].unk1a = std::none_of(std::begin(SCRIPT_KEYS), std::end(SCRIPT_KEYS), [&](const char* k) { return ent.kvs[j].key == k; });
                         if (ent.kvs[j].isVector) {
                             out[j].type = SVKT_VECTOR;
                             std::memcpy(out[j].value.vector, ent.kvs[j].vector, sizeof(ent.kvs[j].vector));

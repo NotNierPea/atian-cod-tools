@@ -2431,7 +2431,16 @@ namespace tool::gsc::compiler {
                         }
                     }
 
-                    if (obj.HasOpCode(OPCODE_GetVector)) {
+                    /*
+                     * Not on T8: its VM takes a vector whose byte before the floats is 0 as a refcounted one, the u16 4
+                     * before them its count (ScrVar_AddRefVector), and the floats' zero padding after GetVector made
+                     * that the opcode: freeing a struct holding the constant (fast_restart) decremented the opcode into
+                     * an invalid one. The game's compiler never emits it there, the 3 values and Vector below instead.
+                     */
+                    bool vectorRefCounted{
+                        obj.vmInfo->vmMagic >= tool::gsc::opcode::VMI_T8_31 && obj.vmInfo->vmMagic <= tool::gsc::opcode::VMI_T8_36
+                    };
+                    if (!vectorRefCounted && obj.HasOpCode(OPCODE_GetVector)) {
                         fobj.AddNode(rule, new AscmNodeOpCode(OPCODE_GetVector));
                         fobj.AddNode(rule, new AscmNodeRawData<float>(x));
                         fobj.AddNode(rule, new AscmNodeRawData<float>(y));
