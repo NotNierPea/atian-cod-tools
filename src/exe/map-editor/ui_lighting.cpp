@@ -272,11 +272,8 @@ namespace editor {
             return;
         }
 
-        if (!ImGui::BeginTable("##lighting", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV, ImGui::GetContentRegionAvail())) {
-            return;
-        }
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
+        static float jsonWidth{ 720 };
+        SplitLeft("##lightingsplit", jsonWidth, 320, 320);
         ImGui::BeginChild("##json");
         ImGui::PushItemWidth(-200);
 
@@ -285,7 +282,9 @@ namespace editor {
                 "the sun volume's light level where there are no probes (the auto exposure reads it): 0 is the most "
                 "exposure there is, a white sky. zm_towers 2511.2, the frontend 0.205");
             l.dirty |= DrawJsonFloats(l.root, "probeColor", 0, 3, "Probe colour", 0.01f, true,
-                "the reflection probes' colour (one 1x1 cube each): the models' ambient is the light grid times it");
+                "the reflection probes' colour (one 1x1 cube each): the models' ambient is the light grid times it, and glossy "
+                "surfaces reflect it as it is: against the light level, the day's 1 at 2511.2 is dim. The night's are as "
+                "small (about 1e-4) with a grid of 300; brighter ones make everything milky");
             if (ImGui::TreeNodeEx("Light grid", ImGuiTreeNodeFlags_DefaultOpen)) {
                 static float uniform{ 300 };
                 ImGui::DragFloat("##uniform", &uniform, 1.0f, 0, 100000, "%.1f");
@@ -382,7 +381,7 @@ namespace editor {
         ImGui::PopItemWidth();
         ImGui::EndChild();
 
-        ImGui::TableSetColumnIndex(1);
+        SplitRight();
         ImGui::BeginChild("##state");
         ImGui::PushItemWidth(-200);
         static size_t stateIndex{};
@@ -465,6 +464,6 @@ namespace editor {
         }
         ImGui::PopItemWidth();
         ImGui::EndChild();
-        ImGui::EndTable();
+        SplitEnd();
     }
 }

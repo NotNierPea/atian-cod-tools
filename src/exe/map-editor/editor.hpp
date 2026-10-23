@@ -28,6 +28,7 @@ namespace editor {
         fs::path acts{};    // acts.exe, the one next to the editor by default
         fs::path gameDir{}; // Black Ops 4's folder, project-bo4 in it
         fs::path stageDir{}; // the links before a deploy, <stage>/<zone name>
+        std::string python{ "python" }; // runs the map's tool scripts after a move
         std::vector<fs::path> recentMaps{};
 
         void Load();
@@ -125,8 +126,18 @@ namespace editor {
     // viewport.cpp: the 3D view (its own render target, drawn into the panel)
     struct App;
     void SetViewportContext(ID3D11Device* device, ID3D11DeviceContext* context);
+    bool ViewportLoading(); // the 3D tab's loading screen is up
     void ShutdownViewport();
     bool RenderToFile(App& app, const fs::path& out, int width, int height, int view); // --render
+    bool SaveTest(App& app); // --savetest: test moves saved into the map's files (scripts listed, not run)
+    bool GroupTest(App& app, const fs::path& outDir); // --grouptest: the window, its sill, the walls and the floor moved / scaled / turned, rendered, a dry-run save
+    bool CopyTest(App& app); // --copytest: ctrl+D on the window's sill (written), the scripts listed
+    // --ui-shot: the window drawn offscreen with the 3D view's tab, a camera and a selection
+    void ShowTab(const char* name);
+    bool DumpImage(const fs::path& image, const fs::path& out, bool hdr = false); // a dumped image's colors over its alpha, into a png
+    bool DumpSky(const fs::path& out); // the sky as the 3D view draws it (its filler painted over), unrolled
+    void SetViewCamera(float x, float y, float z, float yaw, float pitch);
+    void SelectObject(const std::string& labelPart);
 
     // build.cpp: link the zone with acts into the stage, deploy the stage to the game's project-bo4
     struct Build {
@@ -146,6 +157,19 @@ namespace editor {
         void Update(Project& project);
         bool Busy() const { return step != Step::IDLE; }
         float Seconds() const;
+    };
+
+    // build.cpp: the map's tool scripts run one after another (python, from the map's folder), then the project reloaded
+    struct Scripts {
+        Process process{};
+        std::vector<std::string> queue{};
+        fs::path cwd{};
+        bool running{};
+        bool started{}; // one is running
+        bool failed{};
+
+        void Start(const fs::path& mapDir, const std::vector<std::string>& scripts);
+        void Update(Project& project);
     };
 
     // lighting.cpp: maps/lighting.json and the lighting states' known values
@@ -171,6 +195,7 @@ namespace editor {
     struct App {
         Project project{};
         Build build{};
+        Scripts scripts{};
         Lighting lighting{};
         bool showSettings{};
         bool quit{};
@@ -185,6 +210,11 @@ namespace editor {
     void DrawPreview(const fs::path& file);
     void SelectFile(const fs::path& file);
     const fs::path& SelectedFile();
+    // two panes split by a bar dragged as the log's: SplitLeft opens the left pane (`width` the left's, or the right's
+    // with widthIsRight, kept by the caller), SplitRight ends it, draws the bar and opens the right one, SplitEnd closes
+    void SplitLeft(const char* id, float& width, float minLeft, float minRight, bool widthIsRight = false);
+    void SplitRight();
+    void SplitEnd();
     bool PickFolder(fs::path& out, const wchar_t* title);
     void OpenInShell(const fs::path& path);
     void ShowInExplorer(const fs::path& path);

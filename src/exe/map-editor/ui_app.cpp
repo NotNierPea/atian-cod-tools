@@ -89,14 +89,20 @@ namespace editor {
             ImGui::SameLine();
             if (ImGui::Button("Link & deploy")) app.build.Link(p, true);
             ImGui::EndDisabled();
-            ImGui::SameLine();
+            // the status on the toolbar's line only when there's one (a dangling SameLine put the tabs beside it)
             if (app.build.step == Build::Step::LINKING) {
+                ImGui::SameLine();
                 ImGui::TextColored(ImVec4(1, 0.8f, 0.35f, 1), "linking %s... %.0f s", app.build.zoneName.c_str(), app.build.Seconds());
                 ImGui::SameLine();
                 if (ImGui::SmallButton("Stop")) app.build.process.Kill();
             }
             else if (app.build.step == Build::Step::DEPLOYING) {
+                ImGui::SameLine();
                 ImGui::TextColored(ImVec4(1, 0.8f, 0.35f, 1), "deploying... %.0f s", app.build.Seconds());
+            }
+            if (app.scripts.running) {
+                ImGui::SameLine(0, 24);
+                ImGui::TextColored(ImVec4(1, 0.8f, 0.35f, 1), "running the map's tools...");
             }
             if (GameRunning()) {
                 ImGui::SameLine(0, 24);
@@ -127,6 +133,10 @@ namespace editor {
                 pathRow("acts.exe", s.acts, false, "the acts that links the zone (fastfilelinker)");
                 pathRow("Game folder", s.gameDir, true, "Black Ops 4's folder: deploys go to its project-bo4");
                 pathRow("Stage folder", s.stageDir, true, "where links go before a deploy (empty: map-editor-stage next to the editor)");
+                ImGui::SetNextItemWidth(-260);
+                ImGui::InputText("Python", &s.python);
+                ImGui::SameLine();
+                HelpMarker("runs the map's tool scripts after moves are saved (editor_bindings.json's \"run\")");
                 if (ImGui::Button("Save")) {
                     s.Save();
                     Log(LogLevel::INFO, "settings saved");
@@ -139,6 +149,65 @@ namespace editor {
     App& GetApp() {
         static App app{};
         return app;
+    }
+
+    namespace {
+        std::string shownTab{}; // a tab to select on the next frame
+    }
+
+    void ShowTab(const char* name) { shownTab = name; }
+
+    namespace {
+        struct Split {
+            std::string id;
+            float* width;
+            float minLeft;
+            float minRight;
+            float total;
+            bool widthIsRight;
+        };
+        std::vector<Split> splits{};
+        constexpr float SPLIT_BAR{ 8 };
+
+        float LeftWidth(const Split& s) {
+            float left{ s.widthIsRight ? s.total - SPLIT_BAR - *s.width : *s.width };
+            return std::clamp(left, s.minLeft, std::max(s.minLeft, s.total - SPLIT_BAR - s.minRight));
+        }
+    }
+
+    void SplitLeft(const char* id, float& width, float minLeft, float minRight, bool widthIsRight) {
+        Split s{ id, &width, minLeft, minRight, ImGui::GetContentRegionAvail().x, widthIsRight };
+        float left{ LeftWidth(s) };
+        width = widthIsRight ? s.total - SPLIT_BAR - left : left;
+        splits.push_back(s);
+        ImGui::BeginChild((s.id + "_left").c_str(), ImVec2(left, 0));
+    }
+
+    void SplitRight() {
+        Split& s{ splits.back() };
+        ImGui::EndChild();
+        ImGui::SameLine(0, 0);
+        ImVec2 p{ ImGui::GetCursorScreenPos() };
+        float h{ ImGui::GetContentRegionAvail().y };
+        ImGui::InvisibleButton((s.id + "_bar").c_str(), ImVec2(SPLIT_BAR, std::max(1.0f, h)));
+        bool hovered{ ImGui::IsItemHovered() };
+        bool active{ ImGui::IsItemActive() };
+        if (hovered || active) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+        if (active) {
+            float dx{ ImGui::GetIO().MouseDelta.x };
+            *s.width += s.widthIsRight ? -dx : dx;
+            float left{ LeftWidth(s) };
+            *s.width = s.widthIsRight ? s.total - SPLIT_BAR - left : left;
+        }
+        ImU32 col{ active ? IM_COL32(110, 150, 210, 255) : hovered ? IM_COL32(90, 110, 140, 255) : IM_COL32(55, 58, 64, 255) };
+        ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x + SPLIT_BAR / 2, p.y), ImVec2(p.x + SPLIT_BAR / 2, p.y + h), col, active || hovered ? 3.0f : 1.0f);
+        ImGui::SameLine(0, 0);
+        ImGui::BeginChild((s.id + "_right").c_str(), ImVec2(0, 0));
+    }
+
+    void SplitEnd() {
+        ImGui::EndChild();
+        splits.pop_back();
     }
 
     void HelpMarker(const char* text) {
@@ -190,6 +259,7 @@ namespace editor {
     void DrawApp() {
         App& app{ GetApp() };
         app.build.Update(app.project);
+        app.scripts.Update(app.project);
 
         if (app.project.IsOpen() && !app.build.Busy()) {
             if (ImGui::IsKeyPressed(ImGuiKey_F5, false)) { app.project.Reload(); app.lighting = {}; }
@@ -200,8 +270,12 @@ namespace editor {
         const ImGuiViewport* vp{ ImGui::GetMainViewport() };
         ImGui::SetNextWindowPos(vp->WorkPos);
         ImGui::SetNextWindowSize(vp->WorkSize);
+        // the window fills the client area: no rounded corners or border
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         ImGui::Begin("##main", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus);
+        ImGui::PopStyleVar(2);
         DrawMenu(app);
 
         if (!app.project.IsOpen()) {
@@ -228,19 +302,24 @@ namespace editor {
         float contentHeight{ std::max(200.0f, ImGui::GetContentRegionAvail().y - logHeight - 8) };
         ImGui::BeginChild("##content", ImVec2(0, contentHeight));
         if (ImGui::BeginTabBar("##tabs")) {
-            if (ImGui::BeginTabItem("Zone")) {
+            auto tab = [](const char* name) {
+                bool select{ shownTab == name };
+                if (select) shownTab.clear();
+                return ImGui::BeginTabItem(name, nullptr, select ? ImGuiTabItemFlags_SetSelected : 0);
+            };
+            if (tab("Zone")) {
                 DrawZonePanel(app);
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Folder")) {
+            if (tab("Folder")) {
                 DrawFolderPanel(app);
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("3D view")) {
+            if (tab("3D view")) {
                 DrawViewportPanel(app);
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Lighting & sky")) {
+            if (tab("Lighting & sky")) {
                 DrawLightingPanel(app);
                 ImGui::EndTabItem();
             }
@@ -248,9 +327,15 @@ namespace editor {
         }
         ImGui::EndChild();
 
+        ImVec2 barPos{ ImGui::GetCursorScreenPos() };
+        float barWidth{ ImGui::GetContentRegionAvail().x };
         ImGui::InvisibleButton("##splitter", ImVec2(-1, 8));
-        if (ImGui::IsItemHovered() || ImGui::IsItemActive()) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
-        if (ImGui::IsItemActive()) logHeight = std::clamp(logHeight - ImGui::GetIO().MouseDelta.y, 60.0f, vp->WorkSize.y - 260);
+        bool barHover{ ImGui::IsItemHovered() };
+        bool barActive{ ImGui::IsItemActive() };
+        if (barHover || barActive) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+        if (barActive) logHeight = std::clamp(logHeight - ImGui::GetIO().MouseDelta.y, 60.0f, vp->WorkSize.y - 260);
+        ImU32 barCol{ barActive ? IM_COL32(110, 150, 210, 255) : barHover ? IM_COL32(90, 110, 140, 255) : IM_COL32(55, 58, 64, 255) };
+        ImGui::GetWindowDrawList()->AddLine(ImVec2(barPos.x, barPos.y + 4), ImVec2(barPos.x + barWidth, barPos.y + 4), barCol, barActive || barHover ? 3.0f : 1.0f);
         ImGui::BeginChild("##logarea", ImVec2(0, 0));
         DrawLogPanel();
         ImGui::EndChild();

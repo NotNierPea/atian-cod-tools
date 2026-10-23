@@ -26,15 +26,9 @@ namespace editor {
                 [](char a, char b) { return std::tolower((unsigned char)a) == std::tolower((unsigned char)b); }) != text.end();
         }
 
-        // the two panes: the list on the left, the selected file on the right
-        void SplitBegin(const char* id, float leftFraction) {
-            ImGui::BeginTable(id, 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp,
-                ImGui::GetContentRegionAvail());
-            ImGui::TableSetupColumn("left", ImGuiTableColumnFlags_WidthStretch, leftFraction);
-            ImGui::TableSetupColumn("right", ImGuiTableColumnFlags_WidthStretch, 1 - leftFraction);
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-        }
+        // the list panes' widths (the bar between dragged)
+        float zoneLeft{ 640 };
+        float folderLeft{ 440 };
 
         // the folder tree: listings kept until a reload
         struct DirListing {
@@ -97,7 +91,7 @@ namespace editor {
         static std::string typeFilter{};
         static bool missingOnly{};
 
-        SplitBegin("##zonesplit", 0.42f);
+        SplitLeft("##zonesplit", zoneLeft, 260, 320);
         {
             ImGui::TextDisabled("game %s, compression %s", zone.Option("game").c_str(), zone.Option("compression").c_str());
             ImGui::Text("%zu entries, %zu blocks", zone.entries, zone.blocks.size());
@@ -180,7 +174,7 @@ namespace editor {
             ImGui::EndChild();
         }
 
-        ImGui::TableSetColumnIndex(1);
+        SplitRight();
         {
             if (selectedEntry) {
                 const ZoneEntry& e{ *selectedEntry };
@@ -195,7 +189,7 @@ namespace editor {
             }
             DrawPreview(SelectedFile());
         }
-        ImGui::EndTable();
+        SplitEnd();
     }
 
     void DrawFolderPanel(App& app) {
@@ -204,7 +198,7 @@ namespace editor {
             listings.clear();
             lastDir = app.project.dir;
         }
-        SplitBegin("##foldersplit", 0.35f);
+        SplitLeft("##foldersplit", folderLeft, 220, 320);
         {
             if (ImGui::SmallButton("Refresh")) listings.clear();
             ImGui::SameLine();
@@ -213,8 +207,8 @@ namespace editor {
             DrawDir(app.project.dir);
             ImGui::EndChild();
         }
-        ImGui::TableSetColumnIndex(1);
+        SplitRight();
         DrawPreview(SelectedFile());
-        ImGui::EndTable();
+        SplitEnd();
     }
 }

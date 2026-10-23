@@ -1,6 +1,44 @@
 #include "editor.hpp"
 
 namespace editor {
+    void Scripts::Start(const fs::path& mapDir, const std::vector<std::string>& scripts) {
+        cwd = mapDir;
+        queue = scripts;
+        failed = false;
+        running = true;
+    }
+
+    void Scripts::Update(Project& project) {
+        if (!running || process.Running()) {
+            return;
+        }
+        // the one before done: stop the queue on a failure
+        if (started) {
+            started = false;
+            if (process.ExitCode()) {
+                Logf(LogLevel::ERR, "the script failed (exit code %d): the rest not run, the map reloaded as it is", process.ExitCode());
+                failed = true;
+                queue.clear();
+            }
+        }
+        if (queue.empty()) {
+            running = false;
+            project.Reload();
+            return;
+        }
+        std::string script{ queue.front() };
+        queue.erase(queue.begin());
+        std::wstring cmd{ L"\"" + FromUtf8(GetSettings().python).wstring() + L"\" \"" + FromUtf8(script).wstring() + L"\"" };
+        Logf(LogLevel::INFO, "running %s", script.c_str());
+        if (!process.Start(cmd, cwd)) {
+            Logf(LogLevel::ERR, "can't run %s with %s (File > Settings: Python)", script.c_str(), GetSettings().python.c_str());
+            failed = true;
+            queue.clear();
+            return;
+        }
+        started = true;
+    }
+
     Build::~Build() {
         if (worker.joinable()) {
             worker.join();

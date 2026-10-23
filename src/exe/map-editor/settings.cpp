@@ -57,6 +57,7 @@ namespace editor {
         if (fs::path p{ ReadPath(root, "acts") }; !p.empty()) acts = p;
         if (fs::path p{ ReadPath(root, "gameDir") }; !p.empty()) gameDir = p;
         if (fs::path p{ ReadPath(root, "stageDir") }; !p.empty()) stageDir = p;
+        if (auto it{ root.find("python") }; it != root.end() && it->is_string() && !it->get<std::string>().empty()) python = it->get<std::string>();
         if (auto it{ root.find("recentMaps") }; it != root.end() && it->is_array()) {
             for (const json& r : *it) {
                 if (r.is_string()) recentMaps.push_back(FromUtf8(r.get<std::string>()));
@@ -70,6 +71,7 @@ namespace editor {
         root["acts"] = ToUtf8(acts);
         root["gameDir"] = ToUtf8(gameDir);
         root["stageDir"] = ToUtf8(stageDir);
+        root["python"] = python;
         json recent{ json::array() };
         for (const fs::path& r : recentMaps) {
             recent.push_back(ToUtf8(r));
