@@ -235,6 +235,26 @@ namespace fastfile::linker::memory {
         return maxSize;
     }
 
+    static size_t LoadChunkSizeTotal(LinkerDataChunk* chunk) {
+        size_t size{};
+        for (; chunk; chunk = chunk->next) {
+            switch (chunk->type) {
+            case CHUNKTYPE_DATA:
+                size += chunk->size;
+                break;
+            case CHUNKTYPE_ALIGN:
+                size = utils::Aligned<size_t>(size, chunk->align);
+                break;
+            case CHUNKTYPE_POP:
+                size = utils::Aligned<size_t>(size, 0x10);
+                break;
+            default:
+                break;
+            }
+        }
+        return size;
+    }
+
     void XBlockLinker::Link(size_t* blocks) {
         if (blockStackIndex) {
             throw std::runtime_error(std::format("XBlockLinker::Link: block stack not empty {}", blockStackIndex));
@@ -245,6 +265,7 @@ namespace fastfile::linker::memory {
 
             switch (block.type) {
             case BLOCKTYPE_TEMP:
+                block.totalSize = LoadChunkSizeTotal(block.data[LM_DATA]);
                 block.finalSize =
                     LoadChunkSizeTemp(i, block.data[LM_DATA], LoadChunkSizeTemp(i, block.data[LM_HEADER], 0));
                 break;

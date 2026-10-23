@@ -25,6 +25,10 @@ namespace {
         GfxImage* detailMap;
         float detailHeight;
         vec2_t detailScale;
+        // 2 color, 4 and 8 the base's normal/gloss textures into the camo material, the rest to the shader
+        uint16_t flags;
+        uint8_t flags2;
+        uint8_t unk3f;
     };
     static_assert(sizeof(CamoMaterialChannel) == 0x40);
 
@@ -79,28 +83,33 @@ namespace {
                     json.BeginObject();
                     json.WriteFieldNameString("baseMaterials");
                     json.BeginArray();
+                    // one a channel, an empty one where both are null, so they stay in step with the channels
                     for (size_t k = 0; k < material->numBaseMaterials; k++) {
-                        if (!material->baseMaterials[k] && !material->baseMaterialMasks[k]) {
-                            continue;
-                        }
-
                         json.BeginObject();
-                        json.WriteFieldValueXAsset(
-                            "material",
-                            games::bo4::pool::ASSET_TYPE_MATERIAL,
-                            material->baseMaterials[k]
-                        );
-                        json.WriteFieldValueXAsset(
-                            "mask",
-                            games::bo4::pool::ASSET_TYPE_IMAGE,
-                            material->baseMaterialMasks[k]
-                        );
+                        if (material->baseMaterials) {
+                            json.WriteFieldValueXAsset(
+                                "material",
+                                games::bo4::pool::ASSET_TYPE_MATERIAL,
+                                material->baseMaterials[k]
+                            );
+                        }
+                        if (material->baseMaterialMasks) {
+                            json.WriteFieldValueXAsset(
+                                "mask",
+                                games::bo4::pool::ASSET_TYPE_IMAGE,
+                                material->baseMaterialMasks[k]
+                            );
+                        }
                         json.EndObject();
                     }
                     json.EndArray();
 
-                    // json.WriteFieldValueNumber<decltype(material->unk1a), false, true> ("unk1a", material->unk1a);
-                    // json.WriteFieldValueNumber<decltype(material->unk1c), false, true>("unk1c", material->unk1c);
+                    if (material->unk1a) {
+                        json.WriteFieldValueNumber("unk1a", material->unk1a);
+                    }
+                    if (material->unk1c) {
+                        json.WriteFieldValueNumber("unk1c", material->unk1c);
+                    }
                     json.WriteFieldNameString("camoMaterialChannels");
                     json.BeginArray();
                     for (size_t k = 0; k < material->numBaseMaterials; k++) {
@@ -127,6 +136,11 @@ namespace {
                         );
                         json.WriteFieldNameString("albedoTint");
                         json.WriteValueNumber(channel->albedoTint.packed);
+                        json.WriteFieldValueNumber("flags", channel->flags);
+                        json.WriteFieldValueNumber("flags2", channel->flags2);
+                        if (channel->unk3f) {
+                            json.WriteFieldValueNumber("unk3f", channel->unk3f);
+                        }
                         /*
                         json.BeginObject();
                         json.WriteFieldValueNumber("packed", channel->albedoTint.packed);

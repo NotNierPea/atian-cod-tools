@@ -15,7 +15,8 @@
  * image,name.png,nomips   resident, one mip (UI pictures drawn at their size)
  * image,name.png,stream   streamed, the mips are in zone/<xpak>.xpak, the fastfile only has the header
  * image,path/name.json    a game image as acts' dumper writes it (lossless), the path from the zone's dir: its header,
- *                         its resident pixels or its streamed parts (to the xpak, under the game's keys)
+ *                         its resident pixels or its streamed parts (to the xpak, under the game's keys);
+ *                         ",resident" joins a streamed one's parts into resident pixels
  * >image.stream=true      streams every image of the zone (",resident" keeps one in the fastfile)
  * >xpak.name=<name>       name of the xpak, the fastfile name by default
  *
@@ -171,7 +172,10 @@ namespace {
      * One entry: the data cut in chunks, lz4 when it is smaller, raw else, 30 chunks a group. The streamer reads an entry
      * by windows of 1 MB from its start rounded down to 0x8000 (sub_143713AF0), and the decompressor takes each window
      * as a piece starting with a group header (sub_1422B7E50): no group may cross a window. A group that would is moved
-     * to the next window and the room left filled by a group of one raw chunk, written where that group writes after it.
+     * to the next window and the room left filled by a group of one raw chunk over the start of that group's range,
+     * holding that range's own bytes: the game decompresses windows in any order, and a filler of zeros written after
+     * the group wiped its data (sounds cut at the same frame each time, a different one each run). The filler always
+     * fits in the group's range: both are 0x80 aligned and a chunk is lz4 only when smaller.
      * out is the whole xpak file, its size the file offset of the entry.
      */
     void EncodeXPakEntry(const byte* data, size_t len, std::vector<byte>& out, bool& compressed) {
@@ -224,14 +228,19 @@ namespace {
             size_t pos{ out.size() };
             size_t windowEnd{ windowBase + ((pos - windowBase) / XPAK_READ_WINDOW + 1) * XPAK_READ_WINDOW };
             if (pos + group.size() > windowEnd) {
-                // filler up to the window: a raw chunk over the place this group decompresses to, it comes after
+                // filler up to the window: a raw chunk of the bytes this group decompresses to first
                 size_t room{ windowEnd - pos };
+                size_t fill{ room - XPAK_GROUP_ALIGN };
+                if (fill > srcOffset - destOffset) {
+                    throw std::runtime_error(std::format("xpak filler of 0x{:x} bytes over a group of 0x{:x}", fill, srcOffset - destOffset));
+                }
                 size_t fillerStart{ out.size() };
                 out.resize(fillerStart + room);
                 uint32_t* filler{ (uint32_t*)&out[fillerStart] };
                 filler[0] = 1;
                 filler[1] = destOffset;
-                filler[2] = (XPAK_CHUNK_RAW << 24) | (uint32_t)(room - XPAK_GROUP_ALIGN);
+                filler[2] = (XPAK_CHUNK_RAW << 24) | (uint32_t)fill;
+                std::memcpy(&out[fillerStart + XPAK_GROUP_ALIGN], data + destOffset, fill);
             }
             out.insert(out.end(), group.begin(), group.end());
         }
@@ -386,8 +395,9 @@ namespace {
         return it == obj.MemberEnd() || it->value.IsNull() ? nullptr : &it->value;
     }
 
-    // a dumped game image: the header with its runtime pointers cleared, the pixels resident or its parts to the xpak
-    void LinkLossless(BO4LinkContext& ctx, const std::filesystem::path& path, BO4FFContext& ff) {
+    // a dumped game image: the header with its runtime pointers cleared, the pixels resident or its parts to the xpak;
+    // resident: a streamed one's parts joined into resident pixels instead
+    void LinkLossless(BO4LinkContext& ctx, const std::filesystem::path& path, BO4FFContext& ff, bool resident) {
         BO4Json cfg{ path };
         if (!cfg.SyncConfig(false)) {
             LOG_ERROR("Can't read image {}", path.string());
@@ -418,6 +428,52 @@ namespace {
             if (parts->Size() != src.streamedParts_count || parts->Size() > MAX_STREAMED_PARTS) {
                 LOG_ERROR("Image {}: {} parts for a count of {}", path.string(), parts->Size(), src.streamedParts_count);
                 ctx.error = true;
+                return;
+            }
+            /*
+             * Resident from its parts: part k holds the bytes its mips add, at totalSize - its cumulative size (part 0 the
+             * smallest mips at the end), so the parts joined biggest first are the whole mip chain the streamer would fill.
+             * An image only an effect draws streams slowly and shows black meanwhile.
+             */
+            if (resident) {
+                std::vector<byte> pixels(src.totalSize);
+                size_t done{};
+                for (rapidjson::SizeType k = 0; k < parts->Size(); k++) {
+                    std::vector<byte> buff{};
+                    GfxStreamedPartInfo info{};
+                    if (!ReadHex(Member((*parts)[k], "header"), buff) || buff.size() != sizeof(GfxStreamedPartInfo)) {
+                        LOG_ERROR("Image {}: bad part {} header", path.string(), k);
+                        ctx.error = true;
+                        return;
+                    }
+                    std::memcpy(&info, buff.data(), sizeof(info));
+                    size_t cumulative{ info.levelCountAndSize >> 4 };
+                    if (!ReadHex(Member((*parts)[k], "data"), buff) || buff.size() != cumulative - done || cumulative > pixels.size()) {
+                        LOG_ERROR("Image {}: part {} has {} bytes, not {}", path.string(), k, buff.size(), cumulative - done);
+                        ctx.error = true;
+                        return;
+                    }
+                    std::memcpy(pixels.data() + pixels.size() - cumulative, buff.data(), buff.size());
+                    done = cumulative;
+                }
+                if (done != pixels.size()) {
+                    LOG_ERROR("Image {}: its parts have {} bytes of {}", path.string(), done, pixels.size());
+                    ctx.error = true;
+                    return;
+                }
+                gfx.streaming = 0;
+                gfx.await_stream = 0;
+                gfx.streamedParts_count = 0;
+                gfx.streamedParts = nullptr;
+                // 0x10 is on every streamed image and on no resident one
+                gfx.imageFlags &= ~0x10u;
+                gfx.pixels = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
+                ff.data.Align(0x100);
+                ff.data.WriteStream(pixels.data(), pixels.size());
+                ff.data.PopStream();
+                ff.data.PopStream();
+                LOG_INFO("Added asset gfximage {} (hash_{:x}), lossless, resident from its {} parts", path.filename().string(), hash, parts->Size());
                 return;
             }
             // the pixels in the streamer block (Load_GfxImage allocates them there, the streamer maps its pages)
@@ -524,6 +580,7 @@ namespace {
             std::string idStr{ id };
             bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false) };
             bool mips{ ctx.linkCtx.zone.GetConfigBool("image.mips", true) };
+            bool resident{};
             size_t opt{ idStr.find_last_of(',') };
             if (opt != std::string::npos) {
                 std::string optName{ idStr.substr(opt + 1) };
@@ -531,6 +588,7 @@ namespace {
                     stream = true;
                 } else if (optName == "resident") {
                     stream = false;
+                    resident = true;
                 } else if (optName == "nomips") {
                     stream = false;
                     mips = false;
@@ -543,7 +601,7 @@ namespace {
             }
 
             if (idStr.size() > 5 && idStr.ends_with(".json")) {
-                LinkLossless(ctx, ctx.linkCtx.input / idStr, ff);
+                LinkLossless(ctx, ctx.linkCtx.input / idStr, ff, resident);
                 return;
             }
 

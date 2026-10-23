@@ -62,6 +62,9 @@ namespace fastfile::handlers::bo4 {
             XBlock g_loadblocks[XFileBlock::XFILE_BLOCK_COUNT2]{};
             std::vector<SafeLoc> safeLocs{};
             StreamPosInfo g_streamPosStack[64]{};
+            // where a preload of this zone would end in XFILE_BLOCK_TEMP_PRELOAD: the Preload_* loaders push it where the
+            // Load_* ones push XFILE_BLOCK_TEMP, and it doesn't rewind (aligned to 16 at a pop)
+            size_t preloadPos{};
         } gcx{};
 
         struct {
@@ -213,7 +216,12 @@ namespace fastfile::handlers::bo4 {
         }
     }
 
-    void DB_IncStreamPos(size_t size) { gcx.g_streamPos += size; }
+    void DB_IncStreamPos(size_t size) {
+        gcx.g_streamPos += size;
+        if (gcx.g_streamPosIndex == XFILE_BLOCK_TEMP) {
+            gcx.preloadPos += size;
+        }
+    }
 
     bool Load_Stream(bool atStreamStart, void* ptr, size_t size) {
         LOG_TRACE(
@@ -259,6 +267,9 @@ namespace fastfile::handlers::bo4 {
         gcx.g_streamPos = newLoc;
         // add align padding
         gcx.g_streamRead[gcx.g_streamPosIndex] += newLoc - streamPos;
+        if (gcx.g_streamPosIndex == XFILE_BLOCK_TEMP) {
+            gcx.preloadPos = utils::Aligned(gcx.preloadPos, (size_t)align + 1);
+        }
         return newLoc;
     }
 
@@ -274,6 +285,7 @@ namespace fastfile::handlers::bo4 {
         case XFILE_BLOCK_TEMP:
             pos = gcx.g_streamPosStack[newidx].pos;
             gcx.g_streamPos = pos;
+            gcx.preloadPos = utils::Aligned(gcx.preloadPos, (size_t)0x10);
             break;
         case XFILE_BLOCK_TEMP_PRELOAD:
             pos = utils::Aligned(gcx.g_streamPos, 0x10);
@@ -668,6 +680,7 @@ namespace fastfile::handlers::bo4 {
 
                 DB_AllocXBlocks(blockSizes, gcx.g_loadblocks);
                 DB_InitStreams(gcx.g_loadblocks);
+                gcx.preloadPos = 0;
 
                 DB_PushStreamPos(XFILE_BLOCK_VIRTUAL);
                 gcx.xstrings.clear();
@@ -789,6 +802,11 @@ namespace fastfile::handlers::bo4 {
 
                 DB_PopStreamPos();
                 LOG_OPT_INFO("Loaded {} asset(s)", gcx.loaded);
+                LOG_OPT_INFO(
+                    "Preload block: 0x{:x} for a preload of these assets, 0x{:x} in the header",
+                    gcx.preloadPos,
+                    blockSizes[XFILE_BLOCK_TEMP_PRELOAD]
+                );
 
                 if (gcx.compiledZone) {
                     std::filesystem::path outCZ{ gcx.opt->m_output / "bo4" / "compiled" /

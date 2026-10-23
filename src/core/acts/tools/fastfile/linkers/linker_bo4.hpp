@@ -49,6 +49,8 @@ namespace fastfile::linker::bo4 {
         uint64_t ffnameHash{};
         const char* ffname{};
         std::unordered_map<uint64_t, fastfile::linker::memory::LinkerDataChunk*> allocatedAssets{};
+        // the assets linked in this fastfile (type and name): a repeat is linked by its name
+        std::unordered_set<uint64_t> linkedAssets{};
     };
     struct BO4LinkContext;
 

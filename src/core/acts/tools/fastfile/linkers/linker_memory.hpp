@@ -46,6 +46,8 @@ namespace fastfile::linker::memory {
         LinkerDataChunk* data[LM_COUNT]{};
         LinkerBlockType type{};
         size_t finalSize{};
+        // a temp block's data (LM_DATA) as if it didn't rewind at a pop, aligned to 16 there
+        size_t totalSize{};
     };
 
     struct AssetData {

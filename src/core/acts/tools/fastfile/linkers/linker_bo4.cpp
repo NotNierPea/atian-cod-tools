@@ -186,6 +186,24 @@ namespace fastfile::linker::bo4 {
 
                 ff.data.Link(blocks);
 
+                /*
+                 * A map zone (a clipMap in it) gets the block the lobby's preload loads it into: the Preload_* loaders
+                 * push XFILE_BLOCK_TEMP_PRELOAD where the Load_* ones push XFILE_BLOCK_TEMP, and it doesn't rewind (the
+                 * level's temp data stays there until DB_FinishPreloadedZone). Empty, the preload wrote the clipMap_t at
+                 * null. Stock levels' are the temp data so counted plus 0x1D8 to 0x248 (zm_towers, zm_mansion,
+                 * zm_office, zm_zodt8 read back).
+                 */
+                constexpr size_t PRELOAD_MARGIN = 0x1000;
+                for (const fastfile::linker::memory::AssetData* asset : ff.data.assets) {
+                    if (asset->type == games::bo4::pool::ASSET_TYPE_CLIPMAP) {
+                        blocks[XFILE_BLOCK_TEMP_PRELOAD] = std::max<size_t>(
+                            blocks[XFILE_BLOCK_TEMP_PRELOAD], ff.data.blocks[XFILE_BLOCK_TEMP].totalSize + PRELOAD_MARGIN
+                        );
+                        LOG_INFO("Preload block of {}: 0x{:x}", ff.ffname, blocks[XFILE_BLOCK_TEMP_PRELOAD]);
+                        break;
+                    }
+                }
+
                 ff.data.WriteLinkedData(data);
 
                 LOG_INFO(
@@ -237,6 +255,21 @@ namespace fastfile::linker::bo4 {
         }
 
         uint64_t hash{ hash::Hash64(id) };
+
+        /*
+         * An asset already in this fastfile is linked again by its name (an empty asset the game resolves to it): two
+         * of one name in a zone break its unload, the pool keeps a freed one (two aitypes' inline aiFxBundle left a
+         * scriptbundle dangling, the frontend's spawn then crashed walking the scriptbundles). Only for the types with
+         * an empty asset (a size and a name in it).
+         */
+        if (!defaultAsset && !ff->linkedAssets.insert(hash ^ ((uint64_t)type * 0x9E3779B97F4A7C15ull)).second) {
+            size_t len{ games::bo4::pool::GetAssetSize(type) };
+            std::vector<byte> probe(len);
+            if (len && games::bo4::pool::GetAssetName(type, probe.data(), len)) {
+                LOG_DEBUG("{} {} already in {}, linked by its name", games::bo4::pool::XAssetNameFromId(type), id, ff->ffname);
+                defaultAsset = true;
+            }
+        }
         /*
         auto ait{ ff->allocatedAssets.find(hash) };
 
