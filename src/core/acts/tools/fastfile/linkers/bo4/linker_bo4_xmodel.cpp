@@ -30,9 +30,12 @@
  *     "collisionObj": "models/my_model_coll.obj",  // the shape of the collision instead of the model, a convex
  *                               // piece per object (o or g) of it
  *     "hullMaxSides": 44,       // the planes of a hull past its bounds, the game's props stay under 46
+ *     "collisionPieces": 64,    // the most collisionObj objects (acts' default; the counts are 32 bits): a level's
+ *                               // collision in one model, the viewmodel's sprint restarted at each ground entity change
  *     "physics": false,         // true (the game's props' preset), "#preset" or "physics/my_preset.json" (ours)
  *     "playerClip": true,       // the collmap blocks the players, false by default on a physics model (jitter)
  *     "skeleton": "skeletons/body.json",  // a game model's json of the acts dumper: its bones, for its animations
+ *     "extraJoints": { "j_my_jaw": "j_head" },  // with "skeleton": glTF joints it hasn't, new cosmetic bones on those
  *     "hitboxes": "skeleton"    // with a skeleton: its bone hit boxes (boneInfo), or "mesh" (the vertices of each)
  * }
  *
@@ -872,6 +875,7 @@ namespace {
     constexpr size_t MIN_HULL_SIDES = 4;
     constexpr size_t MAX_HULL_SIDES = 128;
     constexpr size_t MAX_COLLISION_PIECES = 64;
+    constexpr int64_t MAX_COLLISION_PIECES_LIMIT = 32768;
     // the directions the points a hull is made of are picked in
     constexpr size_t HULL_DIRECTIONS = 1024;
     // the triangles of a hull in one plane: within ~0.5 degree
@@ -1850,6 +1854,7 @@ namespace {
             std::string collision{ cfg.GetString("collision", "hull") };
             std::string collisionObj{ cfg.GetString("collisionObj", "") };
             int64_t hullMaxSides{ cfg.GetInteger("hullMaxSides", (int64_t)DEFAULT_HULL_MAX_SIDES) };
+            int64_t maxPieces{ cfg.GetInteger("collisionPieces", (int64_t)MAX_COLLISION_PIECES) };
             std::string normalsMode{ cfg.GetString("normals", "obj") };
             float smoothAngle{ (float)cfg.GetDouble("smoothAngle", 60.0) };
             const rapidjson::Value* colorsCfg{ Member(cfg.main, "vertexColors") };
@@ -1860,6 +1865,10 @@ namespace {
             }
             if (hullMaxSides < (int64_t)MIN_HULL_SIDES || hullMaxSides > (int64_t)MAX_HULL_SIDES) {
                 Fail(std::format("hullMaxSides must be {} to {}", MIN_HULL_SIDES, MAX_HULL_SIDES));
+                return;
+            }
+            if (maxPieces < 1 || maxPieces > MAX_COLLISION_PIECES_LIMIT) {
+                Fail(std::format("collisionPieces must be 1 to {}", MAX_COLLISION_PIECES_LIMIT));
                 return;
             }
             if (normalsMode != "obj" && normalsMode != "smooth" && normalsMode != "flat" && normalsMode != "angle") {
@@ -1887,6 +1896,10 @@ namespace {
                 std::string err{};
                 if (!gameSkel.Load(dir / skeletonPath, err)) {
                     Fail(std::format("skeleton {}: {}", skeletonPath, err));
+                    return;
+                }
+                if (!gameSkel.AddExtraJoints(cfg.main, err)) {
+                    Fail(err);
                     return;
                 }
                 if (hitboxes != "skeleton" && hitboxes != "mesh") {
@@ -2047,8 +2060,8 @@ namespace {
                         }
                     }
                     std::erase_if(pieceShapes, [](const std::vector<Vec3>& p) { return p.empty(); });
-                    if (pieceShapes.size() > MAX_COLLISION_PIECES) {
-                        Fail(std::format("collisionObj: at most {} objects", MAX_COLLISION_PIECES));
+                    if (pieceShapes.size() > (size_t)maxPieces) {
+                        Fail(std::format("collisionObj: at most {} objects (collisionPieces)", maxPieces));
                         return;
                     }
                 } else {

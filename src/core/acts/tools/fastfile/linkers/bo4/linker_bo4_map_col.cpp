@@ -16,10 +16,24 @@
  * }
  * "brushes": [ { "mins": [..], "maxs": [..], "contents": 0x10000 } ] adds box brushes after the floor (contents 0x100001,
  * solid, by default; 0x10000 player clip only, which AI and bullets go through).
+ * "convexBrushes": "maps/my_brushes.json" adds convex brushes after those: a json array of
+ *   { "mins": [..], "maxs": [..], "planes": [ [nx, ny, nz, dist], .. ], "verts": [ [x, y, z], .. ], "contents": .. }
+ * (the planes past the bounds, outward, a point inside when n.p <= dist; the verts its corners). A level's collision as
+ * world brushes: the players' ground stays the world (each script model with a collmap is its own ground entity, the
+ * viewmodel's sprint restarted at each change) and the traces find them through a tree (a model's collmap has none).
+ * Their sides point into ClipInfo's planes (0x14: normal, dist, u16 surface material index) and their verts into its brush verts
+ * (0xC, block 8: on pc the current block), aliases as the loader (sub_142E160C0) takes them.
  * The floor: one axial brush (0x40: sides 0, verts 8, bounds 0x10/0x20, contents 0x1C, axial faces' flags 0x2C, u16
  * verts 0x38, u8 sides 0x3A), without sides or verts as the game's box brush (its traces use the bounds). ClipInfo's
  * 0x20 list is the leaf brush nodes (count at 4: < 0 an inner node, its brush indices (u32) after it), node 0 none:
  * node 1 lists brush 0 and the leaf points at it (0x28), with the brush's contents (4).
+ * The leaf brush nodes (ClipInfo's 0x10 array, cLeafBrushNode_t 0x20: axis 0, count 4, contents 8, 0x10 a leaf's brush
+ * list (u32 indices) or a split's dist, range 0x14, u32 child offsets 0x18 / 0x1C in nodes from it: retail's are u32,
+ * the old elf's u16 pair at 0x18 crashed its traces (sub_142882440)): a count over 0 is a leaf,
+ * 0 a split (CM_TestInLeafBrushNode_r: a box past dist on the axis goes to child 0, under it to child 1, across to
+ * both), under 0 a split whose own brushes are the leaf right after it (traced first). With the convex brushes node 1
+ * is the root of a tree of at most LEAF_BRUSHES a leaf, the brushes across a split kept at it (copied into both
+ * children, the big walls and floors made thousands of nodes).
  */
 namespace {
     using namespace fastfile::linker::bo4;
@@ -108,6 +122,9 @@ namespace {
     constexpr size_t CMODEL_SIZE = 0x58;
     constexpr size_t BRUSH_SIZE = 0x40;
     constexpr size_t MATERIAL_SIZE = 0x20;
+    constexpr size_t PLANE_SIZE = 0x14;
+    constexpr size_t LEAF_BRUSHES = 8;
+    constexpr int TREE_DEPTH = 48;
     constexpr size_t ROPE_SIZE = 0x11A0;
     // the game's maps (32 frontend, 35 zm_towers)
     constexpr uint32_t MAX_ROPES = 32;
@@ -212,9 +229,162 @@ namespace {
                     }
                 }
             }
-            uint32_t allContents{};
+            // the convex brushes: their planes past the bounds and corners
+            struct Convex {
+                float mins[3];
+                float maxs[3];
+                uint32_t contents;
+                std::vector<std::array<float, 4>> planes{};
+                std::vector<std::array<float, 3>> verts{};
+            };
+            std::vector<Convex> convex{};
+            if (const char* file{ cfg.GetCString("convexBrushes") }; file && *file) {
+                std::string buffer{};
+                if (!utils::ReadFile(path.parent_path() / file, buffer)) {
+                    LOG_ERROR("col_map {}: can't read convexBrushes {}", path.string(), file);
+                    ctx.error = true;
+                    return;
+                }
+                rapidjson::Document doc{};
+                doc.Parse(buffer.data());
+                if (doc.HasParseError() || !doc.IsArray()) {
+                    LOG_ERROR("col_map {}: convexBrushes {} isn't a json array", path.string(), file);
+                    ctx.error = true;
+                    return;
+                }
+                auto Floats = [](const rapidjson::Value& v, float* out, size_t n) {
+                    for (rapidjson::SizeType i = 0; i < n; i++) {
+                        out[i] = v.IsArray() && i < v.Size() && v[i].IsNumber() ? v[i].GetFloat() : 0;
+                    }
+                };
+                for (const rapidjson::Value& bv : doc.GetArray()) {
+                    Convex& c{ convex.emplace_back() };
+                    c.contents = BRUSH_CONTENTS;
+                    if (auto it{ bv.FindMember("contents") }; it != bv.MemberEnd() && it->value.IsNumber()) {
+                        c.contents = it->value.GetUint();
+                    }
+                    if (auto it{ bv.FindMember("mins") }; it != bv.MemberEnd()) Floats(it->value, c.mins, 3);
+                    if (auto it{ bv.FindMember("maxs") }; it != bv.MemberEnd()) Floats(it->value, c.maxs, 3);
+                    if (auto it{ bv.FindMember("planes") }; it != bv.MemberEnd() && it->value.IsArray()) {
+                        for (const rapidjson::Value& pl : it->value.GetArray()) {
+                            Floats(pl, c.planes.emplace_back().data(), 4);
+                        }
+                    }
+                    if (auto it{ bv.FindMember("verts") }; it != bv.MemberEnd() && it->value.IsArray()) {
+                        for (const rapidjson::Value& v : it->value.GetArray()) {
+                            Floats(v, c.verts.emplace_back().data(), 3);
+                        }
+                    }
+                    if (c.planes.size() > 0xFF || c.verts.size() > 0xFFFF) {
+                        LOG_ERROR("col_map {}: a convex brush of {} planes / {} verts (at most 255 / 65535)", path.string(), c.planes.size(), c.verts.size());
+                        ctx.error = true;
+                        return;
+                    }
+                }
+            }
+            // every brush's bounds and contents, the boxes first
+            struct BrushBounds {
+                float mins[3];
+                float maxs[3];
+                uint32_t contents;
+            };
+            std::vector<BrushBounds> all{};
             for (const Box& b : boxes) {
+                all.push_back({ { b.mins[0], b.mins[1], b.mins[2] }, { b.maxs[0], b.maxs[1], b.maxs[2] }, b.contents });
+            }
+            for (const Convex& c : convex) {
+                all.push_back({ { c.mins[0], c.mins[1], c.mins[2] }, { c.maxs[0], c.maxs[1], c.maxs[2] }, c.contents });
+            }
+            uint32_t allContents{};
+            for (const BrushBounds& b : all) {
                 allContents |= b.contents;
+            }
+
+            // the leaf brush nodes from node 1 (node 0 is the game's empty one): a tree, pre-order (children after their
+            // node, child 0 right after it)
+            struct LeafNode {
+                byte axis{};
+                uint32_t contents{};
+                float dist{};
+                size_t child[2]{};
+                std::vector<uint32_t> brushes{};
+                bool leaf{};
+                bool ownLeaf{}; // a split with its brushes in the leaf after it (count -1)
+            };
+            std::vector<LeafNode> tree{};
+            std::function<size_t(std::vector<uint32_t>&, int)> Build = [&](std::vector<uint32_t>& idx, int depth) -> size_t {
+                size_t me{ tree.size() };
+                tree.emplace_back();
+                uint32_t contents{};
+                for (uint32_t i : idx) {
+                    contents |= all[i].contents;
+                }
+                tree[me].contents = contents;
+                auto Leaf = [&]() {
+                    tree[me].leaf = true;
+                    tree[me].brushes = idx;
+                    return me;
+                };
+                if (idx.size() <= LEAF_BRUSHES || depth >= TREE_DEPTH) {
+                    return Leaf();
+                }
+                float lo[3]{ FLT_MAX, FLT_MAX, FLT_MAX }, hi[3]{ -FLT_MAX, -FLT_MAX, -FLT_MAX };
+                for (uint32_t i : idx) {
+                    for (int a = 0; a < 3; a++) {
+                        float c{ (all[i].mins[a] + all[i].maxs[a]) * 0.5f };
+                        lo[a] = std::min(lo[a], c);
+                        hi[a] = std::max(hi[a], c);
+                    }
+                }
+                int axis{ hi[0] - lo[0] >= hi[1] - lo[1] && hi[0] - lo[0] >= hi[2] - lo[2] ? 0 : hi[1] - lo[1] >= hi[2] - lo[2] ? 1 : 2 };
+                if (hi[axis] - lo[axis] < 1) {
+                    return Leaf();
+                }
+                std::vector<float> centres{};
+                for (uint32_t i : idx) {
+                    centres.push_back((all[i].mins[axis] + all[i].maxs[axis]) * 0.5f);
+                }
+                std::nth_element(centres.begin(), centres.begin() + centres.size() / 2, centres.end());
+                float dist{ centres[centres.size() / 2] };
+                // past the split, under it, across it (kept here)
+                std::vector<uint32_t> front{}, back{}, across{};
+                for (uint32_t i : idx) {
+                    if (all[i].mins[axis] >= dist) front.push_back(i);
+                    else if (all[i].maxs[axis] <= dist) back.push_back(i);
+                    else across.push_back(i);
+                }
+                if (front.empty() || back.empty()) {
+                    return Leaf();
+                }
+                tree[me].axis = (byte)axis;
+                tree[me].dist = dist;
+                if (!across.empty()) {
+                    tree[me].ownLeaf = true;
+                    size_t own{ tree.size() };
+                    tree.emplace_back();
+                    tree[own].leaf = true;
+                    tree[own].brushes = across;
+                    for (uint32_t i : across) {
+                        tree[own].contents |= all[i].contents;
+                    }
+                }
+                size_t f{ Build(front, depth + 1) };
+                size_t b{ Build(back, depth + 1) };
+                tree[me].child[0] = f - me;
+                tree[me].child[1] = b - me;
+                return me;
+            };
+            if (!all.empty()) {
+                std::vector<uint32_t> idx(all.size());
+                for (uint32_t i = 0; i < (uint32_t)all.size(); i++) {
+                    idx[i] = i;
+                }
+                Build(idx, 0);
+            }
+            size_t planeCount{}, vertCount{};
+            for (const Convex& c : convex) {
+                planeCount += c.planes.size();
+                vertCount += c.verts.size();
             }
             float radius{};
             for (size_t i = 0; i < 3; i++) {
@@ -255,9 +425,13 @@ namespace {
             cm.dynEntCollList[0] = (byte*)fastfile::linker::memory::POINTER_NEXT;
             cm.maxRopes = MAX_ROPES;
             cm.ropes = (byte*)fastfile::linker::memory::POINTER_NEXT;
-            cm.info.numMaterials = boxes.empty() ? 1 : 2;
+            cm.info.planeCount = (uint32_t)planeCount;
+            cm.info.planes = planeCount ? (byte*)fastfile::linker::memory::POINTER_NEXT : nullptr;
+            cm.info.numMaterials = (uint32_t)(1 + tree.size());
             cm.info.materials = (byte*)fastfile::linker::memory::POINTER_NEXT;
-            cm.info.numBrushes = (uint32_t)boxes.size();
+            cm.info.numBrushVerts = (uint32_t)vertCount;
+            cm.info.brushVerts = vertCount ? (byte*)fastfile::linker::memory::POINTER_NEXT : nullptr;
+            cm.info.numBrushes = (uint32_t)all.size();
             cm.info.brushes = (byte*)fastfile::linker::memory::POINTER_NEXT;
             cm.info.count60 = 1;
             cm.info.array60 = (byte*)fastfile::linker::memory::POINTER_NEXT;
@@ -293,7 +467,7 @@ namespace {
             ff.data.Align(8);
             byte leaf[LEAF_SIZE]{};
             *(uint32_t*)leaf = 0xFFFFFFFF;
-            if (!boxes.empty()) {
+            if (!all.empty()) {
                 *(uint32_t*)(leaf + 0x4) = allContents;
                 *(uint64_t*)(leaf + 0x28) = 1;
             }
@@ -341,20 +515,59 @@ namespace {
             ff.data.AllocRuntime(ROPE_SIZE * MAX_ROPES);
             ff.data.PopStream();
 
-            // ClipInfo: one material without anything, the brush after the brushes, one u64 of surface flags (none) for its faces
+            // ClipInfo in the loader's order: the planes (each convex brush's a chunk its sides point to), the leaf brush
+            // nodes (node 0 empty, the tree from 1) and their leaves' lists, the brush verts (each brush's a chunk), the
+            // brushes and the one after them, one u64 of surface flags (none) for their faces
+            std::vector<fastfile::linker::memory::LinkerDataChunk*> planeChunks(convex.size()), vertChunks(convex.size());
+            if (planeCount) {
+                ff.data.Align(4);
+                for (size_t i = 0; i < convex.size(); i++) {
+                    if (convex[i].planes.empty()) {
+                        continue;
+                    }
+                    std::vector<byte> planes(PLANE_SIZE * convex[i].planes.size());
+                    for (size_t k = 0; k < convex[i].planes.size(); k++) {
+                        const auto& pl{ convex[i].planes[k] };
+                        byte* o{ planes.data() + PLANE_SIZE * k };
+                        // normal, dist, then the u16 surface material index the traces read (sub_142881E50: 0, the
+                        // brushes' one material; not the old elf's type and signbits)
+                        std::memcpy(o, pl.data(), 16);
+                    }
+                    planeChunks[i] = ff.data.WriteStream(planes.data(), planes.size());
+                }
+            }
+
             ff.data.Align(8);
             byte material[MATERIAL_SIZE]{};
             ff.data.WriteStream(material, sizeof(material));
-            if (!boxes.empty()) {
-                // node 1: a leaf (axis 0) of all the brushes, its list after the nodes
+            for (const LeafNode& n : tree) {
                 byte node[MATERIAL_SIZE]{};
-                *(int32_t*)(node + 0x4) = (int32_t)boxes.size();
-                *(uint32_t*)(node + 0x8) = allContents;
-                *(uint64_t*)(node + 0x10) = fastfile::linker::memory::POINTER_NEXT;
+                node[0] = n.axis;
+                *(uint32_t*)(node + 0x8) = n.contents;
+                if (n.leaf) {
+                    *(int32_t*)(node + 0x4) = (int32_t)n.brushes.size();
+                    *(uint64_t*)(node + 0x10) = fastfile::linker::memory::POINTER_NEXT;
+                } else {
+                    *(int32_t*)(node + 0x4) = n.ownLeaf ? -1 : 0;
+                    *(float*)(node + 0x10) = n.dist;
+                    *(uint32_t*)(node + 0x18) = (uint32_t)n.child[0];
+                    *(uint32_t*)(node + 0x1C) = (uint32_t)n.child[1];
+                }
                 ff.data.WriteStream(node, sizeof(node));
+            }
+            for (const LeafNode& n : tree) {
+                if (n.leaf) {
+                    ff.data.Align(4);
+                    ff.data.WriteStream(n.brushes.data(), n.brushes.size() * sizeof(uint32_t));
+                }
+            }
+
+            if (vertCount) {
                 ff.data.Align(4);
-                for (uint32_t i = 0; i < (uint32_t)boxes.size(); i++) {
-                    ff.data.WriteStream<uint32_t>(i);
+                for (size_t i = 0; i < convex.size(); i++) {
+                    if (!convex[i].verts.empty()) {
+                        vertChunks[i] = ff.data.WriteStream(convex[i].verts.data(), convex[i].verts.size() * sizeof(convex[i].verts[0]));
+                    }
                 }
             }
 
@@ -366,6 +579,22 @@ namespace {
                 *(uint32_t*)(brush + 0x1C) = b.contents;
                 std::memcpy(brush + 0x20, b.maxs, sizeof(b.maxs));
                 ff.data.WriteStream(brush, sizeof(brush));
+            }
+            for (size_t i = 0; i < convex.size(); i++) {
+                const Convex& c{ convex[i] };
+                byte* brush{ ff.data.AllocStreamPtr<byte>(BRUSH_SIZE) };
+                TemplateBrush(brush, 0);
+                std::memcpy(brush + 0x10, c.mins, sizeof(c.mins));
+                *(uint32_t*)(brush + 0x1C) = c.contents;
+                std::memcpy(brush + 0x20, c.maxs, sizeof(c.maxs));
+                if (planeChunks[i]) {
+                    planeChunks[i]->refs.push_back((void**)brush);
+                    brush[0x3A] = (byte)c.planes.size();
+                }
+                if (vertChunks[i]) {
+                    vertChunks[i]->refs.push_back((void**)(brush + 0x8));
+                    *(uint16_t*)(brush + 0x38) = (uint16_t)c.verts.size();
+                }
             }
             byte lastBrush[BRUSH_SIZE];
             TemplateBrush(lastBrush, 0);
@@ -379,7 +608,8 @@ namespace {
 
             LOG_INFO(
                 "Added asset col_map {} (hash_{:x}), bounds ({} {} {}) ({} {} {}), {}",
-                assetName, cm.name.name, mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2], std::format("{} brush(es)", boxes.size())
+                assetName, cm.name.name, mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2],
+                std::format("{} box and {} convex brush(es), {} planes, {} verts, {} leaf brush nodes", boxes.size(), convex.size(), planeCount, vertCount, tree.size())
             );
         }
     };

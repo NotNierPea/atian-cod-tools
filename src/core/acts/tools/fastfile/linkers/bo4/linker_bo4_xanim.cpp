@@ -21,7 +21,9 @@
  *     "additive": false,           // type 1, the stock view model anims' (most of core_common's), instead of 6 / 7
  *     "bones": "all",              // or "animated": only the joints the animation has channels on
  *     "skeleton": "skeletons/body.json",  // for a game skeleton (the xmodel linker's): its bones' frames
- *     "notifies": [                // time 0..1, "end" is added at 1
+ *     "skeletonPositions": "gltf", // with "skeleton", as the model's: its bones at the glTF's joints (own proportions)
+ *     "extraJoints": { "j_my_jaw": "j_head" },  // as the model's: its own cosmetic bones
+ *     "notifies": [               // time 0..1, "end" is added at 1
  *         { "name": "hit", "time": 0.5 },                           // a script notify (the notetrack)
  *         { "sound": "my_alias", "tag": "j_head", "time": 0.2 },    // a sound alias, on a tag or the entity
  *         { "rumble": "damage_light", "time": 0.3 },
@@ -492,6 +494,29 @@ namespace {
             if (!skeletonPath.empty()) {
                 if (!game.Load(path.parent_path() / skeletonPath, err)) {
                     Fail(std::format("skeleton {}: {}", skeletonPath, err));
+                    return;
+                }
+                if (!game.AddExtraJoints(cfg.main, err)) {
+                    Fail(err);
+                    return;
+                }
+                // "skeletonPositions": "gltf", as the model's: the bones at the glTF's joints (its own proportions), or
+                // the moves land on the game's bind places and pull the joints apart (a small model's hands)
+                std::string positions{ cfg.GetString("skeletonPositions", "game") };
+                if (positions == "gltf") {
+                    std::vector<std::optional<std::array<double, 3>>> pos(game.Count());
+                    for (size_t j = 0; j < skel.nodes.size(); j++) {
+                        int g{ game.Index(skel.names[j]) };
+                        if (g < 0) {
+                            continue;
+                        }
+                        double q[4], t[3];
+                        skel.ToGame(skel.restWorld[j], q, t);
+                        pos[g] = std::array<double, 3>{ t[0], t[1], t[2] };
+                    }
+                    game.Reposition(pos);
+                } else if (positions != "game") {
+                    Fail("unknown skeletonPositions, game or gltf");
                     return;
                 }
                 gameJoint.assign(game.Count(), -1);

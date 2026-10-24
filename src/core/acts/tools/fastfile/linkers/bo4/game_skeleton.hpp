@@ -91,6 +91,58 @@ namespace fastfile::linker::bo4::gltf {
             }
         }
 
+        /*
+         * A new cosmetic bone on a bone of the skeleton (a joint of the model's own the skeleton hasn't, as a face's): at
+         * its parent's bind, turned as it (Reposition places it at its joint after). The game animates cosmetic bones by
+         * name (stock anims move zm_body's helpers), the skeleton's anims don't have it: it stays at its bind with them.
+         */
+        bool AddCosmetic(const std::string& name, const std::string& parentName, std::string& err) {
+            int parent{ Index(parentName) };
+            if (parent < 0 || parent > 0xFF) {
+                err = std::format("extra joint {}: no parent bone {} (at most index 255)", name, parentName);
+                return false;
+            }
+            if (Index(name) >= 0) {
+                err = std::format("extra joint {}: the skeleton has it", name);
+                return false;
+            }
+            size_t children{ Count() - numRoots };
+            names.push_back(name);
+            parents.push_back(parent);
+            parentList.push_back((byte)parent);  // a cosmetic bone's parent is an absolute index
+            // its local turn none (PackQuat of identity: w the largest, axis index 1, the others 0)
+            uint64_t identity{ 1 };
+            quats.insert(quats.end(), (byte*)&identity, (byte*)&identity + 8);
+            // packed float3s, the loader reads 16 bytes a bone (zeros after them)
+            trans.resize(12 * children);
+            trans.resize(16 * (children + 1));
+            partClassification.push_back(partClassification[parent]);
+            baseMat.insert(baseMat.end(), baseMat.begin() + BASE_MAT_SIZE * parent, baseMat.begin() + BASE_MAT_SIZE * (parent + 1));
+            numCosmetic++;
+            return true;
+        }
+
+        // "extraJoints": { "name": "parent bone", ... } of a linker's json: AddCosmetic each
+        bool AddExtraJoints(const rapidjson::Value& cfg, std::string& err) {
+            auto it{ cfg.FindMember("extraJoints") };
+            if (it == cfg.MemberEnd()) {
+                return true;
+            }
+            if (!it->value.IsObject()) {
+                err = "extraJoints: { joint: parent bone }";
+                return false;
+            }
+            for (auto j{ it->value.MemberBegin() }; j != it->value.MemberEnd(); ++j) {
+                if (!j->value.IsString() || !AddCosmetic(j->name.GetString(), j->value.GetString(), err)) {
+                    if (err.empty()) {
+                        err = std::format("extra joint {}: its parent isn't a name", j->name.GetString());
+                    }
+                    return false;
+                }
+            }
+            return true;
+        }
+
         bool Load(const std::filesystem::path& path, std::string& err) {
             BO4Json js{ path };
             if (!js.SyncConfig(false)) {
