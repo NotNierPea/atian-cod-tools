@@ -1520,6 +1520,94 @@ namespace {
         return tool::OK;
     }
 
+    // the index of every xpak of a casc storage matching a mask, read in place: <out>/<pak>.idx, 0x18 bytes entries
+    int cascxpakindex(Process& proc, int argc, const char* argv[]) {
+        if (argc < 5) {
+            return tool::BAD_USAGE;
+        }
+        HANDLE storage{};
+        if (!CascOpenStorage(argv[2], 0, &storage)) {
+            LOG_ERROR("Can't open local path {}", argv[2]);
+            return tool::BASIC_ERROR;
+        }
+        utils::CloseEnd cs{ [storage] { CascCloseStorage(storage); } };
+
+        // a split pak's parts (x.xpak_1, x.xpak_2...) run its offsets on
+        std::map<std::string, uint64_t> sizes{};
+        CASC_FIND_DATA data;
+        HANDLE find{ CascFindFirstFile(storage, argv[3], &data, NULL) };
+        if (!find) {
+            LOG_ERROR("No file matching {}", argv[3]);
+            return tool::BASIC_ERROR;
+        }
+        do {
+            if (data.bFileAvailable) {
+                sizes[data.szFileName] = data.FileSize;
+            }
+        } while (CascFindNextFile(find, &data));
+        CascFindClose(find);
+
+        auto ReadAt = [&](const std::string& pak, uint64_t offset, void* out, size_t len) -> bool {
+            byte* dst{ (byte*)out };
+            for (size_t part = 0; len; part++) {
+                std::string name{ part ? std::format("{}_{}", pak, part) : pak };
+                auto it{ sizes.find(name) };
+                if (it == sizes.end()) {
+                    return false;
+                }
+                if (offset >= it->second) {
+                    offset -= it->second;
+                    continue;
+                }
+                HANDLE fh{};
+                if (!CascOpenFile(storage, name.data(), CASC_LOCALE_ALL, 0, &fh)) {
+                    return false;
+                }
+                utils::CloseEnd ce{ [fh] { CascCloseFile(fh); } };
+                ULONGLONG pos{};
+                size_t n{ (size_t)std::min<uint64_t>(len, it->second - offset) };
+                DWORD read{};
+                if (!CascSetFilePointer64(fh, (LONGLONG)offset, &pos, FILE_BEGIN) || !CascReadFile(fh, dst, (DWORD)n, &read) || read != n) {
+                    return false;
+                }
+                dst += n;
+                len -= n;
+                offset = 0;
+            }
+            return true;
+        };
+
+        int ret{ tool::OK };
+        for (const auto& [name, size] : sizes) {
+            if (name.find(".xpak_") != std::string::npos) {
+                continue;
+            }
+            byte header[0x200];
+            if (!ReadAt(name, 0, header, sizeof(header)) || *(uint32_t*)header != 0x4950414B) {
+                LOG_WARNING("can't read the xpak header of {}", name);
+                ret = tool::BASIC_ERROR;
+                continue;
+            }
+            uint64_t indexOffset{ *(uint64_t*)(header + 0x38) };
+            uint64_t indexSize{ *(uint64_t*)(header + 0x40) };
+            std::vector<byte> index(indexSize);
+            if (indexSize > 0x40000000 || !ReadAt(name, indexOffset, index.data(), index.size())) {
+                LOG_WARNING("can't read the index of {}", name);
+                ret = tool::BASIC_ERROR;
+                continue;
+            }
+            std::filesystem::path out{ std::filesystem::path{ argv[4] } / (std::filesystem::path{ name }.filename().string() + ".idx") };
+            std::filesystem::create_directories(out.parent_path());
+            if (!utils::WriteFile(out, index)) {
+                LOG_ERROR("Can't write {}", out.string());
+                ret = tool::BASIC_ERROR;
+                continue;
+            }
+            LOG_INFO("{} {} entries", name, indexSize / 0x18);
+        }
+        return ret;
+    }
+
     int h32ck(Process& proc, int argc, const char* argv[]) {
         if (argc < 3) {
             return tool::BAD_USAGE;
@@ -1600,5 +1688,6 @@ ADD_TOOL(ffexe, "fastfile", " [ff]", "test fastfile", ffexe);
 ADD_TOOL(casctest, "fastfile", " [path]", "test casc", nullptr, casctest);
 ADD_TOOL(cascextract, "fastfile", " [path] [mask] [out]", "extract casc files", nullptr, cascextract);
 ADD_TOOL(casclist, "fastfile", " [path] [mask]", "list casc files", nullptr, casclist);
+ADD_TOOL(cascxpakindex, "fastfile", " [path] [mask] [out]", "dump the indexes of casc xpaks", nullptr, cascxpakindex);
 ADD_TOOL(h32ck, "fastfile", " [path]", "hash checksum", nullptr, h32ck);
 ADD_TOOL(bdiffinst, "fastfile", " [game]", "test bdiff", bdiffinst);
