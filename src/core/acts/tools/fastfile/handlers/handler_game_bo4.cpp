@@ -67,10 +67,14 @@ namespace fastfile::handlers::bo4 {
             size_t preloadPos{};
             // the game's module, for the return addresses of its loaders
             byte* gameBase{};
-            // ACTS_OLD_ZONE: a zone of an older build (changelist 3310077, no .fd patch), see OldZoneSize
+            // ACTS_OLD_ZONE: a zone of an older build (no .fd patch), see OldZoneSize; its value is the changelist
+            // (3310077 for 1)
             bool oldZone{};
-            // ACTS_STREAM_LOG=<file>: every Load_Stream of the loaded assets (the game's rva, size, stream position)
+            uint32_t oldBuild{};
+            // ACTS_STREAM_LOG=<file>: every Load_Stream of the loaded assets (the game's rva, size, stream position);
+            // ACTS_STREAM_LOG_FROM=<offset>: only those from that stream offset on, flushed at once
             std::ofstream streamLog{};
+            size_t streamLogFrom{};
         } gcx{};
 
         struct {
@@ -229,11 +233,58 @@ namespace fastfile::handlers::bo4 {
         }
     }
 
+    namespace old_zone {
+        void ImageParts();
+        // the dpvs being loaded (sub_142E1F510)
+        extern byte* dpvs;
+
+        // a struct made from an old one by copies {new offset, old offset, size}, the rest zeros
+        struct Copy {
+            size_t to;
+            size_t from;
+            size_t size;
+        };
+
+        template<size_t N>
+        void Remap(const byte* from, byte* to, const Copy (&copies)[N]) {
+            for (const Copy& c : copies) {
+                std::memcpy(to + c.to, from + c.from, c.size);
+            }
+        }
+
+        /*
+         * FxElemDef, 0x290 in 3233729: in the dev build's order (flags first), today's is reordered (visuals first).
+         * From zm_mansion's 1876 element pairs; old +0x248..+0x254, +0x28C.. and new +0x1D4, +0x1FC..+0x208 unknown (zeros)
+         */
+        constexpr Copy FX_ELEM_COPIES[]{
+            { 0x118, 0x00, 4 }, { 0x11C, 0x04, 4 }, { 0x108, 0x08, 0x10 }, { 0x130, 0x18, 0x18 }, { 0x234, 0x30, 4 },
+            { 0x120, 0x34, 0x10 }, { 0x148, 0x44, 0x60 }, { 0x224, 0xA4, 4 }, { 0x1A8, 0xA8, 0x10 }, { 0x265, 0xB8, 7 },
+            { 0x240, 0xC0, 4 }, { 0x264, 0xC4, 1 }, { 0x26D, 0xC5, 1 }, { 0x26C, 0xC6, 1 }, { 0x277, 0xC7, 1 },
+            { 0x278, 0xC8, 1 }, { 0x26E, 0xC9, 7 }, { 0x275, 0xD0, 1 }, { 0x88, 0xD8, 0x28 }, { 0x00, 0x100, 0x80 },
+            { 0x1D8, 0x180, 0x18 }, { 0x1F0, 0x198, 0xC }, { 0xC8, 0x1A8, 0x30 }, { 0x1B8, 0x1D8, 0x18 },
+            { 0x1D0, 0x1F0, 4 }, { 0xF8, 0x1F8, 0x10 }, { 0x238, 0x208, 4 }, { 0x23C, 0x210, 4 }, { 0x80, 0x218, 8 },
+            { 0x25C, 0x220, 8 }, { 0xC0, 0x228, 8 }, { 0xB0, 0x230, 0x10 }, { 0x214, 0x240, 8 }, { 0x21C, 0x254, 8 },
+            { 0x228, 0x25C, 8 }, { 0x230, 0x264, 4 }, { 0x208, 0x268, 0xC }, { 0x244, 0x274, 0x18 },
+        };
+    }
+
     constexpr size_t LIGHT_PROBE_SIZE = 0x144;
     constexpr size_t OLD_LIGHT_PROBE_SIZE = 0x148;
 
     // the size a load of the game has in a zone of an older build, by the loader's return address (rva)
     size_t OldZoneSize(size_t rva, size_t size) {
+        if (gcx.oldBuild == 3233729) {
+            switch (rva) {
+            case 0x2E2ECEB: // a StringTable's cells (sub_142E2EBB0): 0x20 then, 0x18 now
+                return size / 0x18 * 0x20;
+            case 0x2E1A607: // an effect's FxElemDefs (sub_142E1A5E0): 0x290 then, 0x280 now
+                return size / 0x280 * 0x290;
+            case 0x2E2C2F0: // a TerrainGfx section's materials (sub_142E2C0D0): 0x100 then, 0x108 now (OldZoneGrow)
+                return size / 0x108 * 0x100;
+            case 0x2E36A05: // an XModel's mesh/material sets (Load_XModel): 0x20 then (two floats after), 0x18 now
+                return size / 0x18 * 0x20;
+            }
+        }
         switch (rva) {
         case 0x2E25DD1: // PhysGeomList's tree (sub_142E25CC0)
         case 0x2E36B77: // XModelCollSurf's tree (Load_XModel)
@@ -248,8 +299,71 @@ namespace fastfile::handlers::bo4 {
         }
     }
 
+    /*
+     * The old data of a load made bigger where it was read, when the loader walks it with today's size from where it
+     * read it (no pointer to move): the block's room after it is taken too (the zone's virtual block has room to spare)
+     */
+    bool OldZoneGrow(size_t rva, byte* data, size_t oldSize, size_t size) {
+        if (gcx.oldBuild != 3233729) {
+            return false;
+        }
+        switch (rva) {
+        case 0x2E2C2F0:
+            // TerrainGfx materials: 8 more bytes at the end, zeros
+            for (size_t i = size / 0x108; i-- > 0;) {
+                std::memmove(data + i * 0x108, data + i * 0x100, 0x100);
+                std::memset(data + i * 0x108 + 0x100, 0, 8);
+            }
+            return true;
+        default:
+            return false;
+        }
+    }
+
     // the old data of a load made into today's layout where it was read (it got smaller or kept its size)
     void OldZoneConvert(size_t rva, byte* data, size_t size) {
+        if (gcx.oldBuild == 3233729 && rva == 0x2E1A607) {
+            // FxElemDefs, the old one first (in place: the new one is smaller)
+            for (size_t i = 0; i < size / 0x280; i++) {
+                byte from[0x290];
+                std::memcpy(from, data + i * 0x290, sizeof(from));
+                byte* to{ data + i * 0x280 };
+                std::memset(to, 0, 0x280);
+                old_zone::Remap(from, to, old_zone::FX_ELEM_COPIES);
+            }
+            return;
+        }
+        if (gcx.oldBuild == 3233729 && rva == 0x2E36A05) {
+            // XModel sets {count, mesh, materials, 2 floats} then: the floats dropped (1/128 in the models seen)
+            for (size_t i = 0; i < size / 0x18; i++) {
+                std::memmove(data + i * 0x18, data + i * 0x20, 0x18);
+            }
+            return;
+        }
+        if (gcx.oldBuild == 3233729 && rva == 0x2E2ECEB) {
+            // a StringTable cell: {value, 8, u8 type +0x10, u32 hash +0x18} then, {value, 8, u32 hash, u8 type +0x14} now
+            for (size_t i = 0; i < size / 0x18; i++) {
+                const byte* from{ data + i * 0x20 };
+                byte* to{ data + i * 0x18 };
+                const byte type{ from[0x10] };
+                const uint32_t hash{ *(const uint32_t*)(from + 0x18) };
+                std::memmove(to, from, 0x10);
+                *(uint32_t*)(to + 0x10) = hash;
+                *(uint32_t*)(to + 0x14) = type;
+            }
+            return;
+        }
+        if (gcx.oldBuild == 3233729 && rva == 0x2E2E14E) {
+            /*
+             * sub_142E2E0C0's 0x48 (a streamkey, a bank's data): +0x45/+0x46 were at +0x46/+0x47 (the flags of where its
+             * data is, sub_142E2DFE0). +0x45 is 2 for a bank's (5 at +0x46) in every zone seen, 0 for the others
+             */
+            const byte type{ data[0x45] };
+            data[0x47] = data[0x46];
+            data[0x46] = type;
+            data[0x45] = type == 5 ? 2 : 0;
+            return;
+        }
         switch (rva) {
         case 0x2E2EA32:
             // a streamer world's 0x38 entries: +0x10..+0x34 were left with the linker's pointers, they are zeros now
@@ -276,12 +390,25 @@ namespace fastfile::handlers::bo4 {
         size_t newSize{ size };
         if (gcx.oldZone) {
             size = OldZoneSize(rva, size);
+            if (rva == 0x2E1CFD3 && gcx.oldBuild == 3233729) {
+                old_zone::ImageParts();
+                return true;
+            }
+            if (rva == 0x2E1F929 && gcx.oldBuild == 3233729 && old_zone::dpvs && atStreamStart) {
+                // the dpvs' runtime array (+0x280) was a u32 for each static model then, in the zone
+                const size_t oldSize{ 4ull * *(uint32_t*)(old_zone::dpvs + 4) };
+                DB_LoadXFileData(nullptr, oldSize);
+            }
         }
-        if (gcx.streamLog.is_open() && atStreamStart) {
+        if (gcx.streamLog.is_open() && atStreamStart && gcx.reader->Loc() >= gcx.streamLogFrom) {
             // and the offset in its block, which the linker's offsets to it (block << 60 | offset + 1) give
             const byte* blockData{ gcx.g_streamBlocks ? gcx.g_streamBlocks[gcx.g_streamPosIndex].data : nullptr };
             gcx.streamLog << std::hex << rva << " " << size << " " << gcx.reader->Loc() << " "
                           << (int)gcx.g_streamPosIndex << " " << (blockData ? (size_t)((byte*)ptr - blockData) : 0) << "\n";
+            if (gcx.streamLogFrom) {
+                // a short log of where a crash is: kept whole
+                gcx.streamLog.flush();
+            }
         }
         LOG_TRACE(
             "Load_Stream({}, {}, {}) {}",
@@ -305,6 +432,10 @@ namespace fastfile::handlers::bo4 {
             DB_IncStreamPos(size);
             if (gcx.oldZone) {
                 OldZoneConvert(rva, (byte*)ptr, newSize);
+                if (newSize > size && OldZoneGrow(rva, (byte*)ptr, size, newSize)) {
+                    // made bigger where it was read (the loader walks it with today's size): the block moves on too
+                    DB_IncStreamPos(newSize - size);
+                }
             }
             return true;
         case XFILE_BLOCK_RUNTIME_VIRTUAL:
@@ -379,6 +510,18 @@ namespace fastfile::handlers::bo4 {
             original(false, count, expanded);
         }
 
+        hook::library::Detour dpvsDetour{};
+        byte* dpvs{};
+
+        // sub_142E1F510: a GfxWorld's dpvs (0x2E0 at +0x1B8)
+        char Dpvs(bool atStreamStart, byte* planes, byte* world) {
+            auto original{ dpvsDetour.GetBase<char(bool, byte*, byte*)>() };
+            dpvs = planes;
+            char r{ original(atStreamStart, planes, world) };
+            dpvs = nullptr;
+            return r;
+        }
+
         hook::library::Detour worldDetour{};
 
         constexpr size_t WORLD_SIZE = 0x1AB0;
@@ -399,10 +542,36 @@ namespace fastfile::handlers::bo4 {
         }
 
         // sub_142E1E830: the GfxWorld (gfx_map)
+        /*
+         * The GfxWorld of 3233729 (0x1A20): today's +0x488..+0x498 and +0x1808..+0x1898 (the materials and parts
+         * structs) weren't there; it had a {count, pointer} at +0x560 that today's hasn't (WorldOldArray)
+         */
+        constexpr Copy WORLD_3233729_COPIES[]{
+            { 0, 0, 0x488 }, { 0x498, 0x488, 0x570 - 0x498 }, { 0x570, 0x570, 0x1808 - 0x570 },
+            { 0x1898, 0x1808, 0x1AB0 - 0x1898 },
+        };
+        // the old world loading, its +0x560 pair
+        byte* oldWorld{};
+        byte* world3233729{};
+
         char World(bool atStreamStart, byte* world) {
             auto original{ worldDetour.GetBase<char(bool, byte*)>() };
             if (!atStreamStart) {
                 return original(atStreamStart, world);
+            }
+            if (gcx.oldBuild == 3233729) {
+                if (!Load_Stream(true, world, 0x1A20)) {
+                    return 0;
+                }
+                byte* expanded{ gcx.allocator.Alloc<byte>(WORLD_SIZE) };
+                std::memset(expanded, 0, WORLD_SIZE);
+                Remap(world, expanded, WORLD_3233729_COPIES);
+                LOG_INFO("old zone: world +0x560 {} {:x}, at stream 0x{:x}", *(uint32_t*)(world + 0x560), *(uint64_t*)(world + 0x568), gcx.reader->Loc());
+                oldWorld = world;
+                world3233729 = expanded;
+                char r{ original(false, expanded) };
+                oldWorld = world3233729 = nullptr;
+                return r;
             }
             if (!Load_Stream(true, world, OLD_WORLD_SIZE)) {
                 return 0;
@@ -417,7 +586,10 @@ namespace fastfile::handlers::bo4 {
         hook::library::Detour modelInfoDetour{};
 
         constexpr size_t MODEL_INFO_TABLE_SIZE = 0x4438;
-        constexpr size_t OLD_MODEL_INFO_TABLE_SIZE = 0x4420;
+        // 0x4420 in 3310077, 0x4418 in 3233729
+        size_t OldModelInfoTableSize() {
+            return gcx.oldBuild == 3233729 ? 0x4418 : 0x4420;
+        }
 
         template<typename T>
         T Game(size_t rva) {
@@ -433,10 +605,29 @@ namespace fastfile::handlers::bo4 {
             if (atStreamStart && !Load_Stream(true, info, 0x200)) {
                 return;
             }
+            if (gcx.oldBuild == 3233729) {
+                // no u16 at +0x1F2 then: the counts after it (+0x1F6 the xmodels', +0x1F9) were 2 bytes earlier
+                std::memmove(info + 0x1F4, info + 0x1F2, 0xC);
+                *(uint16_t*)(info + 0x1F2) = 0;
+            }
             if (*(byte**)(info + 0x18)) {
                 byte* p{ (byte*)DB_AllocStreamPos(7) };
                 *(byte**)(info + 0x18) = p;
-                if (Load_Stream(true, p, 0x390)) {
+                /*
+                 * 3233729: its count at +0x380 (+0x388 now), and 0x388 bytes long, but 8 zero bytes more when a table
+                 * (+0x20) follows (sky's models; why isn't known)
+                 */
+                const bool old{ gcx.oldBuild == 3233729 };
+                const size_t size{ old && !*(byte**)(info + 0x20) ? 0x388ull : 0x390ull };
+                if (Load_Stream(true, p, size)) {
+                    if (old) {
+                        byte* expanded{ gcx.allocator.Alloc<byte>(0x390) };
+                        std::memcpy(expanded, p, 0x380);
+                        std::memset(expanded + 0x380, 0, 0x10);
+                        *(uint32_t*)(expanded + 0x388) = *(uint32_t*)(p + 0x380);
+                        p = expanded;
+                        *(byte**)(info + 0x18) = p;
+                    }
                     for (size_t i = 0; i < 0x20; i++) {
                         fixString(p + i * 0x1C);
                     }
@@ -447,9 +638,9 @@ namespace fastfile::handlers::bo4 {
                 byte* table{ gcx.allocator.Alloc<byte>(MODEL_INFO_TABLE_SIZE) };
                 std::memset(table, 0, MODEL_INFO_TABLE_SIZE);
                 *(byte**)(info + 0x20) = table;
-                if (Load_Stream(true, p, OLD_MODEL_INFO_TABLE_SIZE)) {
-                    std::memcpy(table, p, OLD_MODEL_INFO_TABLE_SIZE);
-                    for (size_t i = 0; i < OLD_MODEL_INFO_TABLE_SIZE; i++) {
+                if (Load_Stream(true, p, OldModelInfoTableSize())) {
+                    std::memcpy(table, p, OldModelInfoTableSize());
+                    for (size_t i = 0; i < OldModelInfoTableSize(); i++) {
                         if (p[i]) {
                             LOG_WARNING("old zone: a model info table that isn't zeros, its layout is a guess");
                             break;
@@ -564,12 +755,435 @@ namespace fastfile::handlers::bo4 {
 
             byte* expanded{ gcx.allocator.Alloc<byte>(STREAMER_WORLD_SIZE) };
             std::memset(expanded, 0, STREAMER_WORLD_SIZE);
-            std::memcpy(expanded, world, 0xB8);
-            std::memcpy(expanded + 0xC8, world + 0xB8, OLD_STREAMER_WORLD_SIZE - 0xB8);
+            // in 3233729 it's the pair at +0x98 (zm_mansion's counts say)
+            const size_t pair{ gcx.oldBuild == 3233729 ? 0x98ull : 0xB8ull };
+            std::memcpy(expanded, world, pair);
+            std::memcpy(expanded + pair + 0x10, world + pair, OLD_STREAMER_WORLD_SIZE - pair);
+            return original(false, expanded);
+        }
+
+        hook::library::Detour xanimDetour{};
+
+        constexpr size_t XANIM_SIZE = 0x130;
+        constexpr size_t OLD_XANIM_SIZE = 0x128;
+
+        /*
+         * sub_142E35510: the XAnimParts (0x130). In 3233729 it was 0x128: no u64 at +0xB8 (zeros in every zone today),
+         * and a byte at +0x118 (0 or 1) before what is +0x120 now (checked on mp_elevation's base and patched zones)
+         */
+        char XAnim(bool atStreamStart, byte* anim) {
+            auto original{ xanimDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, anim);
+            }
+            if (!Load_Stream(true, anim, OLD_XANIM_SIZE)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(XANIM_SIZE) };
+            std::memset(expanded, 0, XANIM_SIZE);
+            std::memcpy(expanded, anim, 0xB8);
+            std::memcpy(expanded + 0xC0, anim + 0xB8, 0x60);
+            std::memcpy(expanded + 0x120, anim + 0x119, OLD_XANIM_SIZE - 0x119);
+            return original(false, expanded);
+        }
+
+        hook::library::Detour meshDetour{};
+
+        constexpr size_t MESH_SIZE = 0x58;
+        constexpr size_t OLD_MESH_SIZE = 0x50;
+
+        // sub_142E36F90: the XModelMesh (0x58, 0x50 in 3233729: the byte at +0x50 was at +0x4F, +0x4F is 0 today)
+        char Mesh(bool atStreamStart, byte* mesh) {
+            auto original{ meshDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, mesh);
+            }
+            if (!Load_Stream(true, mesh, OLD_MESH_SIZE)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(MESH_SIZE) };
+            std::memset(expanded, 0, MESH_SIZE);
+            std::memcpy(expanded, mesh, 0x4F);
+            expanded[0x50] = mesh[0x4F];
+            return original(false, expanded);
+        }
+
+        hook::library::Detour imageDetour{};
+
+        constexpr size_t IMAGE_SIZE = 0x88;
+        constexpr size_t OLD_IMAGE_SIZE = 0x120;
+        // the old image being loaded: its parts are in its header
+        byte* oldImage{};
+        byte* image{};
+
+        /*
+         * Load_Simple sub_142E1CEF0: the GfxImage (0x88, 0x120 in 3233729). Its 0x28 parts (u8 count +0x7D, at most 4)
+         * were in the header at +0x30, a pointer to them now; +0x38..+0x88 were at +0xD0. The parts are read where they
+         * are (OldZoneSize 0 for them, OldZoneParts).
+         */
+        char Image(bool atStreamStart, byte* img) {
+            auto original{ imageDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, img);
+            }
+            if (!Load_Stream(true, img, OLD_IMAGE_SIZE)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(IMAGE_SIZE) };
+            std::memset(expanded, 0, IMAGE_SIZE);
+            std::memcpy(expanded, img, 0x30);
+            std::memcpy(expanded + 0x38, img + 0xD0, OLD_IMAGE_SIZE - 0xD0);
+            if (expanded[0x7D] > 4) {
+                LOG_WARNING("old zone: image {:x} has {} parts", *(uint64_t*)(img + 0x20), (int)expanded[0x7D]);
+            }
+            // not 0: the loader reads them (nothing)
+            *(uint64_t*)(expanded + 0x30) = expanded[0x7D] ? 1 : 0;
+            oldImage = img;
+            image = expanded;
+            char r{ original(false, expanded) };
+            oldImage = image = nullptr;
+            return r;
+        }
+
+        // the old image's parts, read where they are (Load_Stream of sub_142E1CEF0 at 0x142E1CFD3)
+        void ImageParts() {
+            if (image) {
+                *(byte**)(image + 0x30) = oldImage + 0x30;
+            }
+        }
+
+        hook::library::Detour soundBankDetour{};
+
+        constexpr size_t SOUND_BANK_SIZE = 0x130;
+        constexpr size_t OLD_SOUND_BANK_SIZE = 0x25160;
+
+        /*
+         * sub_142E2A9F0: the SndBank (0x130, 0x25160 in 3233729). After what is +0x78 now it had 0x25058 bytes of its
+         * own (zones: planes, brushes, named entries, their count at +0x250C8; zeros in mp_elevation), dropped; the
+         * music sets' {count, pointer} followed (zm_mansion's), today's +0xA8
+         */
+        // the bank being loaded (its name hash at +8 is its aliases' file names)
+        byte* soundBank{};
+
+        char SoundBank(bool atStreamStart, byte* bank) {
+            auto original{ soundBankDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, bank);
+            }
+            if (!Load_Stream(true, bank, OLD_SOUND_BANK_SIZE)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(SOUND_BANK_SIZE) };
+            std::memset(expanded, 0, SOUND_BANK_SIZE);
+            // the music sets' pair (+0xA8) and the next one were at +0x250D0, the three before them not there
+            constexpr Copy copies[]{ { 0, 0, 0x78 }, { 0xA8, 0x250D0, SOUND_BANK_SIZE - 0xA8 } };
+            Remap(bank, expanded, copies);
+            soundBank = expanded;
+            char r{ original(false, expanded) };
+            soundBank = nullptr;
+            return r;
+        }
+
+        hook::library::Detour aliasListsDetour{};
+
+        constexpr size_t ALIAS_SIZE = 0x1C0;
+        constexpr size_t OLD_ALIAS_SIZE = 0x190;
+
+        /*
+         * sub_142E2A810: a bank's alias lists (0x28: aliases +0x10, count +0x18). An alias (0x1C0) was 0x190 in 3233729,
+         * without the three file names (XHash, 0x10 each) at +0x78, the bank's name in zones today
+         */
+        void AliasLists(bool atStreamStart, uint64_t count, byte* lists) {
+            auto original{ aliasListsDetour.GetBase<void(bool, uint64_t, byte*)>() };
+            if (gcx.oldBuild != 3233729) {
+                original(atStreamStart, count, lists);
+                return;
+            }
+            if (atStreamStart && !Load_Stream(true, lists, 0x28 * count)) {
+                return;
+            }
+            auto fixString{ Game<void (*)(void*)>(0x2EBC480) };
+            for (size_t i = 0; i < count; i++) {
+                byte* list{ lists + i * 0x28 };
+                uint64_t& aliases{ *(uint64_t*)(list + 0x10) };
+                if (aliases != ~0ull) {
+                    if (aliases) {
+                        Game<void (*)(void*)>(0x2EBBFF0)(&aliases);
+                    }
+                    continue;
+                }
+                size_t n{ (size_t)*(int32_t*)(list + 0x18) };
+                byte* old{ (byte*)DB_AllocStreamPos(7) };
+                byte* expanded{ gcx.allocator.Alloc<byte>(ALIAS_SIZE * n) };
+                std::memset(expanded, 0, ALIAS_SIZE * n);
+                aliases = (uint64_t)expanded;
+                if (!Load_Stream(true, old, OLD_ALIAS_SIZE * n)) {
+                    continue;
+                }
+                for (size_t j = 0; j < n; j++) {
+                    byte* to{ expanded + j * ALIAS_SIZE };
+                    const byte* from{ old + j * OLD_ALIAS_SIZE };
+                    std::memcpy(to, from, 0x78);
+                    std::memcpy(to + 0xA8, from + 0x78, OLD_ALIAS_SIZE - 0x78);
+                    for (size_t k = 0; k < 3 && soundBank; k++) {
+                        *(uint64_t*)(to + 0x78 + k * 0x10) = *(uint64_t*)(soundBank + 8);
+                    }
+                    fixString(to + 0x40);
+                }
+            }
+        }
+
+        hook::library::Detour weaponDetour{};
+
+        constexpr size_t WEAPON_SIZE = 0x1550;
+        constexpr size_t OLD_WEAPON_SIZE = 0x14C8;
+
+        /*
+         * The WeaponDef of 3233729 (0x14C8), from zm_mansion's 42 weapons: inserts inside zero runs are placed by the
+         * loader's fields (XHash slots 0x730 and 0x890, the pointer 0xC18, 0xD28; of the 8 small arrays at 0xCE8..0xD20
+         * it lacked one of the three 8-byte ones, taken as 0xD08: the children of zm_mansion's and sky's weapons say)
+         */
+        constexpr Copy WEAPON_COPIES[]{
+            { 0, 0, 0x730 },
+            { 0x740, 0x730, 0x890 - 0x740 },
+            { 0x8A0, 0x880, 0x28 },
+            { 0x8C8, 0x8B0, 0x904 - 0x8C8 },
+            { 0x924, 0x8EC, 0xC18 - 0x924 },
+            { 0xC20, 0xBE0, 0xD08 - 0xC20 },
+            { 0xD10, 0xCC8, 0x18 },
+            { 0xD30, 0xCE0, 0xF70 - 0xD30 },
+            { 0xF78, 0xF20, 0x1290 - 0xF78 },
+            { 0x12B8, 0x1238, 0x1370 - 0x12B8 },
+            { 0x1374, 0x12F0, 0x13E4 - 0x1374 },
+            { 0x13E8, 0x1360, OLD_WEAPON_SIZE - 0x1360 },
+        };
+
+        hook::library::Detour weaponNamesDetour{};
+        // a weapon being loaded (its name arrays had fewer entries)
+        bool loadingWeapon{};
+
+        // sub_142E35C60: a weapon's string arrays (0x154 and 0x12C entries, the first had 0x142 in 3233729)
+        void WeaponNames(bool atStreamStart, uint64_t count, byte* names) {
+            auto original{ weaponNamesDetour.GetBase<void(bool, uint64_t, byte*)>() };
+            if (loadingWeapon && gcx.oldBuild == 3233729) {
+                count = count == 0x154 ? 0x142 : count;
+            }
+            original(atStreamStart, count, names);
+        }
+
+        // sub_142E333C0: the WeaponDef
+        char Weapon(bool atStreamStart, byte* weapon) {
+            auto original{ weaponDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, weapon);
+            }
+            if (!Load_Stream(true, weapon, OLD_WEAPON_SIZE)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(WEAPON_SIZE) };
+            std::memset(expanded, 0, WEAPON_SIZE);
+            Remap(weapon, expanded, WEAPON_COPIES);
+            if (!(weapon[7] & 0x80)) {
+                LOG_WARNING("old zone: weapon {:x} isn't a reference, its layout is a guess", *(uint64_t*)weapon);
+            }
+            loadingWeapon = true;
+            char r{ original(false, expanded) };
+            loadingWeapon = false;
+            return r;
+        }
+
+        hook::library::Detour fxElemsDetour{};
+
+        /*
+         * sub_142E1A5E0: an effect's FxElemDefs. In 3233729 an element's data follows its old field order: the five
+         * sample arrays, then the visuals, the compute visuals and the type block (today: visuals first). The array is
+         * made today's layout when read (OldZoneConvert), the loop here loads in the old order.
+         */
+        void FxElems(bool atStreamStart, uint64_t count, byte* elems) {
+            auto original{ fxElemsDetour.GetBase<void(bool, uint64_t, byte*)>() };
+            if (gcx.oldBuild != 3233729) {
+                original(atStreamStart, count, elems);
+                return;
+            }
+            if (atStreamStart) {
+                // read old (the read is made today's by OldZoneConvert for the game's own call only)
+                if (!Load_Stream(true, elems, 0x290 * count)) {
+                    return;
+                }
+                OldZoneConvert(0x2E1A607, elems, 0x280 * count);
+            }
+            auto loadVisuals{ Game<void (*)(bool, byte*, byte*)>(0x2E1A820) };
+            auto loadTypeBlock{ Game<void (*)(bool, byte*, byte*)>(0x2E1AA00) };
+            auto convertAlias{ Game<void (*)(void*)>(0x2EBBFF0) };
+            auto hashRef{ Game<void (*)(void*)>(0x2EBB5C0) };
+            for (size_t i = 0; i < count; i++) {
+                byte* e{ elems + i * 0x280 };
+                // {pointer, element size, count byte}
+                const struct { size_t ptr; size_t size; size_t count; } samples[]{
+                    { 0x88, 0x60, 0x26F }, { 0x90, 8, 0x270 }, { 0x98, 0x68, 0x273 }, { 0xA0, 8, 0x271 }, { 0xA8, 0x30, 0x272 },
+                };
+                for (const auto& sa : samples) {
+                    uint64_t& ptr{ *(uint64_t*)(e + sa.ptr) };
+                    if (ptr == ~0ull) {
+                        byte* p{ (byte*)DB_AllocStreamPos(3) };
+                        ptr = (uint64_t)p;
+                        Load_Stream(true, p, sa.size * (e[sa.count] + 1ull));
+                    } else if (ptr) {
+                        convertAlias(&ptr);
+                    }
+                }
+                loadVisuals(false, e, e);
+                loadVisuals(false, e + 0x40, e);
+                loadTypeBlock(false, e + 0x80, e);
+                for (size_t r = 0; r < 4; r++) {
+                    hashRef(e + 0xC8 + r * 0x10);
+                }
+            }
+        }
+
+        hook::library::Detour statusEffectDetour{};
+
+        // sub_142E2D100: a statuseffect (0x250, 0x248 in 3233729: the byte at +0xBC is at +0xBD now, 8 more from +0xC0)
+        char StatusEffect(bool atStreamStart, byte* effect) {
+            auto original{ statusEffectDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, effect);
+            }
+            if (!Load_Stream(true, effect, 0x248)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(0x250) };
+            std::memset(expanded, 0, 0x250);
+            constexpr Copy copies[]{ { 0, 0, 0xBC }, { 0xBD, 0xBC, 4 }, { 0xC8, 0xC0, 0x248 - 0xC0 } };
+            Remap(effect, expanded, copies);
+            return original(false, expanded);
+        }
+
+        hook::library::Detour gestureDetour{};
+
+        /*
+         * sub_142E1BC90: a GestureDef (0x208, 0x1E8 in 3233729). Its xanim pointers (+0x20..+0x150) and the scalars after
+         * them to +0x16C are where they were (zm_mansion); the 0x20 bytes it lacked are taken as the end's (wz_escape_alt's
+         * 3355979 lacks the 0x18 at +0x1F0)
+         */
+        char Gesture(bool atStreamStart, byte* gesture) {
+            auto original{ gestureDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, gesture);
+            }
+            if (!Load_Stream(true, gesture, 0x1E8)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(0x208) };
+            std::memset(expanded, 0, 0x208);
+            std::memcpy(expanded, gesture, 0x1E8);
+            return original(false, expanded);
+        }
+
+        hook::library::Detour tunablesDetour{};
+
+        /*
+         * WeaponTunables (0x1218, 0x1180 in 3233729): its pointers (+0x00..+0x30, +0x4C0 pair) and strings are where they
+         * were; the scalars after +0x278 moved by the shifts zm_mansion's 39 voted for (inside zero runs a guess, the tail
+         * from +0x10E8 most of all)
+         */
+        constexpr Copy TUNABLES_COPIES[]{
+            { 0x0, 0x0, 0x278 }, { 0x278, 0x274, 0x248 }, { 0x4C0, 0x4C0, 0x10C },
+            { 0x5CC, 0x5C8, 0xF0 }, { 0x6BC, 0x6A4, 0x1C }, { 0x6D8, 0x6BC, 0x1EC },
+            { 0x8C4, 0x8A4, 0x54 }, { 0x918, 0x8EC, 0x28 }, { 0x940, 0x910, 0x160 },
+            { 0xAA0, 0xA6C, 0x4C }, { 0xAEC, 0xAB4, 0x58 }, { 0xB44, 0xAE8, 0x20 },
+            { 0xB64, 0xB04, 0xD0 }, { 0xC34, 0xBC4, 0x21C }, { 0xE50, 0xDD8, 0x178 },
+            { 0xFC8, 0xF4C, 0x120 }, { 0x10E8, 0x1050, 0x130 },
+        };
+
+        // sub_142E34C90: WeaponTunables
+        char Tunables(bool atStreamStart, byte* tunables) {
+            auto original{ tunablesDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, tunables);
+            }
+            if (!Load_Stream(true, tunables, 0x1180)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(0x1218) };
+            std::memset(expanded, 0, 0x1218);
+            Remap(tunables, expanded, TUNABLES_COPIES);
+            if (!(tunables[0x47] & 0x80)) {
+                LOG_WARNING("old zone: weapon tunables {:x} aren't a reference, their scalars are a guess", *(uint64_t*)(tunables + 0x40));
+            }
+            return original(false, expanded);
+        }
+
+        hook::library::Detour sharedSoundsDetour{};
+
+        // sub_142E2A330: SharedWeaponSounds (0x228, 0x248 in 3233729: two more XHash slots at +0x68, zm_mansion's 8)
+        char SharedSounds(bool atStreamStart, byte* sounds) {
+            auto original{ sharedSoundsDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, sounds);
+            }
+            if (!Load_Stream(true, sounds, 0x248)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(0x228) };
+            constexpr Copy copies[]{ { 0, 0, 0x68 }, { 0x68, 0x88, 0x228 - 0x68 } };
+            Remap(sounds, expanded, copies);
+            return original(false, expanded);
+        }
+
+        hook::library::Detour vehicleDetour{};
+
+        /*
+         * VehicleDef (0x1A30, 0x1998 in 3233729), zm_mansion's 2 old and patched pairs. Today's pointer at +0x1C0 was a
+         * u32 (-1) then, left null; old +0x1938 holds a build machine's pointer (today's +0x19D0, not loaded), zeroed.
+         */
+        constexpr Copy VEHICLE_COPIES[]{
+            { 0, 0, 0x1C0 }, { 0x1C8, 0x1C4, 4 }, { 0x1D0, 0x1C8, 0x288 - 0x1D0 }, { 0x298, 0x280, 0x1038 - 0x298 },
+            { 0x1080, 0x1020, 0x11D0 - 0x1080 }, { 0x11D8, 0x1170, 0x1554 - 0x11D8 }, { 0x1574, 0x14EC, 0x1938 - 0x1574 },
+            { 0x1944, 0x18B0, 0x1980 - 0x1944 }, { 0x1984, 0x18EC, 0x1A30 - 0x1984 },
+        };
+
+        // sub_142E30C60: a VehicleDef
+        char Vehicle(bool atStreamStart, byte* vehicle) {
+            auto original{ vehicleDetour.GetBase<char(bool, byte*)>() };
+            if (!atStreamStart || gcx.oldBuild != 3233729) {
+                return original(atStreamStart, vehicle);
+            }
+            if (!Load_Stream(true, vehicle, 0x1998)) {
+                return 0;
+            }
+
+            byte* expanded{ gcx.allocator.Alloc<byte>(0x1A30) };
+            std::memset(expanded, 0, 0x1A30);
+            Remap(vehicle, expanded, VEHICLE_COPIES);
+            *(uint64_t*)(expanded + 0x19D0) = 0;
             return original(false, expanded);
         }
 
         void Create() {
+            vehicleDetour.Create(gcx.gameBase + 0x2E30C60, (void*)Vehicle);
+            sharedSoundsDetour.Create(gcx.gameBase + 0x2E2A330, (void*)SharedSounds);
+            tunablesDetour.Create(gcx.gameBase + 0x2E34C90, (void*)Tunables);
+            gestureDetour.Create(gcx.gameBase + 0x2E1BC90, (void*)Gesture);
+            statusEffectDetour.Create(gcx.gameBase + 0x2E2D100, (void*)StatusEffect);
+            fxElemsDetour.Create(gcx.gameBase + 0x2E1A5E0, (void*)FxElems);
+            weaponDetour.Create(gcx.gameBase + 0x2E333C0, (void*)Weapon);
+            dpvsDetour.Create(gcx.gameBase + 0x2E1F510, (void*)Dpvs);
+            weaponNamesDetour.Create(gcx.gameBase + 0x2E35C60, (void*)WeaponNames);
+            soundBankDetour.Create(gcx.gameBase + 0x2E2A9F0, (void*)SoundBank);
+            aliasListsDetour.Create(gcx.gameBase + 0x2E2A810, (void*)AliasLists);
+            imageDetour.Create(gcx.gameBase + 0x2E1CEF0, (void*)Image);
+            meshDetour.Create(gcx.gameBase + 0x2E36F90, (void*)Mesh);
+            xanimDetour.Create(gcx.gameBase + 0x2E35510, (void*)XAnim);
             streamerWorldDetour.Create(gcx.gameBase + 0x2E2E760, (void*)StreamerWorld);
             clipMapDetour.Create(gcx.gameBase + 0x2E37BA0, (void*)ClipMap);
             lightingDetour.Create(gcx.gameBase + 0x2E214B0, (void*)Lighting);
@@ -927,8 +1541,14 @@ namespace fastfile::handlers::bo4 {
 
                 game.Get("fastfile.Load_XAsset", &gcx.Load_XAsset);
                 gcx.gameBase = (byte*)**mod;
-                gcx.oldZone = std::getenv("ACTS_OLD_ZONE") != nullptr;
+                const char* oldZoneEnv{ std::getenv("ACTS_OLD_ZONE") };
+                gcx.oldZone = oldZoneEnv != nullptr;
                 if (gcx.oldZone) {
+                    gcx.oldBuild = (uint32_t)std::strtoul(oldZoneEnv, nullptr, 10);
+                    if (gcx.oldBuild <= 1) {
+                        gcx.oldBuild = 3310077;
+                    }
+                    LOG_INFO("old zone of changelist {}", gcx.oldBuild);
                     old_zone::Create();
                 }
                 void* Load_XHash{};
@@ -1011,6 +1631,10 @@ namespace fastfile::handlers::bo4 {
                     LOG_DEBUG("Block size {} = 0x{:x}", XFileBlockName((XFileBlock)i), blockSizes[i]);
                 }
 
+                if (gcx.oldZone) {
+                    // room for the old data made bigger in place (OldZoneGrow)
+                    blockSizes[XFILE_BLOCK_VIRTUAL] += 0x1000000;
+                }
                 DB_AllocXBlocks(blockSizes, gcx.g_loadblocks);
                 DB_InitStreams(gcx.g_loadblocks);
                 gcx.preloadPos = 0;
@@ -1124,6 +1748,8 @@ namespace fastfile::handlers::bo4 {
                     size_t stopAt{ stopEnv ? (size_t)std::strtoull(stopEnv, nullptr, 0) : SIZE_MAX };
                     if (const char* streamLogPath{ std::getenv("ACTS_STREAM_LOG") }) {
                         gcx.streamLog.open(streamLogPath);
+                        const char* from{ std::getenv("ACTS_STREAM_LOG_FROM") };
+                        gcx.streamLogFrom = from ? (size_t)std::strtoull(from, nullptr, 0) : 0;
                     }
 
                     for (size_t i = 0; i < assetList.assetCount && i <= stopAt; i++) {
@@ -1284,4 +1910,4 @@ namespace fastfile::handlers::bo4 {
     }
 } // namespace fastfile::handlers::bo4
 
-std::ostream& operator<<(std::ostream& os, const fastfile::handlers::bo4::ScrString_t& scr) { return os << scr.id; }
+std::ostream& operator<<(std::ostream& os, const fastfile::handlers::bo4::ScrString_t& scr) { return os << scr.id; }
