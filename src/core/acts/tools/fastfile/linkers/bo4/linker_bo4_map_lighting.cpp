@@ -10,8 +10,11 @@
  * 0x80 struct, loaded last). The first group and the 4 at 0x178 are the same in the frontend and zm_towers: global
  * images. The images are linked by name to the game's.
  *
- * The lighting states (0x10/0x18, 0x14C0 each, sub_142E1E260): cgame picks one each frame (sub_140E46980) and its
- * readers take it as set, the world needs one. A state from a game map's (the dumper's lighting_state<i>.bin): its
+ * The lighting states (0x10/0x18, 0x14C0 each, sub_142E1E260): cgame picks one each frame (sub_140E46980) by the
+ * camera, against each one's planes but the last (sub_1436710C0: none, the first), and its readers take it as set, the
+ * world needs one. Each holds 4 script lighting states (setlightingstate n, the player's renderInfo, the blocks below
+ * "by quality" are them), +0x0C the mask of those it has (sub_14369F5C0 falls back to the first it has): the
+ * atmosphere and fog 0x50 + 0x394 * n, the sun shadow 0xEA0 + 0x80 * n, the probes, grid, sky and sun volume. A state from a game map's (the dumper's lighting_state<i>.bin): its
  * plain values to 0x10A0, the pointers after (probes, models, images...) none. The 4 pointers at 0xF10 + 0x80 * i can't
  * be null, the load writes their stream key's 0x38 (sub_1422B7AF0): each an object (0x70, sub_142E1E130) with only its
  * stream key (0x48, asset type 0x9F, sub_142E2E0C0) without data. Each frame reads an atlas of one (0x58 or 0x68,
@@ -52,7 +55,8 @@
  *     "objectImage": "hash_e4117858d2aa27b",
  *     "list90": true,
  *     "images30": [ "hash_2a12fae3f8cef40", ... ],   // up to 12
- *     "images178": [ "hash_5c02282b50567cdd", ... ]  // up to 4
+ *     "images178": [ "hash_5c02282b50567cdd", ... ], // up to 4
+ *     "lightingStates": [ {}, { "exposure": 0.28, "probeColor": [ ... ], "sky": { ... } } ] // by script lighting state
  * }
  */
 namespace {
@@ -201,6 +205,8 @@ namespace {
                 out.image = s.HasMember("image") && s["image"].IsString() ? s["image"].GetString() : "";
                 out.rotation = s.HasMember("rotation") && s["rotation"].IsNumber() ? s["rotation"].GetFloat() : 0;
                 out.distance = s.HasMember("distance") && s["distance"].IsNumber() ? s["distance"].GetFloat() : 8000;
+                // an entry without one has none (not the default's it replaces)
+                out.lensFlare.reset();
                 if (s.HasMember("lensFlare") && s["lensFlare"].IsString()) {
                     std::string data{};
                     out.lensFlare = std::make_shared<rapidjson::Document>();
@@ -211,21 +217,87 @@ namespace {
                 }
                 return true;
             };
+            // a "sky" value: an object for the 4 entries or an array of up to 4 (the last one repeated); false when bad
+            auto ReadSkies = [&](const rapidjson::Value& v, SkyEntry (&out)[4]) {
+                if (v.IsObject()) {
+                    if (!ReadSky(v, out[0])) {
+                        return false;
+                    }
+                    for (size_t j = 1; j < 4; j++) {
+                        out[j] = out[0];
+                    }
+                } else if (v.IsArray() && !v.Empty()) {
+                    for (size_t j = 0; j < 4; j++) {
+                        if (j >= v.Size()) {
+                            out[j] = out[j - 1];
+                        } else if (!v[(rapidjson::SizeType)j].IsObject() || !ReadSky(v[(rapidjson::SizeType)j], out[j])) {
+                            LOG_ERROR("lighting {}: bad sky entry {}", path.string(), j);
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            };
             auto skyIt{ cfg.main.FindMember("sky") };
-            if (skyIt != cfg.main.MemberEnd() && skyIt->value.IsObject()) {
-                if (!ReadSky(skyIt->value, sky[0])) {
+            if (skyIt != cfg.main.MemberEnd() && !ReadSkies(skyIt->value, sky)) {
+                ctx.error = true;
+                return;
+            }
+
+            /*
+             * "lightingStates": an object by script lighting state (the 4 blocks of each state, see above) with its own
+             * "exposure", "probeColor", "lightGrid" and "sky" (one entry), the top level's for what it leaves out, so a
+             * map can have a day and a night and switch with util::set_lighting_state (zm_towers' quest does). A probe
+             * colour or grid needs the top level's to be there (their images' count)
+             */
+            struct LightingState {
+                float exposure{};
+                std::vector<float> probeColor{};
+                std::vector<float> lightGrid{};
+                SkyEntry sky{};
+            };
+            LightingState lightingStates[4]{};
+            auto ReadFloats = [&](const rapidjson::Value& v, size_t count, std::vector<float>& out) {
+                if (!v.IsArray() || v.Size() != count) {
+                    return false;
+                }
+                out.clear();
+                for (auto& f : v.GetArray()) {
+                    out.push_back(f.IsNumber() ? f.GetFloat() : 0.0f);
+                }
+                return true;
+            };
+            for (size_t j = 0; j < 4; j++) {
+                lightingStates[j] = { exposure, probeColor, lightGrid, sky[j] };
+            }
+            auto lightingIt{ cfg.main.FindMember("lightingStates") };
+            if (lightingIt != cfg.main.MemberEnd() && lightingIt->value.IsArray()) {
+                if (lightingIt->value.Size() > 4) {
+                    LOG_ERROR("lighting {}: lightingStates takes up to 4", path.string());
                     ctx.error = true;
                     return;
                 }
-                for (size_t j = 1; j < 4; j++) {
-                    sky[j] = sky[0];
-                }
-            } else if (skyIt != cfg.main.MemberEnd() && skyIt->value.IsArray() && !skyIt->value.Empty()) {
-                for (size_t j = 0; j < 4; j++) {
-                    if (j >= skyIt->value.Size()) {
-                        sky[j] = sky[j - 1];
-                    } else if (!skyIt->value[(rapidjson::SizeType)j].IsObject() || !ReadSky(skyIt->value[(rapidjson::SizeType)j], sky[j])) {
-                        LOG_ERROR("lighting {}: bad sky entry {}", path.string(), j);
+                for (rapidjson::SizeType j = 0; j < lightingIt->value.Size(); j++) {
+                    const rapidjson::Value& s{ lightingIt->value[j] };
+                    LightingState& st{ lightingStates[j] };
+                    if (!s.IsObject()) {
+                        continue;
+                    }
+                    if (s.HasMember("exposure") && s["exposure"].IsNumber()) {
+                        st.exposure = s["exposure"].GetFloat();
+                    }
+                    if (s.HasMember("probeColor") && (probeColor.empty() || !ReadFloats(s["probeColor"], 3, st.probeColor))) {
+                        LOG_ERROR("lighting {}: lighting state {}'s probeColor takes 3 numbers, with the top level's", path.string(), j);
+                        ctx.error = true;
+                        return;
+                    }
+                    if (s.HasMember("lightGrid") && (lightGrid.empty() || !ReadFloats(s["lightGrid"], LIGHT_GRID_FLOATS, st.lightGrid))) {
+                        LOG_ERROR("lighting {}: lighting state {}'s lightGrid takes {} numbers, with the top level's", path.string(), j, LIGHT_GRID_FLOATS);
+                        ctx.error = true;
+                        return;
+                    }
+                    if (s.HasMember("sky") && (!s["sky"].IsObject() || !ReadSky(s["sky"], st.sky))) {
+                        LOG_ERROR("lighting {}: lighting state {}'s sky is one entry", path.string(), j);
                         ctx.error = true;
                         return;
                     }
@@ -276,18 +348,19 @@ namespace {
                             *(uint64_t*)(record + 0x28) = fastfile::linker::memory::POINTER_NEXT;
                         }
 
-                        *(float*)(data.data() + SUN_VOLUMES + 0x40 * j + 4) = exposure;
+                        *(float*)(data.data() + SUN_VOLUMES + 0x40 * j + 4) = lightingStates[j].exposure;
 
+                        const SkyEntry& stateSky{ lightingStates[j].sky };
                         byte* skyEntry{ (byte*)data.data() + SKY_ENTRIES + SKY_ENTRY_SIZE * j };
-                        if (!sky[j].model.empty()) {
+                        if (!stateSky.model.empty()) {
                             *(uint64_t*)skyEntry = fastfile::linker::memory::POINTER_NEXT;
-                            *(float*)(skyEntry + 0x8) = sky[j].rotation;
-                            *(float*)(skyEntry + 0xC) = sky[j].distance;
+                            *(float*)(skyEntry + 0x8) = stateSky.rotation;
+                            *(float*)(skyEntry + 0xC) = stateSky.distance;
                         }
-                        if (!sky[j].image.empty()) {
+                        if (!stateSky.image.empty()) {
                             *(uint64_t*)(skyEntry + 0x18) = fastfile::linker::memory::POINTER_NEXT;
                         }
-                        if (sky[j].lensFlare) {
+                        if (stateSky.lensFlare) {
                             *(uint64_t*)(skyEntry + 0x20) = fastfile::linker::memory::POINTER_NEXT;
                         }
 
@@ -483,7 +556,7 @@ namespace {
                             std::vector<uint64_t> list(probeImageCount, fastfile::linker::memory::POINTER_NEXT);
                             ff.data.WriteStream(list.data(), list.size() * sizeof(list[0]));
                         }
-                        if (probeColor.empty()) {
+                        if (lightingStates[j].probeColor.empty()) {
                             for (const std::string& image : lightmapImages) {
                                 void* ref{};
                                 ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, std::format(",{}", image).data(), ref, false, &ff);
@@ -512,7 +585,7 @@ namespace {
                             ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
                             ff.data.Align(0x100);
                             for (size_t f = 0; f < PROBE_FACES; f++) {
-                                float texel[4]{ probeColor[0], probeColor[1], probeColor[2], 1.0f };
+                                float texel[4]{ lightingStates[j].probeColor[0], lightingStates[j].probeColor[1], lightingStates[j].probeColor[2], 1.0f };
                                 ff.data.WriteStream(texel, sizeof(texel));
                             }
                             ff.data.PopStream();
@@ -573,7 +646,7 @@ namespace {
                             byte recordData[RECORD_DATA_SIZE]{};
                             ff.data.WriteStream(recordData, sizeof(recordData));
                         } else {
-                            ff.data.WriteStream(lightGrid.data(), dataSize);
+                            ff.data.WriteStream(lightingStates[j].lightGrid.data(), dataSize);
                         }
                         ff.data.PopStream();
                         // the u32 list after the handle (0x28): one 0
@@ -585,13 +658,14 @@ namespace {
                     // the sky entries after the records (sub_142E1DED0): each its model, then its image, by name, then its KLF
                     for (size_t j = 0; j < 4; j++) {
                         void* ref{};
-                        if (!sky[j].model.empty()) {
-                            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, std::format(",{}", sky[j].model).data(), ref, false, &ff);
+                        const SkyEntry& stateSky{ lightingStates[j].sky };
+                        if (!stateSky.model.empty()) {
+                            ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODEL, std::format(",{}", stateSky.model).data(), ref, false, &ff);
                         }
-                        if (!sky[j].image.empty()) {
-                            ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, std::format(",{}", sky[j].image).data(), ref, false, &ff);
+                        if (!stateSky.image.empty()) {
+                            ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, std::format(",{}", stateSky.image).data(), ref, false, &ff);
                         }
-                        if (sky[j].lensFlare && !LinkKlf(ctx, ff, *sky[j].lensFlare, ref)) {
+                        if (stateSky.lensFlare && !LinkKlf(ctx, ff, *stateSky.lensFlare, ref)) {
                             LOG_ERROR("lighting {}: bad lens flare in sky entry {}", path.string(), j);
                             ctx.error = true;
                         }
