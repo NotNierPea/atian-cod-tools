@@ -359,6 +359,46 @@ namespace {
         return out;
     }
 
+    // a covered image's smallest mip (its small side)
+    constexpr uint32_t COVER_MIN_MIP = 16;
+
+    // the share of an image's pixels whose alpha passes the alpha test (128)
+    float AlphaCoverage(const std::vector<byte>& img) {
+        size_t n{ img.size() / 4 };
+        size_t pass{};
+        for (size_t i = 0; i < n; i++) {
+            pass += img[i * 4 + 3] >= 128;
+        }
+        return n ? (float)pass / (float)n : 0.0f;
+    }
+
+    /*
+     * A mip's alpha scaled so that as much of it passes the alpha test as of mip 0 (the averaged 0/1 mask of cut-out
+     * leaves fell under the test's half in the small mips: the foliage thinned away in the distance); the scale searched
+     */
+    void KeepCoverage(std::vector<byte>& img, float coverage) {
+        float lo{ 1.0f };
+        float hi{ 64.0f };
+        if (AlphaCoverage(img) >= coverage) {
+            return;
+        }
+        std::vector<byte> scaled{ img };
+        for (int it = 0; it < 12; it++) {
+            float s{ (lo + hi) / 2 };
+            for (size_t i = 3; i < img.size(); i += 4) {
+                scaled[i] = (byte)std::min(255.0f, img[i] * s);
+            }
+            if (AlphaCoverage(scaled) < coverage) {
+                lo = s;
+            } else {
+                hi = s;
+            }
+        }
+        for (size_t i = 3; i < img.size(); i += 4) {
+            img[i] = (byte)std::min(255.0f, img[i] * hi);
+        }
+    }
+
     int HexDigit(char c) {
         if (c >= '0' && c <= '9')
             return c - '0';
@@ -576,13 +616,14 @@ namespace {
             if (*id == '#')
                 id++; // ignore start #
 
-            // name.png[,stream|,resident|,nomips]
+            // name.png[,stream|,resident|,nomips|,cover]... (several: ",cover,stream")
             std::string idStr{ id };
             bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false) };
             bool mips{ ctx.linkCtx.zone.GetConfigBool("image.mips", true) };
             bool resident{};
-            size_t opt{ idStr.find_last_of(',') };
-            if (opt != std::string::npos) {
+            // the mips keep the alpha test's coverage (cut-out foliage)
+            bool cover{};
+            for (size_t opt{ idStr.find_last_of(',') }; opt != std::string::npos; opt = idStr.find_last_of(',')) {
                 std::string optName{ idStr.substr(opt + 1) };
                 if (optName == "stream" || optName == "streamed") {
                     stream = true;
@@ -592,6 +633,8 @@ namespace {
                 } else if (optName == "nomips") {
                     stream = false;
                     mips = false;
+                } else if (optName == "cover") {
+                    cover = true;
                 } else {
                     LOG_ERROR("Unknown image option '{}' for {}", optName, idStr);
                     ctx.error = true;
@@ -662,6 +705,7 @@ namespace {
                 }
             }
 
+            const float coverage{ cover && hasAlpha ? AlphaCoverage(top) : 0.0f };
             if (!stream) {
                 // mip 0 first, down to 1x1, a block at least each
                 std::vector<byte> compressed{};
@@ -670,6 +714,11 @@ namespace {
                     while ((std::max(width, height) >> levels) >= 1) {
                         levels++;
                     }
+                }
+                // a covered one's chain stops at COVER_MIN_MIP: below it the kept coverage turns a far leaf card into a
+                // solid square (the game samples the smallest there is further out)
+                while (coverage > 0 && levels > 1 && (std::min(width, height) >> (levels - 1)) < COVER_MIN_MIP) {
+                    levels--;
                 }
                 std::vector<byte> level{ top };
                 uint32_t lx{ width };
@@ -680,6 +729,9 @@ namespace {
                         uint32_t nx{ std::max(1u, lx >> 1) };
                         uint32_t ny{ std::max(1u, ly >> 1) };
                         level = HalfSize(level, lx, ly, nx, ny);
+                        if (coverage > 0) {
+                            KeepCoverage(level, coverage);
+                        }
                         lx = nx;
                         ly = ny;
                     }
@@ -699,9 +751,9 @@ namespace {
                 return;
             }
 
-            // mips down to 4 pixels on the small side, like the game's
+            // mips down to 4 pixels on the small side, like the game's (a covered one's to COVER_MIN_MIP)
             uint32_t levels{ 1 };
-            while ((std::min(width, height) >> levels) >= 4) {
+            while ((std::min(width, height) >> levels) >= (coverage > 0 ? COVER_MIN_MIP : 4u)) {
                 levels++;
             }
 
@@ -725,6 +777,9 @@ namespace {
                         uint32_t nx{ std::max(1u, lx >> 1) };
                         uint32_t ny{ std::max(1u, ly >> 1) };
                         level = HalfSize(level, lx, ly, nx, ny);
+                        if (coverage > 0) {
+                            KeepCoverage(level, coverage);
+                        }
                         lx = nx;
                         ly = ny;
                     }

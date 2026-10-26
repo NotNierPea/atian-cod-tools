@@ -32,6 +32,7 @@
  *
  * "staticModels": [ { "model": "enh_floor", "origin": [ 0, 0, 0 ], "angles": [ 0, 0, 0 ], "scale": 1,
  *     "mins": [ -2048, -2048, -64 ], "maxs": [ 2048, 2048, 0 ] } ]   // mins/maxs: the model's own bounds
+ *     "shadow": false   // not in the sun's caster list (thin cut-out grass flickered with its own shadows)
  * Static models (the dpvs, sub_142E1F510): the count at dpvs +0x04, the draw insts at +0x248 (0x38: the model, -1 at
  * 0x20, the id at 0x30 that scripts and smodel animations match (sub_143700740), -1 at 0x2E/0x34), their placements at
  * +0x250 (0x40: quat, origin, scale, world mins/maxs, the draw inst's index at 0x38, radius 0x3C; the streamer's world
@@ -151,6 +152,7 @@ namespace {
                 float mins[3]{};
                 float maxs[3]{};
                 float radius{};
+                bool shadow{ true };
             };
             std::vector<StaticModel> staticModels{};
             auto smodelsIt{ cfg.main.FindMember("staticModels") };
@@ -177,6 +179,7 @@ namespace {
                     Vec("mins", localMins, -1);
                     Vec("maxs", localMaxs, 1);
                     sm.scale = v.HasMember("scale") && v["scale"].IsNumber() ? v["scale"].GetFloat() : 1;
+                    sm.shadow = !(v.HasMember("shadow") && v["shadow"].IsBool() && !v["shadow"].GetBool());
 
                     // pitch, yaw, roll (degrees) to a quat, then the world bounds from the 8 corners
                     constexpr float DEG2RAD{ 3.14159265f / 180.0f };
@@ -209,6 +212,13 @@ namespace {
                 }
             }
             const uint32_t smodelCount{ (uint32_t)staticModels.size() };
+            // the sun's casters: the models with shadows
+            std::vector<uint32_t> casters{};
+            for (uint32_t j = 0; j < smodelCount; j++) {
+                if (staticModels[j].shadow) {
+                    casters.push_back(j);
+                }
+            }
             // the 8 smodel vis buffers and the bytes at +0x2A0: the count rounded to 16
             const uint32_t smodelVisSize{ std::max<uint32_t>(16, (smodelCount + 15) & ~15u) };
 
@@ -280,7 +290,7 @@ namespace {
                 *(uint64_t*)(header + SMODEL_TREE + 0x20) = smodelCount;
                 *(uint64_t*)(header + SMODEL_TREE + 0x28) = fastfile::linker::memory::POINTER_NEXT;
                 // the sun's dynamic cascades' models (see above)
-                *(uint32_t*)(header + DPVS + 0x220) = smodelCount;
+                *(uint32_t*)(header + DPVS + 0x220) = (uint32_t)casters.size();
                 *(uint64_t*)(header + DPVS + 0x228) = fastfile::linker::memory::POINTER_NEXT;
                 *(uint64_t*)(header + DPVS + 0x248) = fastfile::linker::memory::POINTER_NEXT;
                 *(uint64_t*)(header + DPVS + 0x250) = fastfile::linker::memory::POINTER_NEXT;
@@ -450,9 +460,9 @@ namespace {
                         ff.data.Align(4);
                         ff.data.WriteStream<uint32_t>(0);
 
-                        // the sun's dynamic cascades' models: all
+                        // the sun's dynamic cascades' models: the casters
                         ff.data.Align(4);
-                        ff.data.WriteStream(order.data(), order.size() * sizeof(uint32_t));
+                        ff.data.WriteStream(casters.data(), casters.size() * sizeof(uint32_t));
 
                         // the draw insts, then each one's model (by name, the game's or another zone's)
                         ff.data.Align(8);
