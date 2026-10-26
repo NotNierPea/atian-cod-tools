@@ -5,7 +5,6 @@
  * The world assets a map can have empty, named as its col_map, their header only (the name, all else 0, no list), as
  * the game's frontend and zm_towers have some of them:
  *   glasses (0x58, sub_142E20150): breakable glass pieces, then the glass system's memory sizes
- *   staticlevelfxlist (0x30, sub_142E2CF70): placed effects (count 0x10, list 0x18), effect names (0x20, 0x28)
  *   cpu_occlusion_data (0x60, sub_142E16EB0, the layout in bo4_unlinker_cpu_cclusion_data.cpp): occluder volumes; the
  *     runtime arrays at 0x50/0x58 are skipped while null
  *   streamerworld (0x100, sub_142E2E760): the streamer's lists, all (count, pointer); gfx_map loads it inline at 0x1800
@@ -54,9 +53,6 @@ namespace {
 
     utils::MapAdder<EmptyWorldAssetLinker<XAssetType::ASSET_TYPE_GLASSES, 0x58>, XAssetType, XAssetLinker> glasses{
         GetWorkers(), XAssetType::ASSET_TYPE_GLASSES
-    };
-    utils::MapAdder<EmptyWorldAssetLinker<XAssetType::ASSET_TYPE_STATIC_LEVEL_FX_LIST, 0x30>, XAssetType, XAssetLinker> staticLevelFxList{
-        GetWorkers(), XAssetType::ASSET_TYPE_STATIC_LEVEL_FX_LIST
     };
     utils::MapAdder<EmptyWorldAssetLinker<XAssetType::ASSET_TYPE_CPU_OCCLUSION_DATA, 0x60>, XAssetType, XAssetLinker> cpuOcclusionData{
         GetWorkers(), XAssetType::ASSET_TYPE_CPU_OCCLUSION_DATA

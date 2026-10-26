@@ -38,6 +38,9 @@ namespace {
         // for compressed images
         GFX_PF_BC1 = 72,
         GFX_PF_BC3 = 78,
+
+        // hdr (",hdr": a sky), uncompressed half floats
+        GFX_PF_R16G16B16A16_FLOAT = 10,
     };
     enum MapType : byte {
         MAPTYPE_NONE = 0x0,
@@ -571,6 +574,39 @@ namespace {
         LOG_INFO("Added asset gfximage {} (hash_{:x}), lossless, {}x{} format {}", path.filename().string(), hash, src.width, src.height, (int)src.imageFormat);
     }
 
+    // a float to a half float (no denormals: they're 0)
+    uint16_t ToHalf(float f) {
+        uint32_t u;
+        std::memcpy(&u, &f, 4);
+        uint32_t sign{ (u >> 16) & 0x8000 };
+        int32_t exp{ (int32_t)((u >> 23) & 0xFF) - 127 + 15 };
+        uint32_t mant{ u & 0x7FFFFF };
+        if (exp <= 0) return (uint16_t)sign;
+        if (exp >= 31) return (uint16_t)(sign | 0x7BFF);
+        return (uint16_t)(sign | (exp << 10) | (mant >> 13));
+    }
+
+    // half size float rgba, 2x2 box filter
+    std::vector<float> HalfSizeF(const std::vector<float>& img, uint32_t x, uint32_t y, uint32_t nx, uint32_t ny) {
+        std::vector<float> out((size_t)nx * ny * 4);
+        for (uint32_t py = 0; py < ny; py++) {
+            for (uint32_t px = 0; px < nx; px++) {
+                for (uint32_t c = 0; c < 4; c++) {
+                    float sum{};
+                    for (uint32_t dy = 0; dy < 2; dy++) {
+                        for (uint32_t dx = 0; dx < 2; dx++) {
+                            uint32_t sx{ std::min(px * 2 + dx, x - 1) };
+                            uint32_t sy{ std::min(py * 2 + dy, y - 1) };
+                            sum += img[((size_t)sy * x + sx) * 4 + c];
+                        }
+                    }
+                    out[((size_t)py * nx + px) * 4 + c] = sum / 4;
+                }
+            }
+        }
+        return out;
+    }
+
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -616,13 +652,15 @@ namespace {
             if (*id == '#')
                 id++; // ignore start #
 
-            // name.png[,stream|,resident|,nomips|,cover]... (several: ",cover,stream")
+            // name.png[,stream|,resident|,nomips|,cover|,hdr]... (several: ",cover,stream")
             std::string idStr{ id };
             bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false) };
             bool mips{ ctx.linkCtx.zone.GetConfigBool("image.mips", true) };
             bool resident{};
             // the mips keep the alpha test's coverage (cut-out foliage)
             bool cover{};
+            // half floats from the file's values (a .hdr's as they are), streamed: a sky
+            bool hdr{};
             for (size_t opt{ idStr.find_last_of(',') }; opt != std::string::npos; opt = idStr.find_last_of(',')) {
                 std::string optName{ idStr.substr(opt + 1) };
                 if (optName == "stream" || optName == "streamed") {
@@ -635,6 +673,9 @@ namespace {
                     mips = false;
                 } else if (optName == "cover") {
                     cover = true;
+                } else if (optName == "hdr") {
+                    hdr = true;
+                    stream = true;
                 } else {
                     LOG_ERROR("Unknown image option '{}' for {}", optName, idStr);
                     ctx.error = true;
@@ -660,6 +701,123 @@ namespace {
             GfxImage& gfx{ ff.data.AllocStreamRef<GfxImage>() };
             gfx.name.name = hash;
 
+            // the streamed parts of mips (mip 0 first, their offsets) to the xpak, the header's fields
+            auto streamOut = [&](std::vector<byte>& pixels, std::vector<size_t>& mipOffsets, uint32_t levels, uint32_t width,
+                                 uint32_t height) {
+            // each part is a texture of its own: it starts on blocks of 4 too
+            uint32_t parts{ (uint32_t)std::min<size_t>(MAX_STREAMED_PARTS, levels) };
+            while (parts > 1 && (((width >> (parts - 1)) & 3) || ((height >> (parts - 1)) & 3))) {
+                parts--;
+            }
+            size_t totalSize{ pixels.size() };
+
+            if (totalSize >= (1ull << 28)) {
+                LOG_ERROR("Image {} is too big to be streamed", idStr);
+                ctx.error = true;
+                return;
+            }
+
+            gfx.levelCount = (byte)levels;
+            gfx.totalSize = (uint32_t)totalSize;
+            gfx.streaming = 1;
+            gfx.streamedParts_count = (byte)parts;
+            gfx.streamedParts = (GfxStreamedPartInfo*)fastfile::linker::memory::POINTER_NEXT;
+
+            GfxStreamedPartInfo partInfo[MAX_STREAMED_PARTS]{};
+            std::vector<XPakItem>& items{ xpakItems[&ff] };
+            size_t lastCumulative{};
+            for (uint32_t k = 0; k < parts; k++) {
+                // the biggest mip of this part
+                uint32_t topMip{ parts - 1 - k };
+                size_t cumulative{ totalSize - mipOffsets[topMip] };
+                uint32_t partLevels{ levels - topMip };
+
+                GfxStreamedPartInfo& part{ partInfo[k] };
+                part.xpakEntry.key = ::hash::Hash64(std::format("{}/streamed_part_{}", name, k).data());
+                part.levelCountAndSize = (uint32_t)(cumulative << 4) | partLevels;
+                part.width = (uint16_t)(width >> topMip);
+                part.height = (uint16_t)(height >> topMip);
+
+                // what this part adds, the game puts it at totalSize - cumulative (Image_PartOffset)
+                XPakItem& item{ items.emplace_back() };
+                item.key = part.xpakEntry.key;
+                item.data.assign(
+                    pixels.begin() + (totalSize - cumulative), pixels.begin() + (totalSize - lastCumulative)
+                );
+                lastCumulative = cumulative;
+            }
+
+            ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
+
+            // pixels, in the streamer block, nothing in the file
+            ff.data.PushStream(XFILE_BLOCK_STREAMER);
+            ff.data.Align(0x10000);
+            ff.data.AllocRuntime(totalSize);
+            ff.data.PopStream();
+
+            // streamed parts
+            ff.data.Align(8);
+            ff.data.WriteStream(partInfo, sizeof(partInfo[0]) * parts);
+
+            ff.data.PopStream();
+
+            ff.data.PopStream();
+            LOG_INFO(
+                "Added asset gfximage {} (hash_{:x}) streamed, {}x{} {} mips in {} parts",
+                idStr,
+                hash,
+                width,
+                height,
+                levels,
+                parts
+            );
+            };
+
+
+            if (hdr) {
+                int hx, hy, hc;
+                float* f{ stbi_loadf(pathStr.data(), &hx, &hy, &hc, 4) };
+                if (!f) {
+                    ctx.error = true;
+                    LOG_ERROR("Can't process image {}: {}", path.string(), stbi_failure_reason());
+                    return;
+                }
+                std::vector<float> level(f, f + (size_t)hx * hy * 4);
+                stbi_image_free(f);
+                gfx.unk0 = 0;
+                gfx.mapType = MAPTYPE_2D;
+                gfx.depth = 1;
+                gfx.pixels = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                gfx.width = (uint16_t)hx;
+                gfx.height = (uint16_t)hy;
+                gfx.imageFormat = GFX_PF_R16G16B16A16_FLOAT;
+                uint32_t levels{ 1 };
+                while ((std::min<uint32_t>(hx, hy) >> levels) >= 4u) {
+                    levels++;
+                }
+                std::vector<byte> pixels{};
+                std::vector<size_t> mipOffsets{};
+                uint32_t lx{ (uint32_t)hx };
+                uint32_t ly{ (uint32_t)hy };
+                for (uint32_t i = 0; i < levels; i++) {
+                    mipOffsets.push_back(pixels.size());
+                    size_t at{ pixels.size() };
+                    pixels.resize(at + level.size() * 2);
+                    uint16_t* out{ (uint16_t*)&pixels[at] };
+                    for (size_t k = 0; k < level.size(); k++) {
+                        out[k] = ToHalf(level[k]);
+                    }
+                    if (i + 1 < levels) {
+                        uint32_t nx{ std::max(1u, lx >> 1) };
+                        uint32_t ny{ std::max(1u, ly >> 1) };
+                        level = HalfSizeF(level, lx, ly, nx, ny);
+                        lx = nx;
+                        ly = ny;
+                    }
+                }
+                streamOut(pixels, mipOffsets, levels, (uint32_t)hx, (uint32_t)hy);
+                return;
+            }
             LOG_TRACE("Processing image {} ({}) 0x{:x}", name, path.string(), hash);
             int x, y, channels;
             // always rgba, whatever the file has
@@ -757,12 +915,6 @@ namespace {
                 levels++;
             }
 
-            // each part is a texture of its own: it starts on blocks of 4 too
-            uint32_t parts{ (uint32_t)std::min<size_t>(MAX_STREAMED_PARTS, levels) };
-            while (parts > 1 && (((width >> (parts - 1)) & 3) || ((height >> (parts - 1)) & 3))) {
-                parts--;
-            }
-
             // mip 0 first, then the smaller ones
             std::vector<byte> pixels{};
             std::vector<size_t> mipOffsets{};
@@ -785,68 +937,7 @@ namespace {
                     }
                 }
             }
-            size_t totalSize{ pixels.size() };
-
-            if (totalSize >= (1ull << 28)) {
-                LOG_ERROR("Image {} is too big to be streamed", idStr);
-                ctx.error = true;
-                return;
-            }
-
-            gfx.levelCount = (byte)levels;
-            gfx.totalSize = (uint32_t)totalSize;
-            gfx.streaming = 1;
-            gfx.streamedParts_count = (byte)parts;
-            gfx.streamedParts = (GfxStreamedPartInfo*)fastfile::linker::memory::POINTER_NEXT;
-
-            GfxStreamedPartInfo partInfo[MAX_STREAMED_PARTS]{};
-            std::vector<XPakItem>& items{ xpakItems[&ff] };
-            size_t lastCumulative{};
-            for (uint32_t k = 0; k < parts; k++) {
-                // the biggest mip of this part
-                uint32_t topMip{ parts - 1 - k };
-                size_t cumulative{ totalSize - mipOffsets[topMip] };
-                uint32_t partLevels{ levels - topMip };
-
-                GfxStreamedPartInfo& part{ partInfo[k] };
-                part.xpakEntry.key = ::hash::Hash64(std::format("{}/streamed_part_{}", name, k).data());
-                part.levelCountAndSize = (uint32_t)(cumulative << 4) | partLevels;
-                part.width = (uint16_t)(width >> topMip);
-                part.height = (uint16_t)(height >> topMip);
-
-                // what this part adds, the game puts it at totalSize - cumulative (Image_PartOffset)
-                XPakItem& item{ items.emplace_back() };
-                item.key = part.xpakEntry.key;
-                item.data.assign(
-                    pixels.begin() + (totalSize - cumulative), pixels.begin() + (totalSize - lastCumulative)
-                );
-                lastCumulative = cumulative;
-            }
-
-            ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
-
-            // pixels, in the streamer block, nothing in the file
-            ff.data.PushStream(XFILE_BLOCK_STREAMER);
-            ff.data.Align(0x10000);
-            ff.data.AllocRuntime(totalSize);
-            ff.data.PopStream();
-
-            // streamed parts
-            ff.data.Align(8);
-            ff.data.WriteStream(partInfo, sizeof(partInfo[0]) * parts);
-
-            ff.data.PopStream();
-
-            ff.data.PopStream();
-            LOG_INFO(
-                "Added asset gfximage {} (hash_{:x}) streamed, {}x{} {} mips in {} parts",
-                idStr,
-                hash,
-                width,
-                height,
-                levels,
-                parts
-            );
+            streamOut(pixels, mipOffsets, levels, width, height);
         }
     };
 
