@@ -74,7 +74,6 @@ namespace {
     }
 
     // the light descriptions and KLFs linked inline in each fastfile
-    std::unordered_map<BO4FFContext*, std::unordered_set<uint64_t>> inlined{};
 
     class XAssetLinkerImpl : public XAssetLinker {
       public:
@@ -105,7 +104,7 @@ namespace {
         // a light description (sub_142E1D1F0: 0x268, aligned 16, no pointers) inline once
         void Light(BO4LinkContext& ctx, BO4FFContext& ff, const rapidjson::Value& root, const rapidjson::Value* nameVal, void*& ref) {
             uint64_t name{ RefHash(ctx, nameVal) };
-            if (!name || IsRef(ctx, nameVal) || inlined[&ff].contains(name)) {
+            if (!name || IsRef(ctx, nameVal) || ff.SetContains("fx.inlined", name)) {
                 ByName(ctx, ff, XAssetType::ASSET_TYPE_LIGHT_DESCRIPTION, name, ref, 16);
                 return;
             }
@@ -115,7 +114,7 @@ namespace {
                 Fail(ctx, std::format("fx: light description hash_{:x} has no data", name));
                 return;
             }
-            inlined[&ff].insert(name);
+            ff.SetInsert("fx.inlined", name);
             ref = (void*)fastfile::linker::memory::POINTER_NEXT;
             ff.data.PushStream(XFILE_BLOCK_TEMP);
             ff.data.Align(16);
@@ -166,11 +165,11 @@ namespace {
             if (!name) {
                 name = uniqueName;
             }
-            if ((raw >> 63) || inlined[&ff].contains(name)) {
+            if ((raw >> 63) || ff.SetContains("fx.inlined", name)) {
                 ByName(ctx, ff, XAssetType::ASSET_TYPE_KLF, name, ref, 16);
                 return;
             }
-            inlined[&ff].insert(name);
+            ff.SetInsert("fx.inlined", name);
             *(uint64_t*)(header.data() + 0x18) = name;
 
             const rapidjson::Value* entries{ Member(k, "entries") };

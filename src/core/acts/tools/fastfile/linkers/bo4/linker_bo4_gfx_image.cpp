@@ -1,5 +1,6 @@
 #include <includes.hpp>
 #include <tools/fastfile/linkers/linker_bo4.hpp>
+#include <tools/fastfile/linkers/linker_cache.hpp>
 #include <utils/compress_utils.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_DXT_IMPLEMENTATION
@@ -171,20 +172,44 @@ namespace {
     // the streamed parts of a fastfile, written to its xpak in ComputeFinal
     std::unordered_map<BO4FFContext*, std::vector<XPakItem>> xpakItems{};
 
+    // a chunk of an entry in lz4 (high compression), empty if it isn't smaller (raw)
+    std::vector<byte> CompressXPakChunk(const byte* chunk, size_t chunkLen) {
+        size_t outLen{ utils::compress::GetCompressSize(utils::compress::COMP_LZ4, chunkLen) };
+        std::vector<byte> buff(outLen);
+        bool lz4{ utils::compress::Compress(
+                      (utils::compress::CompressionAlgorithm)(utils::compress::COMP_LZ4 |
+                                                              utils::compress::COMP_HIGH_COMPRESSION),
+                      buff.data(),
+                      &outLen,
+                      chunk,
+                      chunkLen
+                  ) &&
+                  outLen < chunkLen };
+        if (!lz4) {
+            return {};
+        }
+        buff.resize(outLen);
+        return buff;
+    }
+
     /*
-     * One entry: the data cut in chunks, lz4 when it is smaller, raw else, 30 chunks a group. The streamer reads an entry
-     * by windows of 1 MB from its start rounded down to 0x8000 (sub_143713AF0), and the decompressor takes each window
-     * as a piece starting with a group header (sub_1422B7E50): no group may cross a window. A group that would is moved
-     * to the next window and the room left filled by a group of one raw chunk over the start of that group's range,
-     * holding that range's own bytes: the game decompresses windows in any order, and a filler of zeros written after
-     * the group wiped its data (sounds cut at the same frame each time, a different one each run). The filler always
-     * fits in the group's range: both are 0x80 aligned and a chunk is lz4 only when smaller.
-     * out is the whole xpak file, its size the file offset of the entry.
+     * One entry: the data cut in chunks, lz4 when it is smaller, raw else, 30 chunks a group. The streamer reads an
+     * entry by windows of 1 MB from its start rounded down to 0x8000 (sub_143713AF0), and the decompressor takes each
+     * window as a piece starting with a group header (sub_1422B7E50): no group may cross a window. A group that would
+     * is moved to the next window and the room left filled by a group of one raw chunk over the start of that group's
+     * range, holding that range's own bytes: the game decompresses windows in any order, and a filler of zeros written
+     * after the group wiped its data (sounds cut at the same frame each time, a different one each run). The filler
+     * always fits in the group's range: both are 0x80 aligned and a chunk is lz4 only when smaller. out is the whole
+     * xpak file, its size the file offset of the entry, lz4Chunks the chunks (CompressXPakChunk).
      */
-    void EncodeXPakEntry(const byte* data, size_t len, std::vector<byte>& out, bool& compressed) {
+    void EncodeXPakEntry(
+        const byte* data, size_t len, const std::vector<std::vector<byte>>& lz4Chunks, std::vector<byte>& out,
+        bool& compressed
+    ) {
         compressed = false;
         size_t windowBase{ out.size() & ~(XPAK_READ_ALIGN - 1) };
         size_t srcOffset{};
+        size_t chunkIndex{};
         std::vector<byte> group{};
         while (srcOffset < len) {
             group.assign(XPAK_GROUP_ALIGN, 0);
@@ -196,22 +221,11 @@ namespace {
             while (chunks < XPAK_GROUP_MAX_CHUNKS && srcOffset < len) {
                 size_t chunkLen{ std::min(XPAK_CHUNK_SIZE, len - srcOffset) };
                 const byte* chunk{ data + srcOffset };
+                const std::vector<byte>& lz4{ lz4Chunks[chunkIndex++] };
 
-                size_t outLen{ utils::compress::GetCompressSize(utils::compress::COMP_LZ4, chunkLen) };
-                std::vector<byte> buff(outLen);
-                bool lz4{ utils::compress::Compress(
-                              (utils::compress::CompressionAlgorithm)(utils::compress::COMP_LZ4 |
-                                                                      utils::compress::COMP_HIGH_COMPRESSION),
-                              buff.data(),
-                              &outLen,
-                              chunk,
-                              chunkLen
-                          ) &&
-                          outLen < chunkLen };
-
-                if (lz4) {
-                    group.insert(group.end(), buff.begin(), buff.begin() + outLen);
-                    cmds[chunks] = (XPAK_CHUNK_LZ4 << 24) | (uint32_t)outLen;
+                if (!lz4.empty()) {
+                    group.insert(group.end(), lz4.begin(), lz4.end());
+                    cmds[chunks] = (XPAK_CHUNK_LZ4 << 24) | (uint32_t)lz4.size();
                     compressed = true;
                 } else {
                     group.insert(group.end(), chunk, chunk + chunkLen);
@@ -249,7 +263,110 @@ namespace {
         }
     }
 
-    void WriteXPak(const std::filesystem::path& path, std::vector<XPakItem>& items) {
+    /*
+     * The xpak chunks compressed in the last link, by their content (xxh64 twice): a file of the link cache, written
+     * again when a chunk was compressed or one isn't used anymore. {key, size (~0 raw), lz4}...
+     */
+    class XPakChunkCache {
+      public:
+        using Key = std::pair<uint64_t, uint64_t>;
+        struct KeyHash {
+            size_t operator()(const Key& k) const { return (size_t)(k.first ^ (k.second * 0x9E3779B97F4A7C15ull)); }
+        };
+
+      private:
+        static constexpr uint64_t MAGIC = 0x3143504B43434C41; // ALCCKPC1
+        static constexpr uint32_t RAW = 0xFFFFFFFF;
+        std::vector<byte> file{};
+        // key -> offset, size in file (RAW: not compressed)
+        std::unordered_map<Key, std::pair<size_t, uint32_t>, KeyHash> chunks{};
+
+      public:
+        static Key KeyOf(const byte* data, size_t len) {
+            return { fastfile::linker::cache::HashBytes(data, len, 0),
+                     fastfile::linker::cache::HashBytes(data, len, len) };
+        }
+
+        static size_t UniqueCount(const std::vector<Key>& keys) {
+            std::unordered_set<Key, KeyHash> u{ keys.begin(), keys.end() };
+            return u.size();
+        }
+
+        size_t Count() const { return chunks.size(); }
+
+        void Load(const std::filesystem::path& path, const std::string& key) {
+            if (!utils::ReadFile(path, file)) {
+                return;
+            }
+            try {
+                fastfile::linker::cache::Reader r{ file.data(), file.size() };
+                if (r.Read<uint64_t>() != MAGIC || r.ReadString() != key) {
+                    return;
+                }
+                size_t count{ (size_t)r.Read<uint64_t>() };
+                for (size_t i = 0; i < count; i++) {
+                    Key k{};
+                    k.first = r.Read<uint64_t>();
+                    k.second = r.Read<uint64_t>();
+                    uint32_t size{ r.Read<uint32_t>() };
+                    const byte* d{ r.ReadRaw(size == RAW ? 0 : size) };
+                    chunks[k] = { (size_t)(d - file.data()), size };
+                }
+            } catch (std::exception& e) {
+                LOG_WARNING("Bad xpak chunk cache {}: {}", path.string(), e.what());
+                chunks.clear();
+            }
+        }
+
+        // the lz4 of a chunk, empty if raw, false if it isn't known
+        bool Find(const Key& key, std::vector<byte>& out) const {
+            auto it{ chunks.find(key) };
+            if (it == chunks.end()) {
+                return false;
+            }
+            if (it->second.second == RAW) {
+                out.clear();
+            } else {
+                out.assign(file.data() + it->second.first, file.data() + it->second.first + it->second.second);
+            }
+            return true;
+        }
+
+        void Save(
+            const std::filesystem::path& path, const std::string& key,
+            const std::vector<std::pair<size_t, size_t>>& tasks, const std::vector<Key>& keys,
+            const std::vector<std::vector<std::vector<byte>>>& lz4
+        ) {
+            fastfile::linker::cache::Writer w{};
+            w.Write(MAGIC);
+            w.WriteString(key);
+            size_t countOffset{ w.data.size() };
+            w.Write<uint64_t>(0);
+            std::unordered_set<Key, KeyHash> written{};
+            for (size_t t = 0; t < tasks.size(); t++) {
+                if (!written.insert(keys[t]).second) {
+                    continue;
+                }
+                const std::vector<byte>& c{ lz4[tasks[t].first][tasks[t].second] };
+                w.Write(keys[t].first);
+                w.Write(keys[t].second);
+                w.Write<uint32_t>(c.empty() ? RAW : (uint32_t)c.size());
+                utils::WriteValue(w.data, c.data(), c.size());
+            }
+            *(uint64_t*)(w.data.data() + countOffset) = written.size();
+            std::filesystem::path tmp{ path };
+            tmp += ".tmp";
+            if (!utils::WriteFile(tmp, w.data) || !MoveFileExW(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING)) {
+                LOG_WARNING("Can't write the xpak chunk cache {}", path.string());
+            }
+        }
+    };
+
+    // cachePath: the xpak chunk cache (XPakChunkCache), none if empty
+    void WriteXPak(
+        const std::filesystem::path& path, std::vector<XPakItem>& items, const std::filesystem::path& cachePath,
+        const std::string& cacheKey
+    ) {
         std::sort(items.begin(), items.end(), [](const XPakItem& a, const XPakItem& b) { return a.key < b.key; });
 
         // a part the game's images share (the same pixels, the same key) once
@@ -268,11 +385,54 @@ namespace {
         std::vector<byte> file(XPAK_HEADER_SIZE);
         std::vector<XPakIndexEntry> index{};
 
-        for (XPakItem& item : items) {
+        // the chunks compressed on the cores (or from the chunk cache), then laid out in order
+        std::chrono::steady_clock::time_point start{ std::chrono::steady_clock::now() };
+        std::vector<std::pair<size_t, size_t>> tasks{};
+        std::vector<std::vector<std::vector<byte>>> lz4(items.size());
+        for (size_t i = 0; i < items.size(); i++) {
+            size_t count{ (items[i].data.size() + XPAK_CHUNK_SIZE - 1) / XPAK_CHUNK_SIZE };
+            lz4[i].resize(count);
+            for (size_t k = 0; k < count; k++) {
+                tasks.emplace_back(i, k);
+            }
+        }
+        XPakChunkCache chunkCache{};
+        if (!cachePath.empty()) {
+            chunkCache.Load(cachePath, cacheKey);
+        }
+        std::vector<XPakChunkCache::Key> keys(tasks.size());
+        std::atomic<size_t> computed{};
+        fastfile::linker::cache::ParallelFor(tasks.size(), [&](size_t t) {
+            auto [i, k]{ tasks[t] };
+            size_t offset{ k * XPAK_CHUNK_SIZE };
+            const byte* chunk{ items[i].data.data() + offset };
+            size_t chunkLen{ std::min(XPAK_CHUNK_SIZE, items[i].data.size() - offset) };
+            if (!cachePath.empty()) {
+                keys[t] = XPakChunkCache::KeyOf(chunk, chunkLen);
+                if (chunkCache.Find(keys[t], lz4[i][k])) {
+                    return;
+                }
+            }
+            lz4[i][k] = CompressXPakChunk(chunk, chunkLen);
+            computed++;
+        });
+        if (!cachePath.empty() && (computed || chunkCache.Count() != XPakChunkCache::UniqueCount(keys))) {
+            chunkCache.Save(cachePath, cacheKey, tasks, keys, lz4);
+        }
+        LOG_INFO(
+            "Compressed the xpak chunks in {:.2f}s ({} of {} from the chunk cache)",
+            std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count(),
+            tasks.size() - computed,
+            tasks.size()
+        );
+
+        for (size_t i = 0; i < items.size(); i++) {
+            XPakItem& item{ items[i] };
             file.resize(utils::Aligned<size_t>(file.size(), XPAK_GROUP_ALIGN));
             size_t start{ file.size() };
             bool compressed;
-            EncodeXPakEntry(item.data.data(), item.data.size(), file, compressed);
+            EncodeXPakEntry(item.data.data(), item.data.size(), lz4[i], file, compressed);
+            lz4[i].clear();
 
             XPakIndexEntry& entry{ index.emplace_back() };
             entry.key = item.key;
@@ -540,9 +700,7 @@ namespace {
                     ctx.error = true;
                     return;
                 }
-                XPakItem& item{ xpakItems[&ff].emplace_back() };
-                item.key = partInfo[k].xpakEntry.key;
-                item.data = std::move(buff);
+                AddXPakItem(ff, partInfo[k].xpakEntry.key, std::move(buff));
             }
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
             ff.data.PushStream(XFILE_BLOCK_STREAMER);
@@ -625,7 +783,21 @@ namespace {
             // a prefixed fastfile (en_, ...) gets its own xpak
             const char* xpakName{ &ff == &ctx.mainFF ? ctx.linkCtx.zone.GetConfig("xpak.name", ff.ffname) : ff.ffname };
 
-            WriteXPak(ctx.linkCtx.opt.m_output / "zone" / std::format("{}.xpak", xpakName), items);
+            // its chunks compressed in the last link, in the link cache
+            std::filesystem::path chunkCache{};
+            if (ctx.cache) {
+                chunkCache = ctx.cache->Directory() / std::format("{}.xpakchunks", xpakName);
+                if (ctx.cache->Rebuild()) {
+                    std::error_code ec{};
+                    std::filesystem::remove(chunkCache, ec);
+                }
+            }
+            WriteXPak(
+                ctx.linkCtx.opt.m_output / "zone" / std::format("{}.xpak", xpakName),
+                items,
+                chunkCache,
+                ctx.cache ? ctx.cache->Key() : std::string{}
+            );
 
             // XPak_AddPackfilesForZone: values of xpak_read in the keyvaluepairs named after the zone
             ff.data.PushStream(XFILE_BLOCK_TEMP);
@@ -724,7 +896,6 @@ namespace {
             gfx.streamedParts = (GfxStreamedPartInfo*)fastfile::linker::memory::POINTER_NEXT;
 
             GfxStreamedPartInfo partInfo[MAX_STREAMED_PARTS]{};
-            std::vector<XPakItem>& items{ xpakItems[&ff] };
             size_t lastCumulative{};
             for (uint32_t k = 0; k < parts; k++) {
                 // the biggest mip of this part
@@ -739,10 +910,11 @@ namespace {
                 part.height = (uint16_t)(height >> topMip);
 
                 // what this part adds, the game puts it at totalSize - cumulative (Image_PartOffset)
-                XPakItem& item{ items.emplace_back() };
-                item.key = part.xpakEntry.key;
-                item.data.assign(
-                    pixels.begin() + (totalSize - cumulative), pixels.begin() + (totalSize - lastCumulative)
+                AddXPakItem(
+                    ff,
+                    part.xpakEntry.key,
+                    std::vector<byte>{ pixels.begin() + (totalSize - cumulative),
+                                       pixels.begin() + (totalSize - lastCumulative) }
                 );
                 lastCumulative = cumulative;
             }
@@ -946,6 +1118,10 @@ namespace {
 
 namespace fastfile::linker::bo4 {
     void AddXPakItem(BO4FFContext& ff, uint64_t key, std::vector<byte>&& data) {
+        BO4LinkContext& ctx{ GetLinkContext() };
+        if (ctx.cache) {
+            ctx.cache->RecordXPakItem(ff, key, data);
+        }
         XPakItem& item{ xpakItems[&ff].emplace_back() };
         item.key = key;
         item.data = std::move(data);

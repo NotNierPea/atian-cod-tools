@@ -83,7 +83,7 @@ namespace {
             auto& known{ shared[&ff] };
             if (auto it{ key.empty() ? known.end() : known.find(key) }; it != known.end()) {
                 slot = 0;
-                it->second->refs.push_back((void**)&slot);
+                ff.data.AddRef(it->second, (void**)&slot);
                 reused++;
                 return;
             }
@@ -103,7 +103,7 @@ namespace {
             auto& known{ shared[&ff] };
             if (auto it{ key.empty() ? known.end() : known.find(key) }; it != known.end()) {
                 slot = 0;
-                it->second->refs.push_back((void**)&slot);
+                ff.data.AddRef(it->second, (void**)&slot);
                 reused++;
                 return;
             }

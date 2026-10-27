@@ -1337,11 +1337,13 @@ namespace {
         return v;
     }
 
-    // the material jsons linked in each fastfile: a json once a zone, by name after (two models on one material linked it
-    // twice, two assets of a name: the game unloaded one and streamed into the other's freed parts)
-    std::unordered_map<BO4FFContext*, std::unordered_set<std::string>> linkedMaterials{};
-    // the lossless models' meshes linked in a zone (by name)
-    std::unordered_map<BO4FFContext*, std::unordered_set<std::string>> linkedMeshes{};
+    /*
+     * The fastfile's sets (BO4FFContext::sets) of the material jsons linked, a json once a zone, by name after (two
+     * models on one material linked it twice, two assets of a name: the game unloaded one and streamed into the other's
+     * freed parts), and of the lossless models' meshes linked in a zone (by name)
+     */
+    constexpr const char* LINKED_MATERIALS = "xmodel.materials";
+    constexpr const char* LINKED_MESHES = "xmodel.meshes";
 
     // the asset name of a material json, for its references after the first (the material linker's name)
     std::string MaterialAssetName(BO4LinkContext& ctx, const std::string& material) {
@@ -1590,7 +1592,7 @@ namespace {
                     if (hadShared) {
                         if (meshShared && meshShared->IsBool() && meshShared->GetBool() && sharedChunk) {
                             // an offset to the mesh's shared block
-                            sharedChunk->refs.push_back((void**)(surf + 0x10));
+                            ff.data.AddRef(sharedChunk, (void**)(surf + 0x10));
                         } else {
                             Next(surf, 0x10);
                             Shared(ff, Hex(sv, "shared"), {}, sv);
@@ -1675,14 +1677,14 @@ namespace {
                 std::string ref{ meshes && meshes->IsArray() && i < meshes->Size() ? RefName(&(*meshes)[(rapidjson::SizeType)i]) : "" };
                 void*& mref{ *(void**)(a + 0x78 + 8 * i) };
                 // a mesh once in the zone, then by its name (the game's models share them: a weapon's and its upgrade's)
-                if (!ref.empty() && linkedMeshes[&ff].contains(ref)) {
+                if (!ref.empty() && ff.SetContains(LINKED_MESHES, ::hash::Hash64(ref.data()))) {
                     std::string refId{ "," + ref };
                     ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELMESH, refId.data(), mref, false, &ff);
                     continue;
                 }
                 Mesh(ctx, ff, meshDir / (FileName(ref) + ".json"), mref);
                 if (!ref.empty()) {
-                    linkedMeshes[&ff].insert(ref);
+                    ff.SetInsert(LINKED_MESHES, ::hash::Hash64(ref.data()));
                 }
             }
 
@@ -2489,7 +2491,7 @@ namespace {
                     baseIndex += (uint32_t)lod.surfs[i].indices.size();
                     // offset of the shared block in the virtual block, set at link
                     surf.shared = nullptr;
-                    sharedChunk->refs.push_back((void**)&surf.shared);
+                    ff.data.AddRef(sharedChunk, (void**)&surf.shared);
                     surf.partBits = lod.skinned || surfPartBits.size() == PART_BITS_SIZE ? (byte*)fastfile::linker::memory::POINTER_NEXT : nullptr;
                     surf.vertList = lod.skinned ? nullptr : (XRigidVertList*)fastfile::linker::memory::POINTER_NEXT;
                 }
@@ -2525,7 +2527,6 @@ namespace {
                 mms[slot].himipInvSqRadii = (float*)fastfile::linker::memory::POINTER_NEXT;
             }
             // a material of a json once in the zone, then by its name
-            std::unordered_set<std::string>& linked{ linkedMaterials[&ff] };
             for (size_t slot = 0; slot < numLods; slot++) {
                 const LodGeom& lod{ lods[numLods - 1 - slot] };
                 ff.data.Align(8);
@@ -2535,11 +2536,10 @@ namespace {
                     if (material[0] == '#') {
                         std::string refId{ std::format(",{}", material.substr(1)) };
                         ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, refId.data(), mats[i], false, &ff);
-                    } else if (linked.contains(material)) {
+                    } else if (!ff.SetInsert(LINKED_MATERIALS, ::hash::Hash64(material.data()))) {
                         std::string refId{ std::format(",{}", MaterialAssetName(ctx, material)) };
                         ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, refId.data(), mats[i], false, &ff);
                     } else {
-                        linked.insert(material);
                         ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, material.data(), mats[i], false, &ff);
                     }
                 }

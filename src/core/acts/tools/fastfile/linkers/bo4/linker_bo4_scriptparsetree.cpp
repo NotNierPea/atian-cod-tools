@@ -2,6 +2,7 @@
 #include <tools/fastfile/linkers/linker_bo4.hpp>
 #include <tools/gsc/gsc.hpp>
 #include <tools/gsc/gsc_compiler.hpp>
+#include <tools/fastfile/linkers/linker_cache.hpp>
 
 namespace {
     using namespace fastfile::linker::bo4;
@@ -124,6 +125,7 @@ namespace {
 
             // a compiled script (.gscc, .cscc: the dumper's) is linked as it is, its name from its header
             bool precompiled{ scriptName.extension() == ".gscc" || scriptName.extension() == ".cscc" };
+            bool fromCache{};
             if (precompiled) {
                 isCsc = scriptName.extension() == ".cscc";
                 if (!utils::ReadFile(path, buffer)) {
@@ -132,12 +134,63 @@ namespace {
                     return;
                 }
             } else {
-                try {
-                    tool::gsc::compiler::CompileGsc(path, buffer, cfg);
-                } catch (std::runtime_error& re) {
-                    LOG_ERROR("Can't compile {}: {}", path.string(), re.what());
-                    ctx.error = true;
-                    return;
+                // the compiled script, its preprocessed source, debug data, precache and hashes, from the link cache
+                // if its files are the same
+                std::string cacheKey{
+                    std::format("gsc {} {} {} {}", path.string(), cfg.name, (int)cfg.platform, cfg.clientScript)
+                };
+                std::vector<byte> cached{};
+                if (ctx.cache && ctx.cache->LoadComputed(cacheKey, cached)) {
+                    fromCache = true;
+                    fastfile::linker::cache::Reader r{ cached.data(), cached.size() };
+                    buffer = r.ReadBytes();
+                    preprocOutput = r.ReadString();
+                    dbgdata = r.ReadBytes();
+                    size_t types{ (size_t)r.Read<uint64_t>() };
+                    for (size_t i = 0; i < types; i++) {
+                        std::vector<std::string>& entries{ bgcacheCompiled[r.ReadString()] };
+                        entries.resize((size_t)r.Read<uint64_t>());
+                        for (std::string& e : entries) {
+                            e = r.ReadString();
+                        }
+                    }
+                    size_t hashCount{ (size_t)r.Read<uint64_t>() };
+                    for (size_t i = 0; i < hashCount; i++) {
+                        hashes.insert(r.ReadString());
+                    }
+                } else {
+                    bool tracked{ ctx.cache && ctx.cache->BeginComputed() };
+                    try {
+                        tool::gsc::compiler::CompileGsc(path, buffer, cfg);
+                    } catch (std::runtime_error& re) {
+                        if (tracked) {
+                            ctx.cache->StoreComputed(cacheKey, nullptr);
+                        }
+                        LOG_ERROR("Can't compile {}: {}", path.string(), re.what());
+                        ctx.error = true;
+                        return;
+                    }
+                    if (tracked) {
+                        fastfile::linker::cache::Writer w{};
+                        w.WriteBytes(buffer.data(), buffer.size());
+                        w.WriteString(preprocOutput);
+                        w.WriteBytes(dbgdata.data(), dbgdata.size());
+                        w.Write<uint64_t>(bgcacheCompiled.size());
+                        for (const auto& [type, entries] : bgcacheCompiled) {
+                            w.WriteString(type);
+                            w.Write<uint64_t>(entries.size());
+                            for (const std::string& e : entries) {
+                                w.WriteString(e);
+                            }
+                        }
+                        std::vector<std::string> sortedHashes{ hashes.begin(), hashes.end() };
+                        std::sort(sortedHashes.begin(), sortedHashes.end());
+                        w.Write<uint64_t>(sortedHashes.size());
+                        for (const std::string& h : sortedHashes) {
+                            w.WriteString(h);
+                        }
+                        ctx.cache->StoreComputed(cacheKey, &w.data);
+                    }
                 }
             }
 
@@ -165,7 +218,7 @@ namespace {
             }
 
             if (!precompiled) {
-                LOG_INFO("Compiled {} ({})", path.string(), cfg.name);
+                LOG_INFO("Compiled {} ({}){}", path.string(), cfg.name, fromCache ? " from the link cache" : "");
             }
 
             if (buffer.size() < sizeof(tool::gsc::T8GSCOBJ)) {

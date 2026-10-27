@@ -588,11 +588,11 @@ namespace {
                 *(uint32_t*)(brush + 0x1C) = c.contents;
                 std::memcpy(brush + 0x20, c.maxs, sizeof(c.maxs));
                 if (planeChunks[i]) {
-                    planeChunks[i]->refs.push_back((void**)brush);
+                    ff.data.AddRef(planeChunks[i], (void**)brush);
                     brush[0x3A] = (byte)c.planes.size();
                 }
                 if (vertChunks[i]) {
-                    vertChunks[i]->refs.push_back((void**)(brush + 0x8));
+                    ff.data.AddRef(vertChunks[i], (void**)(brush + 0x8));
                     *(uint16_t*)(brush + 0x38) = (uint16_t)c.verts.size();
                 }
             }

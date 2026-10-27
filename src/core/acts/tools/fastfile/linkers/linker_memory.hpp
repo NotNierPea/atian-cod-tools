@@ -57,8 +57,47 @@ namespace fastfile::linker::memory {
         LinkerDataChunk* insertedZone{};
     };
 
+    class XBlockLinker;
+
+    /*
+     * What a linker gets while an asset is linked, for the link cache (linker_cache.hpp): the chunks in their order,
+     * the script strings asked and the assets added. Taint is why it can't be replayed (empty if it can).
+     */
+    struct LinkerRecorder {
+        struct ScrStringUse {
+            std::string str;
+            uint32_t index;
+            bool keepEmpty;
+        };
+        struct AssetUse {
+            size_t type;
+            size_t alignChunk;
+        };
+
+        XBlockLinker* linker{};
+        std::vector<LinkerDataChunk*> chunks{};
+        // the block each chunk was added to
+        std::vector<size_t> chunkBlocks{};
+        std::unordered_map<LinkerDataChunk*, size_t> chunkIndex{};
+        std::vector<ScrStringUse> scrStrings{};
+        std::vector<AssetUse> assets{};
+        std::string taint{};
+
+        void Taint(const std::string& why) {
+            if (taint.empty()) {
+                taint = why;
+            }
+        }
+    };
+
+    // the recorder of the asset being linked, null if none
+    LinkerRecorder* GetActiveRecorder();
+    void SetActiveRecorder(LinkerRecorder* recorder);
+
     class XBlockLinker {
         core::memory_allocator::MemoryAllocator alloc{};
+        // the index of each script string, + 1
+        std::unordered_map<std::string_view, uint32_t> scrStringIndex{};
 
       public:
         LinkerBlock blocks[LINKER_MAX_BLOCKS]{};
@@ -69,6 +108,8 @@ namespace fastfile::linker::memory {
         size_t blockStackIndex{};
         std::vector<AssetData*> assets{};
         std::vector<const char*> scrStrings{};
+        // the last chunk added
+        LinkerDataChunk* lastChunk{};
         size_t numblocks;
         size_t virtualBlock;
 
@@ -109,6 +150,12 @@ namespace fastfile::linker::memory {
         AssetData* AddAsset(size_t type, LinkerDataChunk* align);
         // add a string
         void AddXString(const char*& value, const char* val);
+        // a pointer to a chunk's data, set at Link
+        void AddRef(LinkerDataChunk* chunk, void** ref);
+        // the index of a script string, 0 if it isn't in the fastfile
+        uint32_t FindScrString(const char* value) const;
+        // the current block
+        size_t GetCurrentBlock() const { return blockStack[blockStackIndex]; }
 
         template<typename Type>
         LinkerDataChunk* WriteStream(const Type& data) {
@@ -144,6 +191,7 @@ namespace fastfile::linker::memory {
         inline uint32_t AddScrString(const std::string& value) { return AddScrString(value.data()); }
 
       private:
+        uint32_t AddScrStringRaw(const char* value);
         // get the current last pushed block
         LinkerBlock& GetBlock();
         // assert that a block is valid

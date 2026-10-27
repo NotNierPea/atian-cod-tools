@@ -165,9 +165,6 @@ namespace {
         return it == obj.MemberEnd() || it->value.IsNull() ? nullptr : &it->value;
     }
 
-    // the images of a fastfile linked in place by the materials, once a zone (by name after)
-    std::unordered_map<BO4FFContext*, std::unordered_set<std::string>> zoneImages{};
-
     class XAssetLinkerImpl : public XAssetLinker {
       public:
         using XAssetLinker::XAssetLinker;
@@ -224,8 +221,7 @@ namespace {
                 }
             }
 
-            // images of the zone are linked in place once, then referenced by name
-            std::unordered_set<std::string>& linkedImages{ zoneImages[&ff] };
+            // images of the zone are linked in place once, then referenced by name (the fastfile's set)
             std::function<void(std::string, void*&)> LinkImageName{};
             auto LinkImage = [&](const rapidjson::Value* ref, void*& ptr) {
                 if (!ref || !ref->IsString() || !*ref->GetString()) {
@@ -246,11 +242,10 @@ namespace {
                 }
                 std::filesystem::path file{ val.substr(0, val.find(',')) };
                 std::string stem{ file.stem().string() };
-                if (linkedImages.contains(stem)) {
+                if (!ff.SetInsert("material.images", ::hash::Hash64(stem.data()))) {
                     ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, std::format(",{}", stem).data(), ptr, false, &ff);
                     return;
                 }
-                linkedImages.insert(stem);
                 ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, val.data(), ptr, false, &ff);
             };
 

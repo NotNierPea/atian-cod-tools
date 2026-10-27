@@ -49,10 +49,19 @@ namespace fastfile::linker::bo4 {
         uint64_t ffnameHash{};
         const char* ffname{};
         std::unordered_map<uint64_t, fastfile::linker::memory::LinkerDataChunk*> allocatedAssets{};
-        // the assets linked in this fastfile (type and name): a repeat is linked by its name
-        std::unordered_set<uint64_t> linkedAssets{};
+        /*
+         * Keys the assets of this fastfile share, what is linked once (by name after): "assets" the assets linked
+         * (type and name), the linkers' own. The link cache records what an asset found and added.
+         */
+        std::unordered_map<std::string, std::unordered_set<uint64_t>> sets{};
+
+        // the key is in the set
+        bool SetContains(const std::string& set, uint64_t key);
+        // add a key to a set, true if it wasn't in it
+        bool SetInsert(const std::string& set, uint64_t key);
     };
     struct BO4LinkContext;
+    class BO4LinkCache;
 
     BO4LinkContext& GetLinkContext();
 
@@ -61,6 +70,12 @@ namespace fastfile::linker::bo4 {
         BO4FFContext mainFF;
         std::map<std::string, BO4FFContext> ffs{};
         bool error{};
+        // the link cache, null without
+        BO4LinkCache* cache{};
+        // the assets being linked in the assets being linked
+        size_t linkDepth{};
+        // the next LinkAsset is an asset of the zone
+        bool zoneAsset{};
 
         BO4FFContext& GetFFContext(const char* prefix);
 
@@ -214,6 +229,44 @@ namespace fastfile::linker::bo4 {
 
     // adds an entry to the xpak of a fastfile, written with its keyvaluepairs by the image linker
     void AddXPakItem(BO4FFContext& ff, uint64_t key, std::vector<byte>&& data);
+
+    /*
+     * The link cache (linker_bo4_cache.cpp): a top asset of a type that can be cached is replayed from the last link
+     * if the files it read and what it found in the fastfile are the same, else linked and recorded.
+     */
+    class BO4LinkCache {
+      public:
+        virtual ~BO4LinkCache() {}
+        // replay an asset, false if it must be linked
+        virtual bool Replay(XAssetType type, const char* id, BO4FFContext& ff) = 0;
+        // start recording an asset, false if it can't be cached
+        virtual bool Begin(XAssetType type, const char* id, BO4FFContext& ff) = 0;
+        // end the recording, store it if linked without error
+        virtual void End(bool ok) = 0;
+        // an asset of this type linked in the recorded one
+        virtual void Nested(XAssetType type) = 0;
+        // the recorded asset can't be cached
+        virtual void Taint(const std::string& why) = 0;
+        // a set access of a fastfile (BO4FFContext::sets)
+        virtual void RecordSet(BO4FFContext& ff, const std::string& set, uint64_t key, bool insert, bool result) = 0;
+        virtual void RecordXPakItem(BO4FFContext& ff, uint64_t key, const std::vector<byte>& data) = 0;
+        /*
+         * A value computed from the files it reads (a compiled script), outside of the recorded assets: Load gives it
+         * if they are the same, else BeginComputed tracks the files until StoreComputed (false if it can't).
+         */
+        virtual bool LoadComputed(const std::string& key, std::vector<byte>& value) = 0;
+        virtual bool BeginComputed() = 0;
+        virtual void StoreComputed(const std::string& key, const std::vector<byte>* value) = 0;
+        // the cache's directory, the key of its files (acts' build, the zone's options), linked again
+        virtual const std::filesystem::path& Directory() const = 0;
+        virtual const std::string& Key() const = 0;
+        virtual bool Rebuild() const = 0;
+        // before the assets, after them
+        virtual void Start(BO4LinkContext& ctx) = 0;
+        virtual void Finish(BO4LinkContext& ctx) = 0;
+    };
+    // the link cache of the options, null if disabled
+    std::unique_ptr<BO4LinkCache> CreateLinkCache(BO4LinkContext& ctx);
 
     // a KLF (lens flare) as the fx dumper writes it, inline the first time in the fastfile, by name after (linker_bo4_fx.cpp)
     bool LinkKlf(BO4LinkContext& ctx, BO4FFContext& ff, const rapidjson::Value& klf, void*& ref);

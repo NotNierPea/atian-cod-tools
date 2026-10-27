@@ -7,9 +7,84 @@
 #include <tools/compatibility/acti_crypto_keys.hpp>
 #include <tools/compatibility/acti_archive_checksums.hpp>
 #include <utils/data_utils.hpp>
+#include <tools/fastfile/linkers/linker_cache.hpp>
 
 namespace fastfile::compressor::t789 {
     using namespace compatibility::acti::crypto_keys;
+
+    /*
+     * The chunks of a fastfile compressed ahead on the cores at the offsets they would be asked at (one after the
+     * other, the chunk size each), a batch at a time: a chunk asked elsewhere (shrunk to fit a segment, after a filler)
+     * is compressed alone, the next batch starts once the chunks follow each other again (near the end of a segment
+     * most full chunks asked don't fit).
+     */
+    class CompressAhead {
+        static constexpr size_t BATCH = 24;
+        utils::compress::CompressionAlgorithm alg;
+        const byte* base;
+        size_t total;
+        size_t chunkSize;
+        // offset -> size, compressed
+        std::map<size_t, std::pair<size_t, std::pair<bool, std::vector<byte>>>> ahead{};
+        // the offset after the last full chunk given
+        size_t afterAlone{ SIZE_MAX };
+
+        std::pair<bool, std::vector<byte>> Compress(size_t offset, size_t size) const {
+            std::vector<byte> out{};
+            bool ok{ utils::compress::CompressBuffer(alg, base + offset, size, out) };
+            return { ok, std::move(out) };
+        }
+
+      public:
+        // the chunks asked, the ones compressed ahead
+        size_t asked{};
+        size_t hits{};
+
+        CompressAhead(utils::compress::CompressionAlgorithm alg, const byte* base, size_t total, size_t chunkSize)
+            : alg(alg), base(base), total(total), chunkSize(chunkSize) {}
+
+        bool Get(const byte* ptr, size_t size, std::vector<byte>& out) {
+            size_t offset{ (size_t)(ptr - base) };
+            asked++;
+            if (size != std::min(chunkSize, total - offset)) {
+                // shrunk to fit
+                std::pair<bool, std::vector<byte>> r{ Compress(offset, size) };
+                out = std::move(r.second);
+                return r.first;
+            }
+            auto it{ ahead.find(offset) };
+            if ((it == ahead.end() || it->second.first != size) && offset != afterAlone) {
+                // not where a batch would go on
+                ahead.clear();
+                afterAlone = offset + size;
+                std::pair<bool, std::vector<byte>> r{ Compress(offset, size) };
+                out = std::move(r.second);
+                return r.first;
+            }
+            if (it == ahead.end() || it->second.first != size) {
+                ahead.clear();
+                std::vector<std::pair<size_t, size_t>> batch{};
+                for (size_t o = offset; batch.size() < BATCH && o < total; o += batch.back().second) {
+                    batch.emplace_back(o, std::min(chunkSize, total - o));
+                }
+                std::vector<std::pair<bool, std::vector<byte>>> results(batch.size());
+                fastfile::linker::cache::ParallelFor(batch.size(), [&](size_t i) {
+                    results[i] = Compress(batch[i].first, batch[i].second);
+                });
+                for (size_t i = 0; i < batch.size(); i++) {
+                    ahead[batch[i].first] = { batch[i].second, std::move(results[i]) };
+                }
+                it = ahead.find(offset);
+            } else {
+                hits++;
+            }
+            std::pair<bool, std::vector<byte>> r{ std::move(it->second.second) };
+            ahead.erase(ahead.begin(), std::next(it));
+            afterAlone = offset + size;
+            out = std::move(r.second);
+            return r.first;
+        }
+    };
 
     enum T789Version {
         T789V_FLAG_CW = 0x1000,
@@ -98,11 +173,13 @@ namespace fastfile::compressor::t789 {
                 HeaderWriterData header{};
                 AllocateHeader(ctx, out, header);
 
+                std::chrono::steady_clock::time_point compressStart{ std::chrono::steady_clock::now() };
                 // write blocks
                 byte* toCompress{ ff.linkedData.data() };
                 size_t remainingSize{ ff.linkedData.size() };
 
                 size_t idx{};
+                CompressAhead compressAhead{ alg, toCompress, remainingSize, chunkSize };
                 std::vector<byte> compressBuffer{};
                 size_t compressedSize{};
                 LOG_TRACE(
@@ -120,7 +197,7 @@ namespace fastfile::compressor::t789 {
                     bool fits{ false };
                     for (;;) {
                         compressBuffer.clear();
-                        if (!utils::compress::CompressBuffer(alg, toCompress, uncompressedSize, compressBuffer)) {
+                        if (!compressAhead.Get(toCompress, uncompressedSize, compressBuffer)) {
                             throw std::runtime_error(
                                 std::format("Can't compress chunk 0x{:x} of size 0x{:x}", idx, uncompressedSize)
                             );
@@ -284,6 +361,7 @@ namespace fastfile::compressor::t789 {
                 h.compressedSize = 0;
                 utils::Allocate(out, 0x40);
 
+                std::chrono::steady_clock::time_point compressedTime{ std::chrono::steady_clock::now() };
                 // write header data
                 WriteHeaderData(ctx, out, ff, compression, secure, header);
 
@@ -299,16 +377,22 @@ namespace fastfile::compressor::t789 {
                 }
 
                 LOG_INFO(
-                    "Compressed {} into {} [{}]({} -> {} bytes / {}% saved)",
+                    "Compressed {} into {} [{}]({} -> {} bytes / {}% saved) in {:.2f}s ({}/{} chunks ahead), written "
+                    "in {:.2f}s",
                     ff.ffname,
                     outputFileFF.string(),
                     alg,
                     ff.linkedData.size(),
                     compressedSize,
-                    (100 - 100 * compressedSize / ff.linkedData.size())
+                    (100 - 100 * compressedSize / ff.linkedData.size()),
+                    std::chrono::duration<double>(compressedTime - compressStart).count(),
+                    compressAhead.hits,
+                    compressAhead.asked,
+                    std::chrono::duration<double>(std::chrono::steady_clock::now() - compressedTime).count()
                 );
             }
 
+            std::chrono::steady_clock::time_point wniStart{ std::chrono::steady_clock::now() };
             if (!ctx.storedHashes.empty()) {
                 std::filesystem::path outputFileWNI{ ctx.opt.m_output / "package_index" /
                                                      std::format("{}.wni", ctx.mainFFName) };
@@ -317,6 +401,11 @@ namespace fastfile::compressor::t789 {
                 if (compatibility::scobalula::wnigen::CompressWNIFile(ctx.storedHashes, outputFileWNI) != tool::OK) {
                     throw std::runtime_error(std::format("Can't write wni info into {}", outputFileWNI.string()));
                 }
+                LOG_INFO(
+                    "Written {} hashes in {:.2f}s",
+                    ctx.storedHashes.size(),
+                    std::chrono::duration<double>(std::chrono::steady_clock::now() - wniStart).count()
+                );
             }
         }
     };

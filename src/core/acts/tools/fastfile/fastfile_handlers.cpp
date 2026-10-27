@@ -241,6 +241,16 @@ namespace fastfile {
                 encrypt = true;
             } else if (!_strcmpi("--server", arg)) {
                 server = true;
+            } else if (!_strcmpi("--no-cache", arg)) {
+                noCache = true;
+            } else if (!_strcmpi("--rebuild-cache", arg)) {
+                rebuildCache = true;
+            } else if (!_strcmpi("--cache-dir", arg)) {
+                if (i + 1 == endIndex) {
+                    LOG_ERROR("Missing value for param '{}'!", arg);
+                    return false;
+                }
+                cacheDir = args[++i];
             } else if (!_strcmpi("--chunkSize", arg)) {
                 if (i + 1 == endIndex) {
                     LOG_ERROR("Missing value for param '{}'!", arg);
@@ -286,6 +296,9 @@ namespace fastfile {
         LOG_INFO("-e --encrypt          : Encrypt fastfile, requires AES key");
         LOG_INFO("--chunkSize [size]    : Set chunk sizes");
         LOG_INFO("-H --high-compression : Use high compression (if available)");
+        LOG_INFO("--no-cache            : Link every asset, without the link cache (bo4)");
+        LOG_INFO("--rebuild-cache       : Link every asset and store them in the link cache again");
+        LOG_INFO("--cache-dir [dir]     : Link cache dir, by default in %LOCALAPPDATA%/acts/link_cache");
     }
 
     FastFileOption::FastFileOption() : ActsAPIFastFile_FastFileOption() {
@@ -1437,6 +1450,9 @@ namespace fastfile {
     void FastFileLinkerContext::RegisterHash(uint64_t val, const char* str) {
         if (!val)
             return;
+        if (hashRecord) {
+            hashRecord->emplace_back(val, str);
+        }
 
         const char*& old{ storedHashes[val] };
         if (old) {
@@ -1539,11 +1555,20 @@ namespace fastfile {
                         ctx.compressor->Cleanup();
                 } };
 
+                std::chrono::steady_clock::time_point start{ std::chrono::steady_clock::now() };
                 ctx.linker->Link(ctx);
+                std::chrono::steady_clock::time_point linked{ std::chrono::steady_clock::now() };
 
                 if (ctx.compressor) {
                     ctx.compressor->Compress(ctx);
                 }
+                std::chrono::steady_clock::time_point end{ std::chrono::steady_clock::now() };
+                LOG_INFO(
+                    "Linked {} in {:.2f}s, compressed in {:.2f}s",
+                    file,
+                    std::chrono::duration<double>(linked - start).count(),
+                    std::chrono::duration<double>(end - linked).count()
+                );
             } catch (std::runtime_error& err) {
                 LOG_ERROR("Can't read {}: {}", file, err.what());
             }

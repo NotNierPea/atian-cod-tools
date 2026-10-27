@@ -2,6 +2,13 @@
 #include <tools/fastfile/linkers/linker_memory.hpp>
 
 namespace fastfile::linker::memory {
+    namespace {
+        LinkerRecorder* activeRecorder{};
+    }
+
+    LinkerRecorder* GetActiveRecorder() { return activeRecorder; }
+    void SetActiveRecorder(LinkerRecorder* recorder) { activeRecorder = recorder; }
+
     XBlockLinker::XBlockLinker(size_t numblocks, size_t virtualBlock)
         : numblocks(numblocks), virtualBlock(virtualBlock) {
         if (numblocks > LINKER_MAX_BLOCKS) {
@@ -18,6 +25,9 @@ namespace fastfile::linker::memory {
             throw std::runtime_error(
                 "XBlockLinker::SetMode: Can't set linker mode with non empty chunks, missing PopStream()?"
             );
+        }
+        if (activeRecorder) {
+            activeRecorder->Taint("linker mode set");
         }
         linkerMode = mode;
     }
@@ -38,6 +48,18 @@ namespace fastfile::linker::memory {
             block.last[linkerMode]->next = chunk;
             chunk->last = block.last[linkerMode];
             block.last[linkerMode] = chunk;
+        }
+        lastChunk = chunk;
+        if (activeRecorder) {
+            if (activeRecorder->linker != this) {
+                activeRecorder->Taint("data linked in another fastfile");
+            } else if (linkerMode != LM_DATA) {
+                activeRecorder->Taint("header data linked");
+            } else {
+                activeRecorder->chunkIndex[chunk] = activeRecorder->chunks.size();
+                activeRecorder->chunks.push_back(chunk);
+                activeRecorder->chunkBlocks.push_back(blockStack[blockStackIndex]);
+            }
         }
         return chunk;
     }
@@ -112,31 +134,42 @@ namespace fastfile::linker::memory {
         return AddChunk(LinkerDataChunkType::CHUNKTYPE_DATA, 0, nullptr, size);
     }
 
+    uint32_t XBlockLinker::FindScrString(const char* value) const {
+        auto it{ scrStringIndex.find(value) };
+        return it == scrStringIndex.end() ? 0 : it->second;
+    }
+
+    uint32_t XBlockLinker::AddScrStringRaw(const char* value) {
+        uint32_t index{ FindScrString(value) };
+        if (!index) {
+            const char* str{ alloc.CloneStr(value) };
+            scrStrings.push_back(str);
+            index = (uint32_t)scrStrings.size(); // +1 for the null str
+            scrStringIndex[str] = index;
+        }
+        return index;
+    }
+
     uint32_t XBlockLinker::AddScrString(const char* value) {
         if (!value || !*value) {
             return 0;
         }
-
-        for (size_t i = 0; i < scrStrings.size(); i++) {
-            if (!std::strcmp(value, scrStrings[i])) {
-                return (uint32_t)i + 1; // +1 for the null str
-            }
+        uint32_t index{ AddScrStringRaw(value) };
+        if (activeRecorder && activeRecorder->linker == this) {
+            activeRecorder->scrStrings.push_back({ value, index, false });
         }
-        scrStrings.push_back(alloc.CloneStr(value));
-        return (uint32_t)scrStrings.size();
+        return index;
     }
 
     uint32_t XBlockLinker::AddScrStringKeepEmpty(const char* value) {
         if (!value) {
             return 0;
         }
-        for (size_t i = 0; i < scrStrings.size(); i++) {
-            if (!std::strcmp(value, scrStrings[i])) {
-                return (uint32_t)i + 1;
-            }
+        uint32_t index{ AddScrStringRaw(value) };
+        if (activeRecorder && activeRecorder->linker == this) {
+            activeRecorder->scrStrings.push_back({ value, index, true });
         }
-        scrStrings.push_back(alloc.CloneStr(value));
-        return (uint32_t)scrStrings.size();
+        return index;
     }
 
     AssetData* XBlockLinker::AddAsset(size_t type, LinkerDataChunk* align) {
@@ -146,7 +179,22 @@ namespace fastfile::linker::memory {
         asset->type = type;
         asset->align = align;
         assets.emplace_back(asset);
+        if (activeRecorder && activeRecorder->linker == this) {
+            auto it{ activeRecorder->chunkIndex.find(align) };
+            if (it == activeRecorder->chunkIndex.end()) {
+                activeRecorder->Taint("asset added on data linked before");
+            } else {
+                activeRecorder->assets.push_back({ type, it->second });
+            }
+        }
         return asset;
+    }
+
+    void XBlockLinker::AddRef(LinkerDataChunk* chunk, void** ref) {
+        chunk->refs.push_back(ref);
+        if (activeRecorder && !activeRecorder->chunkIndex.contains(chunk)) {
+            activeRecorder->Taint("pointer to data linked before");
+        }
     }
 
     void XBlockLinker::AddXString(const char*& value, const char* val) {

@@ -18,7 +18,6 @@ namespace {
     using namespace fastfile::bo4ai;
 
     // the inline assets of each fastfile by type, by name
-    std::unordered_map<BO4FFContext*, std::unordered_map<XAssetType, std::unordered_set<uint64_t>>> inlineAssets{};
 
     class XAssetLinkerImpl : public XAssetLinker {
         XAssetType type;
@@ -114,7 +113,7 @@ namespace {
                         // was two assets of a name, the game's zones name the second)
                         if (const rapidjson::Value* nv{ av->HasMember("name") ? &(*av)["name"] : nullptr }; nv && nv->IsString() && *nv->GetString()) {
                             uint64_t nameHash{ ctx.HashXHash(nv->GetString(), true) };
-                            if (!inlineAssets[&ff][f.assetType].insert(nameHash).second) {
+                            if (!ff.SetInsert(std::format("ai.inline.{}", (int)f.assetType), nameHash)) {
                                 ctx.LinkAsset(f.assetType, std::format(",hash_{:x}", nameHash).c_str(), reinterpret_cast<void*&>(ref), false, &ff);
                                 continue;
                             }

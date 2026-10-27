@@ -172,6 +172,10 @@ namespace fastfile {
         FFLinker* linker{};
         bool server{};
         FastFilePlatform platform{ FastFilePlatform::XFILE_PC };
+        // link cache: none, everything linked again (and stored), its directory
+        bool noCache{};
+        bool rebuildCache{};
+        std::filesystem::path cacheDir{};
 
         ~FastFileLinkerOption();
         bool Compute(const char** args, size_t startIndex, size_t endIndex);
@@ -197,6 +201,8 @@ namespace fastfile {
         core::memory_allocator::MemoryAllocator strs{};
         FFCompressor* compressor{};
         FFLinker* linker{};
+        // the hashes registered, while the link cache records an asset
+        std::vector<std::pair<uint64_t, std::string>>* hashRecord{};
 
         FastFileLinkerContext(FastFileLinkerOption& opt, std::filesystem::path zoneFile);
 

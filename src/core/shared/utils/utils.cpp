@@ -239,9 +239,7 @@ namespace utils {
 
     size_t Allocate(std::vector<byte>& data, size_t len) {
         size_t begin = data.size();
-        for (size_t i = 0; i < len; i++) {
-            data.push_back(0);
-        }
+        data.resize(begin + len);
         return begin;
     }
 

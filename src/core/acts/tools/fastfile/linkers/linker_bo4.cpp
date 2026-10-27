@@ -3,6 +3,8 @@
 #include <core/preprocessor.hpp>
 
 namespace fastfile::linker::bo4 {
+    static BO4LinkContext* linkContext{};
+
     BO4FFContext::BO4FFContext() : data{ XFILE_BLOCK_COUNT, XFILE_BLOCK_VIRTUAL } {
         data.SetMode(fastfile::linker::memory::LM_DATA);
         data.SetBlockType(XFILE_BLOCK_TEMP, fastfile::linker::memory::BLOCKTYPE_TEMP);
@@ -37,7 +39,27 @@ namespace fastfile::linker::bo4 {
         return (uint32_t)r;
     }
 
+    bool BO4FFContext::SetContains(const std::string& set, uint64_t key) {
+        auto it{ sets.find(set) };
+        bool r{ it != sets.end() && it->second.contains(key) };
+        if (linkContext && linkContext->cache) {
+            linkContext->cache->RecordSet(*this, set, key, false, r);
+        }
+        return r;
+    }
+
+    bool BO4FFContext::SetInsert(const std::string& set, uint64_t key) {
+        bool r{ sets[set].insert(key).second };
+        if (linkContext && linkContext->cache) {
+            linkContext->cache->RecordSet(*this, set, key, true, r);
+        }
+        return r;
+    }
+
     BO4FFContext& BO4LinkContext::GetFFContext(const char* prefix) {
+        if (cache && linkDepth) {
+            cache->Taint("prefixed fastfile");
+        }
         BO4FFContext& sctx{ ffs[prefix] };
         if (!sctx.ffnameHash) {
             sctx.ffname = this->linkCtx.strs.CloneStr(utils::va("%s%s", prefix, mainFF.ffname));
@@ -81,8 +103,6 @@ namespace fastfile::linker::bo4 {
         return r;
     }
 
-    static BO4LinkContext* linkContext{};
-
     BO4LinkContext& GetLinkContext() {
         if (!linkContext) {
             throw std::runtime_error("No BO4LinkContext");
@@ -100,6 +120,22 @@ namespace fastfile::linker::bo4 {
             utils::CloseEnd linkContextCE{ [] { linkContext = nullptr; } };
             bo4ctx.mainFF.ffname = ctx.mainFFName;
             bo4ctx.mainFF.ffnameHash = bo4ctx.HashXHash(ctx.mainFFName);
+            std::unique_ptr<BO4LinkCache> cache{ CreateLinkCache(bo4ctx) };
+            bo4ctx.cache = cache.get();
+            utils::CloseEnd cacheCE{ [&bo4ctx] { bo4ctx.cache = nullptr; } };
+            if (cache) {
+                cache->Start(bo4ctx);
+            }
+
+            // the time of each step, logged at the end (the top assets with the ones they link)
+            struct StepTime {
+                double seconds{};
+                size_t count{};
+            };
+            std::map<std::string, StepTime> times{};
+            auto Elapsed = [](std::chrono::steady_clock::time_point start) {
+                return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+            };
 
             for (auto& [t, d] : ctx.zone.assets) {
                 XAssetType type{ games::bo4::pool::XAssetIdFromName(t.data()) };
@@ -109,23 +145,41 @@ namespace fastfile::linker::bo4 {
                     continue;
                 }
 
+                StepTime& time{ times[t] };
                 for (fastfile::zone::AssetData& assetData : d) {
+                    std::chrono::steady_clock::time_point start{ std::chrono::steady_clock::now() };
                     void* ref{};
+                    bo4ctx.zoneAsset = true;
                     bo4ctx.LinkAsset(type, assetData.value, ref, true, &bo4ctx.mainFF);
                     assetData.handled = true;
+                    time.seconds += Elapsed(start);
+                    time.count++;
                 }
             }
 
             // final linking for all the fastfiles
             for (auto& [type, linker] : GetWorkers()) {
+                std::chrono::steady_clock::time_point start{ std::chrono::steady_clock::now() };
                 linker->ComputeFinal(bo4ctx, bo4ctx.mainFF);
                 for (auto& [ffname, ff] : bo4ctx.ffs) {
                     linker->ComputeFinal(bo4ctx, ff);
+                }
+                double seconds{ Elapsed(start) };
+                if (seconds >= 0.01) {
+                    StepTime& time{ times[std::format("final {}", games::bo4::pool::XAssetNameFromId(type))] };
+                    time.seconds += seconds;
+                    time.count++;
                 }
             }
 
             if (bo4ctx.error) {
                 throw std::runtime_error("Error when linking fast file data");
+            }
+            if (cache) {
+                std::chrono::steady_clock::time_point start{ std::chrono::steady_clock::now() };
+                cache->Finish(bo4ctx);
+                bo4ctx.cache = nullptr;
+                times["final link cache"] = { Elapsed(start), 1 };
             }
 
             auto LinkFF = [&bo4ctx](BO4FFContext& ff, std::vector<byte>& data, size_t* blocks) {
@@ -214,6 +268,7 @@ namespace fastfile::linker::bo4 {
                 );
             };
 
+            std::chrono::steady_clock::time_point linkStart{ std::chrono::steady_clock::now() };
             fastfile::FastFile& mff{ ctx.fastfiles.emplace_back() };
             mff.ffname = ctx.mainFFName;
             LinkFF(bo4ctx.mainFF, mff.linkedData, mff.blockSizes);
@@ -222,6 +277,17 @@ namespace fastfile::linker::bo4 {
                 fastfile::FastFile& mff{ ctx.fastfiles.emplace_back() };
                 mff.ffname = ff.ffname;
                 LinkFF(ff, mff.linkedData, mff.blockSizes);
+            }
+            times["final link data"] = { Elapsed(linkStart), 1 };
+
+            std::vector<std::pair<std::string, StepTime>> sorted{ times.begin(), times.end() };
+            std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) {
+                return a.second.seconds > b.second.seconds;
+            });
+            for (const auto& [name, time] : sorted) {
+                if (time.seconds >= 0.05) {
+                    LOG_INFO("Link time {:>8.2f}s {} ({})", time.seconds, name, time.count);
+                }
             }
         }
     };
@@ -232,6 +298,8 @@ namespace fastfile::linker::bo4 {
             ff = &mainFF;
         }
 
+        bool zoneAsset{ this->zoneAsset };
+        this->zoneAsset = false;
         LOG_DEBUG(
             "BO4LinkContext::LinkAsset(type={}, id={}, addAsset={}, ff={})",
             games::bo4::pool::XAssetNameFromId(type),
@@ -262,7 +330,7 @@ namespace fastfile::linker::bo4 {
          * scriptbundle dangling, the frontend's spawn then crashed walking the scriptbundles). Only for the types with
          * an empty asset (a size and a name in it).
          */
-        if (!defaultAsset && !ff->linkedAssets.insert(hash ^ ((uint64_t)type * 0x9E3779B97F4A7C15ull)).second) {
+        if (!defaultAsset && !ff->SetInsert("assets", hash ^ ((uint64_t)type * 0x9E3779B97F4A7C15ull))) {
             size_t len{ games::bo4::pool::GetAssetSize(type) };
             std::vector<byte> probe(len);
             if (len && games::bo4::pool::GetAssetName(type, probe.data(), len)) {
@@ -303,13 +371,35 @@ namespace fastfile::linker::bo4 {
             if (addAsset && !it->second->isGrouped) {
                 asset = ff->data.AddAsset(type, align);
             }
+            // a top asset replayed from the link cache or recorded in it
+            bool top{ cache && !linkDepth && zoneAsset };
+            if (cache && linkDepth) {
+                cache->Nested(type);
+            }
+            bool recording{};
             try {
+                if (top && cache->Replay(type, real, *ff)) {
+                    ff->data.PopStream();
+                    return;
+                }
+                recording = top && cache->Begin(type, real, *ff);
+                linkDepth++;
+                utils::CloseEnd depthCE{ [this] { linkDepth--; } };
+                bool errorBefore{ error };
                 it->second->Compute(*this, id, *ff);
+
+                if (recording) {
+                    recording = false;
+                    cache->End(!errorBefore && !error);
+                }
 
                 if (computedRef) {
                     ff->allocatedAssets[hash] = computedRef;
                 }
             } catch (std::runtime_error& e) {
+                if (recording) {
+                    cache->End(false);
+                }
                 error = true;
                 LOG_ERROR("Can't link asset {},{} : {}", games::bo4::pool::XAssetNameFromId(type), id, e.what());
             }
