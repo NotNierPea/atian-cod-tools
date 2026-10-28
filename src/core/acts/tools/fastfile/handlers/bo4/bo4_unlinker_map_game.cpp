@@ -99,6 +99,40 @@ namespace fastfile::handlers::bo4::map {
             if (!json.WriteToFile(outFile)) {
                 LOG_ERROR("Error when dumping {}", outFile.string());
             }
+
+            // the raw path data beside it: nodes.bin (nodeCount + 0x80 nodes), links.bin (each node's links, 0xC by the
+            // u16 count at 0x70, in node order), vis.bin, nodetree.bin (0x18 each) and nodetree_leaves.bin (a leaf's u16
+            // node indices: count at 0x8, in tree order)
+            std::filesystem::path dir{ outFile.parent_path() };
+            if (asset.nodes) {
+                size_t count{ asset.nodeCount + 0x80ull };
+                utils::WriteFile(dir / "nodes.bin", asset.nodes, 0xA8 * count);
+                std::vector<byte> links{};
+                for (size_t i = 0; i < count; i++) {
+                    const byte* node{ asset.nodes + 0xA8 * i };
+                    const byte* ptr{ *(const byte* const*)node };
+                    uint16_t n{ *(const uint16_t*)(node + 0x70) };
+                    if (ptr && n) {
+                        links.insert(links.end(), ptr, ptr + 0xCull * n);
+                    }
+                }
+                utils::WriteFile(dir / "links.bin", links.data(), links.size());
+            }
+            if (asset.pathVis && asset.visBytes) {
+                utils::WriteFile(dir / "vis.bin", asset.pathVis, asset.visBytes);
+            }
+            if (asset.nodeTree) {
+                utils::WriteFile(dir / "nodetree.bin", asset.nodeTree, 0x18ull * asset.nodeTreeCount);
+                std::vector<byte> leaves{};
+                for (size_t i = 0; i < asset.nodeTreeCount; i++) {
+                    const byte* e{ asset.nodeTree + 0x18 * i };
+                    if (*(const int32_t*)e < 0 && *(const byte* const*)(e + 0x10)) {
+                        const byte* list{ *(const byte* const*)(e + 0x10) };
+                        leaves.insert(leaves.end(), list, list + 2ull * *(const int32_t*)(e + 8));
+                    }
+                }
+                utils::WriteFile(dir / "nodetree_leaves.bin", leaves.data(), leaves.size());
+            }
         }
     };
 
