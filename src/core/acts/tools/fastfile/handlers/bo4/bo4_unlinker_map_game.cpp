@@ -133,6 +133,53 @@ namespace fastfile::handlers::bo4::map {
                 }
                 utils::WriteFile(dir / "nodetree_leaves.bin", leaves.data(), leaves.size());
             }
+
+            // the tactical graph (sub_142E2F5B0): tacgraph.bin (its 0x2738 header: point count, the points (0x2C each)
+            // at 0x08, their vis (0x320 each) at 0x10, the direction tables, a tree's count / nodes (0x18 each, a leaf's
+            // u16 point list: count at 0x8, list at 0x10) at 0x2718 / 0x2720, and 0x50 records' count / array at
+            // 0x2728 / 0x2730, each a u16 list: count at 0x34, list at 0x48), tacpoints.bin, tacvis.bin, tactree.bin +
+            // tactree_leaves.bin, tacrecords.bin + tacrecords_lists.bin
+            if (asset.tacGraph) {
+                const byte* tg{ asset.tacGraph };
+                utils::WriteFile(dir / "tacgraph.bin", tg, 0x2738);
+                int32_t count{ *(const int32_t*)tg };
+                const byte* tpoints{ *(const byte* const*)(tg + 0x08) };
+                const byte* vpoints{ *(const byte* const*)(tg + 0x10) };
+                if (count > 0 && tpoints) {
+                    utils::WriteFile(dir / "tacpoints.bin", tpoints, 0x2Cull * count);
+                }
+                if (count > 0 && vpoints) {
+                    utils::WriteFile(dir / "tacvis.bin", vpoints, 0x320ull * count);
+                }
+                int32_t treeCount{ *(const int32_t*)(tg + 0x2718) };
+                const byte* tree{ *(const byte* const*)(tg + 0x2720) };
+                if (treeCount > 0 && tree) {
+                    utils::WriteFile(dir / "tactree.bin", tree, 0x18ull * treeCount);
+                    std::vector<byte> leaves{};
+                    for (int32_t i = 0; i < treeCount; i++) {
+                        const byte* e{ tree + 0x18 * i };
+                        if (*(const int32_t*)e < 0 && *(const byte* const*)(e + 0x10)) {
+                            const byte* list{ *(const byte* const*)(e + 0x10) };
+                            leaves.insert(leaves.end(), list, list + 2ull * *(const int32_t*)(e + 8));
+                        }
+                    }
+                    utils::WriteFile(dir / "tactree_leaves.bin", leaves.data(), leaves.size());
+                }
+                int32_t recCount{ *(const int32_t*)(tg + 0x2728) };
+                const byte* recs{ *(const byte* const*)(tg + 0x2730) };
+                if (recCount > 0 && recs) {
+                    utils::WriteFile(dir / "tacrecords.bin", recs, 0x50ull * recCount);
+                    std::vector<byte> lists{};
+                    for (int32_t i = 0; i < recCount; i++) {
+                        const byte* e{ recs + 0x50 * i };
+                        const byte* list{ *(const byte* const*)(e + 0x48) };
+                        if (list) {
+                            lists.insert(lists.end(), list, list + 2ull * *(const int32_t*)(e + 0x34));
+                        }
+                    }
+                    utils::WriteFile(dir / "tacrecords_lists.bin", lists.data(), lists.size());
+                }
+            }
         }
     };
 

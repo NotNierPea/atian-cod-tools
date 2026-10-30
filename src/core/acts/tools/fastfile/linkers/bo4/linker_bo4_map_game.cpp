@@ -12,7 +12,12 @@
  *     "nodes": [                          // optional: the map's path nodes, in the order of its node_ entities
  *         { "type": 20, "origin": [ x, y, z ], "yaw": 0, "extents": [ 24, 32, 28.5 ], "flags": 32796, "partner": 1, "mantle": -1,
  *           "connect": 1, "cost": 1, "samples": [ [ x, y, z ], ... ] }
- *     ]
+ *     ],
+ *     "tacGraph": {                       // optional: the tactical graph (the bots' tacticalquery), files beside the json
+ *         "header": "...",                // a game's 0x2738 header (its direction tables; counts and pointers rewritten)
+ *         "points": "...", "vis": "...",  // 0x2C / 0x320 a point
+ *         "regions": "...", "lists": "..." // 0x50 a region, their u16 point lists in region order
+ *     }
  * }
  * The game spawns each node_ entity into the next baked node (sub_14405DE40: nodes + 0xA8 * a counter, no check
  * against nodeCount), its keys over the node's fields (origin, angles, the strings, movementtype_*, cost_modifier,
@@ -184,14 +189,91 @@ namespace {
                 ff.data.WriteStream(list.data(), list.size() * sizeof(uint16_t));
             }
 
-            ff.data.Align(8);
+            // the tactical graph (sub_142E2F5B0), empty without "tacGraph": the header (a template's direction tables at
+            // 0x18 .. 0x2718), the points (0x2C each, on 4), their vis (0x320 each, on 2), the point tree as one leaf of
+            // them all (0x18 on 8, its u16 list on 2), the regions (0x50 each on 8, their u16 lists after on 2)
             std::vector<byte> tacGraph(TACTICAL_GRAPH_SIZE);
+            std::string tacPoints{}, tacVis{}, tacRegions{}, tacLists{};
+            auto tacIt{ cfg.main.FindMember("tacGraph") };
+            if (tacIt != cfg.main.MemberEnd() && tacIt->value.IsObject()) {
+                auto ReadTac = [&](const char* key, std::string& out) {
+                    auto it{ tacIt->value.FindMember(key) };
+                    if (it == tacIt->value.MemberEnd() || !it->value.IsString()
+                        || !utils::ReadFile(path.parent_path() / it->value.GetString(), out)) {
+                        LOG_ERROR("game_map {}: can't read tacGraph {}", path.string(), key);
+                        return false;
+                    }
+                    return true;
+                };
+                std::string header{};
+                if (!ReadTac("header", header) || !ReadTac("points", tacPoints) || !ReadTac("vis", tacVis)
+                    || !ReadTac("regions", tacRegions) || !ReadTac("lists", tacLists) || header.size() < TACTICAL_GRAPH_SIZE
+                    || tacPoints.size() % 0x2C || tacVis.size() != tacPoints.size() / 0x2C * 0x320 || tacRegions.size() % 0x50) {
+                    LOG_ERROR("game_map {}: bad tacGraph data", path.string());
+                    ctx.error = true;
+                    return;
+                }
+                std::memcpy(tacGraph.data(), header.data(), TACTICAL_GRAPH_SIZE);
+            }
+            int32_t tacCount{ (int32_t)(tacPoints.size() / 0x2C) };
+            int32_t tacRegionCount{ (int32_t)(tacRegions.size() / 0x50) };
+            *(int32_t*)&tacGraph[0] = tacCount;
+            *(uint64_t*)&tacGraph[0x08] = tacCount ? fastfile::linker::memory::POINTER_NEXT : 0;
+            *(uint64_t*)&tacGraph[0x10] = tacCount ? fastfile::linker::memory::POINTER_NEXT : 0;
+            *(int32_t*)&tacGraph[0x2718] = tacCount ? 1 : 0;
+            *(uint64_t*)&tacGraph[0x2720] = tacCount ? fastfile::linker::memory::POINTER_NEXT : 0;
+            *(int32_t*)&tacGraph[0x2728] = tacRegionCount;
+            *(uint64_t*)&tacGraph[0x2730] = tacRegionCount ? fastfile::linker::memory::POINTER_NEXT : 0;
+            ff.data.Align(8);
             ff.data.WriteStream(tacGraph.data(), tacGraph.size());
+            if (tacCount) {
+                ff.data.Align(4);
+                ff.data.WriteStream(tacPoints.data(), tacPoints.size());
+                ff.data.Align(2);
+                ff.data.WriteStream(tacVis.data(), tacVis.size());
+                ff.data.Align(8);
+                byte leaf[NODE_TREE_SIZE]{};
+                *(int32_t*)leaf = -1;
+                *(int32_t*)(leaf + 8) = tacCount;
+                *(uint64_t*)(leaf + 0x10) = fastfile::linker::memory::POINTER_NEXT;
+                ff.data.WriteStream(leaf, sizeof(leaf));
+                ff.data.Align(2);
+                std::vector<uint16_t> all(tacCount);
+                for (int32_t i = 0; i < tacCount; i++) {
+                    all[i] = (uint16_t)i;
+                }
+                ff.data.WriteStream(all.data(), all.size() * sizeof(uint16_t));
+            }
+            if (tacRegionCount) {
+                ff.data.Align(8);
+                size_t listAt{};
+                std::vector<byte> regions(tacRegions.begin(), tacRegions.end());
+                for (int32_t i = 0; i < tacRegionCount; i++) {
+                    byte* r{ &regions[0x50 * i] };
+                    *(uint64_t*)(r + 0x48) = *(int32_t*)(r + 0x34) > 0 ? fastfile::linker::memory::POINTER_NEXT : 0;
+                }
+                ff.data.WriteStream(regions.data(), regions.size());
+                for (int32_t i = 0; i < tacRegionCount; i++) {
+                    int32_t n{ *(int32_t*)&regions[0x50 * i + 0x34] };
+                    if (n <= 0) {
+                        continue;
+                    }
+                    if ((listAt + n) * 2 > tacLists.size()) {
+                        LOG_ERROR("game_map {}: tacGraph lists too short", path.string());
+                        ctx.error = true;
+                        return;
+                    }
+                    ff.data.Align(2);
+                    ff.data.WriteStream(tacLists.data() + listAt * 2, n * 2ull);
+                    listAt += n;
+                }
+            }
             ff.data.PopStream();
 
             ff.data.PopStream();
 
-            LOG_INFO("Added asset game_map {} (hash_{:x}), {} path nodes", assetName, game.name.name, nodeCount);
+            LOG_INFO("Added asset game_map {} (hash_{:x}), {} path nodes, {} tactical points, {} regions", assetName,
+                game.name.name, nodeCount, tacCount, tacRegionCount);
         }
     };
 
