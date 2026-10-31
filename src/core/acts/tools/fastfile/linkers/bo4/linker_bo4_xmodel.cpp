@@ -36,7 +36,10 @@
  *     "playerClip": true,       // the collmap blocks the players, false by default on a physics model (jitter)
  *     "skeleton": "skeletons/body.json",  // a game model's json of the acts dumper: its bones, for its animations
  *     "extraJoints": { "j_my_jaw": "j_head" },  // with "skeleton": glTF joints it hasn't, new cosmetic bones on those
- *     "hitboxes": "skeleton"    // with a skeleton: its bone hit boxes (boneInfo), or "mesh" (the vertices of each)
+ *     "hitboxes": "skeleton",   // with a skeleton: its bone hit boxes (boneInfo), or "mesh" (the vertices of each)
+ *     "hitLocations": [ [ "head", 2 ], [ "spine", 5 ] ]  // without a skeleton: a bone's hit location (its
+ *                               // partClassification) is the first whose text is in its name, others the template's
+ *                               // (0: none, the bullets pass it)
  * }
  *
  * glTF: the meshes at rest in the game's space (y up converted, translations times scale), skinned to the joints of
@@ -2353,8 +2356,20 @@ namespace {
             if (useGameSkel) {
                 ff.data.WriteStream(gameSkel.partClassification.data(), gameSkel.partClassification.size());
             } else {
+                // the bones' hit locations: the first "hitLocations" text in the bone's name, else the template's
+                const rapidjson::Value* hitLocs{ Member(cfg.main, "hitLocations") };
                 for (size_t b = 0; b < numBones; b++) {
-                    ff.data.WriteStream(partClassification.data(), partClassification.size());
+                    byte loc{ partClassification[0] };
+                    if (hitLocs && hitLocs->IsArray() && b < boneNames.size()) {
+                        for (const rapidjson::Value& h : hitLocs->GetArray()) {
+                            if (h.IsArray() && h.Size() == 2 && h[0].IsString() && h[1].IsInt() &&
+                                boneNames[b].find(h[0].GetString()) != std::string::npos) {
+                                loc = (byte)h[1].GetInt();
+                                break;
+                            }
+                        }
+                    }
+                    ff.data.WriteStream(&loc, 1);
                 }
             }
 
