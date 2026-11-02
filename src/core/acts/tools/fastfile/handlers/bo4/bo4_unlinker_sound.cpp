@@ -97,6 +97,15 @@ namespace {
     };
     static_assert(sizeof(SndDialogScriptIdLookup) == 0x20);
 
+    // a REV engine file of the bank (SndBank 0xC0, Load_SndBank sub_142E2A9F0: data 16 aligned)
+    struct SndRevFile {
+        XHash name;
+        int32_t size;
+        uint32_t pad;
+        void* data;
+    };
+    static_assert(sizeof(SndRevFile) == 0x20);
+
     struct SndBank {
         const char* name;
         XHash nameHash;
@@ -411,6 +420,28 @@ namespace {
                     json.EndObject();
                 }
                 json.EndArray();
+                json.EndObject();
+            }
+            json.EndArray();
+
+            // the REV engine files (CrankcaseAudio's granular engine models a "vehicle" storage alias names by its
+            // revFilename, decoded as format 11): their data beside the json, <bank>.rev/<hash>.rev
+            json.WriteFieldNameString("revFiles");
+            json.BeginArray();
+            // (the bank's name kept: ExtractTmp's buffers turn over)
+            std::string revDir{ outFile.stem().string() + ".rev" };
+            for (size_t i = 0; i < asset->unkc0_count; i++) {
+                SndRevFile& rev{ ((SndRevFile*)asset->unkc0)[i] };
+                const char* rn{ hashutils::ExtractTmp("hash", rev.name.name) };
+                std::filesystem::path revFile{ outFile.parent_path() / revDir / std::format("{}.rev", rn) };
+                std::filesystem::create_directories(revFile.parent_path());
+                if (rev.data && rev.size > 0 && !utils::WriteFile(revFile, rev.data, (size_t)rev.size)) {
+                    LOG_ERROR("Error when dumping {}", revFile.string());
+                }
+                json.BeginObject();
+                json.WriteFieldValueXHash("name", rev.name);
+                json.WriteFieldValueNumber("size", rev.size);
+                json.WriteFieldValueString("file", std::format("{}/{}.rev", revDir, rn));
                 json.EndObject();
             }
             json.EndArray();

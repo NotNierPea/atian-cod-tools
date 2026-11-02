@@ -3,9 +3,97 @@
 #include <core/hashes/raw_file_extractor.hpp>
 #include <tools/fastfile/handlers/handler_game_bo4.hpp>
 #include <tools/fastfile/handlers/bo4/bo4_unlinker_scriptbundle.hpp>
+#include <tools/fastfile/bo4_vehicle_slots.hpp>
 
 namespace {
     using namespace fastfile::handlers::bo4;
+
+    std::string Hex(const void* data, size_t len) {
+        static const char* digits{ "0123456789abcdef" };
+        std::string out{};
+        out.reserve(len * 2);
+        for (size_t i = 0; i < len; i++) {
+            out += digits[((const byte*)data)[i] >> 4];
+            out += digits[((const byte*)data)[i] & 0xF];
+        }
+        return out;
+    }
+
+    void WriteScr(BO4JsonWriter& json, uint32_t s) {
+        if (s) {
+            json.WriteValueString(GetScrString(*(ScrString_t*)&s));
+        } else {
+            json.WriteValueNull();
+        }
+    }
+
+    // an asset by name (the top bit, a reference, off), null for none
+    void WriteAssetRef(BO4JsonWriter& json, uint32_t type, void* asset) {
+        XHash* name{ asset ? GetAssetName((games::bo4::pool::XAssetType)type, asset, 0) : nullptr };
+        if (!name || !name->name) {
+            json.WriteValueNull();
+            return;
+        }
+        json.WriteValueString(std::format("#hash_{:x}", name->name & hash::MASK63));
+    }
+
+    /*
+     * A lossless vehicle asset (the vehicle linkers'): the header as it is and its pointers and script strings by offset
+     * (bo4_vehicle_slots.hpp), the assets by name ("#hash_x"), the blobs as hex
+     */
+    bool WriteLossless(BO4JsonWriter& json, const byte* a, size_t size, const std::vector<fastfile::bo4vehicle::Slot>& slots) {
+        using namespace fastfile::bo4vehicle;
+        json.WriteFieldValueBool("lossless", true);
+        json.WriteFieldValueString("header", Hex(a, size));
+        json.WriteFieldNameString("slots");
+        json.BeginObject();
+        bool error{};
+        for (const Slot& s : slots) {
+            const byte* v{ a + s.offset };
+            void* ptr{ *(void* const*)v };
+            const char* key{ utils::va("%x", s.offset) };
+            switch (s.kind) {
+            case SK_ASSET:
+                if (ptr) {
+                    json.WriteFieldNameString(key);
+                    WriteAssetRef(json, s.type, ptr);
+                }
+                break;
+            case SK_SCR:
+                json.WriteFieldNameString(key);
+                WriteScr(json, *(const uint32_t*)v);
+                break;
+            case SK_BLOB:
+                if (ptr) {
+                    json.WriteFieldValueString(key, Hex(ptr, (size_t)SlotCount(s, a) * s.elemSize));
+                }
+                break;
+            case SK_XSTRING:
+                if (ptr) {
+                    json.WriteFieldValueString(key, (const char*)ptr);
+                }
+                break;
+            case SK_STRUCT_XSTRING:
+                if (ptr) {
+                    json.WriteFieldNameString(key);
+                    json.BeginObject();
+                    json.WriteFieldValueString("data", Hex(ptr, s.elemSize));
+                    const char* str{ *(const char* const*)ptr };
+                    if (str) {
+                        json.WriteFieldValueString("string", str);
+                    }
+                    json.EndObject();
+                }
+                break;
+            case SK_BUNDLE:
+                json.WriteFieldNameString(key);
+                scriptbundle::WriteObject(json, *(scriptbundle::SB_ObjectsArray*)v, error);
+                break;
+            }
+        }
+        json.EndObject();
+        return !error;
+    }
 
     enum VehicleTypes : int16_t {
         VEH_WHEELS_4 = 0x0,
@@ -489,6 +577,11 @@ namespace {
             LOG_OPT_INFO("Dump vehicle {}", outFile.string());
             json.BeginObject();
 
+            if (!WriteLossless(json, (const byte*)asset, sizeof(*asset), fastfile::bo4vehicle::VehicleDefSlots())) {
+                LOG_ERROR("Error when dumping {}", outFile.string());
+                return;
+            }
+
             json.WriteFieldValueXHash("name", asset->name);
             json.WriteFieldValueString("type", VehicleTypesName(asset->type));
 
@@ -770,5 +863,50 @@ namespace {
 
     utils::MapAdder<VehicleDefWorker, games::bo4::pool::XAssetType, Worker> impl{
         GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_VEHICLEDEF
+    };
+
+    // a vehicle's effects (VehicleFxDef) or sounds (VehicleSoundDef), lossless only: their name, then the slots
+    template<size_t Size, const char* Folder>
+    class VehiclePartWorker : public Worker {
+      public:
+        std::vector<fastfile::bo4vehicle::Slot> slots{};
+
+        void Unlink(fastfile::FastFileOption& opt, void* ptr) override {
+            XHash& name{ *(XHash*)ptr };
+            std::filesystem::path outFile{ opt.m_output / "bo4" / "source" / "tables" / Folder /
+                                           std::format("{}.json", hashutils::ExtractTmp("file", name.name)) };
+            std::filesystem::create_directories(outFile.parent_path());
+
+            BO4JsonWriter json{};
+            LOG_OPT_INFO("Dump {} {}", Folder, outFile.string());
+            json.BeginObject();
+            json.WriteFieldValueXHash("name", name);
+            bool ok{ WriteLossless(json, (const byte*)ptr, Size, slots) };
+            json.EndObject();
+            if (!ok || !json.WriteToFile(outFile)) {
+                LOG_ERROR("Error when dumping {}", outFile.string());
+            }
+        }
+    };
+
+    constexpr char VEHICLE_FX_FOLDER[]{ "vehiclefxdef" };
+    constexpr char VEHICLE_SOUND_FOLDER[]{ "vehiclesounddef" };
+
+    class VehicleFxDefWorker : public VehiclePartWorker<fastfile::bo4vehicle::VEHICLE_FX_DEF_SIZE, VEHICLE_FX_FOLDER> {
+      public:
+        VehicleFxDefWorker() { slots = fastfile::bo4vehicle::VehicleFxDefSlots(); }
+    };
+
+    class VehicleSoundDefWorker
+        : public VehiclePartWorker<fastfile::bo4vehicle::VEHICLE_SOUND_DEF_SIZE, VEHICLE_SOUND_FOLDER> {
+      public:
+        VehicleSoundDefWorker() { slots = fastfile::bo4vehicle::VehicleSoundDefSlots(); }
+    };
+
+    utils::MapAdder<VehicleFxDefWorker, games::bo4::pool::XAssetType, Worker> implFx{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_VEHICLEFXDEF
+    };
+    utils::MapAdder<VehicleSoundDefWorker, games::bo4::pool::XAssetType, Worker> implSound{
+        GetWorkers(), games::bo4::pool::XAssetType::ASSET_TYPE_VEHICLESOUNDDEF
     };
 } // namespace

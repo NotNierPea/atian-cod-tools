@@ -126,7 +126,11 @@ namespace fastfile::bo4weapon {
         Asset(0xD38, 9),
         Asset(0xD40, 9),
         Asset(0xD48, 9),
-        Unsupported(0x1420),
+        // the 4 inline damage states of 0x48 (a shield's, sub_142E17F30): 2 models, an fx, 2 script strings each
+        Asset(0x1428, 4), Asset(0x1430, 4), Asset(0x1438, 33), Scr(0x1440), Scr(0x1444),
+        Asset(0x1470, 4), Asset(0x1478, 4), Asset(0x1480, 33), Scr(0x1488), Scr(0x148C),
+        Asset(0x14B8, 4), Asset(0x14C0, 4), Asset(0x14C8, 33), Scr(0x14D0), Scr(0x14D4),
+        Asset(0x1500, 4), Asset(0x1508, 4), Asset(0x1510, 33), Scr(0x1518), Scr(0x151C),
         XString(0x8B0),
         Asset(0xD50, 9),
         Asset(0xD58, 9),

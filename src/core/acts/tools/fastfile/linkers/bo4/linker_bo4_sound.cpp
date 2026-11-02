@@ -110,6 +110,15 @@ namespace {
     };
     static_assert(sizeof(SndDialogScriptIdLookup) == 0x20);
 
+    // a REV engine file (SndBank 0xC0, Load_SndBank sub_142E2A9F0)
+    struct SndRevFile {
+        XHash name;
+        int32_t size;
+        uint32_t pad;
+        void* data;
+    };
+    static_assert(sizeof(SndRevFile) == 0x20);
+
     struct SndBank {
         const char* name;
         XHash nameHash;
@@ -890,6 +899,14 @@ namespace {
                 }
                 alias.subtitle = {};
                 alias.subtitle.name = ctx.HashXHash(v.GetString());
+            } else if (!_strcmpi(key, "revFilename")) {
+                // a REV engine alias's file ("Storage": "vehicle", no asset): a "revFiles" entry of the bank by name
+                if (!v.IsString()) {
+                    error = "revFilename: takes a rev file's name";
+                    return false;
+                }
+                alias.revFilename = {};
+                alias.revFilename.name = ctx.HashXHash(v.GetString());
             } else if (!_strcmpi(key, "pitch")) {
                 ok = Set("PitchMin") && Set("PitchMax");
             } else if (!_strcmpi(key, "minDist")) {
@@ -1415,9 +1432,10 @@ namespace {
                         Fail(std::format("{} variant {}: {}", alias.name, k, error));
                         return;
                     }
-                    // loaded (the sabl, in memory) or streamed (the sabs, played off the disk)
+                    // loaded (the sabl, in memory) or streamed (the sabs, played off the disk); a variant without an
+                    // asset any (a REV engine's "vehicle", its file by revFilename)
                     double storage{ GetAliasField(sa, *FindAliasField("Storage")) };
-                    if (storage != 1 && storage != 2) {
+                    if (files[k].first && storage != 1 && storage != 2) {
                         Fail(std::format("{}: Storage must be loaded or streamed", alias.name));
                         return;
                     }
@@ -1434,8 +1452,11 @@ namespace {
                     bool flac{ vformat && !_strcmpi(vformat->GetString(), "flac") };
 
                     if (!files[k].first) {
+                        XHash rev{ sa.revFilename };
                         SetAliasNames(sa);
-                        LOG_INFO("Added sound alias {}{} ({}, no asset)", alias.name, files.size() > 1 ? std::format(" variant {}", k) : "", type);
+                        sa.revFilename = rev;
+                        LOG_INFO("Added sound alias {}{} ({}, no asset{})", alias.name, files.size() > 1 ? std::format(" variant {}", k) : "", type,
+                                 rev.name ? std::format(", rev hash_{:x}", rev.name) : "");
                         continue;
                     }
 
@@ -1612,6 +1633,32 @@ namespace {
                 }
             }
 
+            // the REV engine files ("revFiles": [ { "name", "file" } ], the dumper's <bank>.rev/<hash>.rev): CrankcaseAudio
+            // granular engine models a "vehicle" storage alias plays by its revFilename
+            std::vector<std::pair<uint64_t, std::vector<byte>>> revFiles{};
+            const rapidjson::Value* cfgRev{ Member(scfg.main, "revFiles") };
+            if (cfgRev) {
+                if (!cfgRev->IsArray()) {
+                    Fail("revFiles is a list of { name, file }");
+                    return;
+                }
+                for (const rapidjson::Value& v : cfgRev->GetArray()) {
+                    const rapidjson::Value* rn{ Member(v, "name") };
+                    const rapidjson::Value* rf{ Member(v, "file") };
+                    if (!rn || !rn->IsString() || !rf || !rf->IsString()) {
+                        Fail("a rev file needs a name and a file");
+                        return;
+                    }
+                    auto& [revName, revData] { revFiles.emplace_back() };
+                    revName = ctx.HashXHash(rn->GetString());
+                    if (!utils::ReadFile(path.parent_path() / rf->GetString(), revData) || revData.empty()) {
+                        Fail(std::format("can't read rev file {}", rf->GetString()));
+                        return;
+                    }
+                    LOG_INFO("Added rev file {} (0x{:x} bytes)", rn->GetString(), revData.size());
+                }
+            }
+
             BankMusic music{};
             const rapidjson::Value* cfgMusic{ Member(scfg.main, "music") };
             if (cfgMusic) {
@@ -1716,6 +1763,23 @@ namespace {
                 ff.data.WriteStream(ambients.data(), ambients.size() * sizeof(ambients[0]));
             }
             WriteBankMusic(ff, bank.musicSetCount, bank.musicSets, music);
+            // the rev files after the music (0xC0, 0x20 each: name, size, data 16 aligned)
+            if (!revFiles.empty()) {
+                bank.unkc0_count = (uint32_t)revFiles.size();
+                bank.unkc0 = (uint64_t)fastfile::ALLOC_PTR;
+                ff.data.Align(8);
+                SndRevFile* rf{ ff.data.AllocStreamPtr<SndRevFile>(revFiles.size()) };
+                for (size_t i = 0; i < revFiles.size(); i++) {
+                    rf[i] = {};
+                    rf[i].name.name = revFiles[i].first;
+                    rf[i].size = (int32_t)revFiles[i].second.size();
+                    rf[i].data = (void*)fastfile::ALLOC_PTR;
+                }
+                for (auto& [revName, revData] : revFiles) {
+                    ff.data.Align(16);
+                    ff.data.WriteStream(revData.data(), revData.size());
+                }
+            }
 
             // the keys of the bank, the patch zone ones (0xF8) stay empty
             // the keys of the bank as the game names them (core_ui_all_stream)

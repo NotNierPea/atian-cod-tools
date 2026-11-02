@@ -42,9 +42,16 @@ namespace fastfile::linker::bo4::scriptbundle {
         { KVP_IMPACT_FX_TABLE, ET_XHASH, "impact_fx_table#" },
     };
 
+    // a key's 64-bit hash: a name, or hash_<64>:hash_<32> as the dumper writes unknown keys
+    static uint64_t KeyHash(BO4LinkContext& ctx, const char* keyName) {
+        const char* colon{ std::strchr(keyName, ':') };
+        if (colon && !std::strncmp(keyName, "hash_", 5)) {
+            return std::strtoull(keyName + 5, nullptr, 16);
+        }
+        return ctx.HashXHash(keyName);
+    }
+
     bool WriteArray(BO4LinkContext& ctx, rapidjson::Value& val, SB_ObjectsArray& array, BO4FFContext& ff) {
-        size_t sbObjectsCount{};
-        size_t sbSubCount{};
         if (!val.IsObject()) {
             LOG_ERROR("Value is not an object");
             return false;
@@ -52,22 +59,29 @@ namespace fastfile::linker::bo4::scriptbundle {
 
         auto obj{ val.GetObj() };
 
-        for (auto& [k, v] : obj) {
-            if (v.IsArray()) {
-                sbSubCount++;
-            } else {
-                sbObjectsCount++;
-            }
+        /*
+         * The game finds a bundle's values and lists by a binary search on their key's 64-bit hash, as the stock bundles
+         * are sorted: in json order, a key after a bigger one was missed (zm_park's inventory: the UI's bundle table had
+         * no wonderweaponphases, written after shieldpieces and objprogitems, while GSC, iterating them all, had it)
+         */
+        std::vector<std::pair<uint64_t, rapidjson::Value::Member*>> objects{};
+        std::vector<std::pair<uint64_t, rapidjson::Value::Member*>> subs{};
+        for (auto& member : obj) {
+            (member.value.IsArray() ? subs : objects).emplace_back(KeyHash(ctx, member.name.GetString()), &member);
         }
+        auto byHash = [](const auto& a, const auto& b) { return a.first < b.first; };
+        std::stable_sort(objects.begin(), objects.end(), byHash);
+        std::stable_sort(subs.begin(), subs.end(), byHash);
+        size_t sbObjectsCount{ objects.size() };
+        size_t sbSubCount{ subs.size() };
 
         if (sbObjectsCount) {
             size_t idxobj{};
             SB_Object* sbObjects{ ff.data.AllocStreamPtr<SB_Object>(sbObjectsCount) };
 
-            for (auto& [k, v] : obj) {
-                if (v.IsArray()) {
-                    continue;
-                }
+            for (auto& [keyHash, member] : objects) {
+                auto& k{ member->name };
+                auto& v{ member->value };
                 const char* keyName{ k.GetString() };
 
                 SB_Object* sobj{ sbObjects + idxobj++ };
@@ -134,11 +148,9 @@ namespace fastfile::linker::bo4::scriptbundle {
         if (sbSubCount) {
             size_t idxsub{};
             SB_Sub* sbSub{ ff.data.AllocStreamPtr<SB_Sub>(sbSubCount) };
-            for (auto& [k, v] : obj) {
-                if (!v.IsArray()) {
-                    continue;
-                }
-                const char* keyName{ k.GetString() };
+            for (auto& [keyHash, member] : subs) {
+                auto& v{ member->value };
+                const char* keyName{ member->name.GetString() };
                 SB_Sub* ssub{ sbSub + idxsub++ };
                 ssub->keyname = (ScrString_t)ff.data.AddScrString(keyName);
                 auto arr{ v.GetArray() };

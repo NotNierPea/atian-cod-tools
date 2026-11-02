@@ -1677,8 +1677,14 @@ namespace {
                 if (!Had(0x78 + 8 * i)) {
                     continue;
                 }
-                std::string ref{ meshes && meshes->IsArray() && i < meshes->Size() ? RefName(&(*meshes)[(rapidjson::SizeType)i]) : "" };
+                const rapidjson::Value* mv{ meshes && meshes->IsArray() && i < meshes->Size() ? &(*meshes)[(rapidjson::SizeType)i] : nullptr };
+                std::string ref{ RefName(mv) };
                 void*& mref{ *(void**)(a + 0x78 + 8 * i) };
+                // ",name": another zone's mesh by its name (a model copied from wz_common, its mesh core_common's)
+                if (mv && mv->IsString() && *mv->GetString() == ',') {
+                    ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELMESH, mv->GetString(), mref, false, &ff);
+                    continue;
+                }
                 // a mesh once in the zone, then by its name (the game's models share them: a weapon's and its upgrade's)
                 if (!ref.empty() && ff.SetContains(LINKED_MESHES, ::hash::Hash64(ref.data()))) {
                     std::string refId{ "," + ref };
@@ -1743,12 +1749,12 @@ namespace {
                     Next(a, 0x50);
                     ff.data.Align(8);
                     byte* out{ ff.data.AllocStreamPtr<byte>(0x38 * count) };
-                    std::vector<std::vector<byte>> tris(count);
+                    std::vector<std::vector<byte>> tris(count), blobHeaders(count), blobs(count);
                     for (size_t i = 0; i < count; i++) {
                         const rapidjson::Value& cs{ (*css)[(rapidjson::SizeType)i] };
                         std::vector<byte> h{ Hex(cs, "header") };
-                        if (h.size() != 0x38 || Member(cs, "blob")) {
-                            LOG_ERROR("xmodel {}: collision surface {}: bad header or a blob (not supported)", assetName, i);
+                        if (h.size() != 0x38) {
+                            LOG_ERROR("xmodel {}: collision surface {}: bad header", assetName, i);
                             ctx.error = true;
                             return;
                         }
@@ -1758,14 +1764,31 @@ namespace {
                             ctx.error = true;
                             return;
                         }
+                        // (its blob: a 0x10 header {data, size}, the data)
+                        if (Member(cs, "blobHeader")) {
+                            blobHeaders[i] = Hex(cs, "blobHeader");
+                            blobHeaders[i].resize(0x10);
+                            blobs[i] = Hex(cs, "blob");
+                        }
                         std::memcpy(out + 0x38 * i, h.data(), 0x38);
                         *(uint64_t*)(out + 0x38 * i) = tris[i].empty() ? 0 : (uint64_t)fastfile::linker::memory::POINTER_NEXT;
-                        *(uint64_t*)(out + 0x38 * i + 8) = 0;
+                        *(uint64_t*)(out + 0x38 * i + 8) = blobHeaders[i].empty() ? 0 : (uint64_t)fastfile::linker::memory::POINTER_NEXT;
                     }
-                    for (const std::vector<byte>& t : tris) {
-                        if (!t.empty()) {
+                    // each surface's triangles, then its blob (the loader's order)
+                    for (size_t i = 0; i < count; i++) {
+                        if (!tris[i].empty()) {
                             ff.data.Align(4);
-                            ff.data.WriteStream(t.data(), t.size());
+                            ff.data.WriteStream(tris[i].data(), tris[i].size());
+                        }
+                        if (!blobHeaders[i].empty()) {
+                            ff.data.Align(8);
+                            byte* bh{ ff.data.AllocStreamPtr<byte>(0x10) };
+                            std::memcpy(bh, blobHeaders[i].data(), 0x10);
+                            *(uint64_t*)bh = blobs[i].empty() ? 0 : (uint64_t)fastfile::linker::memory::POINTER_NEXT;
+                            *(uint32_t*)(bh + 8) = (uint32_t)blobs[i].size();
+                            if (!blobs[i].empty()) {
+                                ff.data.WriteStream(blobs[i].data(), blobs[i].size());
+                            }
                         }
                     }
                 }
@@ -1779,9 +1802,103 @@ namespace {
                 }
             };
             Ref(0x58, XAssetType::ASSET_TYPE_PHYSPRESET, "physPreset");
+            /*
+             * The collmaps (0x20 each, the count u8 at 0x14D: sub_142E25CC0 / sub_142E12C60's order): each its geom
+             * list (0x18: the geoms, 0x10 each {a brush 0x40 with its sides and verts, an info 0x40}, a blob {data,
+             * size}), then its list (8 bytes a count at 0x10), as the dumper writes them
+             */
             if (Had(0x60)) {
-                LOG_ERROR("xmodel {}: collmaps aren't supported in lossless models yet", assetName);
-                ctx.error = true;
+                const rapidjson::Value* cms{ Member(root, "collmaps") };
+                size_t count{ cms && cms->IsArray() ? cms->Size() : 0 };
+                if (!count || count != (size_t)a[0x14D]) {
+                    LOG_ERROR("xmodel {}: {} collmaps in the json for a count of {}", assetName, count, (int)a[0x14D]);
+                    ctx.error = true;
+                    return;
+                }
+                auto NextIf = [](byte* p, size_t off, bool has) {
+                    *(uint64_t*)(p + off) = has ? (uint64_t)fastfile::linker::memory::POINTER_NEXT : 0;
+                };
+                Next(a, 0x60);
+                ff.data.Align(8);
+                byte* out{ ff.data.AllocStreamPtr<byte>(0x20 * count) };
+                for (size_t i = 0; i < count; i++) {
+                    const rapidjson::Value& cm{ (*cms)[(rapidjson::SizeType)i] };
+                    std::vector<byte> h{ Hex(cm, "header") };
+                    h.resize(0x20);
+                    std::memcpy(out + 0x20 * i, h.data(), 0x20);
+                    NextIf(out + 0x20 * i, 0, Member(cm, "geomList") != nullptr);
+                    NextIf(out + 0x20 * i, 0x18, Member(cm, "list") != nullptr);
+                }
+                for (size_t i = 0; i < count; i++) {
+                    const rapidjson::Value& cm{ (*cms)[(rapidjson::SizeType)i] };
+                    if (Member(cm, "geomList")) {
+                        std::vector<byte> gh{ Hex(cm, "geomList") };
+                        gh.resize(0x18);
+                        const rapidjson::Value* geoms{ Member(cm, "geoms") };
+                        size_t numGeoms{ geoms && geoms->IsArray() ? geoms->Size() : 0 };
+                        ff.data.Align(8);
+                        byte* gl{ ff.data.AllocStreamPtr<byte>(0x18) };
+                        std::memcpy(gl, gh.data(), 0x18);
+                        *(uint32_t*)gl = (uint32_t)numGeoms;
+                        NextIf(gl, 8, numGeoms != 0);
+                        NextIf(gl, 0x10, Member(cm, "blobHeader") != nullptr);
+                        if (numGeoms) {
+                            ff.data.Align(8);
+                            byte* gs{ ff.data.AllocStreamPtr<byte>(0x10 * numGeoms) };
+                            for (size_t j = 0; j < numGeoms; j++) {
+                                const rapidjson::Value& g{ (*geoms)[(rapidjson::SizeType)j] };
+                                NextIf(gs + 0x10 * j, 0, Member(g, "brush") != nullptr);
+                                NextIf(gs + 0x10 * j, 8, Member(g, "info") != nullptr);
+                            }
+                            for (size_t j = 0; j < numGeoms; j++) {
+                                const rapidjson::Value& g{ (*geoms)[(rapidjson::SizeType)j] };
+                                if (Member(g, "brush")) {
+                                    std::vector<byte> bh{ Hex(g, "brush") };
+                                    bh.resize(0x40);
+                                    std::vector<byte> sides{ Hex(g, "sides") };
+                                    std::vector<byte> verts{ Hex(g, "verts") };
+                                    ff.data.Align(0x10);
+                                    byte* b{ ff.data.AllocStreamPtr<byte>(0x40) };
+                                    std::memcpy(b, bh.data(), 0x40);
+                                    NextIf(b, 0, !sides.empty());
+                                    NextIf(b, 8, !verts.empty());
+                                    if (!sides.empty()) {
+                                        ff.data.Align(4);
+                                        ff.data.WriteStream(sides.data(), sides.size());
+                                    }
+                                    if (!verts.empty()) {
+                                        ff.data.Align(4);
+                                        ff.data.WriteStream(verts.data(), verts.size());
+                                    }
+                                }
+                                if (Member(g, "info")) {
+                                    std::vector<byte> info{ Hex(g, "info") };
+                                    info.resize(0x40);
+                                    ff.data.Align(0x10);
+                                    ff.data.WriteStream(info.data(), info.size());
+                                }
+                            }
+                        }
+                        if (Member(cm, "blobHeader")) {
+                            std::vector<byte> bh{ Hex(cm, "blobHeader") };
+                            bh.resize(0x10);
+                            std::vector<byte> data{ Hex(cm, "blob") };
+                            ff.data.Align(8);
+                            byte* b{ ff.data.AllocStreamPtr<byte>(0x10) };
+                            std::memcpy(b, bh.data(), 0x10);
+                            NextIf(b, 0, !data.empty());
+                            *(uint32_t*)(b + 8) = (uint32_t)data.size();
+                            if (!data.empty()) {
+                                ff.data.WriteStream(data.data(), data.size());
+                            }
+                        }
+                    }
+                    if (Member(cm, "list")) {
+                        std::vector<byte> list{ Hex(cm, "list") };
+                        ff.data.Align(4);
+                        ff.data.WriteStream(list.data(), list.size());
+                    }
+                }
             }
             Ref(0x68, XAssetType::ASSET_TYPE_PHYSCONSTRAINTS, "physConstraints");
             // the submodels (0x28 each, the loader's last block): a model by name (sub_142E6B190) and its tag at 8
