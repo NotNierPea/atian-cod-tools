@@ -486,9 +486,25 @@ namespace tool::gsc::compiler {
 
         parser.removeErrorListeners();
 
-        parser.addErrorListener(&*errList);
-
-        gscParser::ProgContext* prog = parser.prog();
+        /*
+         * Two passes, ANTLR's usual speed up: SLL prediction bailing at the first error first (no full context
+         * prediction, most of the parse time: zm_room.gsc took 11 s, 5 now; most of the rest is warming
+         * the parser's prediction cache, once a process), and only when it bails the full LL
+         * parse again with the error listener, for the real errors. A script SLL parses gives the same tree.
+         */
+        gscParser::ProgContext* prog{};
+        parser.getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(antlr4::atn::PredictionMode::SLL);
+        parser.setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
+        try {
+            prog = parser.prog();
+        } catch (antlr4::ParseCancellationException&) {
+            tokens.seek(0);
+            parser.reset();
+            parser.setErrorHandler(std::make_shared<antlr4::DefaultErrorStrategy>());
+            parser.getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(antlr4::atn::PredictionMode::LL);
+            parser.addErrorListener(&*errList);
+            prog = parser.prog();
+        }
 
         tool::gsc::vm::GscVm* readerBuilder = tool::gsc::vm::GetGscReader(vmInfo->vmMagic);
 
