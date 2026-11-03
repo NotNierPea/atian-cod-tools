@@ -5,7 +5,8 @@
  * game_map (GameWorld, retail 0x60, the loader sub_142E1BA70, the layout in bo4_unlinker_map_game.cpp): a map's path
  * nodes for the AI. For now none, as the game's frontend world: no nodes but the 0x80 the game adds at runtime (the
  * nodes array is nodeCount + 0x80, 0xA8 each), the base nodes in the runtime block, one node tree leaf (axis -1) without
- * nodes and an empty tactical graph (0x2738 of zeros). The two 0x1E0008 tables at 0x50/0x58 are null in the game's.
+ * nodes and an empty tactical graph (0x2738 of zeros). The two 0x1E0008 tables at 0x50/0x58, Blackout's item spawn
+ * points ("itemPoints": [ { "targetname", "origin", "angles" } ], below), are null in the game's MP and ZM maps.
  *
  * {
  *     "name": "maps/zm/enh_test.d3dbsp",  // maps/<mode>/<map>.d3dbsp
@@ -126,6 +127,51 @@ namespace {
                     }
                 }
             }
+            /*
+             * The item spawn points (Blackout's item world), the two tables at 0x50 (the client's) and 0x58 (the server's),
+             * 0x1E0008 each (the loader reads them after the tactical graph, raw): 0x0 the map's count (a reset trims back
+             * to it), 0x4 the count (the game adds dynamic ones, < 0x7000), then 0x8000 points each of: 0x8 its targetname
+             * XHash (16; function_d0dc448b(targetname) returns the ids of a group), 0x80008 its item's bundle XHash (16;
+             * the point struct's var_a6762160, none before spawning), 0x100008 angles, 0x160008 origin (12 each),
+             * 0x1C0008 an int (0). The first 0x400 are left empty (the game's: its counts count them, its reset keeps their
+             * items), the map's after them, as wz_escape's (2670 points, counts 3694). Origins on the ground (the game's
+             * 0.125 over it), yaws within -180..180. Both tables the same; the game's MP / ZM maps have them null.
+             */
+            constexpr size_t ITEM_TABLE_SIZE = 0x1E0008;
+            constexpr int32_t ITEM_TABLE_FIRST = 0x400;
+            constexpr size_t ITEM_TABLE_MAX = 0x7000;
+            std::vector<byte> itemTable{};
+            auto itemsIt{ cfg.main.FindMember("itemPoints") };
+            if (itemsIt != cfg.main.MemberEnd() && itemsIt->value.IsArray() && itemsIt->value.Size()) {
+                if (ITEM_TABLE_FIRST + itemsIt->value.Size() >= ITEM_TABLE_MAX) {
+                    LOG_ERROR("game_map {}: {} item points, at most {}", path.string(), itemsIt->value.Size(), ITEM_TABLE_MAX - ITEM_TABLE_FIRST - 1);
+                    ctx.error = true;
+                    return;
+                }
+                itemTable.resize(ITEM_TABLE_SIZE);
+                int32_t n{ ITEM_TABLE_FIRST };
+                for (const rapidjson::Value& p : itemsIt->value.GetArray()) {
+                    auto tn{ p.FindMember("targetname") };
+                    auto org{ p.FindMember("origin") };
+                    if (tn == p.MemberEnd() || !tn->value.IsString() || org == p.MemberEnd() || !org->value.IsArray() || org->value.Size() != 3) {
+                        LOG_ERROR("game_map {}: an item point needs a targetname and an origin", path.string());
+                        ctx.error = true;
+                        return;
+                    }
+                    *(uint64_t*)&itemTable[0x8 + 0x10 * n] = ctx.HashXHash(tn->value.GetString());
+                    auto ang{ p.FindMember("angles") };
+                    for (rapidjson::SizeType i = 0; i < 3; i++) {
+                        *(float*)&itemTable[0x160008 + 0xC * n + 4 * i] = (float)org->value[i].GetDouble();
+                        if (ang != p.MemberEnd() && ang->value.IsArray() && ang->value.Size() == 3) {
+                            *(float*)&itemTable[0x100008 + 0xC * n + 4 * i] = (float)ang->value[i].GetDouble();
+                        }
+                    }
+                    n++;
+                }
+                *(int32_t*)&itemTable[0] = n;
+                *(int32_t*)&itemTable[4] = n;
+            }
+
             size_t nodeCount{ baked.size() };
             // 2 bits a pair of nodes (zm_towers': 436 nodes, 23708 bytes)
             size_t visBytes{ (nodeCount * (nodeCount ? nodeCount - 1 : 0) + 7) / 8 };
@@ -144,8 +190,12 @@ namespace {
             game.nodeTreeCount = 1;
             game.nodeTree = (byte*)fastfile::linker::memory::POINTER_NEXT;
             game.tacGraph = (byte*)fastfile::linker::memory::POINTER_NEXT;
+            if (!itemTable.empty()) {
+                game.table50 = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                game.table58 = (byte*)fastfile::linker::memory::POINTER_NEXT;
+            }
 
-            // the loader's order (sub_142E25700, then the tactical graph), each on its alignment
+            // the loader's order (sub_142E25700, then the tactical graph, then the item tables), each on its alignment
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
             ff.data.Align(8);
             std::vector<byte> nodes(PATHNODE_SIZE * (nodeCount + RUNTIME_NODES));
@@ -268,12 +318,17 @@ namespace {
                     listAt += n;
                 }
             }
+            // the client's then the server's item table
+            for (int t = 0; t < 2 && !itemTable.empty(); t++) {
+                ff.data.Align(8);
+                ff.data.WriteStream(itemTable.data(), itemTable.size());
+            }
             ff.data.PopStream();
 
             ff.data.PopStream();
 
-            LOG_INFO("Added asset game_map {} (hash_{:x}), {} path nodes, {} tactical points, {} regions", assetName,
-                game.name.name, nodeCount, tacCount, tacRegionCount);
+            LOG_INFO("Added asset game_map {} (hash_{:x}), {} path nodes, {} tactical points, {} regions, {} item points", assetName,
+                game.name.name, nodeCount, tacCount, tacRegionCount, itemTable.empty() ? 0 : *(int32_t*)&itemTable[0] - ITEM_TABLE_FIRST);
         }
     };
 

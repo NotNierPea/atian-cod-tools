@@ -1,5 +1,7 @@
 #include <includes.hpp>
 #include <tools/fastfile/handlers/bo4/bo4_unlinker_map.hpp>
+#include <tools/fastfile/handlers/bo4/bo4_unlinker_scriptbundle.hpp>
+#include <tools/fastfile/bo4_vehicle_slots.hpp>
 #include <core/hashes/raw_file_extractor.hpp>
 #include <tools/utils/data_utils.hpp>
 
@@ -111,6 +113,55 @@ namespace fastfile::handlers::bo4::map {
         return out;
     }
 
+    /*
+     * A map's dyn ent def (DynEntityDef 0x188) lossless as the vehicles are: the header as it is, its pointers and script
+     * strings by offset (bo4_vehicle_slots.hpp's DynEntityDefSlots), the assets by name, the inline bundle as an object
+     */
+    void WriteDynEnt(BO4JsonWriter& json, const byte* d, bool& error) {
+        using namespace fastfile::bo4vehicle;
+        json.WriteFieldValueBool("lossless", true);
+        json.WriteFieldValueString("header", ColHex(d, DYNENT_DEF_SIZE));
+        json.WriteFieldNameString("slots");
+        json.BeginObject();
+        for (const Slot& s : DynEntityDefSlots()) {
+            const byte* v{ d + s.offset };
+            const char* key{ utils::va("%x", s.offset) };
+            switch (s.kind) {
+            case SK_ASSET: {
+                void* ptr{ *(void* const*)v };
+                if (!ptr) {
+                    break;
+                }
+                XHash* name{ GetAssetName((XAssetType)s.type, ptr, 0) };
+                json.WriteFieldNameString(key);
+                if (name && name->name) {
+                    json.WriteValueString(std::format("#hash_{:x}", name->name & hash::MASK63));
+                } else {
+                    json.WriteValueNull();
+                }
+                break;
+            }
+            case SK_SCR: {
+                uint32_t sv{ *(const uint32_t*)v };
+                json.WriteFieldNameString(key);
+                if (sv) {
+                    json.WriteValueString(GetScrString(*(ScrString_t*)&sv));
+                } else {
+                    json.WriteValueNull();
+                }
+                break;
+            }
+            case SK_BUNDLE:
+                json.WriteFieldNameString(key);
+                scriptbundle::WriteObject(json, *(scriptbundle::SB_ObjectsArray*)v, error);
+                break;
+            default:
+                break;
+            }
+        }
+        json.EndObject();
+    }
+
     class ColMapWorker : public Worker {
         void PreLoadWorker(fastfile::FastFileContext* ctx) override {
             if (!ctx) {
@@ -207,6 +258,18 @@ namespace fastfile::handlers::bo4::map {
             json.BeginArray();
             for (uint16_t c : asset.unk148) {
                 json.WriteValueNumber(c);
+            }
+            json.EndArray();
+            // the map's own dyn ents: list 0's first ones (their count at 0x128, the client's after them), the col_map
+            // linker's "dynEnts"
+            json.WriteFieldNameString("dynEnts");
+            json.BeginArray();
+            bool dynError{};
+            byte* dynDefs{ (byte*)asset.dynEntDefList[0] };
+            for (size_t i = 0; dynDefs && i < asset.unk128 && i < asset.unk148[0]; i++) {
+                json.BeginObject();
+                WriteDynEnt(json, dynDefs + fastfile::bo4vehicle::DYNENT_DEF_SIZE * i, dynError);
+                json.EndObject();
             }
             json.EndArray();
             Count("numConstraints", asset.numConstraints);

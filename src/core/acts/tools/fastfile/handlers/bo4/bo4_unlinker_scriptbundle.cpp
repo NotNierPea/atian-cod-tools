@@ -100,10 +100,11 @@ namespace fastfile::handlers::bo4::scriptbundle {
 
         std::unordered_set<uint32_t> handles{};
 
-        if (arr.sbSubCount && !IsValidHandle(arr.sbObjects)) {
+        // (the subs' own pointer: a bundle of lists only, the level assets' death circles, has no objects)
+        if (arr.sbSubCount && !IsValidHandle(arr.sbSubs)) {
             error = true;
             json.WriteFieldNameString("subs");
-            json.WriteValueString(GetValidString((const char*)arr.sbObjects));
+            json.WriteValueString(GetValidString((const char*)arr.sbSubs));
         } else {
             // subs
             for (size_t i = 0; i < arr.sbSubCount; i++) {
@@ -170,9 +171,15 @@ namespace fastfile::handlers::bo4::scriptbundle {
                 case KVP_INT: // int2
                     json.WriteValueNumber(obj.value.intVal);
                     break;
-                case KVP_FLOAT: // float
-                    json.WriteValueNumber(obj.value.floatVal);
+                case KVP_FLOAT: { // float
+                    // a whole one keeps its point, the linker reads "1" back as an int
+                    std::string f{ std::format("{}", obj.value.floatVal) };
+                    if (f.find_first_of(".en") == std::string::npos) {
+                        f += ".0";
+                    }
+                    json.WriteValueLiteral(f);
                     break;
+                }
                 case KVP_ANIMATION: // anim4
                     WriteHash(json, obj.hashValue.name, "anim#");
                     break;

@@ -1,5 +1,7 @@
 #include <includes.hpp>
 #include <tools/fastfile/linkers/linker_bo4.hpp>
+#include <tools/fastfile/linkers/bo4/linker_bo4_scriptbundle.hpp>
+#include <tools/fastfile/bo4_vehicle_slots.hpp>
 
 /*
  * col_map (clipMap_t, retail 0x2D8, the loader sub_142E37BA0, the layout in bo4_unlinker_map_col.cpp): a map's
@@ -34,6 +36,11 @@
  * both), under 0 a split whose own brushes are the leaf right after it (traced first). With the convex brushes node 1
  * is the root of a tree of at most LEAF_BRUSHES a leaf, the brushes across a split kept at it (copied into both
  * children, the big walls and floors made thousands of nodes).
+ * "dynEnts": [ { "lossless": true, "header": hex, "slots": { .. } } ] the map's dyn ents as the col_map dumper writes a
+ * map's (DynEntityDef 0x188: pose at 0, models, effects, physics preset, targetname, its states' inline bundle; slots in
+ * bo4_vehicle_slots.hpp): list 0's first ones (their count at 0x128, the client's 500 after them, list 0's count both),
+ * their server data (0x170) and second collision list counted at 0x14C, runtime as their poses and client data. The
+ * gfx_map's "dynEntCount" must be the same (its dyn ent dpvs is list 0's).
  */
 namespace {
     using namespace fastfile::linker::bo4;
@@ -128,7 +135,7 @@ namespace {
     constexpr size_t ROPE_SIZE = 0x11A0;
     // the game's maps (32 frontend, 35 zm_towers)
     constexpr uint32_t MAX_ROPES = 32;
-    // the u16 table at 0x140, zeros in all the game's maps
+    // the u16 table at 0x140 (the dyn ents' state bits words, the client's loop has 375)
     constexpr uint32_t TABLE_140_COUNT = 375;
     // the client's own dyn ents (gibs, createdynentandlaunch, sub_142F07460): added after the map's (0 here, the base at
     // 0x128) in dyn ent list 0, so the list has room for them as the frontend's (500 empty defs, their runtime lists)
@@ -136,6 +143,7 @@ namespace {
     constexpr size_t DYNENT_DEF_SIZE = 0x188;
     constexpr size_t DYNENT_POSE_SIZE = 0xB0;
     constexpr size_t DYNENT_CLIENT_SIZE = 0x120;
+    constexpr size_t DYNENT_SERVER_SIZE = 0x170;
     constexpr size_t DYNENT_COLL_SIZE = 0x20;
 
     /*
@@ -393,6 +401,66 @@ namespace {
             }
             radius = std::sqrt(radius);
 
+            // the map's dyn ents (lossless defs: their headers, their slots' values)
+            std::vector<std::vector<byte>> dynHeaders{};
+            std::vector<const rapidjson::Value*> dynSlots{};
+            if (auto it{ root.FindMember("dynEnts") }; it != root.MemberEnd() && it->value.IsArray()) {
+                for (const rapidjson::Value& dv : it->value.GetArray()) {
+                    std::vector<byte> h{};
+                    if (auto hd{ dv.FindMember("header") }; hd != dv.MemberEnd() && hd->value.IsString()) {
+                        const char* s{ hd->value.GetString() };
+                        auto Nib = [](char c) -> byte { return (byte)(c <= '9' ? c - '0' : (c | 0x20) - 'a' + 10); };
+                        for (size_t i = 0; i + 1 < hd->value.GetStringLength(); i += 2) {
+                            h.push_back((byte)(Nib(s[i]) << 4 | Nib(s[i + 1])));
+                        }
+                    }
+                    auto sl{ dv.FindMember("slots") };
+                    if (h.size() != DYNENT_DEF_SIZE || sl == dv.MemberEnd() || !sl->value.IsObject()) {
+                        LOG_ERROR("col_map {}: dyn ent {} isn't a lossless def (header 0x188, slots)", path.string(), dynHeaders.size());
+                        ctx.error = true;
+                        return;
+                    }
+                    dynHeaders.push_back(std::move(h));
+                    dynSlots.push_back(&sl->value);
+                }
+            }
+            uint16_t mapDynEnts{ (uint16_t)dynHeaders.size() };
+            uint16_t dynEntList0{ (uint16_t)(mapDynEnts + CLIENT_DYNENT_SLOTS) };
+
+            /*
+             * The dyn ents' state bits (the snapshot's, sub_140D652D0 reads them and fires the client's state event): 0x130
+             * each dyn ent's first bit and the end, its states' count's bits (0 with none, else at least 1); 0x140 for each
+             * 32 bits word the first dyn ent in it (one starting on it or running into it). Both as Blackout's, rebuilt
+             * from its states. Without them a dyn ent has no bits: its state never reaches the client
+             */
+            std::vector<uint32_t> stateBits{ 0 };
+            for (const rapidjson::Value* sv : dynSlots) {
+                uint32_t states{};
+                if (auto b{ sv->FindMember("168") }; b != sv->MemberEnd() && b->value.IsObject()) {
+                    if (auto st{ b->value.FindMember("dynentStates") }; st != b->value.MemberEnd() && st->value.IsArray()) {
+                        states = st->value.Size();
+                    }
+                }
+                uint32_t bits{};
+                while ((1u << bits) < states) {
+                    bits++;
+                }
+                stateBits.push_back(stateBits.back() + (states ? std::max(bits, 1u) : 0));
+            }
+            if (stateBits.back() > 32 * TABLE_140_COUNT) {
+                LOG_ERROR("col_map {}: the dyn ents' states take {} bits, the game has {}", path.string(), stateBits.back(), 32 * TABLE_140_COUNT);
+                ctx.error = true;
+                return;
+            }
+            std::vector<uint16_t> table140(TABLE_140_COUNT);
+            for (uint32_t k = 0; k < TABLE_140_COUNT && 32 * k < stateBits.back(); k++) {
+                uint16_t i{};
+                while (stateBits[i] < 32 * k && stateBits[i + 1] <= 32 * k) {
+                    i++;
+                }
+                table140[k] = i;
+            }
+
             ff.data.PushStream(XFILE_BLOCK_TEMP);
             ff.data.Align(8);
             ClipMapRetail& cm{ ff.data.AllocStreamRef<ClipMapRetail>() };
@@ -413,16 +481,21 @@ namespace {
                 *(float*)(cm.boxModel + 0x28 + 4 * i) = FLT_MAX;
                 *(float*)(cm.boxModel + 0x34 + 4 * i) = -FLT_MAX;
             }
-            cm.count12C = 1;
+            cm.count12C = (uint32_t)stateBits.size();
             cm.array130 = (uint32_t*)fastfile::linker::memory::POINTER_NEXT;
             cm.count138 = TABLE_140_COUNT;
             cm.array140 = (uint16_t*)fastfile::linker::memory::POINTER_NEXT;
-            cm.unk128 = 0;
-            cm.dynEntCount[0] = CLIENT_DYNENT_SLOTS;
+            cm.unk128 = mapDynEnts;
+            cm.dynEntCount[0] = dynEntList0;
+            cm.dynEntCount[2] = mapDynEnts;
             cm.dynEntDefList[0] = (void*)fastfile::linker::memory::POINTER_NEXT;
             cm.dynEntPoseList[0] = (byte*)fastfile::linker::memory::POINTER_NEXT;
             cm.dynEntClientList[0] = (byte*)fastfile::linker::memory::POINTER_NEXT;
             cm.dynEntCollList[0] = (byte*)fastfile::linker::memory::POINTER_NEXT;
+            if (mapDynEnts) {
+                cm.dynEntServerList[0] = (byte*)fastfile::linker::memory::POINTER_NEXT;
+                cm.dynEntCollList[2] = (byte*)fastfile::linker::memory::POINTER_NEXT;
+            }
             cm.maxRopes = MAX_ROPES;
             cm.ropes = (byte*)fastfile::linker::memory::POINTER_NEXT;
             cm.info.planeCount = (uint32_t)planeCount;
@@ -489,25 +562,72 @@ namespace {
             ff.data.WriteStream(boxBrush, sizeof(boxBrush));
 
             ff.data.Align(4);
-            ff.data.WriteStream<uint32_t>(0);
+            ff.data.WriteStream(stateBits.data(), stateBits.size() * sizeof(stateBits[0]));
 
             ff.data.Align(2);
-            std::vector<uint16_t> table140(TABLE_140_COUNT);
             ff.data.WriteStream(table140.data(), table140.size() * sizeof(table140[0]));
 
-            // dyn ent list 0: the empty defs, then its poses, client data and collision in runtime memory (block 2)
+            // dyn ent list 0: the map's defs and the client's empty ones, each map def's data after them in the loader's
+            // order (sub_142E18800), then its poses, client data, server data and collision in runtime memory (block 2)
             ff.data.Align(8);
-            std::vector<byte> defs(DYNENT_DEF_SIZE * CLIENT_DYNENT_SLOTS);
-            ff.data.WriteStream(defs.data(), defs.size());
+            byte* defs{ ff.data.AllocStreamPtr<byte>(DYNENT_DEF_SIZE * dynEntList0) };
+            std::memset(defs, 0, DYNENT_DEF_SIZE * dynEntList0);
+            std::vector<fastfile::bo4vehicle::Slot> dynSlotList{ fastfile::bo4vehicle::DynEntityDefSlots() };
+            for (size_t i = 0; i < mapDynEnts; i++) {
+                byte* d{ defs + DYNENT_DEF_SIZE * i };
+                std::memcpy(d, dynHeaders[i].data(), DYNENT_DEF_SIZE);
+                // (the dump's pointers out, written again as they're linked)
+                for (const fastfile::bo4vehicle::Slot& s : dynSlotList) {
+                    if (s.kind == fastfile::bo4vehicle::SK_ASSET) {
+                        *(uint64_t*)(d + s.offset) = 0;
+                    } else if (s.kind == fastfile::bo4vehicle::SK_BUNDLE) {
+                        std::memset(d + s.offset, 0, sizeof(scriptbundle::SB_ObjectsArray));
+                    }
+                }
+            }
+            for (size_t i = 0; i < mapDynEnts; i++) {
+                byte* d{ defs + DYNENT_DEF_SIZE * i };
+                const rapidjson::Value& slots{ *dynSlots[i] };
+                for (const fastfile::bo4vehicle::Slot& s : dynSlotList) {
+                    auto vit{ slots.FindMember(utils::va("%x", s.offset)) };
+                    const rapidjson::Value* v{ vit == slots.MemberEnd() || vit->value.IsNull() ? nullptr : &vit->value };
+                    switch (s.kind) {
+                    case fastfile::bo4vehicle::SK_ASSET:
+                        if (v && v->IsString() && v->GetStringLength()) {
+                            ctx.LinkAsset((XAssetType)s.type, v->GetString(), *(void**)(d + s.offset), false, &ff);
+                        }
+                        break;
+                    case fastfile::bo4vehicle::SK_SCR:
+                        *(uint32_t*)(d + s.offset) = v && v->IsString() ? ff.data.AddScrStringKeepEmpty(v->GetString()) : 0;
+                        break;
+                    case fastfile::bo4vehicle::SK_BUNDLE:
+                        if (v && v->IsObject() &&
+                            !scriptbundle::WriteArray(ctx, const_cast<rapidjson::Value&>(*v), *(scriptbundle::SB_ObjectsArray*)(d + s.offset), ff)) {
+                            LOG_ERROR("col_map {}: dyn ent {}: can't write its bundle", path.string(), i);
+                            ctx.error = true;
+                            return;
+                        }
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
             auto Runtime = [&ff](size_t align, size_t size) {
                 ff.data.PushStream(XFILE_BLOCK_RUNTIME_VIRTUAL);
                 ff.data.Align(align);
                 ff.data.AllocRuntime(size);
                 ff.data.PopStream();
             };
-            Runtime(8, DYNENT_POSE_SIZE * CLIENT_DYNENT_SLOTS);
-            Runtime(8, DYNENT_CLIENT_SIZE * CLIENT_DYNENT_SLOTS);
-            Runtime(4, DYNENT_COLL_SIZE * CLIENT_DYNENT_SLOTS);
+            Runtime(8, DYNENT_POSE_SIZE * dynEntList0);
+            Runtime(8, DYNENT_CLIENT_SIZE * dynEntList0);
+            if (mapDynEnts) {
+                Runtime(8, DYNENT_SERVER_SIZE * mapDynEnts);
+            }
+            Runtime(4, DYNENT_COLL_SIZE * dynEntList0);
+            if (mapDynEnts) {
+                Runtime(4, DYNENT_COLL_SIZE * mapDynEnts);
+            }
 
             // the rope pool is runtime memory (DB_PushStreamPos(2)), not in the file
             ff.data.PushStream(XFILE_BLOCK_RUNTIME_VIRTUAL);

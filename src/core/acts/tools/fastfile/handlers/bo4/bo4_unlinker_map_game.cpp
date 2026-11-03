@@ -83,6 +83,30 @@ namespace fastfile::handlers::bo4::map {
                 json.WriteFieldValueString("head", GameHex(table, 0x40));
                 json.WriteFieldValueString("at100000", GameHex(table + 0x100000, 0x40));
                 json.WriteFieldValueString("tail", GameHex(table + GAME_TABLE_SIZE - 0x20, 0x20));
+                // the item spawn points (linker_bo4_map_game.cpp's layout): the counts, the first few
+                int32_t count{ *(const int32_t*)(table + 4) };
+                json.WriteFieldValueNumber("baseCount", *(const int32_t*)table);
+                json.WriteFieldValueNumber("count", count);
+                // (the first point with a targetname: the game's start at 0x400)
+                int32_t first{};
+                while (first < count && first < 0x8000 && !(*(const uint64_t*)(table + 0x8 + 0x10 * first) & 0x7FFFFFFFFFFFFFFFull)) {
+                    first++;
+                }
+                json.WriteFieldValueNumber("firstUsed", first);
+                json.WriteFieldNameString("first");
+                json.BeginArray();
+                for (int32_t i = first; i < count && i < first + 4; i++) {
+                    const float* origin{ (const float*)(table + 0x160008 + 0xC * i) };
+                    const float* angles{ (const float*)(table + 0x100008 + 0xC * i) };
+                    json.BeginObject();
+                    json.WriteFieldValueString("targetname", std::format("hash_{:x}", *(const uint64_t*)(table + 0x8 + 0x10 * i) & 0x7FFFFFFFFFFFFFFFull));
+                    json.WriteFieldValueString("item", std::format("hash_{:x}", *(const uint64_t*)(table + 0x80008 + 0x10 * i) & 0x7FFFFFFFFFFFFFFFull));
+                    json.WriteFieldValueString("origin", std::format("{} {} {}", origin[0], origin[1], origin[2]));
+                    json.WriteFieldValueString("angles", std::format("{} {} {}", angles[0], angles[1], angles[2]));
+                    json.WriteFieldValueNumber("state", *(const int32_t*)(table + 0x1C0008 + 4 * i));
+                    json.EndObject();
+                }
+                json.EndArray();
                 json.EndObject();
             };
             Table("table50", asset.table50);

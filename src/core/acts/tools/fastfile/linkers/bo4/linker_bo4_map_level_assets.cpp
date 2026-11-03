@@ -1,5 +1,6 @@
 #include <includes.hpp>
 #include <tools/fastfile/linkers/linker_bo4.hpp>
+#include <tools/fastfile/linkers/bo4/linker_bo4_scriptbundle.hpp>
 
 /*
  * maptableentrylevelassets (type 93, retail 0x68, loader sub_142E22800 / sub_142E22610): a map's minimap, named as the
@@ -12,7 +13,9 @@
  *   0x20 compassMapImage (the HUD minimap), 0x28 compassMapImageFull (the scoreboard's map), 0x30 compassMapImageSpawn
  *   0x38 count / 0x40 images (sub_142E1D140): stock one, the minimap's size, linear (image flags 2, the others' 0xC3):
  *        likely a height map of the map
- *   0x48 a scriptbundle's objects array (0x20), left empty
+ *   0x48 a scriptbundle's objects array (0x20): the map's script bundle (GSC map::get_script_bundle, the native
+ *        function_2717b55f): Blackout's death circles (deathCircleList: { var_47fd5ad2: a death circle bundle's name }),
+ *        destinationLabelList, oow heights... MP's stock ~60 keys, empty without "bundle" (as a scriptbundle's json)
  * The dev ELF's MapTableEntryLevelAssets has the name and the 3 images only. Stock minimap images are 3072x1728 (16:9)
  * BC7, their minimap corners 16:9 too.
  *
@@ -23,7 +26,8 @@
  *     "compassMap": "mp_room_minimap",       // the images by name: one of the zone (linked before) or a loaded one
  *     "compassMapFull": "mp_room_minimap",
  *     "compassMapSpawn": "mp_room_minimap",
- *     "levelImages": [ "mp_room_minimap_height" ]
+ *     "levelImages": [ "mp_room_minimap_height" ],
+ *     "bundle": { "deathCircleList": [ { "hash_21bd79c527b6f57f:hash_47fd5ad2": "scriptbundle&wz_room_death_circles" } ] }
  * }
  */
 namespace {
@@ -36,6 +40,7 @@ namespace {
     constexpr size_t LEVEL_ASSETS_IMAGES = 0x20;
     constexpr size_t LEVEL_ASSETS_LEVEL_IMAGE_COUNT = 0x38;
     constexpr size_t LEVEL_ASSETS_LEVEL_IMAGES = 0x40;
+    constexpr size_t LEVEL_ASSETS_BUNDLE = 0x48;
     const char* IMAGE_KEYS[]{ "compassMap", "compassMapFull", "compassMapSpawn" };
 
     class XAssetLinkerImpl : public XAssetLinker {
@@ -124,11 +129,19 @@ namespace {
                     ctx.LinkAsset(XAssetType::ASSET_TYPE_IMAGE, std::format(",{}", levelImages[i]).data(), refs[i], false, &ff);
                 }
             }
+            // the bundle last, its field's place
+            auto bundleIt{ cfg.main.FindMember("bundle") };
+            bool bundle{ bundleIt != cfg.main.MemberEnd() };
+            if (bundle && !fastfile::linker::bo4::scriptbundle::WriteArray(ctx, bundleIt->value, *(fastfile::linker::bo4::scriptbundle::SB_ObjectsArray*)(header + LEVEL_ASSETS_BUNDLE), ff)) {
+                LOG_ERROR("maptableentrylevelassets {}: can't write its bundle", path.string());
+                ctx.error = true;
+                return;
+            }
             ff.data.PopStream();
             ff.data.PopStream();
 
-            LOG_INFO("Added asset maptableentrylevelassets {} (hash_{:x}), range {}, {} height(s), {} image(s), {} level image(s)",
-                assetName, nameHash, *(uint32_t*)(header + LEVEL_ASSETS_RANGE), heights.size(), linked, levelImages.size());
+            LOG_INFO("Added asset maptableentrylevelassets {} (hash_{:x}), range {}, {} height(s), {} image(s), {} level image(s){}",
+                assetName, nameHash, *(uint32_t*)(header + LEVEL_ASSETS_RANGE), heights.size(), linked, levelImages.size(), bundle ? ", a bundle" : "");
         }
     };
 

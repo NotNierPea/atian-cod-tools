@@ -260,12 +260,17 @@ namespace {
                 *(uint64_t*)(header + VIS_BUFFERS + i * 0x10 + 8) = fastfile::linker::memory::POINTER_NEXT;
             }
             /*
-             * the dyn ents' dpvs (0x498, sub_142E1F430): count of list 0 (the col_map's client dyn ent slots, the gibs), 4
-             * view buffers and one vis byte each (sub_143699270), 16 rounded, in the runtime block. As the frontend's.
+             * the dyn ents' dpvs (0x498, sub_142E1F430): count of list 0 (the col_map's dyn ents, "dynEntCount" here, and
+             * its 500 client slots, the gibs), 4 view buffers and one vis byte each (sub_143699270), 16 rounded, in the
+             * runtime block. As the frontend's.
              */
             constexpr size_t DPVS_DYN = 0x498;
-            constexpr uint32_t DYNENT_SLOTS = 500;
-            constexpr uint32_t DYNENT_BUFFER_SIZE = (DYNENT_SLOTS + 15) & ~15u;
+            uint32_t mapDynEnts{};
+            if (auto dc{ cfg.main.FindMember("dynEntCount") }; dc != cfg.main.MemberEnd() && dc->value.IsUint()) {
+                mapDynEnts = dc->value.GetUint();
+            }
+            const uint32_t DYNENT_SLOTS = 500 + mapDynEnts;
+            const uint32_t DYNENT_BUFFER_SIZE = (DYNENT_SLOTS + 15) & ~15u;
             *(uint32_t*)(header + DPVS_DYN) = DYNENT_SLOTS;
             for (size_t j = 0; j < 4; j++) {
                 *(uint32_t*)(header + DPVS_DYN + 0x08 + 0x20 * j) = DYNENT_BUFFER_SIZE;

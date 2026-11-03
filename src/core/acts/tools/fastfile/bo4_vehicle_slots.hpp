@@ -152,6 +152,26 @@ namespace fastfile::bo4vehicle {
         return s.slots;
     }
 
+    /*
+     * A map's dyn ent defs (clipMap 0x150, 0x188 each, sub_142E18800's order): its model and destroyed model, two effects,
+     * five rattles' effects (0x20 each), three splash effects, the ambient effect, its physics preset, its targetname,
+     * its inline script bundle (the states' settings). The pose is at 0, the XHash sounds (0x48, the rattles') need nothing.
+     */
+    constexpr size_t DYNENT_DEF_SIZE = 0x188;
+
+    inline std::vector<Slot> DynEntityDefSlots() {
+        SlotList s{};
+        s.Asset(0x20, XAssetType::ASSET_TYPE_XMODEL, 2);
+        s.Asset(0x38, XAssetType::ASSET_TYPE_FX, 2);
+        s.Asset(0x58, XAssetType::ASSET_TYPE_FX, 5, 0x20);
+        s.Asset(0x100, XAssetType::ASSET_TYPE_FX, 3);
+        s.Asset(0x118, XAssetType::ASSET_TYPE_FX);
+        s.Asset(0x130, XAssetType::ASSET_TYPE_PHYSPRESET);
+        s.Scr(0x160);
+        s.Bundle(0x168);
+        return s.slots;
+    }
+
     inline uint32_t SlotCount(const Slot& s, const byte* header) {
         return s.kind == SK_BLOB ? (uint32_t)std::max(0, *(const int32_t*)(header + s.countOffset)) : 1;
     }
