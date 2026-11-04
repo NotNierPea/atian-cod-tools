@@ -40,6 +40,12 @@ namespace fastfile::linker::cache {
      */
     void SetTrackingRoots(const std::filesystem::path& output, const std::vector<std::filesystem::path>& ignored);
 
+    /*
+     * Writes data into path unless the file there already has these bytes: then it's kept as it is, its time too (a map
+     * release's GBs written again for nothing each link, and copied again by the deploy). false if it can't be written.
+     */
+    bool WriteFileIfChanged(const std::filesystem::path& path, const void* data, size_t size, bool* written = nullptr);
+
     // the current state of the files, read once a run
     class FileStates {
         struct State {

@@ -368,7 +368,8 @@ namespace fastfile::compressor::t789 {
                 std::filesystem::path outputFileFF{ ctx.opt.m_output / "zone" / std::format("{}.ff", ff.ffname) };
 
                 std::filesystem::create_directories(outputFileFF.parent_path());
-                if (!utils::WriteFile(outputFileFF, out)) {
+                bool ffWritten{};
+                if (!fastfile::linker::cache::WriteFileIfChanged(outputFileFF, out.data(), out.size(), &ffWritten)) {
                     throw std::runtime_error(std::format("Can't write into {}", outputFileFF.string()));
                 }
 
@@ -377,7 +378,7 @@ namespace fastfile::compressor::t789 {
                 }
 
                 LOG_INFO(
-                    "Compressed {} into {} [{}]({} -> {} bytes / {}% saved) in {:.2f}s ({}/{} chunks ahead), written "
+                    "Compressed {} into {} [{}]({} -> {} bytes / {}% saved) in {:.2f}s ({}/{} chunks ahead), {} "
                     "in {:.2f}s",
                     ff.ffname,
                     outputFileFF.string(),
@@ -388,6 +389,7 @@ namespace fastfile::compressor::t789 {
                     std::chrono::duration<double>(compressedTime - compressStart).count(),
                     compressAhead.hits,
                     compressAhead.asked,
+                    ffWritten ? "written" : "unchanged (kept), checked",
                     std::chrono::duration<double>(std::chrono::steady_clock::now() - compressedTime).count()
                 );
             }

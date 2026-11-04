@@ -98,6 +98,22 @@ namespace {
                     for (uint32_t i = 0; i < count; i++) {
                         WriteFields(ctx, ff, *f.sub, arr + (size_t)i * f.sub->size, (*fv)[i]);
                     }
+                } else if (f.kind == FK_REF) {
+                    // by name: ",<name>" (the zone links them before)
+                    for (uint32_t i = 0; i < f.fixedCount; i++) {
+                        const rapidjson::Value* av{ fv };
+                        if (av && f.fixedCount > 1) {
+                            av = av->IsArray() && i < av->Size() ? &(*av)[i] : nullptr;
+                        }
+                        uintptr_t& ref{ ((uintptr_t*)d)[i] };
+                        if (!av || !av->IsString() || !*av->GetString()) {
+                            ref = 0;
+                            continue;
+                        }
+                        std::string name{ av->GetString() };
+                        std::string refId{ std::format(",{}", name[0] == '#' ? name.substr(1) : name) };
+                        ctx.LinkAsset(f.assetType, refId.data(), reinterpret_cast<void*&>(ref), false, &ff);
+                    }
                 } else if (f.kind == FK_ASSET) {
                     for (uint32_t i = 0; i < f.fixedCount; i++) {
                         const rapidjson::Value* av{ fv };
@@ -179,4 +195,6 @@ namespace {
     utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> ssd{ GetWorkers(), XAssetType::ASSET_TYPE_SURFACESOUNDDEF, XAssetType::ASSET_TYPE_SURFACESOUNDDEF };
     utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> sws{ GetWorkers(), XAssetType::ASSET_TYPE_SHAREDWEAPONSOUNDS, XAssetType::ASSET_TYPE_SHAREDWEAPONSOUNDS };
     utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> esi{ GetWorkers(), XAssetType::ASSET_TYPE_ENTITYSOUNDIMPACTS, XAssetType::ASSET_TYPE_ENTITYSOUNDIMPACTS };
+    utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> ist{ GetWorkers(), XAssetType::ASSET_TYPE_IMPACT_SOUND, XAssetType::ASSET_TYPE_IMPACT_SOUND };
+    utils::MapAdder<XAssetLinkerImpl, XAssetType, XAssetLinker> tfx{ GetWorkers(), XAssetType::ASSET_TYPE_TAGFX, XAssetType::ASSET_TYPE_TAGFX };
 } // namespace

@@ -54,6 +54,29 @@ namespace {
             json.EndArray();
             break;
         }
+        case FK_REF: {
+            if (f.fixedCount > 1) {
+                json.BeginArray();
+            }
+            for (uint32_t i = 0; i < f.fixedCount; i++) {
+                void* a{ ((void* const*)v)[i] };
+                XHash* n{ a ? games::bo4::pool::GetAssetName(f.assetType, a) : nullptr };
+                if (n && n->name) {
+                    const char* str{ hashutils::ExtractPtr(n->name) };
+                    if (str && hash::Hash64(str) == n->name) {
+                        json.WriteValueString(std::format("#{}", str));
+                    } else {
+                        json.WriteValueString(std::format("#hash_{:x}", n->name));
+                    }
+                } else {
+                    json.WriteValueNull();
+                }
+            }
+            if (f.fixedCount > 1) {
+                json.EndArray();
+            }
+            break;
+        }
         case FK_ASSET: {
             if (f.fixedCount > 1) {
                 json.BeginArray();
@@ -155,4 +178,6 @@ namespace {
     utils::MapAdder<ImplWorker, XAssetType, Worker> ssd{ GetWorkers(), XAssetType::ASSET_TYPE_SURFACESOUNDDEF, XAssetType::ASSET_TYPE_SURFACESOUNDDEF };
     utils::MapAdder<ImplWorker, XAssetType, Worker> sws{ GetWorkers(), XAssetType::ASSET_TYPE_SHAREDWEAPONSOUNDS, XAssetType::ASSET_TYPE_SHAREDWEAPONSOUNDS };
     utils::MapAdder<ImplWorker, XAssetType, Worker> esi{ GetWorkers(), XAssetType::ASSET_TYPE_ENTITYSOUNDIMPACTS, XAssetType::ASSET_TYPE_ENTITYSOUNDIMPACTS };
+    utils::MapAdder<ImplWorker, XAssetType, Worker> ist{ GetWorkers(), XAssetType::ASSET_TYPE_IMPACT_SOUND, XAssetType::ASSET_TYPE_IMPACT_SOUND };
+    utils::MapAdder<ImplWorker, XAssetType, Worker> tfx{ GetWorkers(), XAssetType::ASSET_TYPE_TAGFX, XAssetType::ASSET_TYPE_TAGFX };
 } // namespace

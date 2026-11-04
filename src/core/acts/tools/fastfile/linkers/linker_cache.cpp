@@ -633,6 +633,32 @@ namespace fastfile::linker::cache {
         }
     }
 
+    bool WriteFileIfChanged(const std::filesystem::path& path, const void* data, size_t size, bool* written) {
+        std::error_code ec{};
+        if (std::filesystem::is_regular_file(path, ec) && std::filesystem::file_size(path, ec) == size && !ec) {
+            bool same{ true };
+            {
+                std::ifstream in{ path, std::ios::binary };
+                std::vector<char> buff(0x400000);
+                same = (bool)in;
+                for (size_t at = 0; same && at < size; at += buff.size()) {
+                    size_t len{ std::min(buff.size(), size - at) };
+                    same = in.read(buff.data(), (std::streamsize)len) && !std::memcmp(buff.data(), (const byte*)data + at, len);
+                }
+            }
+            if (same) {
+                if (written) {
+                    *written = false;
+                }
+                return true;
+            }
+        }
+        if (written) {
+            *written = true;
+        }
+        return utils::WriteFile(path, data, size);
+    }
+
     void ParallelFor(size_t count, const std::function<void(size_t)>& func) {
         size_t threads{ std::min<size_t>(count, std::max(1u, std::thread::hardware_concurrency())) };
         std::atomic<size_t> next{};

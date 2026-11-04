@@ -3,7 +3,7 @@
 
 /*
  * The AI tables' layouts (animmappingtable, animselectortable, animstatemachine, behaviortree, behaviorstatemachine,
- * footsteptable, surfacesounddef), read from their Load_ functions. The bo4 unlinker dumps them to json with it and the
+ * footsteptable, surfacesounddef, impactsoundstable, tagfx), read from their Load_ functions. The bo4 unlinker dumps them to json with it and the
  * linker writes them back the same way, in the loader's order. The bytes no field covers are dumped as "unk_<offset>".
  */
 namespace fastfile::bo4ai {
@@ -19,6 +19,7 @@ namespace fastfile::bo4ai {
         FK_BOOL,
         FK_ARRAY, // a pointer to count elements of sub, the count an int32 at countOffset
         FK_ASSET, // fixedCount pointers to sub assets (the zone has them inline)
+        FK_REF,   // fixedCount pointers to assets by their name (the zone links them before: a tagfx's effects)
     };
 
     struct Struct;

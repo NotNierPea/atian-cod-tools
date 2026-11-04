@@ -415,10 +415,11 @@ namespace fastfile::linker::bo4 {
                     std::filesystem::path out{ ctx.linkCtx.opt.m_output /
                                                std::filesystem::path{ utils::StrToWStr(p) } };
                     std::filesystem::create_directories(out.parent_path());
-                    if (!utils::WriteFile(out, d)) {
+                    bool written{};
+                    if (!cache::WriteFileIfChanged(out, d.data(), d.size(), &written)) {
                         throw std::runtime_error(std::format("link cache: can't write {}", out.string()));
                     }
-                    LOG_INFO("Link cache: written {}", out.string());
+                    LOG_INFO("Link cache: {} {}", written ? "written" : "kept (unchanged)", out.string());
                 }
                 used.insert(file);
                 stats[games::bo4::pool::XAssetNameFromId(type)].replayed++;

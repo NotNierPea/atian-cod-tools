@@ -13,6 +13,9 @@ namespace fastfile::bo4ai {
         Field Asset(const char* name, uint32_t offset, const Struct* sub, XAssetType type, uint32_t count = 1) {
             return { name, offset, FK_ASSET, sub, 0, 8, type, count };
         }
+        Field Ref(const char* name, uint32_t offset, XAssetType type, uint32_t count = 1) {
+            return { name, offset, FK_REF, nullptr, 0, 8, type, count };
+        }
 
         const Struct XHashElem{ "xhash", 0x10, { Hash("value", 0) }, true };
         const Struct Int32Elem{ "int", 4, { { "value", 0, FK_I32 } }, true };
@@ -149,7 +152,28 @@ namespace fastfile::bo4ai {
             Asset("impacts", 0x20, &EntitySoundImpacts, XAssetType::ASSET_TYPE_ENTITYSOUNDIMPACTS, 9),
         } };
 
+        // impactsoundstable (sub_142E2B580): a surfacesounddef, 4 entitysoundimpacts (a weapon's normal / exit / bounce /
+        // dud impact sounds name one: the grapple hook's grapple_impact)
+        const Struct ImpactSoundsTable{ "ImpactSoundsTable", 0x38, {
+            Hash("name", 0),
+            Asset("surfaceSounds", 0x10, &SurfaceSoundDef, XAssetType::ASSET_TYPE_SURFACESOUNDDEF),
+            Asset("impacts", 0x18, &EntitySoundImpacts, XAssetType::ASSET_TYPE_ENTITYSOUNDIMPACTS, 4),
+        } };
+
+        // tagfx (sub_142E2F890): effects a weapon plays on its tags by state (the grapple's on tag_fx / tag_rope_fx), an
+        // entry 13 effects (by name) and its tag (0x68)
+        const Struct TagFxEntry{ "TagFxEntry", 0x78, {
+            Ref("fx", 0, XAssetType::ASSET_TYPE_FX, 13),
+            Scr("tag", 0x68),
+        } };
+        const Struct TagFx{ "TagFx", 0x20, {
+            Hash("name", 0),
+            Array("entries", 0x18, &TagFxEntry, 0x10),
+        } };
+
         const std::vector<AssetSchema> schemas{
+            { XAssetType::ASSET_TYPE_IMPACT_SOUND, "impactsoundstable", &ImpactSoundsTable },
+            { XAssetType::ASSET_TYPE_TAGFX, "tagfx", &TagFx },
             { XAssetType::ASSET_TYPE_SHAREDWEAPONSOUNDS, "sharedweaponsounds", &SharedWeaponSounds },
             { XAssetType::ASSET_TYPE_ENTITYSOUNDIMPACTS, "entitysoundimpacts", &EntitySoundImpacts },
             { XAssetType::ASSET_TYPE_ANIMMAPPINGTABLE, "animmappingtable", &AnimMappingTable },
@@ -184,6 +208,7 @@ namespace fastfile::bo4ai {
         case FK_BOOL: return 1;
         case FK_ARRAY: return 8;
         case FK_ASSET: return 8 * field.fixedCount;
+        case FK_REF: return 8 * field.fixedCount;
         default: return 0;
         }
     }

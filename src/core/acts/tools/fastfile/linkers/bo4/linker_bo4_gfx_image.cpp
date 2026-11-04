@@ -426,6 +426,17 @@ namespace {
             tasks.size()
         );
 
+        // (its room at once, about its chunks as stored: a GB vector grown by doubling was copied over and over)
+        std::chrono::steady_clock::time_point encodeStart{ std::chrono::steady_clock::now() };
+        size_t expected{ XPAK_HEADER_SIZE };
+        for (size_t i = 0; i < items.size(); i++) {
+            for (size_t k = 0; k < lz4[i].size(); k++) {
+                expected += lz4[i][k].empty() ? std::min(XPAK_CHUNK_SIZE, items[i].data.size() - k * XPAK_CHUNK_SIZE) : lz4[i][k].size();
+            }
+            expected += XPAK_GROUP_ALIGN + lz4[i].size() * 0x10;
+        }
+        file.reserve(expected + expected / 50 + index.size() * sizeof(XPakIndexEntry) + 2 * XPAK_READ_ALIGN);
+
         for (size_t i = 0; i < items.size(); i++) {
             XPakItem& item{ items[i] };
             file.resize(utils::Aligned<size_t>(file.size(), XPAK_GROUP_ALIGN));
@@ -464,11 +475,22 @@ namespace {
         header.indexSection.size = (int64_t)indexSize;
         snprintf(header.comment, sizeof(header.comment), "atian-cod-tools");
 
+        std::chrono::steady_clock::time_point writeStart{ std::chrono::steady_clock::now() };
         std::filesystem::create_directories(path.parent_path());
-        if (!utils::WriteFile(path, file)) {
+        bool written{};
+        if (!fastfile::linker::cache::WriteFileIfChanged(path, file.data(), file.size(), &written)) {
             throw std::runtime_error(std::format("Can't write xpak {}", path.string()));
         }
-        LOG_INFO("Written xpak {} with {} entries (0x{:x} bytes)", path.string(), index.size(), file.size());
+        LOG_INFO(
+            "{} xpak {} with {} entries (0x{:x} bytes), laid out in {:.2f}s, {} in {:.2f}s",
+            written ? "Written" : "Kept",
+            path.string(),
+            index.size(),
+            file.size(),
+            std::chrono::duration<double>(writeStart - encodeStart).count(),
+            written ? "written" : "the same, checked",
+            std::chrono::duration<double>(std::chrono::steady_clock::now() - writeStart).count()
+        );
     }
 
     // 4x4 blocks of an rgba picture, the edges padded with zeros
@@ -792,11 +814,13 @@ namespace {
                     std::filesystem::remove(chunkCache, ec);
                 }
             }
+            // (keyed by the chunk format only, not acts' build like the link cache: a chunk's lz4 is by its bytes alone,
+            // and after each acts build its GB of chunks were all compressed again)
             WriteXPak(
                 ctx.linkCtx.opt.m_output / "zone" / std::format("{}.xpak", xpakName),
                 items,
                 chunkCache,
-                ctx.cache ? ctx.cache->Key() : std::string{}
+                std::format("xpak chunks 1, 0x{:x} bytes, lz4 hc", XPAK_CHUNK_SIZE)
             );
 
             // XPak_AddPackfilesForZone: values of xpak_read in the keyvaluepairs named after the zone

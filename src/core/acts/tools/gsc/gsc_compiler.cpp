@@ -434,6 +434,14 @@ namespace tool::gsc::compiler {
     void CompileGsc(const std::vector<std::filesystem::path>& files, std::vector<byte>& data, CompilerConfig& config) {
         VmInfo* vmInfo{ config.GetVm() };
         InputInfo info{};
+        // (each step's time, logged at the end: a big script's compile is most of a map's link)
+        std::chrono::steady_clock::time_point stepStart{ std::chrono::steady_clock::now() };
+        std::string steps{};
+        auto Step = [&stepStart, &steps](const char* name) {
+            std::chrono::steady_clock::time_point now{ std::chrono::steady_clock::now() };
+            steps += std::format(" {} {:.2f}s", name, std::chrono::duration<double>(now - stepStart).count());
+            stepStart = now;
+        };
         for (const std::filesystem::path& file : files) {
             if (!info.container.AppendFile(file)) {
                 throw std::runtime_error(std::format("Can't read file '{}'", file.string()));
@@ -472,6 +480,7 @@ namespace tool::gsc::compiler {
         if (config.preprocOutput) {
             *config.preprocOutput = info.container.data;
         }
+        Step("preprocessor");
 
         ANTLRInputStream is{ info.container.data };
 
@@ -482,6 +491,7 @@ namespace tool::gsc::compiler {
         CommonTokenStream tokens{ &lexer };
 
         tokens.fill();
+        Step("lexer");
         gscParser parser{ &tokens };
 
         parser.removeErrorListeners();
@@ -497,13 +507,19 @@ namespace tool::gsc::compiler {
         parser.setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
         try {
             prog = parser.prog();
+            Step("parser (SLL)");
         } catch (antlr4::ParseCancellationException&) {
+            Step("parser (SLL, bailed)");
+            if (antlr4::Token* at{ parser.getCurrentToken() }) {
+                steps += std::format(" at line {}:{} '{}'", at->getLine(), at->getCharPositionInLine(), at->getText());
+            }
             tokens.seek(0);
             parser.reset();
             parser.setErrorHandler(std::make_shared<antlr4::DefaultErrorStrategy>());
             parser.getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(antlr4::atn::PredictionMode::LL);
             parser.addErrorListener(&*errList);
             prog = parser.prog();
+            Step("parser (LL)");
         }
 
         tool::gsc::vm::GscVm* readerBuilder = tool::gsc::vm::GetGscReader(vmInfo->vmMagic);
@@ -526,12 +542,15 @@ namespace tool::gsc::compiler {
         if (!ParseProg(prog, parser, obj)) {
             throw std::runtime_error("Error when parsing the object");
         }
+        Step("tree");
 
         RegisterOpCodesMap();
 
         if (!obj.Compile(data, config.dbgoutput)) {
             throw std::runtime_error("Error when compiling the object");
         }
+        Step("compile");
+        LOG_INFO("Compile times of {}:{}", files.empty() ? "" : files[0].string(), steps);
     }
 
     ADD_TOOL(gscc, "gsc", "", "GSC compiler", gscc);
