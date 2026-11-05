@@ -37,6 +37,8 @@
  * shaders take the model's ambient as the grid times the probe array (t8, a cube array at mip 6), the set's first image
  * while the probe array isn't ready (sub_14367CEB0). With "probeColor" (RGB) the images are ours, each a cube array of
  * one 1x1 RGBA32F cube of that colour (mapType 5, sub_1435B9A60 makes a cube array view of it).
+ * With "probeCube" { file, size, mips } too, the states without their own probeColor take that cube instead (RGBA16F, its
+ * mips, mip-major with the 6 faces in each): a real sky for the reflections; the file's last mip the ambient (mip 6).
  * The exposure is automatic (sub_143699F10): it measures the light at the camera with the state's sun volume (0x13A8,
  * 0x40 by quality: probe count 0, a light level 4, probes 8, bounds 0x10-0x24, sub_143660E50), the level at 4 when the
  * camera is outside or there are no probes. 0 is the most exposure there is, a too bright sky: "exposure" is that level
@@ -185,6 +187,36 @@ namespace {
                 }
             }
             const size_t probeImageCount{ probeColor.empty() ? lightmapImages.size() : std::max<size_t>(lightmapImages.size(), 1) };
+            /*
+             * "probeCube": { "file", "size", "mips" }: with probeColor, the probes' cube a real one (the map's sky for the
+             * reflections): RGBA16F (DXGI 10) faces size square, mips to 1x1, mip-major with the 6 faces (D3D's order) in
+             * each, as sub_1435B9A60 reads them; for the lighting states without their own probeColor
+             */
+            std::string probeCubeData{};
+            uint16_t probeCubeSize{};
+            uint8_t probeCubeMips{};
+            auto cubeIt{ cfg.main.FindMember("probeCube") };
+            if (cubeIt != cfg.main.MemberEnd()) {
+                const rapidjson::Value& c{ cubeIt->value };
+                if (probeColor.empty() || !c.IsObject() || !c.HasMember("file") || !c["file"].IsString() || !c.HasMember("size") || !c["size"].IsUint()
+                    || !c.HasMember("mips") || !c["mips"].IsUint()) {
+                    LOG_ERROR("lighting {}: probeCube takes file, size and mips, with probeColor", path.string());
+                    ctx.error = true;
+                    return;
+                }
+                probeCubeSize = (uint16_t)c["size"].GetUint();
+                probeCubeMips = (uint8_t)c["mips"].GetUint();
+                size_t expected{};
+                for (size_t m = 0; m < probeCubeMips; m++) {
+                    size_t s{ std::max<size_t>(probeCubeSize >> m, 1) };
+                    expected += PROBE_FACES * s * s * 8;
+                }
+                if (!utils::ReadFile(path.parent_path() / c["file"].GetString(), probeCubeData) || probeCubeData.size() != expected) {
+                    LOG_ERROR("lighting {}: probeCube {} isn't {} bytes", path.string(), c["file"].GetString(), expected);
+                    ctx.error = true;
+                    return;
+                }
+            }
             // the light level the exposure takes without sun volume probes, see above
             const float exposure{ (float)cfg.GetDouble("exposure", 0.0) };
             /*
@@ -255,6 +287,8 @@ namespace {
                 std::vector<float> probeColor{};
                 std::vector<float> lightGrid{};
                 SkyEntry sky{};
+                // its probes the "probeCube" (when there's one and it has no probeColor of its own)
+                bool cube{};
             };
             LightingState lightingStates[4]{};
             auto ReadFloats = [&](const rapidjson::Value& v, size_t count, std::vector<float>& out) {
@@ -268,7 +302,7 @@ namespace {
                 return true;
             };
             for (size_t j = 0; j < 4; j++) {
-                lightingStates[j] = { exposure, probeColor, lightGrid, sky[j] };
+                lightingStates[j] = { exposure, probeColor, lightGrid, sky[j], !probeCubeData.empty() };
             }
             auto lightingIt{ cfg.main.FindMember("lightingStates") };
             if (lightingIt != cfg.main.MemberEnd() && lightingIt->value.IsArray()) {
@@ -290,6 +324,9 @@ namespace {
                         LOG_ERROR("lighting {}: lighting state {}'s probeColor takes 3 numbers, with the top level's", path.string(), j);
                         ctx.error = true;
                         return;
+                    }
+                    if (s.HasMember("probeColor")) {
+                        st.cube = false;
                     }
                     if (s.HasMember("lightGrid") && (lightGrid.empty() || !ReadFloats(s["lightGrid"], LIGHT_GRID_FLOATS, st.lightGrid))) {
                         LOG_ERROR("lighting {}: lighting state {}'s lightGrid takes {} numbers, with the top level's", path.string(), j, LIGHT_GRID_FLOATS);
@@ -565,6 +602,7 @@ namespace {
                         }
                         // our own: inline (header in TEMP), a cube array of one 1x1 RGBA32F cube (mapType 5, the view the
                         // lit shaders' probe array takes), resident (its 6 faces in block 5 on 256)
+                        const bool cube{ lightingStates[j].cube };
                         for (size_t k = 0; k < probeImageCount; k++) {
                             ff.data.PushStream(XFILE_BLOCK_TEMP);
                             ff.data.Align(8);
@@ -572,21 +610,26 @@ namespace {
                             ((XHash*)(image + 0x20))->name = ctx.HashXHash(std::format("{}_probe{}_{}_{}", assetName, i, j, k), true);
                             *(uint64_t*)(image + 0x18) = fastfile::linker::memory::POINTER_NEXT;
                             *(uint32_t*)(image + 0x58) = 0x4;
-                            *(uint32_t*)(image + 0x60) = PROBE_FACES * 0x10;
-                            *(uint32_t*)(image + 0x64) = 2;
-                            *(uint16_t*)(image + 0x68) = 1;
-                            *(uint16_t*)(image + 0x6A) = 1;
+                            // (the cube: RGBA16F, its size and mips; else 1x1 RGBA32F)
+                            *(uint32_t*)(image + 0x60) = cube ? (uint32_t)probeCubeData.size() : PROBE_FACES * 0x10;
+                            *(uint32_t*)(image + 0x64) = cube ? 10 : 2;
+                            *(uint16_t*)(image + 0x68) = cube ? probeCubeSize : 1;
+                            *(uint16_t*)(image + 0x6A) = cube ? probeCubeSize : 1;
                             *(uint16_t*)(image + 0x6C) = 1;
                             image[0x79] = 5;
-                            image[0x7A] = 1;
+                            image[0x7A] = cube ? probeCubeMips : 1;
                             ff.data.WriteStream(image, sizeof(image));
                             ff.data.PopStream();
 
                             ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
                             ff.data.Align(0x100);
-                            for (size_t f = 0; f < PROBE_FACES; f++) {
-                                float texel[4]{ lightingStates[j].probeColor[0], lightingStates[j].probeColor[1], lightingStates[j].probeColor[2], 1.0f };
-                                ff.data.WriteStream(texel, sizeof(texel));
+                            if (cube) {
+                                ff.data.WriteStream(probeCubeData.data(), probeCubeData.size());
+                            } else {
+                                for (size_t f = 0; f < PROBE_FACES; f++) {
+                                    float texel[4]{ lightingStates[j].probeColor[0], lightingStates[j].probeColor[1], lightingStates[j].probeColor[2], 1.0f };
+                                    ff.data.WriteStream(texel, sizeof(texel));
+                                }
                             }
                             ff.data.PopStream();
                         }
