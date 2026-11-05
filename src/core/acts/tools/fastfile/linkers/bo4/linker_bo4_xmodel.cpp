@@ -1522,7 +1522,166 @@ namespace {
             return chunk;
         }
 
-        void Mesh(BO4LinkContext& ctx, BO4FFContext& ff, const std::filesystem::path& file, void*& ref) {
+        // shared flag of the 24-byte vertices (decl 2): decl 1's 16 bytes, then uv1 (half2, TEXCOORD1) and its tangent
+        constexpr uint32_t SHARED_CAMO_UV = 0x40;
+        // uv units a game unit of the stock guns' camo unwraps (uv1: 0.050 on the Ray Gun's view model, 0.056 its world lods)
+        constexpr float CAMO_UV_DENSITY = 0.055f;
+
+        float HalfToFloat(uint16_t h) {
+            uint32_t sign{ (uint32_t)(h & 0x8000) << 16 };
+            uint32_t exp{ (h >> 10) & 0x1Fu };
+            uint32_t mant{ h & 0x3FFu };
+            float f;
+            if (!exp) {
+                f = std::ldexp((float)mant, -24);
+            } else if (exp == 31) {
+                f = mant ? std::numeric_limits<float>::quiet_NaN() : std::numeric_limits<float>::infinity();
+            } else {
+                f = std::ldexp((float)(mant | 0x400), (int)exp - 25);
+            }
+            return sign ? -f : f;
+        }
+
+        // the converted mesh's name and xpak key, from the dumped ones
+        uint64_t CamoUvName(const std::string& ref) {
+            return ::hash::Hash64(std::format("{}/camo_uv", ref).data()) & hash::MASK63;
+        }
+
+        uint64_t CamoUvKey(uint64_t key) {
+            return ::hash::Hash64(std::format("xpak_{:x}/camo_uv", key).data()) | 0x8000000000000000ull;
+        }
+
+        /*
+         * A mesh of 16-byte vertices (shared flags without 0x40, decl 1) made one of 24 (decl 2) so weapon camos draw on
+         * it: the camo layer reads uv1 and its tangent (0x10, 0x14), the shared flags have no other use of 0x40
+         * (sub_143733CD0: stride 0x10 or 0x18). The stock camo meshes have a uv1 unwrap of their own at a uniform
+         * density; here uv1 is uv0 scaled per surface to that density, so uv0's tangent (w = handedness) is uv1's.
+         * Indices, positions and skin weights are copied, each part 16-aligned in its place.
+         */
+        bool AddCamoUv(std::vector<byte>& shared, std::vector<byte>& data, const rapidjson::Value* surfs, float density, std::string& err) {
+            if (shared.size() < 0x40) {
+                err = "no shared block";
+                return false;
+            }
+            uint32_t& flags{ *(uint32_t*)&shared[0] };
+            if (flags & SHARED_CAMO_UV) {
+                return true;
+            }
+            if (flags & (0x80 | 0x20 | 0x100)) {
+                err = std::format("shared flags 0x{:x}: extra streams", flags);
+                return false;
+            }
+            uint32_t vertCount{ *(uint32_t*)&shared[4] };
+            uint32_t skinCount{ *(uint32_t*)&shared[8] };
+            uint32_t indexCount{ *(uint32_t*)&shared[0xC] };
+            uint32_t& dataSize{ *(uint32_t*)&shared[0x28] };
+            uint32_t& posOffset{ *(uint32_t*)&shared[0x2C] };
+            uint32_t& vertsOffset{ *(uint32_t*)&shared[0x30] };
+            uint32_t& indicesOffset{ *(uint32_t*)&shared[0x34] };
+            uint32_t& skinOffset{ *(uint32_t*)&shared[0x38] };
+            if (*(uint32_t*)&shared[0x10] || *(uint32_t*)&shared[0x3C] || *(uint32_t*)&shared[0x40]) {
+                err = "blend targets or unknown streams";
+                return false;
+            }
+            if (data.size() < dataSize || (uint64_t)vertsOffset + vertCount * 16ull > dataSize
+                || (uint64_t)posOffset + vertCount * 12ull > dataSize || (uint64_t)indicesOffset + indexCount * 2ull > dataSize) {
+                err = std::format("data of 0x{:x} bytes for a size of 0x{:x}", data.size(), dataSize);
+                return false;
+            }
+            const float* pos{ (const float*)&data[posOffset] };
+            const uint32_t* verts{ (const uint32_t*)&data[vertsOffset] };
+            const uint16_t* indices{ (const uint16_t*)&data[indicesOffset] };
+            auto Pos = [pos](size_t i) { return Vec3{ pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2] }; };
+            auto Uv = [verts](size_t i) { return std::pair<float, float>{ HalfToFloat(verts[i * 4 + 1] & 0xFFFF), HalfToFloat(verts[i * 4 + 1] >> 16) }; };
+
+            // the uv0 and world areas of each surface: { first vertex, vertex count, uv area, world area }
+            struct SurfArea {
+                uint32_t base, count;
+                double uv, world;
+            };
+            std::vector<SurfArea> areas{};
+            double uvAll{}, worldAll{};
+            for (size_t s = 0; surfs && surfs->IsArray() && s < surfs->Size(); s++) {
+                std::vector<byte> h{ Hex((*surfs)[(rapidjson::SizeType)s], "header") };
+                if (h.size() < sizeof(XSurface)) {
+                    continue;
+                }
+                const XSurface& xs{ *(const XSurface*)h.data() };
+                SurfArea a{ xs.baseVertIndex, xs.vertCount };
+                for (size_t t = 0; t < xs.triCount; t++) {
+                    size_t i{ (size_t)xs.baseIndexOffset + t * 3 };
+                    if (i + 2 >= indexCount) {
+                        break;
+                    }
+                    size_t v0{ a.base + indices[i] }, v1{ a.base + indices[i + 1] }, v2{ a.base + indices[i + 2] };
+                    if (v0 >= vertCount || v1 >= vertCount || v2 >= vertCount) {
+                        continue;
+                    }
+                    a.world += (Pos(v1) - Pos(v0)).Cross(Pos(v2) - Pos(v0)).Length() * 0.5;
+                    auto [u0, w0] = Uv(v0);
+                    auto [u1, w1] = Uv(v1);
+                    auto [u2, w2] = Uv(v2);
+                    a.uv += std::abs((u1 - u0) * (w2 - w0) - (u2 - u0) * (w1 - w0)) * 0.5;
+                }
+                uvAll += a.uv;
+                worldAll += a.world;
+                areas.push_back(a);
+            }
+            auto Scale = [density](double uv, double world) { return uv > 1e-12 && world > 1e-6 ? (float)(density / std::sqrt(uv / world)) : 0.0f; };
+            float meshScale{ Scale(uvAll, worldAll) };
+            if (meshScale <= 0) {
+                meshScale = 1;
+            }
+            std::vector<float> scale(vertCount, meshScale);
+            for (const SurfArea& a : areas) {
+                float k{ Scale(a.uv, a.world) };
+                for (uint32_t i = 0; i < a.count && a.base + i < vertCount; i++) {
+                    scale[a.base + i] = k > 0 ? k : meshScale;
+                }
+            }
+
+            std::vector<uint32_t> out(vertCount * 6ull);
+            for (size_t i = 0; i < vertCount; i++) {
+                std::memcpy(&out[i * 6], &verts[i * 4], 16);
+                auto [u, v] = Uv(i);
+                out[i * 6 + 4] = FloatToHalf(u * scale[i]) | ((uint32_t)FloatToHalf(v * scale[i]) << 16);
+                out[i * 6 + 5] = verts[i * 4 + 3];
+            }
+
+            // the parts in their order, each from its offset to the next one's (or the end), verts replaced
+            std::vector<uint32_t*> parts{ &posOffset, &vertsOffset };
+            if (indexCount) {
+                parts.push_back(&indicesOffset);
+            }
+            if (!(flags & SHARED_RIGID) && skinCount) {
+                parts.push_back(&skinOffset);
+            }
+            std::sort(parts.begin(), parts.end(), [](uint32_t* a, uint32_t* b) { return *a < *b; });
+            std::vector<byte> rebuilt{ data.begin(), data.begin() + *parts[0] };
+            for (size_t p = 0; p < parts.size(); p++) {
+                uint32_t start{ *parts[p] };
+                uint32_t end{ p + 1 < parts.size() ? *parts[p + 1] : dataSize };
+                if (p + 1 < parts.size() && end == start) {
+                    err = "two parts at one offset";
+                    return false;
+                }
+                rebuilt.resize(utils::Aligned<size_t>(rebuilt.size(), 0x10));
+                uint32_t at{ (uint32_t)rebuilt.size() };
+                if (parts[p] == &vertsOffset) {
+                    rebuilt.insert(rebuilt.end(), (const byte*)out.data(), (const byte*)(out.data() + out.size()));
+                } else {
+                    rebuilt.insert(rebuilt.end(), data.begin() + start, data.begin() + end);
+                }
+                *parts[p] = at;
+            }
+            rebuilt.resize(utils::Aligned<size_t>(rebuilt.size(), 0x10));
+            dataSize = (uint32_t)rebuilt.size();
+            data = std::move(rebuilt);
+            flags |= SHARED_CAMO_UV;
+            return true;
+        }
+
+        void Mesh(BO4LinkContext& ctx, BO4FFContext& ff, const std::filesystem::path& file, void*& ref, uint64_t camoName = 0, float camoDensity = 0) {
             BO4Json cfg{ file };
             if (!cfg.SyncConfig(false)) {
                 LOG_ERROR("Can't read xmodelmesh {}", file.string());
@@ -1556,13 +1715,32 @@ namespace {
             }
             fastfile::linker::memory::LinkerDataChunk* sharedChunk{};
             std::vector<byte> sharedRaw{ Hex(m, "shared") };
+            const rapidjson::Value* surfs{ Member(m, "surfs") };
             if (Had(0x18) && !sharedRaw.empty()) {
                 Next(mesh, 0x18);
                 std::vector<byte> data{ Hex(m, "data") };
-                sharedChunk = Shared(ff, sharedRaw, data, m);
                 uint32_t flags{ *(uint32_t*)sharedRaw.data() };
+                std::vector<byte> streamed{};
                 if (flags & SHARED_STREAMED) {
-                    std::vector<byte> streamed{ Hex(m, "streamData") };
+                    streamed = Hex(m, "streamData");
+                }
+                // made a camo mesh: its own name and xpak key (the dumped mesh may be in the zone it loads with)
+                if (camoName) {
+                    std::string err{};
+                    if (!AddCamoUv(sharedRaw, (flags & SHARED_STREAMED) ? streamed : data, surfs, camoDensity, err)) {
+                        LOG_ERROR("xmodelmesh {}: no camo uv: {}", file.string(), err);
+                        ctx.error = true;
+                    } else {
+                        *(uint64_t*)mesh = camoName;
+                        if (key) {
+                            key = CamoUvKey(key);
+                            *(uint64_t*)(mesh + 0x28) = key;
+                        }
+                        LOG_INFO("xmodelmesh {}: camo uv added (hash_{:x}, 0x{:x} bytes)", file.filename().string(), camoName, *(uint32_t*)(sharedRaw.data() + 0x28));
+                    }
+                }
+                sharedChunk = Shared(ff, sharedRaw, data, m);
+                if (flags & SHARED_STREAMED) {
                     if (streamed.empty() || !key) {
                         LOG_ERROR("xmodelmesh {}: streamed without its data", file.string());
                         ctx.error = true;
@@ -1571,7 +1749,6 @@ namespace {
                     }
                 }
             }
-            const rapidjson::Value* surfs{ Member(m, "surfs") };
             if (Had(0x10) && surfs && surfs->IsArray()) {
                 Next(mesh, 0x10);
                 ff.data.Align(8);
@@ -1597,6 +1774,9 @@ namespace {
                             // an offset to the mesh's shared block
                             ff.data.AddRef(sharedChunk, (void**)(surf + 0x10));
                         } else {
+                            if (camoName) {
+                                LOG_WARNING("xmodelmesh {}: surface {} has a shared block of its own, left without camo uv", file.string(), i);
+                            }
                             Next(surf, 0x10);
                             Shared(ff, Hex(sv, "shared"), {}, sv);
                         }
@@ -1670,6 +1850,15 @@ namespace {
             Blob(0x38, "partClassification", 1, bones);
             Blob(0x40, "baseMat", 0x10, bones * BASE_MAT_SIZE);
 
+            /*
+             * "camoUv": true (or a density, uv units a game unit) makes every mesh a 24-byte camo mesh (AddCamoUv) under
+             * a name of its own, so weapon camos draw on a model whose meshes had no uv1 (the Mk2, the Blundergat)
+             */
+            float camoDensity{};
+            if (const rapidjson::Value* cv{ Member(root, "camoUv") }) {
+                camoDensity = cv->IsNumber() ? (float)cv->GetDouble() : cv->IsBool() && cv->GetBool() ? CAMO_UV_DENSITY : 0.0f;
+            }
+
             // the meshes, inline
             const rapidjson::Value* meshes{ Member(root, "meshes") };
             std::filesystem::path meshDir{ path.parent_path().parent_path() / "xmodelmesh" };
@@ -1682,18 +1871,24 @@ namespace {
                 void*& mref{ *(void**)(a + 0x78 + 8 * i) };
                 // ",name": another zone's mesh by its name (a model copied from wz_common, its mesh core_common's)
                 if (mv && mv->IsString() && *mv->GetString() == ',') {
+                    if (camoDensity > 0) {
+                        LOG_ERROR("xmodel {}: camoUv on mesh {}, another zone's", assetName, mv->GetString());
+                        ctx.error = true;
+                    }
                     ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELMESH, mv->GetString(), mref, false, &ff);
                     continue;
                 }
+                uint64_t camoName{ camoDensity > 0 && !ref.empty() ? CamoUvName(ref) : 0 };
+                std::string linked{ camoName ? std::format("hash_{:x}", camoName) : ref };
                 // a mesh once in the zone, then by its name (the game's models share them: a weapon's and its upgrade's)
-                if (!ref.empty() && ff.SetContains(LINKED_MESHES, ::hash::Hash64(ref.data()))) {
-                    std::string refId{ "," + ref };
+                if (!linked.empty() && ff.SetContains(LINKED_MESHES, ::hash::Hash64(linked.data()))) {
+                    std::string refId{ "," + linked };
                     ctx.LinkAsset(XAssetType::ASSET_TYPE_XMODELMESH, refId.data(), mref, false, &ff);
                     continue;
                 }
-                Mesh(ctx, ff, meshDir / (FileName(ref) + ".json"), mref);
-                if (!ref.empty()) {
-                    ff.SetInsert(LINKED_MESHES, ::hash::Hash64(ref.data()));
+                Mesh(ctx, ff, meshDir / (FileName(ref) + ".json"), mref, camoName, camoDensity);
+                if (!linked.empty()) {
+                    ff.SetInsert(LINKED_MESHES, ::hash::Hash64(linked.data()));
                 }
             }
 
