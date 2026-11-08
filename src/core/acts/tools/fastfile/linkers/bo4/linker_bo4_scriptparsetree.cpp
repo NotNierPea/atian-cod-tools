@@ -25,11 +25,13 @@ namespace {
             }
         }
 
+        // gsc.dbgInZone: in the zone itself, not dbg_<zone>.ff (a map the lobby preloads loads only its zone)
         static void AddGscDBGHeader(
-            BO4LinkContext& ctx, std::vector<byte>& buffer, std::string& preproc, std::vector<byte>& dbgbuffer,
-            const std::filesystem::path& path
+            BO4LinkContext& ctx, BO4FFContext& ff, std::vector<byte>& buffer, std::string& preproc,
+            std::vector<byte>& dbgbuffer, const std::filesystem::path& path
         ) {
-            BO4FFContext& dbgCtx{ ctx.GetFFContext("dbg_") };
+            bool cfgDbgInZone{ ctx.linkCtx.zone.GetConfigBool("gsc.dbgInZone", false) };
+            BO4FFContext& dbgCtx{ cfgDbgInZone ? ff : ctx.GetFFContext("dbg_") };
 
             if (buffer.size() < sizeof(tool::gsc::T8GSCOBJ)) {
                 LOG_ERROR("Can't read compiled gsc header for {}", path.string());
@@ -250,7 +252,7 @@ namespace {
             LOG_INFO("Added asset scriptparsetree {} (hash_{:x})", path.string(), obj.name);
 
             if (preprocOutput.size() || dbgdata.size()) {
-                AddGscDBGHeader(ctx, buffer, preprocOutput, dbgdata, path);
+                AddGscDBGHeader(ctx, ff, buffer, preprocOutput, dbgdata, path);
             }
 
             if (forced) {

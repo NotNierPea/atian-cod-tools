@@ -250,8 +250,38 @@ namespace {
         return ret;
     }
 
+    // the linked headers' copies (the game copies a header out of the temp block into its pool), dumped as a block
+    struct {
+        byte* data{};
+        size_t size{};
+        size_t used{};
+    } linkArena{};
+
+    void* KeepLinkedHeader(T7XAssetType assetType, void* header) {
+        XBlock& temp{ gcx.blocks[XFILE_BLOCK_TEMP] };
+        byte* h{ (byte*)header };
+        if (!gcx.opt->dumpBinaryAssets || !temp.data || h < temp.data || h >= temp.data + temp.size) {
+            return header;
+        }
+        // (no T7 header size table here: enough for the biggest of each kind, the world's assets bigger)
+        size_t size{ assetType >= T7_ASSET_TYPE_COL_MAP && assetType <= T7_ASSET_TYPE_LIGHTDEF ? 0x8000u : 0x1000u };
+        size = std::min<size_t>(size, temp.data + temp.size - h);
+        if (!linkArena.data) {
+            linkArena.size = 0x20000000;
+            linkArena.data = gcx.allocator.AllocAligned<byte>(linkArena.size, 0x10000);
+        }
+        if (linkArena.used + size > linkArena.size) {
+            throw std::runtime_error("link arena full");
+        }
+        byte* copy{ linkArena.data + linkArena.used };
+        std::memcpy(copy, h, size);
+        linkArena.used = (linkArena.used + size + 0xF) & ~(size_t)0xF;
+        return copy;
+    }
+
     void* DB_LinkXAssetEntry(T7XAssetType assetType, void* header) {
         gcx.loaded++;
+        header = KeepLinkedHeader(assetType, header);
 
         if (gcx.opt->assertContainer) {
             // todo: add header name
@@ -431,6 +461,43 @@ namespace {
 
             LOG_OPT_INFO("{} asset(s) loaded (0x{:x})", gcx.loaded, gcx.loaded);
 
+            if (opt.dumpBinaryAssets) {
+                // the loaded zone's memory for offline readers: blocks (base, size, bytes), the asset list, the script strings
+                std::filesystem::path outBlocks{ opt.m_output / "bo3" / "blocks" / std::format("{}.blocks", ctx.ffname) };
+                std::filesystem::create_directories(outBlocks.parent_path());
+                std::ofstream os{ outBlocks, std::ios::binary };
+                if (!os) {
+                    throw std::runtime_error(std::format("Can't open {}", outBlocks.string()));
+                }
+                auto w64 = [&os](uint64_t v) { os.write((const char*)&v, sizeof(v)); };
+                w64(0x31424F33424C4B53ull);
+                w64(MAX_XFILE_COUNT + 1);
+                for (size_t i = 0; i < MAX_XFILE_COUNT; i++) {
+                    w64((uint64_t)gcx.blocks[i].data);
+                    w64(gcx.blocks[i].data ? gcx.blocks[i].size : 0);
+                }
+                w64((uint64_t)linkArena.data);
+                w64(linkArena.used);
+                w64((uint64_t)gcx.assetList.assetCount);
+                for (size_t i = 0; i < (size_t)gcx.assetList.assetCount; i++) {
+                    w64((uint64_t)gcx.assetList.assets[i].type);
+                    w64((uint64_t)gcx.assetList.assets[i].header);
+                }
+                w64((uint64_t)gcx.assetList.stringsCount);
+                for (size_t i = 0; i < (size_t)gcx.assetList.stringsCount; i++) {
+                    w64((uint64_t)gcx.assetList.strings[i]);
+                }
+                for (size_t i = 0; i < MAX_XFILE_COUNT; i++) {
+                    if (gcx.blocks[i].data) {
+                        os.write((const char*)gcx.blocks[i].data, gcx.blocks[i].size);
+                    }
+                }
+                if (linkArena.data) {
+                    os.write((const char*)linkArena.data, linkArena.used);
+                }
+                LOG_OPT_INFO("Dump blocks into {}", outBlocks.string());
+            }
+
             // xstrings
             if (opt.dumpXStrings) {
                 std::filesystem::create_directories(outXStrings.parent_path());
@@ -443,6 +510,7 @@ namespace {
             }
 
             gcx.allocator.FreeAll();
+            linkArena = {};
         }
 
         size_t GetNumXAssetPools() override { return ::bo3::pool::T7XAssetType::T7_ASSET_TYPE_COUNT; };
