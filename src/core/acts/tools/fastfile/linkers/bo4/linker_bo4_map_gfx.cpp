@@ -33,6 +33,7 @@
  * "staticModels": [ { "model": "enh_floor", "origin": [ 0, 0, 0 ], "angles": [ 0, 0, 0 ], "scale": 1,
  *     "mins": [ -2048, -2048, -64 ], "maxs": [ 2048, 2048, 0 ] } ]   // mins/maxs: the model's own bounds
  *     "shadow": false   // not in the sun's caster list (thin cut-out grass flickered with its own shadows)
+ *     "allCascades": true   // drawn into every sun cascade each frame (draw inst +0x2C flag 8), see below
  * Static models (the dpvs, sub_142E1F510): the count at dpvs +0x04, the draw insts at +0x248 (0x38: the model, -1 at
  * 0x20, the id at 0x30 that scripts and smodel animations match (sub_143700740), -1 at 0x2E/0x34), their placements at
  * +0x250 (0x40: quat, origin, scale, world mins/maxs, the draw inst's index at 0x38, radius 0x3C; the streamer's world
@@ -44,6 +45,10 @@
  * The sun's dynamic cascades draw the models in the list at +0x228 (count +0x220, culled against each cascade by
  * sub_143587FE0, drawn by sub_143509D00), the rest go to the cached tiles only (the list at +0x230, count +0x224), which
  * lose the shadows of models off the screen's edges: all of them in the first (zm_towers': 4108 and 34073).
+ * In that first list sub_143587FE0 draws a model without draw inst +0x2C flag 8 live only into the cascades whose split
+ * is within r_lightingSunShadowCacheDynamicSiegeDistance (2000), the further ones from the cached tiles, rendered once
+ * (mp_bully's building shadows came and went with where one looked); flag 8 ones into every cascade. It walks the flag 8
+ * ones first and stops at the first without: they lead the list.
  */
 namespace {
     using namespace fastfile::linker::bo4;
@@ -153,6 +158,7 @@ namespace {
                 float maxs[3]{};
                 float radius{};
                 bool shadow{ true };
+                bool allCascades{};
             };
             std::vector<StaticModel> staticModels{};
             auto smodelsIt{ cfg.main.FindMember("staticModels") };
@@ -180,6 +186,7 @@ namespace {
                     Vec("maxs", localMaxs, 1);
                     sm.scale = v.HasMember("scale") && v["scale"].IsNumber() ? v["scale"].GetFloat() : 1;
                     sm.shadow = !(v.HasMember("shadow") && v["shadow"].IsBool() && !v["shadow"].GetBool());
+                    sm.allCascades = sm.shadow && v.HasMember("allCascades") && v["allCascades"].IsBool() && v["allCascades"].GetBool();
 
                     // pitch, yaw, roll (degrees) to a quat, then the world bounds from the 8 corners
                     constexpr float DEG2RAD{ 3.14159265f / 180.0f };
@@ -212,11 +219,13 @@ namespace {
                 }
             }
             const uint32_t smodelCount{ (uint32_t)staticModels.size() };
-            // the sun's casters: the models with shadows
+            // the sun's casters: the models with shadows, the all cascades ones first
             std::vector<uint32_t> casters{};
-            for (uint32_t j = 0; j < smodelCount; j++) {
-                if (staticModels[j].shadow) {
-                    casters.push_back(j);
+            for (int pass = 0; pass < 2; pass++) {
+                for (uint32_t j = 0; j < smodelCount; j++) {
+                    if (staticModels[j].shadow && staticModels[j].allCascades == (pass == 0)) {
+                        casters.push_back(j);
+                    }
                 }
             }
             // the 8 smodel vis buffers and the bytes at +0x2A0: the count rounded to 16
@@ -476,6 +485,10 @@ namespace {
                             byte* inst{ insts.data() + 0x38 * j };
                             *(uint64_t*)inst = fastfile::linker::memory::POINTER_NEXT;
                             *(int32_t*)(inst + 0x20) = -1;
+                            // drawn into every sun cascade each frame
+                            if (staticModels[j].allCascades) {
+                                inst[0x2C] |= 8;
+                            }
                             *(uint16_t*)(inst + 0x2E) = 0xFFFF;
                             *(uint32_t*)(inst + 0x30) = j;
                             *(int32_t*)(inst + 0x34) = -1;
