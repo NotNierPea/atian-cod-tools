@@ -118,6 +118,8 @@ namespace {
 
                 // load the values
                 ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
+                // the game aligns the values to 8, a table after strings would shift every later offset
+                ff.data.Align(8);
                 StringTableVar* vars{ ff.data.AllocStreamPtr<StringTableVar>(table.rowCount * table.columnCount) };
                 for (size_t i = 1; i <= table.rowCount; i++) {
                     for (size_t j = 0; j < table.columnCount; j++) {

@@ -22,6 +22,7 @@
  *     "normals": "obj",         // "obj" (smoothed by smoothAngle where it has none), "smooth", "flat", "angle"
  *     "smoothAngle": 60,
  *     "skeletonPositions": "gltf", // with "skeleton": its bones where the glTF's joints are, their orientations kept
+ *     "physConstraints": "#hash_4a640d8b3aea4bf", // a game's physics constraints by name (bones it swings by name)
  *     "vertexColors": true,     // the colors of the obj vertices (v x y z r g b) when it has them
  *     "lods": [ { "obj": "models/my_model_lod1.obj", "threshold": 2.5, "materials": { } } ],  // less detailed each
  *     "lodScale": 0.42,         // the lod distances of the model (areaScale), the template's by default
@@ -2997,6 +2998,12 @@ namespace {
             } else if (!physPreset.empty()) {
                 std::string refId{ std::format(",{}", physPreset[0] == '#' ? physPreset.substr(1) : physPreset) };
                 ctx.LinkAsset(XAssetType::ASSET_TYPE_PHYSPRESET, refId.data(), model.physPreset, false, &ff);
+            }
+
+            // a game's physics constraints by name (they name the bones they swing: a stock head's j_bunny_ear_le/ri)
+            if (std::string physConstraints{ cfg.GetString("physConstraints", "") }; !physConstraints.empty()) {
+                std::string refId{ std::format(",{}", physConstraints[0] == '#' ? physConstraints.substr(1) : physConstraints) };
+                ctx.LinkAsset(XAssetType::ASSET_TYPE_PHYSCONSTRAINTS, refId.data(), model.physConstraints, false, &ff);
             }
 
             // collmap of the players and the physics: a brush per piece

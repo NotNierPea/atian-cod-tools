@@ -19,6 +19,7 @@
  *     "loop": true,
  *     "rootMotion": "tag_origin",  // a root bone whose moves (translation, yaw) move the entity instead (delta part)
  *     "additive": false,           // type 1, the stock view model anims' (most of core_common's), instead of 6 / 7
+ *     "player": false,             // type 2: a player anim (a scriptbundle playeranim#, a vehicle driver's), as the game's
  *     "bones": "all",              // or "animated": only the joints the animation has channels on
  *     "skeleton": "skeletons/body.json",  // for a game skeleton (the xmodel linker's): its bones' frames
  *     "skeletonPositions": "gltf", // with "skeleton", as the model's: its bones at the glTF's joints (own proportions)
@@ -915,8 +916,12 @@ namespace {
             *At(0x118) = deltaTrans.empty() ? 0 : 1;
             *(uint16_t*)At(0x112) = (uint16_t)numBones;
             *(uint16_t*)At(0x114) = (uint16_t)numframes;
+            // a player anim ("player": a scriptbundle's playeranim#, the vehicle driver's): the game's player anims are
+            // type 2 with 0x123 0x29 and 0x11F 0; others (type 6/7) in the player tree broke its loop flag check
+            // (Com_Error 0xB97B9662, sub_143DAC590)
+            bool player{ cfg.GetBool("player", false) };
             *At(0x11E) = loop ? 1 : 0;
-            *At(0x11F) = loop ? 1 : 0;
+            *At(0x11F) = loop && !player ? 1 : 0;
             /*
              * The anim's type (0x120), as the game's: 1 additive (the keys are added to the model's bind pose: the bind
              * translations came out doubled in game), 6 absolute, never with root motion, 2 relative (characters) and 7
@@ -925,8 +930,8 @@ namespace {
              * equals 0x11E on all of them.
              */
             bool additive{ cfg.GetBool("additive", false) };
-            *At(0x120) = additive ? 1 : !deltaTrans.empty() ? 7 : 6;
-            *At(0x123) = !additive && !deltaTrans.empty() ? 1 : 0;
+            *At(0x120) = player ? 2 : additive ? 1 : !deltaTrans.empty() ? 7 : 6;
+            *At(0x123) = player ? 0x29 : !additive && !deltaTrans.empty() ? 1 : 0;
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
             *(void**)At(0x08) = (void*)fastfile::linker::memory::POINTER_NEXT;

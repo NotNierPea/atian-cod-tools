@@ -101,6 +101,31 @@ namespace {
             json.WriteFieldValueXAsset("positionDraftIcon", ASSET_TYPE_IMAGE, asset->positionDraftIcon);
             json.WriteFieldValueXAsset("lootUiIcon", ASSET_TYPE_IMAGE, asset->lootUiIcon);
 
+            // outfit summary (raw offsets: heads 0x60, bodies 0x80, war paints 0xC0 of 0x68, isValid +0x10)
+            json.WriteFieldValueNumber("numOutfits", asset->numOutfits);
+            if (asset->outfits) {
+                json.WriteFieldNameString("outfitSummary");
+                json.BeginArray();
+                for (size_t i = 0; i < asset->numOutfits; i++) {
+                    byte* o{ (byte*)asset->outfits[i] };
+                    json.BeginObject();
+                    if (o) {
+                        uint32_t paints{ *(uint32_t*)(o + 0xC0) };
+                        byte* items{ *(byte**)(o + 0xC8) };
+                        uint32_t valid{};
+                        for (uint32_t w = 0; items && w < paints; w++) {
+                            if (items[0x68 * w + 0x10]) valid++;
+                        }
+                        json.WriteFieldValueNumber("heads", *(uint32_t*)(o + 0x60));
+                        json.WriteFieldValueNumber("bodies", *(uint32_t*)(o + 0x80));
+                        json.WriteFieldValueNumber("warPaints", paints);
+                        json.WriteFieldValueNumber("validWarPaints", valid);
+                    }
+                    json.EndObject();
+                }
+                json.EndArray();
+            }
+
             json.WriteFieldValueXAsset("dogtagFriendly", ASSET_TYPE_XMODEL, asset->dogtagFriendly);
             json.WriteFieldValueXAsset("dogTagEnemy", ASSET_TYPE_XMODEL, asset->dogTagEnemy);
             json.WriteFieldValueXAsset("tagFxSet", ASSET_TYPE_TAGFX, asset->tagFxSet);

@@ -77,6 +77,8 @@ namespace fastfile::linker::bo4::scriptbundle {
 
         if (sbObjectsCount) {
             size_t idxobj{};
+            // the game aligns the arrays to 8, without it every later offset of the zone shifts
+            ff.data.Align(8);
             SB_Object* sbObjects{ ff.data.AllocStreamPtr<SB_Object>(sbObjectsCount) };
 
             for (auto& [keyHash, member] : objects) {
@@ -147,6 +149,7 @@ namespace fastfile::linker::bo4::scriptbundle {
 
         if (sbSubCount) {
             size_t idxsub{};
+            ff.data.Align(8);
             SB_Sub* sbSub{ ff.data.AllocStreamPtr<SB_Sub>(sbSubCount) };
             for (auto& [keyHash, member] : subs) {
                 auto& v{ member->value };
@@ -158,6 +161,7 @@ namespace fastfile::linker::bo4::scriptbundle {
                 ssub->item = (SB_ObjectsArray*)fastfile::linker::memory::POINTER_NEXT;
 
                 // alloc sub elements
+                ff.data.Align(8);
                 SB_ObjectsArray* subArray{ ff.data.AllocStreamPtr<SB_ObjectsArray>(ssub->size) };
 
                 for (auto& el : arr) {
