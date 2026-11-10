@@ -204,6 +204,32 @@ namespace {
             };
             writeModels("unk98", asset.unk98, asset.unk98_count, 0xA8, 0x30, 14);
             writeModels("unka8", asset.unka8, asset.unka8_count, 0x78, 0x38, 7);
+            // the presets (0xF8, count 0xF0, 0x70 each: displayName, isValid 0x10, lootId 0x18, matchedWarPaintLootId 0x28,
+            // entitlement 0x38, icon 0x48, outfitIcon 0x50, item indexes 0x58..0x6C), the war paints' count (0xC0)
+            json.WriteFieldValueNumber("numWarPaints", asset.unkc8_count);
+            if (asset.unkf8) {
+                json.WriteFieldNameString("presets");
+                json.BeginArray();
+                for (size_t i = 0; i < asset.unkf8_count; i++) {
+                    byte* p{ (byte*)asset.unkf8 + 0x70 * i };
+                    json.BeginObject();
+                    json.WriteFieldValueXHash("displayName", *(XHash*)p);
+                    json.WriteFieldValueNumber("isValid", p[0x10]);
+                    json.WriteFieldValueXHash("lootId", *(XHash*)(p + 0x18));
+                    json.WriteFieldValueXHash("matchedWarPaintLootId", *(XHash*)(p + 0x28));
+                    json.WriteFieldValueXHash("entitlement", *(XHash*)(p + 0x38));
+                    json.WriteFieldValueXAsset("icon", ASSET_TYPE_IMAGE, *(GfxImage**)(p + 0x48));
+                    json.WriteFieldValueXAsset("outfitIcon", ASSET_TYPE_IMAGE, *(GfxImage**)(p + 0x50));
+                    json.WriteFieldNameString("items");
+                    json.BeginArray();
+                    for (size_t k = 0; k < 6; k++) {
+                        json.WriteValueNumber(*(int32_t*)(p + 0x58 + 4 * k));
+                    }
+                    json.EndArray();
+                    json.EndObject();
+                }
+                json.EndArray();
+            }
             json.EndObject();
 
             if (!json.WriteToFile(outFile)) {

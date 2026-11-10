@@ -3,7 +3,8 @@
 
 /*
  * A small glTF 2.0 reader (.gltf with its .bin or data uris, .glb) for the bo4 xmodel and xanim linkers: the node
- * tree, the meshes (positions, normals, uvs, colors, joints, weights, indices, material names), the skins and the
+ * tree, the meshes (positions, normals, uvs, colors, joints, weights, indices, material names, morph target
+ * positions and names; sparse accessors too), the skins and the
  * animations (translation, rotation and scale channels). Matrices are column major as glTF has them.
  */
 namespace fastfile::linker::bo4::gltf {
@@ -27,11 +28,15 @@ namespace fastfile::linker::bo4::gltf {
         std::vector<float> weights{};   // 4 per vertex or none
         std::vector<uint32_t> indices{};
         std::string material{};
+        // morph targets: each its position deltas, 3 per vertex
+        std::vector<std::vector<float>> targets{};
     };
 
     struct Mesh {
         std::string name{};
         std::vector<Primitive> primitives{};
+        // the morph targets' names (extras.targetNames, Blender's shape keys)
+        std::vector<std::string> targetNames{};
     };
 
     struct Skin {
@@ -267,41 +272,82 @@ namespace fastfile::linker::bo4::gltf {
                 if (!comps) {
                     return false;
                 }
-                if (!acc->HasMember("bufferView")) {
-                    return true; // zeros
+                // a value of a buffer view (component type, normalized as the accessor says)
+                auto Value = [&](const byte* p, int type, bool norm) -> double {
+                    switch (type) {
+                    case 5120: return norm ? std::max(*(int8_t*)p / 127.0, -1.0) : *(int8_t*)p;
+                    case 5121: return norm ? *(uint8_t*)p / 255.0 : *(uint8_t*)p;
+                    case 5122: return norm ? std::max(*(int16_t*)p / 32767.0, -1.0) : *(int16_t*)p;
+                    case 5123: return norm ? *(uint16_t*)p / 65535.0 : *(uint16_t*)p;
+                    case 5125: return *(uint32_t*)p;
+                    case 5126: return *(float*)p;
+                    default: return std::numeric_limits<double>::quiet_NaN();
+                    }
+                };
+                auto ViewBase = [&](const rapidjson::Value& owner, const std::vector<byte>** buf, size_t& base, size_t& stride) -> bool {
+                    const rapidjson::Value* view{ Element(doc, "bufferViews", Int(owner, "bufferView", -1)) };
+                    if (!view) {
+                        return false;
+                    }
+                    int bi{ Int(*view, "buffer", -1) };
+                    if (bi < 0 || bi >= (int)buffers.size()) {
+                        return false;
+                    }
+                    *buf = &buffers[bi];
+                    base = (size_t)Int(*view, "byteOffset", 0) + (size_t)Int(owner, "byteOffset", 0);
+                    stride = (size_t)Int(*view, "byteStride", 0);
+                    return true;
+                };
+                if (acc->HasMember("bufferView")) {
+                    const std::vector<byte>* buf{};
+                    size_t base{}, stride{};
+                    if (!ViewBase(*acc, &buf, base, stride)) {
+                        return false;
+                    }
+                    if (!stride) {
+                        stride = csize * comps;
+                    }
+                    for (size_t i = 0; i < count; i++) {
+                        for (int c = 0; c < comps; c++) {
+                            size_t off{ base + i * stride + c * csize };
+                            if (off + csize > buf->size()) {
+                                return false;
+                            }
+                            double v{ Value(&(*buf)[off], ctype, normalized) };
+                            if (std::isnan(v)) {
+                                return false;
+                            }
+                            out[i * comps + c] = v;
+                        }
+                    }
                 }
-                const rapidjson::Value* view{ Element(doc, "bufferViews", Int(*acc, "bufferView", -1)) };
-                if (!view) {
-                    return false;
-                }
-                int bi{ Int(*view, "buffer", -1) };
-                if (bi < 0 || bi >= (int)buffers.size()) {
-                    return false;
-                }
-                const std::vector<byte>& buf{ buffers[bi] };
-                size_t base{ (size_t)Int(*view, "byteOffset", 0) + (size_t)Int(*acc, "byteOffset", 0) };
-                size_t stride{ (size_t)Int(*view, "byteStride", 0) };
-                if (!stride) {
-                    stride = csize * comps;
-                }
-                for (size_t i = 0; i < count; i++) {
-                    for (int c = 0; c < comps; c++) {
-                        size_t off{ base + i * stride + c * csize };
-                        if (off + csize > buf.size()) {
+                // sparse: the values of some elements over the base (zeros without a buffer view)
+                if (const rapidjson::Value* sparse{ Member(*acc, "sparse") }) {
+                    size_t n{ (size_t)Int(*sparse, "count", 0) };
+                    const rapidjson::Value* si{ Member(*sparse, "indices") };
+                    const rapidjson::Value* sv{ Member(*sparse, "values") };
+                    if (!si || !sv) {
+                        return false;
+                    }
+                    const std::vector<byte>* ibuf{};
+                    const std::vector<byte>* vbuf{};
+                    size_t ibase{}, vbase{}, unused{};
+                    if (!ViewBase(*si, &ibuf, ibase, unused) || !ViewBase(*sv, &vbuf, vbase, unused)) {
+                        return false;
+                    }
+                    int itype{ Int(*si, "componentType", 5125) };
+                    size_t isize{ itype == 5121 ? 1u : itype == 5123 ? 2u : 4u };
+                    for (size_t k = 0; k < n; k++) {
+                        if (ibase + (k + 1) * isize > ibuf->size() || vbase + (k + 1) * csize * comps > vbuf->size()) {
                             return false;
                         }
-                        const byte* p{ &buf[off] };
-                        double v{};
-                        switch (ctype) {
-                        case 5120: v = *(int8_t*)p; if (normalized) v = std::max(v / 127.0, -1.0); break;
-                        case 5121: v = *(uint8_t*)p; if (normalized) v /= 255.0; break;
-                        case 5122: v = *(int16_t*)p; if (normalized) v = std::max(v / 32767.0, -1.0); break;
-                        case 5123: v = *(uint16_t*)p; if (normalized) v /= 65535.0; break;
-                        case 5125: v = *(uint32_t*)p; break;
-                        case 5126: v = *(float*)p; break;
-                        default: return false;
+                        size_t i{ (size_t)Value(&(*ibuf)[ibase + k * isize], itype, false) };
+                        if (i >= count) {
+                            return false;
                         }
-                        out[i * comps + c] = v;
+                        for (int c = 0; c < comps; c++) {
+                            out[i * comps + c] = Value(&(*vbuf)[vbase + (k * comps + c) * csize], ctype, normalized);
+                        }
                     }
                 }
                 return true;
@@ -413,6 +459,21 @@ namespace fastfile::linker::bo4::gltf {
                             err = "index out of the vertices";
                             return false;
                         }
+                    }
+                    for (const rapidjson::Value& t : Array(p, "targets")) {
+                        std::vector<float>& deltas{ prim.targets.emplace_back() };
+                        if (const rapidjson::Value* a{ Member(t, "POSITION") }) {
+                            if (!Read(a->GetInt(), tmp, comps) || comps != 3 || tmp.size() != vcount * 3) {
+                                err = "bad morph target";
+                                return false;
+                            }
+                            deltas.assign(tmp.begin(), tmp.end());
+                        }
+                    }
+                }
+                if (const rapidjson::Value* extras{ Member(m, "extras") }) {
+                    for (const rapidjson::Value& n : Array(*extras, "targetNames")) {
+                        mesh.targetNames.emplace_back(n.IsString() ? n.GetString() : "");
                     }
                 }
             }

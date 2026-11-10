@@ -39,6 +39,11 @@ namespace {
         // for compressed images
         GFX_PF_BC1 = 72,
         GFX_PF_BC3 = 78,
+        // the same blocks read without sRGB (",linear": normal maps; the game's are BC7, also linear)
+        GFX_PF_BC1_LINEAR = 71,
+        GFX_PF_BC3_LINEAR = 77,
+        // one linear channel, the file's red (",bc4": gloss and occlusion maps, as the game's)
+        GFX_PF_BC4 = 80,
 
         // hdr (",hdr": a sky), uncompressed half floats
         GFX_PF_R16G16B16A16_FLOAT = 10,
@@ -493,11 +498,11 @@ namespace {
         );
     }
 
-    // 4x4 blocks of an rgba picture, the edges padded with zeros
-    void CompressBC(const byte* img, uint32_t x, uint32_t y, bool hasAlpha, std::vector<byte>& out) {
+    // 4x4 blocks of an rgba picture, the edges padded with zeros (bc4: its red channel only)
+    void CompressBC(const byte* img, uint32_t x, uint32_t y, bool hasAlpha, std::vector<byte>& out, bool bc4 = false) {
         uint32_t blockW{ (x + 3) / 4 };
         uint32_t blockH{ (y + 3) / 4 };
-        size_t blockSize{ hasAlpha ? (size_t)16 : (size_t)8 };
+        size_t blockSize{ hasAlpha && !bc4 ? (size_t)16 : (size_t)8 };
         size_t start{ out.size() };
         out.resize(start + blockW * blockH * blockSize);
 
@@ -514,6 +519,14 @@ namespace {
                             break;
                         std::memcpy(&block[(py * 4 + px) * 4], &img[(sy * x + sx) * 4], 4);
                     }
+                }
+                if (bc4) {
+                    byte red[16];
+                    for (size_t k = 0; k < 16; k++) {
+                        red[k] = block[k * 4];
+                    }
+                    stb_compress_bc4_block(&out[start + (by * blockW + bx) * blockSize], red);
+                    continue;
                 }
                 stb_compress_dxt_block(
                     &out[start + (by * blockW + bx) * blockSize],
@@ -848,7 +861,7 @@ namespace {
             if (*id == '#')
                 id++; // ignore start #
 
-            // name.png[,stream|,resident|,nomips|,cover|,hdr]... (several: ",cover,stream")
+            // name.png[,stream|,resident|,nomips|,cover|,hdr|,linear|,bc4]... (several: ",cover,stream")
             std::string idStr{ id };
             bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false) };
             bool mips{ ctx.linkCtx.zone.GetConfigBool("image.mips", true) };
@@ -857,6 +870,9 @@ namespace {
             bool cover{};
             // half floats from the file's values (a .hdr's as they are), streamed: a sky
             bool hdr{};
+            // not sRGB (normal maps), one channel (gloss, occlusion)
+            bool linear{};
+            bool bc4{};
             for (size_t opt{ idStr.find_last_of(',') }; opt != std::string::npos; opt = idStr.find_last_of(',')) {
                 std::string optName{ idStr.substr(opt + 1) };
                 if (optName == "stream" || optName == "streamed") {
@@ -872,6 +888,10 @@ namespace {
                 } else if (optName == "hdr") {
                     hdr = true;
                     stream = true;
+                } else if (optName == "linear") {
+                    linear = true;
+                } else if (optName == "bc4") {
+                    bc4 = true;
                 } else {
                     LOG_ERROR("Unknown image option '{}' for {}", optName, idStr);
                     ctx.error = true;
@@ -1045,7 +1065,14 @@ namespace {
                 if (img[i * 4 + 3] != 255)
                     hasAlpha = true;
             }
-            gfx.imageFormat = (GfxPixelFormat)(hasAlpha ? GFX_PF_BC3 : GFX_PF_BC1);
+            if (bc4) {
+                hasAlpha = false;
+                gfx.imageFormat = GFX_PF_BC4;
+            } else if (linear) {
+                gfx.imageFormat = hasAlpha ? GFX_PF_BC3_LINEAR : GFX_PF_BC1_LINEAR;
+            } else {
+                gfx.imageFormat = (GfxPixelFormat)(hasAlpha ? GFX_PF_BC3 : GFX_PF_BC1);
+            }
 
             // the picture padded to blocks of 4, the edges repeated
             uint32_t width{ gfx.width };
@@ -1078,7 +1105,7 @@ namespace {
                 uint32_t lx{ width };
                 uint32_t ly{ height };
                 for (uint32_t i = 0; i < levels; i++) {
-                    CompressBC(level.data(), lx, ly, hasAlpha, compressed);
+                    CompressBC(level.data(), lx, ly, hasAlpha, compressed, bc4);
                     if (i + 1 < levels) {
                         uint32_t nx{ std::max(1u, lx >> 1) };
                         uint32_t ny{ std::max(1u, ly >> 1) };
@@ -1120,7 +1147,7 @@ namespace {
                 uint32_t ly{ height };
                 for (uint32_t i = 0; i < levels; i++) {
                     mipOffsets.push_back(pixels.size());
-                    CompressBC(level.data(), lx, ly, hasAlpha, pixels);
+                    CompressBC(level.data(), lx, ly, hasAlpha, pixels, bc4);
                     if (i + 1 < levels) {
                         uint32_t nx{ std::max(1u, lx >> 1) };
                         uint32_t ny{ std::max(1u, ly >> 1) };

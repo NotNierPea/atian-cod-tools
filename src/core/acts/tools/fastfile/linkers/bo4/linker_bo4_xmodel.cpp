@@ -261,6 +261,8 @@ namespace {
     // shared flags: bit 0 streamed, bit 3 rigid, no skin weights, bits 5-8 extra streams
     constexpr uint32_t SHARED_STREAMED = 1;
     constexpr uint32_t SHARED_RIGID = 8;
+    // blend shapes (BuildBlendData)
+    constexpr uint32_t SHARED_BLEND = 0x20;
     // XSurface::tileMode of the game's skinned surfaces (no vertex list)
     constexpr byte SURFACE_SKINNED = 0xA2;
     // XModelMesh::flags of the game's skinned meshes
@@ -330,6 +332,8 @@ namespace {
         Vec3 tangent;
         uint16_t bones[4]{};
         uint8_t weights[4]{ 0xFF, 0, 0, 0 };
+        // its obj position (its blend shape deltas), not part of the dedup key
+        uint32_t src{ UINT32_MAX };
     };
 
     // a surface of the game: one material, at most 0xFFFF vertices, 16 bits indices, clockwise
@@ -362,6 +366,9 @@ namespace {
         // a skinned mesh: 4 bones and weights (sum 255) per position
         std::vector<std::array<uint16_t, 4>> skinBones{};
         std::vector<std::array<uint8_t, 4>> skinWeights{};
+        // blend shapes (glTF morph targets): their names, per position its non zero deltas (shape, game space)
+        std::vector<std::string> blendNames{};
+        std::vector<std::vector<std::pair<uint16_t, Vec3>>> blendDeltas{};
     };
 
     uint32_t PackColor(float r, float g, float b, float a) {
@@ -606,6 +613,16 @@ namespace {
                     break;
                 }
             }
+            // its morph targets' blend shape indices (by name, the model's list)
+            const gltf::Mesh& gmesh{ doc.meshes[node.mesh] };
+            std::vector<int> shapeOf{};
+            for (const std::string& tn : gmesh.targetNames) {
+                auto it{ std::find(obj.blendNames.begin(), obj.blendNames.end(), tn) };
+                shapeOf.push_back((int)(it - obj.blendNames.begin()));
+                if (it == obj.blendNames.end()) {
+                    obj.blendNames.push_back(tn);
+                }
+            }
             for (const gltf::Primitive& prim : doc.meshes[node.mesh].primitives) {
                 auto git{ std::find(obj.groups.begin(), obj.groups.end(), prim.material) };
                 uint32_t group{ (uint32_t)(git - obj.groups.begin()) };
@@ -674,6 +691,44 @@ namespace {
                         QuantizeSkin(influences, b, w);
                         obj.skinBones.push_back(b);
                         obj.skinWeights.push_back(w);
+                    }
+                    // its blend shape deltas, moved as its normal (the bind's skinning, the game's axes), scaled
+                    std::vector<std::pair<uint16_t, Vec3>> deltas{};
+                    for (size_t t = 0; t < prim.targets.size() && t < shapeOf.size(); t++) {
+                        if (prim.targets[t].size() != vcount * 3) {
+                            continue;
+                        }
+                        double d[3]{ prim.targets[t][i * 3], prim.targets[t][i * 3 + 1], prim.targets[t][i * 3 + 2] };
+                        if (std::abs(d[0]) + std::abs(d[1]) + std::abs(d[2]) < 1e-7) {
+                            continue;
+                        }
+                        double wd[3]{};
+                        if (vskin) {
+                            for (int k = 0; k < 4; k++) {
+                                uint32_t j{ prim.joints[i * 4 + k] };
+                                double w{ prim.weights[i * 4 + k] };
+                                if (w <= 0 || j >= skinMats.size()) {
+                                    continue;
+                                }
+                                double td[3];
+                                skinMats[j].Apply(d, td, 0);
+                                for (int c = 0; c < 3; c++) {
+                                    wd[c] += td[c] * w;
+                                }
+                            }
+                        } else {
+                            world[n].Apply(d, wd, 0);
+                        }
+                        double gd[3];
+                        skel.ToGameVector(wd, gd);
+                        Vec3 g{ (float)(gd[0] * skel.scale), (float)(gd[1] * skel.scale), (float)(gd[2] * skel.scale) };
+                        if (std::abs(g.x) + std::abs(g.y) + std::abs(g.z) >= 1e-5f) {
+                            deltas.emplace_back((uint16_t)shapeOf[t], g);
+                        }
+                    }
+                    if (!deltas.empty() || !obj.blendDeltas.empty()) {
+                        obj.blendDeltas.resize(obj.positions.size());
+                        obj.blendDeltas.back() = std::move(deltas);
                     }
                 }
                 // glTF faces are counter clockwise, the game's clockwise
@@ -758,6 +813,7 @@ namespace {
                 for (const ObjCorner& c : tri.c) {
                     MeshVertex v{};
                     v.pos = obj.positions[c.pos];
+                    v.src = (uint32_t)c.pos;
                     // obj v goes up, the game's goes down
                     v.u = c.uv >= 0 ? obj.uvs[c.uv].first : 0;
                     v.v = c.uv >= 0 ? 1.0f - obj.uvs[c.uv].second : 0;
@@ -1372,7 +1428,59 @@ namespace {
         float threshold{};
         bool stream{};
         bool skinned{};
+        // blend shapes (a face): the names, per obj position its deltas; the surfaces with any first, their vertices
+        // the blended ones (0 .. blendVertCount - 1), the data after the skin weights
+        std::vector<std::string> blendNames{};
+        std::vector<std::vector<std::pair<uint16_t, Vec3>>> blendDeltas{};
+        uint32_t blendVertCount{}, blendOffset{}, blendSize{};
+        std::vector<bool> blendSurf{};
+        // with blend shapes: each surface's written base vertex and vertex count (a blended one's 0 and its highest
+        // index + 1, its indices the mesh's), their table after the blend data (+0x1B8)
+        std::vector<uint32_t> surfBase{}, surfVerts{};
+        uint32_t baseTableOffset{};
     };
+
+    /*
+     * Blend shapes as the game's (Battery's head, core_common hash_2861159c7484fa46): shared flags 0x20, +0x10 the
+     * blended vertex count N (the mesh's first N vertices), +0x14 the data's size, +0x3C its offset (after the skin
+     * weights), +0x1B8 its end 16-aligned, +0x1E0 the shape count, +0x1E8 their names (script strings), +0x1F0 the remap
+     * {u32 name, u16 index, u16} (sorted at load), the surfaces drawing blended vertices tile byte 1 = 1. The data:
+     * u32 N, u32 offsets[N] (from the data's start), then a record each {u32 vertex, u32 count, count entries of 16
+     * bytes}, by count descending. An entry: u8 sign bits of the 6 bytes after, u8 shape (ascending), 6 bytes of normal
+     * and tangent deltas (magnitudes; ours 0), half3 position delta (model space), half (0: a wrinkle weight?).
+     */
+    void BuildBlendData(LodGeom& lod, std::vector<byte>& out) {
+        std::vector<std::pair<uint32_t, const std::vector<std::pair<uint16_t, Vec3>>*>> records{};
+        static const std::vector<std::pair<uint16_t, Vec3>> none{};
+        uint32_t vert{};
+        for (size_t s = 0; s < lod.surfs.size() && lod.blendSurf[s]; s++) {
+            for (const MeshVertex& v : lod.surfs[s].verts) {
+                const auto* d{ v.src < lod.blendDeltas.size() ? &lod.blendDeltas[v.src] : &none };
+                records.emplace_back(vert++, d);
+            }
+        }
+        lod.blendVertCount = vert;
+        std::stable_sort(records.begin(), records.end(), [](const auto& a, const auto& b) { return a.second->size() > b.second->size(); });
+        out.clear();
+        auto U32 = [&out](uint32_t v) { out.insert(out.end(), (byte*)&v, (byte*)&v + 4); };
+        U32(vert);
+        size_t table{ out.size() };
+        out.resize(out.size() + 4ull * vert);
+        for (size_t r = 0; r < records.size(); r++) {
+            *(uint32_t*)&out[table + 4 * r] = (uint32_t)out.size();
+            std::vector<std::pair<uint16_t, Vec3>> d{ *records[r].second };
+            std::sort(d.begin(), d.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+            U32(records[r].first);
+            U32((uint32_t)d.size());
+            for (const auto& [shape, delta] : d) {
+                byte e[16]{};
+                e[1] = (byte)shape;
+                uint16_t h[4]{ FloatToHalf(delta.x), FloatToHalf(delta.y), FloatToHalf(delta.z), 0 };
+                std::memcpy(&e[8], h, 8);
+                out.insert(out.end(), e, e + 16);
+            }
+        }
+    }
 
     // indices, positions, vertices of all the surfaces, the skin weights of a skinned one, each part on 16 bytes
     void BuildLodData(LodGeom& lod) {
@@ -1387,8 +1495,28 @@ namespace {
         std::vector<uint32_t> packed{};
         double area{};
         size_t tris{};
-        for (const MeshSurface& s : lod.surfs) {
-            indices.insert(indices.end(), s.indices.begin(), s.indices.end());
+        bool blend{ !lod.blendNames.empty() && !lod.blendSurf.empty() && lod.blendSurf[0] };
+        uint32_t base{};
+        for (size_t si = 0; si < lod.surfs.size(); si++) {
+            const MeshSurface& s{ lod.surfs[si] };
+            if (blend && lod.blendSurf[si]) {
+                // the mesh's vertex numbers, base 0
+                uint32_t top{};
+                for (uint16_t i : s.indices) {
+                    if (base + i > 0xFFFF) {
+                        throw std::runtime_error("blend shape vertices past 0xFFFF");
+                    }
+                    indices.push_back((uint16_t)(base + i));
+                    top = std::max<uint32_t>(top, base + i + 1);
+                }
+                lod.surfBase.push_back(0);
+                lod.surfVerts.push_back(top);
+            } else {
+                indices.insert(indices.end(), s.indices.begin(), s.indices.end());
+                lod.surfBase.push_back(base);
+                lod.surfVerts.push_back((uint32_t)s.verts.size());
+            }
+            base += (uint32_t)s.verts.size();
             for (const MeshVertex& v : s.verts) {
                 positions.insert(positions.end(), { v.pos.x, v.pos.y, v.pos.z });
                 packed.push_back(v.color);
@@ -1415,6 +1543,18 @@ namespace {
                 }
             }
             lod.skinOffset = Append(skin.data(), skin.size());
+        }
+        if (blend) {
+            std::vector<byte> data{};
+            BuildBlendData(lod, data);
+            lod.blendOffset = Append(data.data(), data.size());
+            lod.blendSize = (uint32_t)data.size();
+            std::vector<uint32_t> table{ lod.surfBase };
+            table.resize(utils::Aligned<size_t>(table.size(), 4));
+            lod.baseTableOffset = Append(table.data(), table.size() * sizeof(uint32_t));
+        } else {
+            lod.surfBase.clear();
+            lod.surfVerts.clear();
         }
         lod.vertCount = (uint32_t)(positions.size() / 3);
         lod.indexCount = (uint32_t)indices.size();
@@ -2277,6 +2417,27 @@ namespace {
                 }
                 lod.skinned = !obj.skinBones.empty();
                 BuildSurfaces(obj, normalsMode, normalsMode == "smooth" ? 180.0f : smoothAngle, vertexColors && obj.hasColors, lod.surfs);
+                // blend shapes: the surfaces moving with any first (their vertices the mesh's first)
+                if (!obj.blendNames.empty() && !obj.blendDeltas.empty()) {
+                    if (obj.blendNames.size() > 0xFF) {
+                        Fail(std::format("lod {}: {} blend shapes, 255 at most", k, obj.blendNames.size()));
+                        return;
+                    }
+                    lod.blendNames = obj.blendNames;
+                    lod.blendDeltas = std::move(obj.blendDeltas);
+                    auto Moves = [&lod](const MeshSurface& s) {
+                        return std::any_of(s.verts.begin(), s.verts.end(), [&lod](const MeshVertex& v) {
+                            return v.src < lod.blendDeltas.size() && !lod.blendDeltas[v.src].empty();
+                        });
+                    };
+                    std::stable_partition(lod.surfs.begin(), lod.surfs.end(), Moves);
+                    for (const MeshSurface& s : lod.surfs) {
+                        lod.blendSurf.push_back(Moves(s));
+                    }
+                    if (lod.blendSurf.empty() || !lod.blendSurf[0]) {
+                        lod.blendNames.clear();
+                    }
+                }
                 if (lod.surfs.size() > 0xFF) {
                     Fail(std::format("lod {}: too many surfaces", k));
                     return;
@@ -2780,8 +2941,19 @@ namespace {
                 sh.indicesOffset = lod.indicesOffset;
                 sh.skinWeightsOffset = lod.skinned ? lod.skinOffset : 0;
                 sh.data = (byte*)fastfile::linker::memory::POINTER_NEXT;
-                // no blend targets
+                // no blend targets, or ours (BuildBlendData: Battery's head's layout)
                 std::memset(shared + SHARED_BLEND_COUNT_OFFSET, 0, XSURFACE_SHARED_SIZE - SHARED_BLEND_COUNT_OFFSET);
+                bool blend{ !lod.surfBase.empty() };
+                if (blend) {
+                    sh.flags |= SHARED_BLEND;
+                    sh.blendTargetVertCount = lod.blendVertCount;
+                    *(uint32_t*)(shared + 0x14) = lod.blendSize;
+                    *(uint32_t*)(shared + 0x3C) = lod.blendOffset;
+                    *(uint32_t*)(shared + 0x1B8) = lod.baseTableOffset;
+                    *(uint32_t*)(shared + SHARED_BLEND_COUNT_OFFSET) = (uint32_t)lod.blendNames.size();
+                } else {
+                    *(uint32_t*)(shared + 0x1B8) = 0xFFFFFFFF;
+                }
 
                 if (lod.stream) {
                     // the xpak keys of the game's streamed meshes all have the top bit
@@ -2796,6 +2968,22 @@ namespace {
                     ff.data.Align(0x100);
                     ff.data.WriteStream(lod.data.data(), lod.data.size());
                     ff.data.PopStream();
+                }
+                // the blend shapes' names and their remap (the loader sorts it), after the data as the game's
+                if (blend) {
+                    *(uintptr_t*)(shared + 0x1E8) = fastfile::linker::memory::POINTER_NEXT;
+                    ff.data.Align(4);
+                    uint32_t* names{ ff.data.AllocStreamPtr<uint32_t>(lod.blendNames.size()) };
+                    for (size_t i = 0; i < lod.blendNames.size(); i++) {
+                        names[i] = ff.data.AddScrStringKeepEmpty(lod.blendNames[i].data());
+                    }
+                    *(uintptr_t*)(shared + 0x1F0) = fastfile::linker::memory::POINTER_NEXT;
+                    ff.data.Align(4);
+                    uint32_t* remap{ ff.data.AllocStreamPtr<uint32_t>(lod.blendNames.size() * 2) };
+                    for (size_t i = 0; i < lod.blendNames.size(); i++) {
+                        remap[i * 2] = ff.data.AddScrStringKeepEmpty(lod.blendNames[i].data());
+                        remap[i * 2 + 1] = (uint32_t)i;
+                    }
                 }
 
                 // surfaces, then for each its part bits and vertex list
@@ -2813,6 +3001,12 @@ namespace {
                     surf.vertCount = (uint16_t)lod.surfs[i].verts.size();
                     surf.triCount = (uint16_t)(lod.surfs[i].indices.size() / 3);
                     surf.baseVertIndex = baseVert;
+                    if (blend) {
+                        // a blended one draws from vertex 0 with the mesh's numbers (tile byte 1: the game's 1)
+                        surf.vertCount = (uint16_t)lod.surfVerts[i];
+                        surf.baseVertIndex = lod.surfBase[i];
+                        surf.unk1 = lod.blendSurf[i] ? 1 : 0;
+                    }
                     surf.baseIndexOffset = baseIndex;
                     surf.unk20 = 0;
                     baseVert += surf.vertCount;
