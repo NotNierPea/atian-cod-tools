@@ -965,6 +965,42 @@ namespace {
             WriteNotifies(0x48, shutdownNotifies);
             WriteNotifies(0x40, startupNotifies);
 
+            /*
+             * The markup (0x30, 0x18 each, u8 count at 0x124; after the notifies in the loader): ScrString name 0x00,
+             * float a 0x04, float b 0x08, int flags 0x0C, ScrString value 0x10, ScrString tag 0x14 (empty strings the
+             * real empty one, as the stock anims'). The stock gestures': "attach player model" (the model value on the
+             * tag, a..b of the anim: their props; flags 0), "hide weapon" / "blend time" (value; flags 1),
+             * "disable_ik_left_hand" (b 1, value and tag "0")...
+             * "markup": [ { "name": "attach player model", "value": "my_prop", "tag": "tag_origin", "a": 0.0, "b": 1.0 },
+             *             { "name": "hide weapon", "flags": 1 } ]
+             */
+            if (auto mk{ root.FindMember("markup") }; mk != root.MemberEnd() && mk->value.IsArray() && mk->value.Size()) {
+                size_t count{ std::min<size_t>(mk->value.Size(), 0xFF) };
+                *At(0x124) = (byte)count;
+                *(void**)At(0x30) = (void*)fastfile::linker::memory::POINTER_NEXT;
+                ff.data.Align(4);
+                byte* out{ ff.data.AllocStreamPtr<byte>(0x18 * count) };
+                std::memset(out, 0, 0x18 * count);
+                for (size_t i = 0; i < count; i++) {
+                    const rapidjson::Value& m{ mk->value[(rapidjson::SizeType)i] };
+                    auto Str = [&m](const char* k) {
+                        auto it{ m.FindMember(k) };
+                        return it != m.MemberEnd() && it->value.IsString() ? std::string{ it->value.GetString() } : std::string{};
+                    };
+                    auto Num = [&m](const char* k, double def) {
+                        auto it{ m.FindMember(k) };
+                        return it != m.MemberEnd() && it->value.IsNumber() ? it->value.GetDouble() : def;
+                    };
+                    byte* e{ out + 0x18 * i };
+                    *(uint32_t*)(e + 0x00) = ff.data.AddScrStringKeepEmpty(Str("name").c_str());
+                    *(float*)(e + 0x04) = (float)Num("a", 0.0);
+                    *(float*)(e + 0x08) = (float)Num("b", 0.0);
+                    *(int32_t*)(e + 0x0C) = (int32_t)Num("flags", 0.0);
+                    *(uint32_t*)(e + 0x10) = ff.data.AddScrStringKeepEmpty(Str("value").c_str());
+                    *(uint32_t*)(e + 0x14) = ff.data.AddScrStringKeepEmpty(Str("tag").c_str());
+                }
+            }
+
             // the delta part: trans then quat2, a key per frame
             if (!deltaTrans.empty()) {
                 *(void**)At(0x18) = (void*)fastfile::linker::memory::POINTER_NEXT;

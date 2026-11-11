@@ -27,5 +27,5 @@ namespace {
         }
     };
 
-    // utils::ArrayAdder<DumpFFHandler, fastfile::FFHandler> arr{ fastfile::GetHandlers() };
+    utils::ArrayAdder<DumpFFHandler, fastfile::FFHandler> arr{ fastfile::GetHandlers() };
 } // namespace
