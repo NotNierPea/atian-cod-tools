@@ -207,6 +207,76 @@ namespace {
             // the presets (0xF8, count 0xF0, 0x70 each: displayName, isValid 0x10, lootId 0x18, matchedWarPaintLootId 0x28,
             // entitlement 0x38, icon 0x48, outfitIcon 0x50, item indexes 0x58..0x6C), the war paints' count (0xC0)
             json.WriteFieldValueNumber("numWarPaints", asset.unkc8_count);
+            // the war paints themselves (0x68 each), raw: their layout isn't mapped yet
+            if (asset.unkc8) {
+                json.WriteFieldNameString("warPaintsRaw");
+                json.BeginArray();
+                for (size_t i = 0; i < asset.unkc8_count; i++) {
+                    const byte* w{ (const byte*)asset.unkc8 + 0x68 * i };
+                    std::string hex{};
+                    for (size_t k = 0; k < 0x68; k++) {
+                        hex += std::format("{:02x}", w[k]);
+                    }
+                    json.WriteValueString(hex);
+                }
+                json.EndArray();
+                // +0x38: the war paint's variant (0x78, as warpaints.cpp's), its override entries at +0x58 (0x18 each:
+                // original material, alternate, image): the materials' names
+                json.WriteFieldNameString("warPaintVariants");
+                json.BeginArray();
+                for (size_t i = 0; i < asset.unkc8_count; i++) {
+                    const byte* w{ (const byte*)asset.unkc8 + 0x68 * i };
+                    // (sub_1405D0080: the variants are at +0x58, 0x78 each, +0x60 their count)
+                    const byte* v{ *(const byte* const*)(w + 0x58) };
+                    json.BeginObject();
+                    if (v) {
+                        std::string hex{};
+                        for (size_t k = 0; k < 0x78; k++) {
+                            hex += std::format("{:02x}", v[k]);
+                        }
+                        json.WriteFieldValueString("raw", hex);
+                        // its override entries (+0x58, count u16 +0x72: original material, alternate, image)
+                        const byte* entries{ *(const byte* const*)(v + 0x58) };
+                        const uint16_t entryCount{ *(const uint16_t*)(v + 0x72) };
+                        json.WriteFieldNameString("entries");
+                        json.BeginArray();
+                        for (size_t e = 0; entries && e < entryCount && e < 64; e++) {
+                            const byte* original{ *(const byte* const*)(entries + 0x18 * e) };
+                            const byte* alternate{ *(const byte* const*)(entries + 0x18 * e + 8) };
+                            const byte* image{ *(const byte* const*)(entries + 0x18 * e + 0x10) };
+                            json.WriteValueString(std::format("{} {} {}",
+                                original ? std::format("hash_{:x}", *(const uint64_t*)original & 0x7FFFFFFFFFFFFFFFull) : std::string{ "-" },
+                                alternate ? std::format("hash_{:x}", *(const uint64_t*)alternate & 0x7FFFFFFFFFFFFFFFull) : std::string{ "-" },
+                                image ? std::format("hash_{:x}", *(const uint64_t*)(image + 0x20) & 0x7FFFFFFFFFFFFFFFull) : std::string{ "-" }));
+                        }
+                        json.EndArray();
+                        for (size_t q : { 0x48, 0x58 }) {
+                            const byte* t{ *(const byte* const*)(w + q) };
+                            std::string th{};
+                            for (size_t k = 0; t && k < 0x20; k++) {
+                                th += std::format("{:02x}", t[k]);
+                            }
+                            json.WriteFieldValueString(q == 0x48 ? "at48" : "at58", th);
+                        }
+                    }
+                    json.EndObject();
+                }
+                json.EndArray();
+            }
+            // the palettes (0xB8, count 0xB0, 0x78 each: the war paint variants of warpaints.cpp, override entries at 0x58), raw
+            if (asset.unkb8) {
+                json.WriteFieldNameString("palettesRaw");
+                json.BeginArray();
+                for (size_t i = 0; i < asset.unkb8_count; i++) {
+                    const byte* pl{ (const byte*)asset.unkb8 + 0x78 * i };
+                    std::string hex{};
+                    for (size_t k = 0; k < 0x78; k++) {
+                        hex += std::format("{:02x}", pl[k]);
+                    }
+                    json.WriteValueString(hex);
+                }
+                json.EndArray();
+            }
             if (asset.unkf8) {
                 json.WriteFieldNameString("presets");
                 json.BeginArray();

@@ -1324,8 +1324,16 @@ namespace {
             std::vector<Alias> aliases{};
             std::vector<SndAssetBankEntryBo4> entries{};
             std::vector<SndAssetBankEntryBo4> streamed{};
-            // a file the bank has already, its entry (variants that differ only in their settings share the asset)
-            std::unordered_map<std::string, uint64_t> fileEntries{};
+            // a file the bank has already, its entries (variants that differ only in their settings share the asset, and
+            // its intro, loop and outro: attack, sustain, release ids)
+            struct FileEntry {
+                uint64_t asset;
+                uint64_t sustain;
+                uint64_t release;
+            };
+            std::unordered_map<std::string, FileEntry> fileEntries{};
+            // an intro/loop/outro part's file (and looping), its entry
+            std::unordered_map<std::string, uint64_t> partEntries{};
             const rapidjson::Value* bankFormat{ Member(scfg.main, "format") };
 
             const rapidjson::Value* cfgAliases{ Member(scfg.main, "aliases") };
@@ -1495,13 +1503,24 @@ namespace {
                     // the file already in the bank: its entry again
                     std::string fileKey{ std::format("{}|{}|{}|{}", (path.parent_path() / files[k].first).lexically_normal().string(),
                                                      flac, streamedAsset, looping) };
-                    if (!asr) {
+                    // (an intro/loop/outro: its parts too, the same three files share their entries)
+                    if (asr) {
+                        auto PartKey = [&](const rapidjson::Value* v) -> std::string {
+                            if (!v) return "-";
+                            if (v->IsString()) return (path.parent_path() / v->GetString()).lexically_normal().string();
+                            return std::format("{}", v->GetDouble());
+                        };
+                        fileKey += std::format("|{}|{}|{}|{}", PartKey(sustainCfg), PartKey(releaseCfg), PartKey(loopStartCfg), PartKey(loopEndCfg));
+                    }
+                    {
                         auto same{ fileEntries.find(fileKey) };
                         if (same != fileEntries.end()) {
                             SetAliasNames(sa);
-                            sa.assetId.name = same->second;
-                            LOG_INFO("Added sound alias {}{} ({}, {}, the asset of {})", alias.name, files.size() > 1 ? std::format(" variant {}", k) : "",
-                                     type, GetAliasField(sa, *FindAliasField("PanType")) ? "3d" : "2d", files[k].first);
+                            sa.assetId.name = same->second.asset;
+                            sa.assetIdSustain.name = same->second.sustain;
+                            sa.assetIdRelease.name = same->second.release;
+                            LOG_INFO("Added sound alias {}{} ({}, {}, the asset{} of {})", alias.name, files.size() > 1 ? std::format(" variant {}", k) : "",
+                                     type, GetAliasField(sa, *FindAliasField("PanType")) ? "3d" : "2d", asr ? "s" : "", files[k].first);
                             continue;
                         }
                     }
@@ -1515,15 +1534,13 @@ namespace {
                     std::string entryName{ k ? std::format("{}/{}/{}", name, alias.name, k) : std::format("{}/{}", name, alias.name) };
                     entry.id = ctx.HashXHash(entryName) & 0x7FFFFFFFFFFFFFFFull;
                     entry.looping = looping ? 1 : 0;
-                    if (!asr) {
-                        fileEntries[fileKey] = entry.id;
-                    }
                     std::vector<SndAssetBankEntryBo4> parts{};
                     if (asr) {
                         SndAssetBankEntryBo4 sustain{}, release{};
                         bool hasRelease{};
-                        if (entry.format != SND_ASSET_FORMAT_PCMS16) {
-                            Fail(std::format("{}: an intro/loop/outro takes wav files", alias.name));
+                        // (cut at loop points: pcm; given as files: wav, or flac ones as the game's own, all three alike)
+                        if (entry.format != SND_ASSET_FORMAT_PCMS16 && !(sustainCfg && entry.format == SND_ASSET_FORMAT_FLAC)) {
+                            Fail(std::format("{}: an intro/loop/outro takes wav files (or flac ones given as files)", alias.name));
                             return;
                         }
                         if (sustainCfg) {
@@ -1553,9 +1570,9 @@ namespace {
                             if ((e == &release && !hasRelease)) {
                                 continue;
                             }
-                            if (e->format != SND_ASSET_FORMAT_PCMS16 || e->channelCount != entry.channelCount ||
+                            if (e->format != entry.format || e->channelCount != entry.channelCount ||
                                 e->frameRateIndex != entry.frameRateIndex || !e->frameCount) {
-                                Fail(std::format("{}: the intro, loop and outro must be wav files of the same channels and rate", alias.name));
+                                Fail(std::format("{}: the intro, loop and outro must be files of the same format, channels and rate", alias.name));
                                 return;
                             }
                         }
@@ -1569,6 +1586,25 @@ namespace {
                         }
                     }
 
+                    // (parts given as files: one entry a file and looping, shared with the other variants that use it)
+                    std::vector<bool> shared(1 + parts.size());
+                    if (!loopStartCfg) {
+                        auto Share = [&](SndAssetBankEntryBo4& e, const std::string& file, size_t i) {
+                            std::string key{ std::format("{}|{}|{}|{}", (path.parent_path() / file).lexically_normal().string(),
+                                                         i ? false : flac, streamedAsset, e.looping) };
+                            auto it{ partEntries.find(key) };
+                            if (it != partEntries.end()) {
+                                e.id = it->second;
+                                shared[i] = true;
+                            } else {
+                                partEntries[key] = e.id;
+                            }
+                        };
+                        Share(entry, files[k].first, 0);
+                        if (parts.size() > 0) Share(parts[0], sustainCfg->GetString(), 1);
+                        if (parts.size() > 1) Share(parts[1], releaseCfg->GetString(), 2);
+                    }
+
                     SetAliasNames(sa);
                     sa.assetId.name = entry.id;
                     if (!parts.empty()) {
@@ -1577,6 +1613,7 @@ namespace {
                     if (parts.size() > 1) {
                         sa.assetIdRelease.name = parts[1].id;
                     }
+                    fileEntries[fileKey] = { entry.id, sa.assetIdSustain.name, sa.assetIdRelease.name };
 
                     LOG_INFO(
                         "Added sound alias {}{} ({}, {}{}{}{}{}, {:.1f} dB, {} Hz, {} channel(s), {} frames, 0x{:x} bytes)",
@@ -1591,11 +1628,14 @@ namespace {
                     );
                     // the entries in the bank, their order the one of the bank
                     std::vector<SndAssetBankEntryBo4>& bank{ streamedAsset ? streamed : entries };
-                    entry.order = (uint32_t)bank.size();
-                    bank.push_back(std::move(entry));
-                    for (SndAssetBankEntryBo4& part : parts) {
-                        part.order = (uint32_t)bank.size();
-                        bank.push_back(std::move(part));
+                    if (!shared[0]) {
+                        entry.order = (uint32_t)bank.size();
+                        bank.push_back(std::move(entry));
+                    }
+                    for (size_t i = 0; i < parts.size(); i++) {
+                        if (shared[i + 1]) continue;
+                        parts[i].order = (uint32_t)bank.size();
+                        bank.push_back(std::move(parts[i]));
                     }
                 }
 

@@ -76,6 +76,8 @@ namespace fastfile::linker::bo4 {
         size_t linkDepth{};
         // the next LinkAsset is an asset of the zone
         bool zoneAsset{};
+        // an xmodel's material is being linked (its images stream with >image.stream.models=true)
+        bool modelMaterial{};
 
         BO4FFContext& GetFFContext(const char* prefix);
 

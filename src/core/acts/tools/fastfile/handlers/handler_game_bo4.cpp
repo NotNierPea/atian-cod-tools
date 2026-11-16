@@ -8,6 +8,7 @@
 #include <hook/module_mapper.hpp>
 #include <hook/memory.hpp>
 #include <hook/error.hpp>
+#include "bo4_old_cipher.hpp"
 #include <tools/fastfile/fastfile_asset_pool.hpp>
 #include <games/bo4/pool.hpp>
 #include <decryptutils.hpp>
@@ -283,6 +284,16 @@ namespace fastfile::handlers::bo4 {
                 return size / 0x108 * 0x100;
             case 0x2E36A05: // an XModel's mesh/material sets (Load_XModel): 0x20 then (two floats after), 0x18 now
                 return size / 0x18 * 0x20;
+            case 0x2E1683E: // the dpvs' group models (sub_142E16820, dpvs +0x2B8): 0x98 then, 0x90 now
+                return 0x98;
+            case 0x2E1674C: // a group model's 0x34 records (sub_142E16520 +0x48): 0x30 then (OldZoneGrow)
+                return size / 0x34 * 0x30;
+            case 0x2E16347: // the group models' effect records (sub_142E16320, group +0x48): 0xA8 then, 0xA0 now
+                return size / 0xA0 * 0xA8;
+            case 0x2E2BF35: // a clipMap heightfield's tiles (sub_142E2BEB0): 0x58 then, 0x50 now
+                return size / 0x50 * 0x58;
+            case 0x2E1F8BD: // the dpvs' static model instances (+0x250): 0x44 then (4 zero bytes at the end), 0x40 now
+                return size / 0x40 * 0x44;
             }
         }
         switch (rva) {
@@ -315,6 +326,18 @@ namespace fastfile::handlers::bo4 {
                 std::memset(data + i * 0x108 + 0x100, 0, 8);
             }
             return true;
+        case 0x2E1674C:
+            if (!getenv("ACTS_OLD_GROW")) {
+                // left old: the client makes them anew once loaded (the block as the linker had it)
+                return false;
+            }
+            // group model records: no u32 at +0x18 then (-1 in every one of zm_mansion's)
+            for (size_t i = size / 0x34; i-- > 0;) {
+                std::memmove(data + i * 0x34 + 0x1C, data + i * 0x30 + 0x18, 0x18);
+                std::memmove(data + i * 0x34, data + i * 0x30, 0x18);
+                *(uint32_t*)(data + i * 0x34 + 0x18) = 0xFFFFFFFF;
+            }
+            return true;
         default:
             return false;
         }
@@ -337,6 +360,45 @@ namespace fastfile::handlers::bo4 {
             // XModel sets {count, mesh, materials, 2 floats} then: the floats dropped (1/128 in the models seen)
             for (size_t i = 0; i < size / 0x18; i++) {
                 std::memmove(data + i * 0x18, data + i * 0x20, 0x18);
+            }
+            return;
+        }
+        if (gcx.oldBuild == 3233729 && rva == 0x2E1683E) {
+            // group models: 8 more bytes at +0x14 then (zeros in sky), the counts and pointers from +0x20 were at +0x28
+            std::memmove(data + 0x14, data + 0x1C, 0x7C);
+            return;
+        }
+        if (gcx.oldBuild == 3233729 && rva == 0x2E16347) {
+            // effect records: a -1 at +0x18 then (no data in the stream), the effect (+0x18 now) at +0x20
+            for (size_t i = 0; i < size / 0xA0; i++) {
+                std::memmove(data + i * 0xA0, data + i * 0xA8, 0x18);
+                std::memmove(data + i * 0xA0 + 0x18, data + i * 0xA8 + 0x20, 0x88);
+            }
+            return;
+        }
+        if (gcx.oldBuild == 3233729 && rva == 0x2E2BF35) {
+            /*
+             * heightfield tiles (33x33 heights): a running offset of their heights at +0x28 then (dropped), the heights
+             * +0x30, bits +0x38, a u32 +0x40, 8 material indices +0x44 (Heightfields puts them in front of the blob),
+             * the blob's size +0x4C and the blob +0x50
+             */
+            for (size_t i = 0; i < size / 0x50; i++) {
+                byte from[0x58];
+                std::memcpy(from, data + i * 0x58, sizeof(from));
+                byte* to{ data + i * 0x50 };
+                std::memcpy(to, from, 0x28);
+                std::memcpy(to + 0x28, from + 0x30, 0x10);
+                std::memcpy(to + 0x38, from + 0x50, 8);
+                std::memcpy(to + 0x40, from + 0x40, 4);
+                std::memcpy(to + 0x48, from + 0x4C, 4);
+                *(uint32_t*)(to + 0x4C) = 0;
+            }
+            return;
+        }
+        if (gcx.oldBuild == 3233729 && rva == 0x2E1F8BD) {
+            // static model instances: their index at +0x38 says 0x44 (sky's 234108), the 4 bytes after +0x40 are zeros
+            for (size_t i = 0; i < size / 0x40; i++) {
+                std::memmove(data + i * 0x40, data + i * 0x44, 0x40);
             }
             return;
         }
@@ -394,11 +456,6 @@ namespace fastfile::handlers::bo4 {
                 old_zone::ImageParts();
                 return true;
             }
-            if (rva == 0x2E1F929 && gcx.oldBuild == 3233729 && old_zone::dpvs && atStreamStart) {
-                // the dpvs' runtime array (+0x280) was a u32 for each static model then, in the zone
-                const size_t oldSize{ 4ull * *(uint32_t*)(old_zone::dpvs + 4) };
-                DB_LoadXFileData(nullptr, oldSize);
-            }
         }
         if (gcx.streamLog.is_open() && atStreamStart && gcx.reader->Loc() >= gcx.streamLogFrom) {
             // and the offset in its block, which the linker's offsets to it (block << 60 | offset + 1) give
@@ -428,7 +485,56 @@ namespace fastfile::handlers::bo4 {
         case XFILE_BLOCK_PHYSICAL:
         case XFILE_BLOCK_MEMMAPPED:
         case XFILE_BLOCK_MEMMAPPED2:
+            if (gcx.oldZone && gcx.oldBuild == 3233729 && rva == 0x2E2C2F0 && !getenv("ACTS_OLD_GROW")) {
+                /*
+                 * TerrainGfx materials as the client loads them: read old (0x100, today's 0x108 has 8 zero bytes at
+                 * the end), their children loaded here, the loader's walk passed (false)
+                 */
+                DB_LoadXFileData(ptr, size);
+                if (const char* rvaDump = getenv("ACTS_DUMP_RVA")) {
+                    // ACTS_DUMP_RVA=<hex rva> ACTS_DUMP_FILE=<file>: the raw data of that read, appended
+                    if (rva == std::strtoull(rvaDump, nullptr, 16) && getenv("ACTS_DUMP_FILE")) {
+                        std::ofstream out{ getenv("ACTS_DUMP_FILE"), std::ios::binary | std::ios::app };
+                        out.write((const char*)ptr, size);
+                    }
+                }
+                DB_IncStreamPos(size);
+                for (size_t i = 0; i < size / 0x100; i++) {
+                    byte* entry{ (byte*)ptr + i * 0x100 };
+                    uint64_t& material{ *(uint64_t*)entry };
+                    DB_PushStreamPos(XFILE_BLOCK_TEMP);
+                    if (material == ~0ull || material == ~1ull) {
+                        const void** inserted{ material == ~1ull ? DB_InsertPointer() : nullptr };
+                        byte* data{ (byte*)DB_AllocStreamPos(0xF) };
+                        material = (uint64_t)data;
+                        reinterpret_cast<void (*)(bool, byte*)>(gcx.gameBase + 0x2E23080)(true, data);
+                        reinterpret_cast<void (*)(byte*)>(gcx.gameBase + 0x2EBB660)(entry);
+                        if (inserted) {
+                            *inserted = (void*)material;
+                        }
+                    } else if (material) {
+                        DB_ConvertOffsetToAlias((void**)entry);
+                    }
+                    DB_PopStreamPos();
+                    uint64_t& bytes{ *(uint64_t*)(entry + 8) };
+                    if (bytes == ~0ull) {
+                        byte* data{ (byte*)DB_AllocStreamPos(1) };
+                        bytes = (uint64_t)data;
+                        Load_Stream(true, data, 0x10);
+                    } else if (bytes) {
+                        DB_ConvertOffsetToPointer((void**)(entry + 8));
+                    }
+                }
+                return false;
+            }
             DB_LoadXFileData(ptr, size);
+            if (const char* rvaDump = getenv("ACTS_DUMP_RVA")) {
+                // ACTS_DUMP_RVA=<hex rva> ACTS_DUMP_FILE=<file>: the raw data of that read, appended
+                if (rva == std::strtoull(rvaDump, nullptr, 16) && getenv("ACTS_DUMP_FILE")) {
+                    std::ofstream out{ getenv("ACTS_DUMP_FILE"), std::ios::binary | std::ios::app };
+                    out.write((const char*)ptr, size);
+                }
+            }
             DB_IncStreamPos(size);
             if (gcx.oldZone) {
                 OldZoneConvert(rva, (byte*)ptr, newSize);
@@ -523,6 +629,61 @@ namespace fastfile::handlers::bo4 {
         }
 
         hook::library::Detour worldDetour{};
+        hook::library::Detour worldImagesDetour{};
+        // the old world's siege anims (WorldImages)
+        uint32_t siegeCount{};
+        uint64_t siegePtr{};
+        uint64_t autoPlayCount{};
+        uint64_t autoPlayPtr{};
+        byte* siegeEntries{};
+        extern byte* world3233729;
+
+        /*
+         * sub_142E1D140: image pointers, the world's 4 at +0x550 (2 in 3233729). The old world had its siegeAnims after
+         * them ({count, pointer} +0x560, 8 each) and siegeAutoPlay (+0x578, 0x14: smid, worldSanimIndex, timeOffset,
+         * shotName, flags); today's 0x18 entries have the sanim pointer first. Read old, made today's apart (the world
+         * loader skips +0x578, set after it).
+         */
+        void WorldImages(bool atStreamStart, uint64_t count, byte* images) {
+            auto original{ worldImagesDetour.GetBase<void(bool, uint64_t, byte*)>() };
+            original(atStreamStart, count, images);
+            if (gcx.oldBuild != 3233729 || !world3233729 || images != world3233729 + 0x550) {
+                return;
+            }
+            std::vector<uint64_t> sanims(siegeCount);
+            if (siegePtr) {
+                byte* p{ (byte*)DB_AllocStreamPos(7) };
+                if (Load_Stream(true, p, 8ull * siegeCount)) {
+                    std::memcpy(sanims.data(), p, 8ull * siegeCount);
+                }
+                for (uint64_t s : sanims) {
+                    if (s == ~0ull || s == ~1ull) {
+                        throw std::runtime_error("old zone: a siege anim in the world itself, not handled");
+                    }
+                }
+            }
+            if (!autoPlayPtr) {
+                return;
+            }
+            byte* p{ (byte*)DB_AllocStreamPos(3) };
+            if (!Load_Stream(true, p, 0x14 * autoPlayCount)) {
+                return;
+            }
+            siegeEntries = gcx.allocator.Alloc<byte>(0x18 * autoPlayCount);
+            std::memset(siegeEntries, 0, 0x18 * autoPlayCount);
+            auto loadSanim{ reinterpret_cast<void (*)(bool, byte*)>(gcx.gameBase + 0x2E1DE20) };
+            auto fixString{ reinterpret_cast<void (*)(void*)>(gcx.gameBase + 0x2EBC480) };
+            for (size_t i = 0; i < autoPlayCount; i++) {
+                const byte* from{ p + i * 0x14 };
+                byte* to{ siegeEntries + i * 0x18 };
+                const uint32_t index{ *(const uint32_t*)(from + 4) };
+                *(uint64_t*)to = index < sanims.size() ? sanims[index] : 0;
+                *(uint32_t*)(to + 8) = *(const uint32_t*)from;
+                std::memcpy(to + 0xC, from + 8, 0xC);
+                loadSanim(false, to);
+                fixString(to + 0x10);
+            }
+        }
 
         constexpr size_t WORLD_SIZE = 0x1AB0;
         constexpr size_t OLD_WORLD_SIZE = 0x1A88;
@@ -566,10 +727,21 @@ namespace fastfile::handlers::bo4 {
                 byte* expanded{ gcx.allocator.Alloc<byte>(WORLD_SIZE) };
                 std::memset(expanded, 0, WORLD_SIZE);
                 Remap(world, expanded, WORLD_3233729_COPIES);
+                // old +0x560: siegeAnims {count, sanim pointers} (not copied), +0x570: siegeAnimsAutoPlay (0x14), see WorldImages
+                siegeCount = *(uint32_t*)(world + 0x560);
+                siegePtr = *(uint64_t*)(world + 0x568);
+                autoPlayCount = *(uint64_t*)(expanded + 0x570);
+                autoPlayPtr = *(uint64_t*)(expanded + 0x578);
+                *(uint64_t*)(expanded + 0x578) = 0;
                 LOG_INFO("old zone: world +0x560 {} {:x}, at stream 0x{:x}", *(uint32_t*)(world + 0x560), *(uint64_t*)(world + 0x568), gcx.reader->Loc());
                 oldWorld = world;
                 world3233729 = expanded;
                 char r{ original(false, expanded) };
+                if (siegeEntries) {
+                    *(uint64_t*)(expanded + 0x570) = autoPlayCount;
+                    *(byte**)(expanded + 0x578) = siegeEntries;
+                }
+                siegeEntries = nullptr;
                 oldWorld = world3233729 = nullptr;
                 return r;
             }
@@ -586,9 +758,9 @@ namespace fastfile::handlers::bo4 {
         hook::library::Detour modelInfoDetour{};
 
         constexpr size_t MODEL_INFO_TABLE_SIZE = 0x4438;
-        // 0x4420 in 3310077, 0x4418 in 3233729
+        // 0x4420 in 3310077 and 3233729
         size_t OldModelInfoTableSize() {
-            return gcx.oldBuild == 3233729 ? 0x4418 : 0x4420;
+            return 0x4420;
         }
 
         template<typename T>
@@ -602,23 +774,29 @@ namespace fastfile::handlers::bo4 {
          */
         void ModelInfo(bool atStreamStart, byte* info) {
             auto fixString{ Game<void (*)(void*)>(0x2EBC430) };
-            if (atStreamStart && !Load_Stream(true, info, 0x200)) {
-                return;
+            if (atStreamStart && gcx.oldBuild == 3233729) {
+                /*
+                 * 0x1F8 then: no u16 at +0x1F2, the counts after it (+0x1F4 i16, +0x1F6 the xmodels', +0x1F9) were 2
+                 * bytes earlier. Made apart (the block goes on after the old size; the game swaps the parent's pointer)
+                 */
+                if (!Load_Stream(true, info, 0x1F8)) {
+                    return;
+                }
+                byte* expanded{ gcx.allocator.Alloc<byte>(0x200) };
+                std::memset(expanded, 0, 0x200);
+                std::memcpy(expanded, info, 0x1F2);
+                std::memcpy(expanded + 0x1F4, info + 0x1F2, 6);
+                info = expanded;
             }
-            if (gcx.oldBuild == 3233729) {
-                // no u16 at +0x1F2 then: the counts after it (+0x1F6 the xmodels', +0x1F9) were 2 bytes earlier
-                std::memmove(info + 0x1F4, info + 0x1F2, 0xC);
-                *(uint16_t*)(info + 0x1F2) = 0;
+            else if (atStreamStart && !Load_Stream(true, info, 0x200)) {
+                return;
             }
             if (*(byte**)(info + 0x18)) {
                 byte* p{ (byte*)DB_AllocStreamPos(7) };
                 *(byte**)(info + 0x18) = p;
-                /*
-                 * 3233729: its count at +0x380 (+0x388 now), and 0x388 bytes long, but 8 zero bytes more when a table
-                 * (+0x20) follows (sky's models; why isn't known)
-                 */
-                const bool old{ gcx.oldBuild == 3233729 };
-                const size_t size{ old && !*(byte**)(info + 0x20) ? 0x388ull : 0x390ull };
+                // the same in 3233729 (it looked 8 bytes off when its 0x1F8 header was read as 0x200)
+                const bool old{ false };
+                const size_t size{ 0x390ull };
                 if (Load_Stream(true, p, size)) {
                     if (old) {
                         byte* expanded{ gcx.allocator.Alloc<byte>(0x390) };
@@ -732,7 +910,61 @@ namespace fastfile::handlers::bo4 {
             byte* expanded{ gcx.allocator.Alloc<byte>(CLIPMAP_SIZE) };
             std::memset(expanded, 0, CLIPMAP_SIZE);
             ExpandClipMap(clipMap, expanded);
-            return original(false, expanded);
+            const char result{ original(false, expanded) };
+            if (gcx.oldBuild == 3233729 && *(byte**)(expanded + 0x28)) {
+                // static model records: no model info (u16 +0x58) was 12345 then, 0x7FFF now
+                for (size_t i = 0; i < *(uint32_t*)(expanded + 0x20); i++) {
+                    uint16_t& index{ *(uint16_t*)(*(byte**)(expanded + 0x28) + i * 0x60 + 0x58) };
+                    if (index >= *(uint32_t*)(expanded + 0x40)) {
+                        index = 0x7FFF;
+                    }
+                }
+            }
+            if (getenv("ACTS_OLD_CM")) {
+                // its model info lists: counts and entries that point nowhere
+                for (size_t l : { 0x30, 0x40 }) {
+                    const uint32_t n{ *(uint32_t*)(expanded + l) };
+                    uint64_t* list{ *(uint64_t**)(expanded + l + 8) };
+                    size_t bad{};
+                    for (size_t i = 0; list && i < n; i++) {
+                        const uint64_t v{ list[i] };
+                        if (v && (v < 0x10000000000ull || v > 0x7FFFFFFFFFFFull) && bad++ < 5) {
+                            LOG_WARNING("old zone: clipMap +0x{:x} entry {} is 0x{:x}", l + 8, i, v);
+                        }
+                    }
+                    LOG_INFO("old zone: clipMap +0x{:x}: {} entries, {} bad, list {}", l + 8, n, bad, (void*)list);
+                }
+                // the 0x60 static model records (+0x28, count +0x20): their u16 at +0x58 against the model infos (+0x48)
+                const uint32_t nr{ *(uint32_t*)(expanded + 0x20) };
+                byte* recs{ *(byte**)(expanded + 0x28) };
+                const uint32_t ni{ *(uint32_t*)(expanded + 0x40) };
+                byte** infos{ *(byte***)(expanded + 0x48) };
+                auto ok = [](const void* v) { return (uint64_t)v > 0x10000000000ull && (uint64_t)v < 0x7FFFFFFFFFFFull; };
+                auto first = [&](byte* inf) -> void* { return ok(inf) && ok(*(byte***)(inf + 0x30)) ? (void*)**(byte***)(inf + 0x30) : nullptr; };
+                std::map<uint32_t, size_t> idx{};
+                size_t same{}, sameAt{};
+                for (size_t i = 0; recs && i < nr; i++) {
+                    byte* r{ recs + i * 0x60 };
+                    idx[*(uint16_t*)(r + 0x58)]++;
+                    byte* model{ *(byte**)r };
+                    if (i < ni && first(infos[i]) == model) same++;
+                    if (i < 8) {
+                        LOG_INFO("old zone: record {}: model {} +0x50 {:x} +0x54 {:x} +0x58 {:x} +0x5c {:x}", i, (void*)model,
+                                 *(uint32_t*)(r + 0x50), *(uint32_t*)(r + 0x54), *(uint32_t*)(r + 0x58), *(uint32_t*)(r + 0x5C));
+                    }
+                }
+                for (size_t m = 0; m < std::min<size_t>(ni, 8); m++) {
+                    byte* inf{ infos[m] };
+                    LOG_INFO("old zone: model info {}: {} xmodels {} first {}", m, (void*)inf, ok(inf) ? inf[0x1F6] : 0, first(inf));
+                }
+                LOG_INFO("old zone: {} static model records, {} index values (first {:x} x{}, last {:x} x{}, 0x3039 x{}, 0x7fff x{}), {} match info i's first model", nr, idx.size(),
+                         idx.empty() ? 0 : idx.begin()->first, idx.empty() ? 0 : idx.begin()->second, idx.empty() ? 0 : idx.rbegin()->first,
+                         idx.empty() ? 0 : idx.rbegin()->second, idx[0x3039], idx[0x7FFF], same);
+                size_t over{};
+                for (auto& [k, v] : idx) if (k >= ni && k != 0x3039 && k != 0x7FFF) over += v;
+                LOG_INFO("old zone: {} records past the model infos", over);
+            }
+            return result;
         }
 
         hook::library::Detour streamerWorldDetour{};
@@ -1040,8 +1272,192 @@ namespace fastfile::handlers::bo4 {
                 loadVisuals(false, e, e);
                 loadVisuals(false, e + 0x40, e);
                 loadTypeBlock(false, e + 0x80, e);
-                for (size_t r = 0; r < 4; r++) {
-                    hashRef(e + 0xC8 + r * 0x10);
+                if (getenv("ACTS_OLD_FXCHECK") && e[0x264] <= 5 && e[0x26E] && !(e[0x264] && (*(uint32_t*)(e + 0x118) & 0x20001000))) {
+                    // what the renderer (sub_142F7C170) reads: one visual at +0, more an array of 0x40 entries; the client's fix first
+                    const size_t n{ e[0x26E] };
+                    uint64_t& v0{ *(uint64_t*)e };
+                    const uint64_t v1{ *(uint64_t*)(e + 0x40) };
+                    int bad{};
+                    if (n == 1) {
+                        if (!v0) v0 = v1;
+                        bad = !v0;
+                    } else if (!v0) {
+                        v0 = v1;
+                        bad = v0 ? 0 : 99;
+                    }
+                    if (n > 1 && v0) {
+                        for (size_t k = 0; k < n; k++) {
+                            uint64_t& m{ *(uint64_t*)(v0 + k * 0x40) };
+                            if (!m && v1) m = *(uint64_t*)(v1 + k * 0x40);
+                            bad += !m;
+                        }
+                    }
+                    if (bad) {
+                        LOG_WARNING("old zone: fx elem {} of asset {}: type {} visuals {} flags {:x}, {} null", i, errorCtx.assetIdx,
+                                    (int)e[0x264], (int)e[0x26E], *(uint32_t*)(e + 0x118), bad);
+                    }
+                    // the materials drawn: their image tables (+0x38, 0x20 each, count byte +0x130)
+                    auto checkMaterial = [&](uint64_t m, bool fromSecond, size_t k) {
+                        if (!m) return;
+                        const byte* mat{ (const byte*)m };
+                        const byte* table{ *(const byte**)(mat + 0x38) };
+                        int nulls{};
+                        for (size_t t = 0; t < mat[0x130]; t++) {
+                            nulls += !table || !*(const uint64_t*)(table + t * 0x20);
+                        }
+                        if (nulls) {
+                            LOG_WARNING("old zone: fx elem {} of asset {} visual {}: material {:x} ({} slot) {} of {} images null", i, errorCtx.assetIdx, k,
+                                        *(uint64_t*)mat, fromSecond ? "second" : "first", nulls, (int)mat[0x130]);
+                        }
+                    };
+                    const uint64_t orig0{ v0 };
+                    if (n == 1) {
+                        checkMaterial(v0, v0 == v1, 0);
+                    } else if (v0) {
+                        for (size_t k = 0; k < n; k++) checkMaterial(*(uint64_t*)(v0 + k * 0x40), v0 == v1, k);
+                    }
+                    (void)orig0;
+                }
+            }
+        }
+
+        hook::library::Detour heightfieldsDetour{};
+
+        // the 64-bit name hash (fnv1a, the top bit clear)
+        uint64_t NameHash(const char* str) {
+            uint64_t h{ 0xCBF29CE484222325ull };
+            for (; *str; str++) {
+                h = (h ^ (byte)*str) * 0x100000001B3ull;
+            }
+            return h & 0x7FFFFFFFFFFFFFFFull;
+        }
+
+        /*
+         * sub_142E2BEB0 (clipMap): heightfields (0xA8; tiles 0x50 at +0x18, count +0; materials at +0x98, count +0xA0).
+         * In 3233729 a tile was 0x58 (OldZoneConvert 0x2E2BF35), a material 0x10 {name string, flags, u32}, today 0x20
+         * {name hash, 0, flags, u32, float}: made apart, the list points at them.
+         */
+        void Heightfields(bool atStreamStart, uint64_t count, byte* fields) {
+            auto original{ heightfieldsDetour.GetBase<void(bool, uint64_t, byte*)>() };
+            if (gcx.oldBuild != 3233729) {
+                original(atStreamStart, count, fields);
+                return;
+            }
+            if (atStreamStart && !Load_Stream(true, fields, 0xA8 * count)) {
+                return;
+            }
+            for (size_t f = 0; f < count; f++) {
+                byte* field{ fields + f * 0xA8 };
+                if (*(uint64_t*)(field + 0x18)) {
+                    const uint32_t n{ *(uint32_t*)field };
+                    byte* tiles{ (byte*)DB_AllocStreamPos(7) };
+                    *(byte**)(field + 0x18) = tiles;
+                    if (Load_Stream(true, tiles, 0x58ull * n)) {
+                        if (const char* hf = getenv("ACTS_OLD_HF_RAW")) {
+                            // the raw old tiles
+                            std::ofstream out{ hf, std::ios::binary | std::ios::app };
+                            out.write((const char*)tiles, 0x58ull * n);
+                        }
+                        std::vector<std::array<byte, 8>> tables(n);
+                        for (size_t t = 0; t < n; t++) {
+                            std::memcpy(tables[t].data(), tiles + t * 0x58 + 0x44, 8);
+                        }
+                        OldZoneConvert(0x2E2BF35, tiles, 0x50ull * n);
+                        for (size_t t = 0; t < n; t++) {
+                            byte* tile{ tiles + t * 0x50 };
+                            const uint16_t c{ *(uint16_t*)(tile + 0x20) };
+                            DB_PushStreamPos(XFILE_BLOCK_MEMMAPPED);
+                            if (*(uint64_t*)(tile + 0x28) == ~0ull) {
+                                byte* p{ (byte*)DB_AllocStreamPos(1) };
+                                *(byte**)(tile + 0x28) = p;
+                                Load_Stream(true, p, 2ull * c);
+                            } else if (*(uint64_t*)(tile + 0x28)) {
+                                DB_ConvertOffsetToPointer((void**)(tile + 0x28));
+                            }
+                            DB_PopStreamPos();
+                            DB_PushStreamPos(XFILE_BLOCK_MEMMAPPED);
+                            if (*(uint64_t*)(tile + 0x30)) {
+                                byte* p{ (byte*)DB_AllocStreamPos(0) };
+                                *(byte**)(tile + 0x30) = p;
+                                Load_Stream(true, p, (c + 7ull) >> 3);
+                            }
+                            DB_PopStreamPos();
+                            DB_PushStreamPos(XFILE_BLOCK_MEMMAPPED);
+                            if (*(uint64_t*)(tile + 0x38) == ~0ull) {
+                                byte* p{ (byte*)DB_AllocStreamPos(0) };
+                                *(byte**)(tile + 0x38) = p;
+                                Load_Stream(true, p, *(uint32_t*)(tile + 0x48));
+                            } else if (*(uint64_t*)(tile + 0x38)) {
+                                DB_ConvertOffsetToPointer((void**)(tile + 0x38));
+                            }
+                            DB_PopStreamPos();
+                            // today's blob: the table (+0x44 entries) then the samples (+0x46 bits); then 3-bit samples only
+                            if (const byte* bits{ *(byte**)(tile + 0x38) }) {
+                                const uint32_t size{ *(uint32_t*)(tile + 0x48) };
+                                byte* blob{ gcx.allocator.Alloc<byte>(8ull + size) };
+                                std::memcpy(blob, tables[t].data(), 8);
+                                std::memcpy(blob + 8, bits, size);
+                                *(byte**)(tile + 0x38) = blob;
+                                *(uint32_t*)(tile + 0x48) = 8 + size;
+                                *(uint16_t*)(tile + 0x44) = 8;
+                                *(uint16_t*)(tile + 0x46) = 3;
+                            } else {
+                                *(uint16_t*)(tile + 0x44) = 1;
+                                *(uint16_t*)(tile + 0x46) = tables[t][0];
+                            }
+                        }
+                    }
+                }
+                if (*(uint64_t*)(field + 0x98)) {
+                    const uint32_t n{ *(uint32_t*)(field + 0xA0) };
+                    uint64_t* list{ (uint64_t*)DB_AllocStreamPos(7) };
+                    *(uint64_t**)(field + 0x98) = list;
+                    if (Load_Stream(true, list, 8ull * n)) {
+                        for (size_t m = 0; m < n; m++) {
+                            if (list[m] != ~0ull) {
+                                if (list[m]) {
+                                    DB_ConvertOffsetToPointer((void**)&list[m]);
+                                }
+                                continue;
+                            }
+                            byte* material{ (byte*)DB_AllocStreamPos(7) };
+                            list[m] = (uint64_t)material;
+                            if (!Load_Stream(true, material, 0x10)) {
+                                continue;
+                            }
+                            const uint64_t rawName{ *(uint64_t*)material };
+                            Load_String(false, (char**)material);
+                            if (getenv("ACTS_OLD_NAMES")) {
+                                const byte* base{ gcx.g_streamBlocks ? gcx.g_streamBlocks[4].data : nullptr };
+                                LOG_INFO("old zone: material name raw {:x} at block 4 +{:x}", rawName, base ? (size_t)(*(byte**)material - base) : 0);
+                            }
+                            byte* made{ gcx.allocator.Alloc<byte>(0x20) };
+                            std::memset(made, 0, 0x20);
+                            const char* name{ *(const char**)material };
+                            if (getenv("ACTS_OLD_NAMES")) {
+                                LOG_INFO("old zone: heightfield material {}", name ? name : "(null)");
+                            }
+                            *(uint64_t*)made = name ? NameHash(name) : 0;
+                            std::memcpy(made + 0x10, material + 8, 8);
+                            list[m] = (uint64_t)made;
+                        }
+                    }
+                }
+                if (getenv("ACTS_OLD_HF")) {
+                    // per tile: its material table (+0x44 entries, bits +0x46) against the field's material count
+                    const uint32_t mats{ *(uint32_t*)(field + 0xA0) };
+                    const uint32_t nt{ *(uint32_t*)field };
+                    byte* tl{ *(byte**)(field + 0x18) };
+                    for (size_t t = 0; tl && t < nt; t++) {
+                        byte* tile{ tl + t * 0x50 };
+                        const uint16_t tc{ *(uint16_t*)(tile + 0x44) };
+                        const uint16_t tb{ *(uint16_t*)(tile + 0x46) };
+                        const byte* blob{ *(byte**)(tile + 0x38) };
+                        uint32_t mx{};
+                        for (size_t i = 0; blob && tc > 1 && i < tc; i++) mx = std::max<uint32_t>(mx, blob[i]);
+                        if (tc <= 1) mx = tb;
+                        if (mx >= mats) LOG_WARNING("old zone: heightfield {} tile {}: material {} of {} (table {}, bits {}, +0x40 {:x} +0x48 {:x} +0x4c {:x})", f, t, mx, mats, tc, tb, *(uint32_t*)(tile + 0x40), *(uint32_t*)(tile + 0x48), *(uint32_t*)(tile + 0x4C));
+                    }
                 }
             }
         }
@@ -1148,7 +1564,7 @@ namespace fastfile::handlers::bo4 {
          */
         constexpr Copy VEHICLE_COPIES[]{
             { 0, 0, 0x1C0 }, { 0x1C8, 0x1C4, 4 }, { 0x1D0, 0x1C8, 0x288 - 0x1D0 }, { 0x298, 0x280, 0x1038 - 0x298 },
-            { 0x1080, 0x1020, 0x11D0 - 0x1080 }, { 0x11D8, 0x1170, 0x1554 - 0x11D8 }, { 0x1574, 0x14EC, 0x1938 - 0x1574 },
+            { 0x1080, 0x1020, 0x1190 - 0x1080 }, { 0x1198, 0x1130, 0x1554 - 0x1198 }, { 0x1574, 0x14EC, 0x1938 - 0x1574 },
             { 0x1944, 0x18B0, 0x1980 - 0x1944 }, { 0x1984, 0x18EC, 0x1A30 - 0x1984 },
         };
 
@@ -1166,6 +1582,11 @@ namespace fastfile::handlers::bo4 {
             std::memset(expanded, 0, 0x1A30);
             Remap(vehicle, expanded, VEHICLE_COPIES);
             *(uint64_t*)(expanded + 0x19D0) = 0;
+            if (const char* f = getenv("ACTS_OLD_VEHICLE")) {
+                // the raw old header, for the layout
+                std::ofstream out{ f, std::ios::binary | std::ios::app };
+                out.write((const char*)vehicle, 0x1998);
+            }
             return original(false, expanded);
         }
 
@@ -1178,6 +1599,8 @@ namespace fastfile::handlers::bo4 {
             fxElemsDetour.Create(gcx.gameBase + 0x2E1A5E0, (void*)FxElems);
             weaponDetour.Create(gcx.gameBase + 0x2E333C0, (void*)Weapon);
             dpvsDetour.Create(gcx.gameBase + 0x2E1F510, (void*)Dpvs);
+            worldImagesDetour.Create(gcx.gameBase + 0x2E1D140, (void*)WorldImages);
+            heightfieldsDetour.Create(gcx.gameBase + 0x2E2BEB0, (void*)Heightfields);
             weaponNamesDetour.Create(gcx.gameBase + 0x2E35C60, (void*)WeaponNames);
             soundBankDetour.Create(gcx.gameBase + 0x2E2A9F0, (void*)SoundBank);
             aliasListsDetour.Create(gcx.gameBase + 0x2E2A810, (void*)AliasLists);
@@ -1275,6 +1698,10 @@ namespace fastfile::handlers::bo4 {
 
     const void** DB_InsertPointer() {
         LOG_TRACE("DB_InsertPointer() {}", hook::library::CodePointer{ _ReturnAddress() });
+        if (gcx.oldZone && getenv("ACTS_OLD_INSERTS")) {
+            LOG_INFO("old zone: insert pointer (asset {} {}) from {}", errorCtx.assetIdx,
+                     errorCtx.lastAsset ? XAssetNameFromId(errorCtx.lastAsset->type) : "?", hook::library::CodePointer{ _ReturnAddress() });
+        }
         XFileBlock index{ gcx.g_streamPosIndex };
         int posStackLoc{ gcx.g_streamPosStackIdx };
         gcx.g_streamPosStack[gcx.g_streamPosStackIdx].index = gcx.g_streamPosIndex;
@@ -1324,7 +1751,38 @@ namespace fastfile::handlers::bo4 {
         return loc;
     }
 
+    // ACTS_OLD_ALIAS_CHECK: an offset into block 4 past where the block is now (the layout went wrong before)
+    void CheckForwardRef(uint64_t ref, const char* kind) {
+        static int told{};
+        if (!getenv("ACTS_OLD_ALIAS_CHECK") || ref >= 0xFFFFFFFFFFFFFFFEull || ((ref - 1) >> 60) != XFILE_BLOCK_VIRTUAL) {
+            return;
+        }
+        static const char* window{ getenv("ACTS_OLD_REF_WINDOW") };
+        if (window) {
+            // every reference into [a, b) of block 4: offset, asset, stream
+            static uint64_t a{ std::strtoull(window, nullptr, 16) };
+            static uint64_t b{ std::strtoull(std::strchr(window, ':') + 1, nullptr, 16) };
+            const uint64_t off{ (ref - 1) & ~0xF000000000000000ull };
+            if (off >= a && off < b && kind[0] == 'p') {
+                static std::ofstream refs{ getenv("ACTS_OLD_REF_FILE") ? getenv("ACTS_OLD_REF_FILE") : "refs.txt" };
+                refs << std::hex << off << " " << std::dec << errorCtx.assetIdx << "\n";
+            }
+            return;
+        }
+        if (told > 30) {
+            return;
+        }
+        byte* now{ gcx.g_streamPosIndex == XFILE_BLOCK_VIRTUAL ? gcx.g_streamPos : gcx.g_streamPosArray[XFILE_BLOCK_VIRTUAL] };
+        byte* at{ gcx.g_streamBlocks[XFILE_BLOCK_VIRTUAL].data + ((ref - 1) & ~0xF000000000000000ull) };
+        if (at > now) {
+            told++;
+            LOG_WARNING("old zone: {} 0x{:x} is 0x{:x} past block 4's position (asset {}, stream 0x{:x}) from {}", kind, ref,
+                        (size_t)(at - now), errorCtx.assetIdx, gcx.reader->Loc(), hook::library::CodePointer{ _ReturnAddress() });
+        }
+    }
+
     void DB_ConvertOffsetToPointer(void** data) {
+        CheckForwardRef(*(uint64_t*)data, "pointer");
         LOG_TRACE("DB_ConvertOffsetToPointer() {}", hook::library::CodePointer{ _ReturnAddress() });
         *data = DB_GetOffsetData(*(uint64_t*)data);
     }
@@ -1334,12 +1792,58 @@ namespace fastfile::handlers::bo4 {
         // an inline marker or no block where the loader wants an alias: a stream of another layout (old builds without
         // their .fd)
         uint64_t ref{ *(uint64_t*)data };
+        CheckForwardRef(ref, "alias");
+        if (const char* f = getenv("ACTS_OLD_ALIAS_LOG")) {
+            // every alias: its block offset, the asset loading
+            static std::ofstream out{ f };
+            out << std::hex << ref << " " << std::dec << errorCtx.assetIdx << "\n";
+        }
         if (ref >= 0xFFFFFFFFFFFFFFFEull || ((ref - 1) >> 60) >= XFILE_BLOCK_COUNT
             || ((ref - 1) & ~0xF000000000000000ull) + 8 > gcx.g_streamBlocks[(ref - 1) >> 60].size) {
             throw std::runtime_error(std::format("DB_ConvertOffsetToAlias of 0x{:x} from {} at stream 0x{:x}", *(uint64_t*)data,
                                                  hook::library::CodePointer{ _ReturnAddress() }, gcx.reader->Loc()));
         }
         *data = *(void**)DB_GetOffsetData(*(uint64_t*)data);
+        if (getenv("ACTS_OLD_ALIAS_VALUES") && errorCtx.assetIdx >= std::strtoull(getenv("ACTS_OLD_ALIAS_VALUES"), nullptr, 10)) {
+            // an alias reads a pointer stored before: a value that points nowhere says the block's layout is off
+            static int told{};
+            const byte* v{ (const byte*)*data };
+            bool ok{ !v };
+            for (size_t b = 0; b < XFILE_BLOCK_COUNT && !ok; b++) {
+                ok = gcx.g_streamBlocks[b].data && v >= gcx.g_streamBlocks[b].data && v < gcx.g_streamBlocks[b].data + gcx.g_streamBlocks[b].size;
+            }
+            if (!ok && (uint64_t)v > 0x10000000000ull && (uint64_t)v < 0x7FFFFFFFFFFFull) {
+                ok = true; // a heap pointer (a header made anew)
+            }
+            if (!ok && told++ < 40) {
+                LOG_WARNING("old zone: alias 0x{:x} read 0x{:x} (asset {} {})", ref, (uint64_t)v, errorCtx.assetIdx,
+                            errorCtx.lastAsset ? XAssetNameFromId(errorCtx.lastAsset->type) : "?");
+            }
+        }
+    }
+
+    const char* DecryptStringOld(char* str) {
+        const byte* b{ (const byte*)str };
+        if (!str || gcx.oldBuild != 3233729 || (b[0] & 0xC0) != 0x80) {
+            return acts::decryptutils::DecryptStringT8(str);
+        }
+        const size_t size{ std::strlen(str) };
+        if (size < 2 || b[1] != size - 1) {
+            return acts::decryptutils::DecryptStringT8(str);
+        }
+        static thread_local char out[0x1000];
+        const uint16_t* keys{ old_fastfiles::CIPHER_3233729[b[0] - 0x80] };
+        size_t i{};
+        for (; i + 2 < size && i + 1 < sizeof(out); i++) {
+            const byte c{ b[i + 2] };
+            const uint16_t key{ i < old_fastfiles::CIPHER_3233729_LENGTH ? keys[i] : (uint16_t)0xFFFF };
+            const int r{ key >> 8 };
+            const byte k{ (byte)(key & 0xFF) };
+            auto rotr = [](byte v, int n) { n &= 7; return (byte)((v >> n) | (v << ((8 - n) & 7))); };
+            out[i] = (char)(key == 0xFFFF ? c : (c == k ? rotr(k, r) : rotr(c ^ k, r)));
+        }
+        out[i] = 0;
+        return out;
     }
 
     void Load_XStringCustom(char** str) {
@@ -1354,8 +1858,14 @@ namespace fastfile::handlers::bo4 {
             acts::decryptutils::DecryptStringT8(ptr)
         );
         AssertCanWrite(*str, size + 1);
+        if (getenv("ACTS_OLD_STR_FILE") && gcx.g_streamBlocks && gcx.g_streamPosIndex == XFILE_BLOCK_VIRTUAL) {
+            // ACTS_OLD_STR_FILE: each block 4 string's offset and the asset reading it
+            static std::ofstream strs{ getenv("ACTS_OLD_STR_FILE") };
+            strs << std::hex << (size_t)((byte*)*str - gcx.g_streamBlocks[XFILE_BLOCK_VIRTUAL].data) << " " << std::dec
+                 << errorCtx.assetIdx << " " << size << "\n";
+        }
         std::memcpy(*str, ptr, size + 1);
-        const char* ds{ acts::decryptutils::DecryptStringT8(*str) };
+        const char* ds{ DecryptStringOld(*str) };
         std::memmove(*str, ds, std::strlen(ds) + 1);
         hashutils::AddPrecomputed(hash::Hash64(ds), ds, true);
         if (gcx.opt->dumpXStrings) {
@@ -1765,6 +2275,10 @@ namespace fastfile::handlers::bo4 {
                             continue;
                         }
                         XAsset_0* ass{ &assetList.assets[i] };
+                        if (gcx.oldBuild == 3233729 && (int)ass->type == 0x75) {
+                            // 3233729's type 0x75 is today's entity list (0x76)
+                            ass->type = (decltype(ass->type))0x76;
+                        }
                         errorCtx.lastAsset = ass;
                         errorCtx.assetIdx = i;
                         const char* assType{ XAssetNameFromId(ass->type) };
@@ -1811,7 +2325,7 @@ namespace fastfile::handlers::bo4 {
                         utils::OutFileCE os{ outStrings, true };
 
                         for (char* xstr : gcx.xstrings) {
-                            os << acts::decryptutils::DecryptStringT8(xstr) << "\n";
+                            os << DecryptStringOld(xstr) << "\n";
                         }
                         LOG_OPT_INFO("Dump xstrings into {}", outStrings.string());
                     }
@@ -1824,6 +2338,16 @@ namespace fastfile::handlers::bo4 {
                     gcx.preloadPos,
                     blockSizes[XFILE_BLOCK_TEMP_PRELOAD]
                 );
+                if (gcx.oldZone) {
+                    // old zones: where each block ended against the header's size (a layout gone wrong shows here)
+                    for (size_t b = 0; b < XFILE_BLOCK_COUNT; b++) {
+                        byte* pos{ gcx.g_streamPosIndex == b ? gcx.g_streamPos : gcx.g_streamPosArray[b] };
+                        if (gcx.g_streamBlocks && gcx.g_streamBlocks[b].data && pos) {
+                            LOG_INFO("old zone: block {} ended at 0x{:x}, 0x{:x} in the header", b,
+                                     (size_t)(pos - gcx.g_streamBlocks[b].data), blockSizes[b]);
+                        }
+                    }
+                }
 
                 if (gcx.compiledZone) {
                     std::filesystem::path outCZ{ gcx.opt->m_output / "bo4" / "compiled" /
@@ -1856,7 +2380,7 @@ namespace fastfile::handlers::bo4 {
             return "";
         if (!IsValidHandle(c))
             return GetValidString(c);
-        return acts::decryptutils::DecryptStringT8(c);
+        return DecryptStringOld(c);
     }
 
     const char* GetEModeName(eModes id) {

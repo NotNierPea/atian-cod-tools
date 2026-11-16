@@ -3062,7 +3062,11 @@ namespace {
                         std::string refId{ std::format(",{}", MaterialAssetName(ctx, material)) };
                         ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, refId.data(), mats[i], false, &ff);
                     } else {
+                        // (its images: drawn on the model, they may stream)
+                        const bool wasModelMaterial{ ctx.modelMaterial };
+                        ctx.modelMaterial = true;
                         ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, material.data(), mats[i], false, &ff);
+                        ctx.modelMaterial = wasModelMaterial;
                     }
                 }
                 ff.data.Align(4);

@@ -19,6 +19,7 @@
  *                         its resident pixels or its streamed parts (to the xpak, under the game's keys);
  *                         ",resident" joins a streamed one's parts into resident pixels
  * >image.stream=true      streams every image of the zone (",resident" keeps one in the fastfile)
+ * >image.stream.models=true  streams the images of the xmodels' own materials only
  * >xpak.name=<name>       name of the xpak, the fastfile name by default
  *
  * A streamed image is cut in up to 4 parts, part 0 is the smallest mips, each next part adds the next bigger
@@ -863,7 +864,9 @@ namespace {
 
             // name.png[,stream|,resident|,nomips|,cover|,hdr|,linear|,bc4]... (several: ",cover,stream")
             std::string idStr{ id };
-            bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false) };
+            // >image.stream.models=true: the images of the xmodels' materials only (UI pictures and effects stay resident)
+            bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false)
+                         || (ctx.modelMaterial && ctx.linkCtx.zone.GetConfigBool("image.stream.models", false)) };
             bool mips{ ctx.linkCtx.zone.GetConfigBool("image.mips", true) };
             bool resident{};
             // the mips keep the alpha test's coverage (cut-out foliage)

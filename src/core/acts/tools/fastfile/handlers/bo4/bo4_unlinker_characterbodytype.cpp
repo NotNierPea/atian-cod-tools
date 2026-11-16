@@ -128,6 +128,21 @@ namespace {
 
             json.WriteFieldValueXAsset("dogtagFriendly", ASSET_TYPE_XMODEL, asset->dogtagFriendly);
             json.WriteFieldValueXAsset("dogTagEnemy", ASSET_TYPE_XMODEL, asset->dogTagEnemy);
+            // the war paint records (0x138: u32 list, u16 list, their counts) and 0x150, raw: their layout isn't mapped yet
+            {
+                auto hexOf = [](const void* p, size_t len) {
+                    std::string h{};
+                    for (size_t k = 0; p && k < len; k++) {
+                        h += std::format("{:02x}", ((const byte*)p)[k]);
+                    }
+                    return h;
+                };
+                json.WriteFieldValueNumber("paintU32Count", asset->unk138.unk0_count);
+                json.WriteFieldValueNumber("paintU16Count", asset->unk138.unk8_count);
+                json.WriteFieldValueString("paintU32", hexOf(asset->unk138.unk0, 4ull * asset->unk138.unk0_count));
+                json.WriteFieldValueString("paintU16", hexOf(asset->unk138.unk8, 2ull * asset->unk138.unk8_count));
+                json.WriteFieldValueString("unk150", hexOf(asset->unk150, 0x100));
+            }
             json.WriteFieldValueXAsset("tagFxSet", ASSET_TYPE_TAGFX, asset->tagFxSet);
             json.WriteFieldValueXAsset("characterFootsteps", ASSET_TYPE_FOOTSTEP_TABLE, asset->characterFootsteps);
             json.WriteFieldValueXAsset(
