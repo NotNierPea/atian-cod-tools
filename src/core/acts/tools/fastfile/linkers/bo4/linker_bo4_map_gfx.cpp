@@ -526,7 +526,14 @@ namespace {
                         ff.data.AllocRuntime(DYNENT_BUFFER_SIZE);
                     }
                     ff.data.PopStream();
-                    // then (after the 0x498 struct and the lut materials) the 4 images at 0x550
+                    // the lut materials (0x540, 0x548: the grade the renderer reads, sub_1434F3EC0; none: core_bootstrap's identity)
+                    for (auto [key, off] : { std::pair<const char*, size_t>{ "lutMaterial", 0x540 }, { "lutMaterialALT", 0x548 } }) {
+                        if (auto m{ cfg.main.FindMember(key) }; m != cfg.main.MemberEnd() && m->value.IsString()) {
+                            ctx.LinkAsset(XAssetType::ASSET_TYPE_MATERIAL, std::format(",{}", m->value.GetString()).data(),
+                                *(void**)(header + off), false, &ff);
+                        }
+                    }
+                    // then the 4 images at 0x550 (never read for rendering)
                     auto images550{ cfg.main.FindMember("images550") };
                     if (images550 != cfg.main.MemberEnd() && images550->value.IsArray()) {
                         for (rapidjson::SizeType j = 0; j < images550->value.Size() && j < 4; j++) {

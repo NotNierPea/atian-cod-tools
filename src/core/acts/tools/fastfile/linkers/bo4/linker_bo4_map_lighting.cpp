@@ -289,6 +289,29 @@ namespace {
                 SkyEntry sky{};
                 // its probes the "probeCube" (when there's one and it has no probeColor of its own)
                 bool cube{};
+                /*
+                 * a baked one (a BO3 map's probe volume, The Giant): "grid" { file, dims [w, h, d] } the 3 grid images'
+                 * pixels (BC6H_UF16 3D, X then Y then Z), resident in the record's handle (type 1); "probes" { data (the
+                 * 0x144s, the first the global one), blends (the 0x25Cs), cubes (a RGBA16F cube a probe, mip-major with the
+                 * 6 faces in each), size, mips } its probe set: the records' u32 list the probes' indices
+                 */
+                std::string gridData{};
+                uint16_t gridDims[3]{};
+                std::string probeData{};
+                std::string blendData{};
+                std::string cubeData{};
+                uint16_t cubeSize{};
+                uint8_t cubeMips{};
+                size_t ProbeCount() const { return probeData.size() / LIGHTMAP_ENTRY_SIZE; }
+                size_t CubeBytes() const {
+                    size_t n{};
+                    for (size_t m = 0; m < cubeMips; m++) {
+                        size_t s{ std::max<size_t>(cubeSize >> m, 1) };
+                        n += PROBE_FACES * s * s * 8;
+                    }
+                    return n;
+                }
+                size_t GridImageBytes() const { return (size_t)((gridDims[0] + 3) / 4) * ((gridDims[1] + 3) / 4) * gridDims[2] * 16; }
             };
             LightingState lightingStates[4]{};
             auto ReadFloats = [&](const rapidjson::Value& v, size_t count, std::vector<float>& out) {
@@ -338,8 +361,59 @@ namespace {
                         ctx.error = true;
                         return;
                     }
+                    if (s.HasMember("grid")) {
+                        const rapidjson::Value& g{ s["grid"] };
+                        if (lightGrid.empty() || !g.IsObject() || !g.HasMember("file") || !g["file"].IsString() || !g.HasMember("dims")
+                            || !g["dims"].IsArray() || g["dims"].Size() != 3) {
+                            LOG_ERROR("lighting {}: lighting state {}'s grid takes file and dims, with the top level's lightGrid", path.string(), j);
+                            ctx.error = true;
+                            return;
+                        }
+                        for (rapidjson::SizeType k = 0; k < 3; k++) {
+                            st.gridDims[k] = (uint16_t)g["dims"][k].GetUint();
+                        }
+                        if (!utils::ReadFile(path.parent_path() / g["file"].GetString(), st.gridData) || st.gridData.size() != 3 * st.GridImageBytes()) {
+                            LOG_ERROR("lighting {}: lighting state {}'s grid {} isn't 3 x {} bytes", path.string(), j, g["file"].GetString(), st.GridImageBytes());
+                            ctx.error = true;
+                            return;
+                        }
+                    }
+                    if (s.HasMember("probes")) {
+                        const rapidjson::Value& p{ s["probes"] };
+                        if (!p.IsObject() || !p.HasMember("data") || !p["data"].IsString() || !p.HasMember("blends") || !p["blends"].IsString()
+                            || !p.HasMember("cubes") || !p["cubes"].IsString() || !p.HasMember("size") || !p["size"].IsUint() || !p.HasMember("mips")
+                            || !p["mips"].IsUint()) {
+                            LOG_ERROR("lighting {}: lighting state {}'s probes take data, blends, cubes, size and mips", path.string(), j);
+                            ctx.error = true;
+                            return;
+                        }
+                        st.cubeSize = (uint16_t)p["size"].GetUint();
+                        st.cubeMips = (uint8_t)p["mips"].GetUint();
+                        if (!utils::ReadFile(path.parent_path() / p["data"].GetString(), st.probeData) || st.probeData.empty()
+                            || st.probeData.size() % LIGHTMAP_ENTRY_SIZE
+                            || !utils::ReadFile(path.parent_path() / p["blends"].GetString(), st.blendData) || st.blendData.size() % 0x25C
+                            || !utils::ReadFile(path.parent_path() / p["cubes"].GetString(), st.cubeData)
+                            || st.cubeData.size() != st.ProbeCount() * st.CubeBytes()) {
+                            LOG_ERROR("lighting {}: lighting state {}'s probe files are bad (0x144s, 0x25Cs, {} cubes of {} bytes)", path.string(), j,
+                                st.ProbeCount(), st.CubeBytes());
+                            ctx.error = true;
+                            return;
+                        }
+                    }
                 }
             }
+
+            // the baked data in the first "bakedRegions" states only (the others, the fallback, the plain grid and probes)
+            const size_t bakedRegions{ (size_t)cfg.GetDouble("bakedRegions", 1000.0) };
+            LightingState plainStates[4]{};
+            for (size_t j = 0; j < 4; j++) {
+                plainStates[j] = lightingStates[j];
+                plainStates[j].gridData.clear();
+                plainStates[j].probeData.clear();
+                plainStates[j].blendData.clear();
+                plainStates[j].cubeData.clear();
+            }
+            auto Baked = [&](size_t i, size_t j) -> const LightingState& { return i < bakedRegions ? lightingStates[j] : plainStates[j]; };
 
             std::vector<std::string> states{};
             // each state's tree size by quality (the u32s of its objects' shadow data)
@@ -381,7 +455,9 @@ namespace {
                         }
                         *(uint64_t*)(record + 0x18) = fastfile::linker::memory::POINTER_NEXT;
                         if (!lightGrid.empty()) {
-                            *(uint64_t*)(record + 0x20) = 1;
+                            // (a baked grid's list: its probes' indices, as the game's)
+                            const LightingState& ls{ Baked(states.size(), j) };
+                            *(uint64_t*)(record + 0x20) = !ls.gridData.empty() && !ls.probeData.empty() ? ls.ProbeCount() : 1;
                             *(uint64_t*)(record + 0x28) = fastfile::linker::memory::POINTER_NEXT;
                         }
 
@@ -402,6 +478,19 @@ namespace {
                         }
 
                         byte* lightmap{ (byte*)data.data() + LIGHTMAPS + 0x58 * j };
+                        if (!Baked(states.size(), j).probeData.empty()) {
+                            // a baked probe set: a cube a probe, the 0x144s, the blends (the loader's 0x10, 0x18, then 0x8)
+                            const LightingState& ls{ Baked(states.size(), j) };
+                            *(uint64_t*)lightmap = ls.ProbeCount();
+                            *(uint64_t*)(lightmap + 8) = fastfile::linker::memory::POINTER_NEXT;
+                            *(uint64_t*)(lightmap + 0x10) = fastfile::linker::memory::POINTER_NEXT;
+                            *(uint32_t*)(lightmap + 0x50) = (uint32_t)(ls.ProbeCount() - 1);
+                            if (!ls.blendData.empty()) {
+                                *(uint64_t*)(lightmap + 0x18) = fastfile::linker::memory::POINTER_NEXT;
+                                *(uint32_t*)(lightmap + 0x54) = (uint32_t)(ls.blendData.size() / 0x25C);
+                            }
+                            continue;
+                        }
                         if (probeImageCount) {
                             *(uint64_t*)lightmap = probeImageCount;
                             *(uint64_t*)(lightmap + 8) = fastfile::linker::memory::POINTER_NEXT;
@@ -584,6 +673,42 @@ namespace {
                     }
                     // the lightmap sets: the 0x144s, then the image list and its images (each in TEMP)
                     for (size_t j = 0; j < 4; j++) {
+                        if (const LightingState& ls{ Baked(i, j) }; !ls.probeData.empty()) {
+                            // a baked set (sub_142E1E260's order): the 0x144s, the blends, the image list, then each probe's
+                            // cube inline as the probeCube one (RGBA16F, a cube array of one, resident)
+                            ff.data.Align(16);
+                            ff.data.WriteStream(ls.probeData.data(), ls.probeData.size());
+                            if (!ls.blendData.empty()) {
+                                ff.data.Align(16);
+                                ff.data.WriteStream(ls.blendData.data(), ls.blendData.size());
+                            }
+                            ff.data.Align(8);
+                            std::vector<uint64_t> list(ls.ProbeCount(), fastfile::linker::memory::POINTER_NEXT);
+                            ff.data.WriteStream(list.data(), list.size() * sizeof(list[0]));
+                            const size_t cubeBytes{ ls.CubeBytes() };
+                            for (size_t k = 0; k < ls.ProbeCount(); k++) {
+                                ff.data.PushStream(XFILE_BLOCK_TEMP);
+                                ff.data.Align(8);
+                                byte image[IMAGE_SIZE]{};
+                                ((XHash*)(image + 0x20))->name = ctx.HashXHash(std::format("{}_probe{}_{}_{}", assetName, i, j, k), true);
+                                *(uint64_t*)(image + 0x18) = fastfile::linker::memory::POINTER_NEXT;
+                                *(uint32_t*)(image + 0x58) = 0x4;
+                                *(uint32_t*)(image + 0x60) = (uint32_t)cubeBytes;
+                                *(uint32_t*)(image + 0x64) = 10;
+                                *(uint16_t*)(image + 0x68) = ls.cubeSize;
+                                *(uint16_t*)(image + 0x6A) = ls.cubeSize;
+                                *(uint16_t*)(image + 0x6C) = 1;
+                                image[0x79] = 5;
+                                image[0x7A] = ls.cubeMips;
+                                ff.data.WriteStream(image, sizeof(image));
+                                ff.data.PopStream();
+                                ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
+                                ff.data.Align(0x100);
+                                ff.data.WriteStream(ls.cubeData.data() + k * cubeBytes, cubeBytes);
+                                ff.data.PopStream();
+                            }
+                            continue;
+                        }
                         if (!lightmapData.empty()) {
                             ff.data.Align(16);
                             ff.data.WriteStream(lightmapData.data(), lightmapData.size());
@@ -653,14 +778,27 @@ namespace {
                                 }
                                 ((XHash*)(image + 0x20))->name = imageName;
                                 *(uint32_t*)(image + 0x58) = 0xB;
-                                *(uint32_t*)(image + 0x60) = 0x10;
-                                *(uint32_t*)(image + 0x64) = 2;
-                                *(uint16_t*)(image + 0x68) = 1;
-                                *(uint16_t*)(image + 0x6A) = 1;
-                                *(uint16_t*)(image + 0x6C) = 1;
+                                const LightingState& ls{ Baked(i, j) };
+                                if (!ls.gridData.empty()) {
+                                    // a baked grid's: BC6H_UF16 3D w x h x d, its texels in the handle's data (zm_mansion's grid
+                                    // images: 272 x 304 x 544, 0x70 / 0x72 its width and height again)
+                                    *(uint32_t*)(image + 0x60) = (uint32_t)ls.GridImageBytes();
+                                    *(uint32_t*)(image + 0x64) = 95;
+                                    *(uint16_t*)(image + 0x68) = ls.gridDims[0];
+                                    *(uint16_t*)(image + 0x6A) = ls.gridDims[1];
+                                    *(uint16_t*)(image + 0x6C) = ls.gridDims[2];
+                                    *(uint16_t*)(image + 0x70) = ls.gridDims[0];
+                                    *(uint16_t*)(image + 0x72) = ls.gridDims[1];
+                                } else {
+                                    *(uint32_t*)(image + 0x60) = 0x10;
+                                    *(uint32_t*)(image + 0x64) = 2;
+                                    *(uint16_t*)(image + 0x68) = 1;
+                                    *(uint16_t*)(image + 0x6A) = 1;
+                                    *(uint16_t*)(image + 0x6C) = 1;
+                                    image[0x70] = 1;
+                                    *(uint16_t*)(image + 0x72) = 1;
+                                }
                                 *(uint16_t*)(image + 0x6E) = 0x40;
-                                image[0x70] = 1;
-                                *(uint16_t*)(image + 0x72) = 1;
                                 *(uint16_t*)(image + 0x74) = 0x100;
                                 image[0x77] = 4;
                                 image[0x79] = 3;
@@ -673,7 +811,8 @@ namespace {
                         // the handle: no id yet (-1), resident, its data in block 5; type 1 points the images in it
                         ff.data.Align(8);
                         byte handle[RECORD_HANDLE_SIZE]{};
-                        const size_t dataSize{ lightGrid.empty() ? RECORD_DATA_SIZE : lightGrid.size() * sizeof(float) };
+                        const LightingState& rs{ Baked(i, j) };
+                        const size_t dataSize{ lightGrid.empty() ? RECORD_DATA_SIZE : !rs.gridData.empty() ? rs.gridData.size() : lightGrid.size() * sizeof(float) };
                         ((XHash*)handle)->name = lightGrid.empty() ? ctx.HashXHash(std::format("{}_lighting_record{}_{}", assetName, i, j), true) : firstImage;
                         *(uint32_t*)(handle + 0x10) = 0xFFFFFFFF;
                         if (!lightGrid.empty()) {
@@ -688,14 +827,19 @@ namespace {
                         if (lightGrid.empty()) {
                             byte recordData[RECORD_DATA_SIZE]{};
                             ff.data.WriteStream(recordData, sizeof(recordData));
+                        } else if (!rs.gridData.empty()) {
+                            ff.data.WriteStream(rs.gridData.data(), rs.gridData.size());
                         } else {
                             ff.data.WriteStream(lightingStates[j].lightGrid.data(), dataSize);
                         }
                         ff.data.PopStream();
-                        // the u32 list after the handle (0x28): one 0
+                        // the u32 list after the handle (0x28): one 0, a baked grid's its probes' indices
                         if (!lightGrid.empty()) {
                             ff.data.Align(4);
-                            ff.data.WriteStream<uint32_t>(0);
+                            const size_t listCount{ !rs.gridData.empty() && !rs.probeData.empty() ? rs.ProbeCount() : 1 };
+                            for (uint32_t u = 0; u < listCount; u++) {
+                                ff.data.WriteStream<uint32_t>(listCount == 1 ? 0 : u);
+                            }
                         }
                     }
                     // the sky entries after the records (sub_142E1DED0): each its model, then its image, by name, then its KLF
