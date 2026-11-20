@@ -124,6 +124,9 @@ namespace fastfile::zone {
                 keyStr = alloc.ClonePtr<char>(keyStr, valLen);
 
                 keyStr[valLen - 1] = 0;
+                if (!assets.contains(assettype)) {
+                    assetOrder.emplace_back(assettype);
+                }
                 std::vector<zone::AssetData>& vals{ assets[assettype] };
                 vals.emplace_back(keyStr, false, lineIdx);
             }

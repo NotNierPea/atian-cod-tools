@@ -47,6 +47,9 @@
  * (99999, the frontend 8000), the image 0x18 (zm_towers' a lat-long sky), a lens flare 0x20 (KLF, zm_towers' sun). The
  * streamer keeps the model's mesh and images in (sub_143715220). "sky": { "model", "image", "rotation", "distance",
  * "lensFlare" } for the 4 qualities, or an array of them by quality.
+ * A state's primary lights (0x10A0 count, 0x10A8 u16 indices into the com_map's, loaded after its objects): the ones the
+ * renderer draws while the camera is in it (cgame's refdef, then the view's, R_SetConstantsInViewInfo). "primaryLights":
+ * the com_map's count, all of them in every state.
  *
  * {
  *     "name": "maps/zm/enh_test.d3dbsp",
@@ -56,6 +59,7 @@
  *     "lightmapData": "gfx/lighting_lightmap_144.bin",
  *     "objectImage": "hash_e4117858d2aa27b",
  *     "list90": true,
+ *     "primaryLights": 265,
  *     "images30": [ "hash_2a12fae3f8cef40", ... ],   // up to 12
  *     "images178": [ "hash_5c02282b50567cdd", ... ], // up to 4
  *     "lightingStates": [ {}, { "exposure": 0.28, "probeColor": [ ... ], "sky": { ... } } ] // by script lighting state
@@ -405,6 +409,8 @@ namespace {
 
             // the baked data in the first "bakedRegions" states only (the others, the fallback, the plain grid and probes)
             const size_t bakedRegions{ (size_t)cfg.GetDouble("bakedRegions", 1000.0) };
+            // the com_map's primary lights each state draws (all of them, 0x10A0 count, 0x10A8 its u16 list)
+            const size_t primaryLights{ std::min<size_t>((size_t)cfg.GetDouble("primaryLights", 0.0), 0xFFFF) };
             LightingState plainStates[4]{};
             for (size_t j = 0; j < 4; j++) {
                 plainStates[j] = lightingStates[j];
@@ -447,6 +453,10 @@ namespace {
                         }
                     }
                     shadowNodes.push_back(nodes);
+                    if (primaryLights) {
+                        *(uint32_t*)(data.data() + 0x10A0) = (uint32_t)primaryLights;
+                        *(uint64_t*)(data.data() + 0x10A8) = fastfile::linker::memory::POINTER_NEXT;
+                    }
                     for (size_t j = 0; j < 4; j++) {
                         *(uint64_t*)(data.data() + 0xF10 + 0x80 * j) = fastfile::linker::memory::POINTER_NEXT;
                         byte* record{ (byte*)data.data() + RECORDS + 0x30 * j };
@@ -670,6 +680,13 @@ namespace {
                 for (size_t i = 0; i < states.size(); i++) {
                     for (size_t j = 0; j < 4; j++) {
                         WriteObject(std::format("{}_lighting_state{}_{}", assetName, i, j), 2, shadowNodes[i][j]);
+                    }
+                    // its primary light list (sub_142E1E260: after the objects, on 2)
+                    if (primaryLights) {
+                        ff.data.Align(2);
+                        for (size_t k = 0; k < primaryLights; k++) {
+                            ff.data.WriteStream<uint16_t>((uint16_t)k);
+                        }
                     }
                     // the lightmap sets: the 0x144s, then the image list and its images (each in TEMP)
                     for (size_t j = 0; j < 4; j++) {

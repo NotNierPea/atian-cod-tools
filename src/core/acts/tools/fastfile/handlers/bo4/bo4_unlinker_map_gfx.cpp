@@ -976,6 +976,10 @@ namespace {
             for (uint32_t i = 0; stateList && i < states; i++) {
                 byte* state{ stateList + 0x14C0 * i };
                 utils::WriteFile(rawDir / std::format("lighting_state{}.bin", i), state, 0x14C0);
+                // its primary light indices (count 0x10A0, ushort list 0x10A8), the lights it draws
+                if (uint16_t* lights{ *(uint16_t**)(state + 0x10A8) }) {
+                    utils::WriteFile(rawDir / std::format("lighting_state{}_lights.bin", i), lights, 2ull * *(uint32_t*)(state + 0x10A0));
+                }
                 // the 4 records at 0x1240 (0x30: 3 images, the streamed data handle at 0x18, u32s 0x20/0x28)
                 BO4JsonWriter rj{};
                 rj.BeginObject();

@@ -822,7 +822,9 @@ namespace {
             XHash& h{ *(XHash*)((byte*)&alias + field.offset) };
             h = {};
             if (*v.GetString()) {
-                h.name = ctx.HashXHash(v.GetString());
+                // (the dumper's "#name" / "#hash_x": the '#' is no part of the name; a duck "#zmb_cinematic" hashed with
+                // it was no duck, zm_giant's loading movie)
+                h.name = ctx.HashXHash(v.GetString(), true);
             }
             return true;
         }
@@ -898,7 +900,7 @@ namespace {
                     return false;
                 }
                 alias.subtitle = {};
-                alias.subtitle.name = ctx.HashXHash(v.GetString());
+                alias.subtitle.name = ctx.HashXHash(v.GetString(), true);
             } else if (!_strcmpi(key, "revFilename")) {
                 // a REV engine alias's file ("Storage": "vehicle", no asset): a "revFiles" entry of the bank by name
                 if (!v.IsString()) {
@@ -906,7 +908,7 @@ namespace {
                     return false;
                 }
                 alias.revFilename = {};
-                alias.revFilename.name = ctx.HashXHash(v.GetString());
+                alias.revFilename.name = ctx.HashXHash(v.GetString(), true);
             } else if (!_strcmpi(key, "pitch")) {
                 ok = Set("PitchMin") && Set("PitchMax");
             } else if (!_strcmpi(key, "minDist")) {
@@ -952,7 +954,7 @@ namespace {
         std::memset(name, 0, sizeof(name));
         std::memcpy(name, v->GetString(), v->GetStringLength());
         id = {};
-        id.name = ctx.HashXHash(v->GetString());
+        id.name = ctx.HashXHash(v->GetString(), true);
         return true;
     }
 
@@ -1079,7 +1081,7 @@ namespace {
                 error = std::format("{}: takes a name", h.key);
                 return false;
             }
-            h.hash->name = *n->GetString() ? ctx.HashXHash(n->GetString()) : 0;
+            h.hash->name = *n->GetString() ? ctx.HashXHash(n->GetString(), true) : 0;
         }
         struct {
             const char* key;
@@ -1690,7 +1692,7 @@ namespace {
                         return;
                     }
                     auto& [revName, revData] { revFiles.emplace_back() };
-                    revName = ctx.HashXHash(rn->GetString());
+                    revName = ctx.HashXHash(rn->GetString(), true);
                     if (!utils::ReadFile(path.parent_path() / rf->GetString(), revData) || revData.empty()) {
                         Fail(std::format("can't read rev file {}", rf->GetString()));
                         return;

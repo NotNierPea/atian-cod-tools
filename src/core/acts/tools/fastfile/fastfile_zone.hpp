@@ -15,6 +15,8 @@ namespace fastfile::zone {
       public:
         core::preprocessor::PreProcessorOption preProcOpt{};
         std::unordered_map<std::string, std::vector<AssetData>> assets;
+        // the asset types in the order the zone first names them (the linkers link by type)
+        std::vector<std::string> assetOrder;
         std::unordered_map<std::string, const char*> cfgs;
 
         void ParseFile(

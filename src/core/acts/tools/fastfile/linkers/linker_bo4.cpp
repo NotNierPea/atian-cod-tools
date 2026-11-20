@@ -137,7 +137,37 @@ namespace fastfile::linker::bo4 {
                 return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
             };
 
+            /*
+             * The types in the map's order, but a type others name by name before them (BEFORE: { named, naming }): a
+             * reference (",name") to an asset of the zone not linked yet wrote an empty asset of the name and the real
+             * one came after it, two of a name in the zone, its unload left the name's entry on freed memory (zm_giant's
+             * DG-2 linked before its anims: the frontend crashed walking the anims' notetracks leaving the match). Only
+             * these moved: all the types in a new order broke the map (its models and lights, zm_giant round 13).
+             */
+            static constexpr std::pair<const char*, const char*> BEFORE[]{
+                { "xanim", "gesture" }, { "xanim", "weapon" }, { "gesture", "gesturetable" }, { "gesture", "weapon" },
+                { "flametable", "weapon" },
+            };
+            std::vector<std::string> typeOrder{};
             for (auto& [t, d] : ctx.zone.assets) {
+                typeOrder.push_back(t);
+            }
+            for (bool moved{ true }; moved;) {
+                moved = false;
+                for (const auto& [named, naming] : BEFORE) {
+                    auto a{ std::find(typeOrder.begin(), typeOrder.end(), named) };
+                    auto b{ std::find(typeOrder.begin(), typeOrder.end(), naming) };
+                    if (a != typeOrder.end() && b != typeOrder.end() && a > b) {
+                        std::string t{ *a };
+                        typeOrder.erase(a);
+                        typeOrder.insert(std::find(typeOrder.begin(), typeOrder.end(), naming), t);
+                        moved = true;
+                    }
+                }
+            }
+
+            for (const std::string& t : typeOrder) {
+                std::vector<fastfile::zone::AssetData>& d{ ctx.zone.assets[t] };
                 XAssetType type{ games::bo4::pool::XAssetIdFromName(t.data()) };
                 if (type == XAssetType::ASSET_TYPE_COUNT) {
                     bo4ctx.error = true;
