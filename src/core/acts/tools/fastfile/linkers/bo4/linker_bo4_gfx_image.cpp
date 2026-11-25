@@ -14,6 +14,7 @@
  *
  * image,name.png          resident, its mips down to 1x1 in the fastfile (like the game's)
  * image,name.png,nomips   resident, one mip (UI pictures drawn at their size)
+ * image,name.png,rgba     resident, one mip, uncompressed at the file's own size (small UI pictures: no block blur)
  * image,name.png,stream   streamed, the mips are in zone/<xpak>.xpak, the fastfile only has the header
  * image,path/name.json    a game image as acts' dumper writes it (lossless), the path from the zone's dir: its header,
  *                         its resident pixels or its streamed parts (to the xpak, under the game's keys);
@@ -862,7 +863,7 @@ namespace {
             if (*id == '#')
                 id++; // ignore start #
 
-            // name.png[,stream|,resident|,nomips|,cover|,hdr|,linear|,bc4]... (several: ",cover,stream")
+            // name.png[,stream|,resident|,nomips|,rgba|,cover|,hdr|,linear|,bc4]... (several: ",cover,stream")
             std::string idStr{ id };
             // >image.stream.models=true: the images of the xmodels' materials only (UI pictures and effects stay resident)
             bool stream{ ctx.linkCtx.zone.GetConfigBool("image.stream", false)
@@ -876,6 +877,8 @@ namespace {
             // not sRGB (normal maps), one channel (gloss, occlusion)
             bool linear{};
             bool bc4{};
+            // uncompressed sRGB, not padded to blocks
+            bool rgba{};
             for (size_t opt{ idStr.find_last_of(',') }; opt != std::string::npos; opt = idStr.find_last_of(',')) {
                 std::string optName{ idStr.substr(opt + 1) };
                 if (optName == "stream" || optName == "streamed") {
@@ -895,6 +898,10 @@ namespace {
                     linear = true;
                 } else if (optName == "bc4") {
                     bc4 = true;
+                } else if (optName == "rgba") {
+                    rgba = true;
+                    stream = false;
+                    mips = false;
                 } else {
                     LOG_ERROR("Unknown image option '{}' for {}", optName, idStr);
                     ctx.error = true;
@@ -1056,6 +1063,23 @@ namespace {
             gfx.pixels = (byte*)fastfile::linker::memory::POINTER_NEXT;
 
             LOG_TRACE("Image: {}x{}x{}", x, y, channels);
+
+            if (rgba) {
+                gfx.width = (uint16_t)x;
+                gfx.height = (uint16_t)y;
+                gfx.imageFormat = GFX_PF_R8G8B8A8_T2;
+                gfx.levelCount = 1;
+                gfx.totalSize = (uint32_t)x * (uint32_t)y * 4;
+
+                ff.data.PushStream(XFILE_BLOCK_PHYSICAL);
+                ff.data.Align(0x100);
+                ff.data.WriteStream(img, gfx.totalSize);
+                ff.data.PopStream();
+
+                ff.data.PopStream();
+                LOG_INFO("Added asset gfximage {} (hash_{:x}), rgba {}x{}", idStr, hash, x, y);
+                return;
+            }
 
             uint32_t blockW{ (uint32_t)((x + 3) / 4) };
             uint32_t blockH{ (uint32_t)((y + 3) / 4) };

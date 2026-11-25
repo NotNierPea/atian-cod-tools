@@ -932,6 +932,18 @@ namespace {
             bool additive{ cfg.GetBool("additive", false) };
             *At(0x120) = player ? 2 : additive ? 1 : !deltaTrans.empty() ? 7 : 6;
             *At(0x123) = player ? 0x29 : !additive && !deltaTrans.empty() ? 1 : 0;
+            /*
+             * First person hand IK (0x121 / 0x122): the game's view model anims hold 3 / 3 where the hands go onto the
+             * gun's tag_ik_loc_le / _ri (keyed at the wrists; idle, sprint, crawl, fire...), 0 / 0 on the hand masks,
+             * the ADS base and the MX9's reload; 2 / 3 (fire) and 0 / 1 (putaway) on a few. Their markups
+             * ("disable_ik_left_hand"...) turn a hand off. With 0 / 0 the slide's move left the hands behind the gun.
+             * "handIK": [3, 3]
+             */
+            if (auto hk{ root.FindMember("handIK") }; hk != root.MemberEnd() && hk->value.IsArray() && hk->value.Size() == 2
+                && hk->value[0].IsInt() && hk->value[1].IsInt()) {
+                *At(0x121) = (byte)hk->value[0].GetInt();
+                *At(0x122) = (byte)hk->value[1].GetInt();
+            }
 
             ff.data.PushStream(XFILE_BLOCK_VIRTUAL);
             *(void**)At(0x08) = (void*)fastfile::linker::memory::POINTER_NEXT;

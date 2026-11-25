@@ -71,6 +71,8 @@ namespace {
     constexpr size_t LIGHTING_SIZE = 0x1F8;
     constexpr size_t STATE_SIZE = 0x14C0;
     constexpr size_t STATE_PLAIN_END = 0x10A0;
+    // the block each script lighting state takes its sun shadow and light grid from (a byte each, sub_14367CEB0, sub_1437151D0)
+    constexpr size_t STATE_BLOCKS = 0x1300;
     constexpr size_t STATE_OBJECT_SIZE = 0x70;
     constexpr size_t STREAM_KEY_SIZE = 0x48;
     constexpr size_t RECORDS = 0x1240;
@@ -99,6 +101,49 @@ namespace {
     constexpr size_t SKY_ENTRY_SIZE = 0x28;
     // the game's low quality grid handles have it at 0x18
     constexpr uint64_t LIGHT_GRID_KEY = 0xef176b74f5d7d291;
+    /*
+     * A lighting state's "exposureAreas": the camera exposure by room, the sun volume block's records (0x13A8 + 0x40 * j,
+     * sub_142E1C7D0 loads them, sub_143660E50 reads them): count 0, the level outside them 4, the 0x50 areas 8, their box
+     * 0x10-0x24, the XY lookup's side 0x28, its index count 0x2C, its side x side { start, count } 0x30, its u32 indices 0x38.
+     * An area: origin 0, half size 0xC, angles 0x18, scale 0x24, radius squared 0x28, cells u16 0x2C/0x2E/0x30, children u16
+     * 0x32, its 6 half floats a cell 0x38 (a face after the other), its children 0x40 (0x50: planes count 0x3C, 0x10 each
+     * at 0x40), priority 0x48.
+     * The file: u32 count, side, index count, 4 unused, the box (6 floats), the areas (their pointers -1 or 0), then for each
+     * its cells, children and their planes, then the lookup and its indices: the loader's order.
+     */
+    constexpr size_t EXPOSURE_HEADER = 0x28;
+    constexpr size_t EXPOSURE_AREA = 0x50;
+
+    bool ExposureAreasValid(const std::string& file) {
+        if (file.size() < EXPOSURE_HEADER) {
+            return false;
+        }
+        const byte* in{ (const byte*)file.data() };
+        const size_t count{ *(const uint32_t*)in };
+        const size_t side{ *(const uint32_t*)(in + 4) };
+        const size_t indices{ *(const uint32_t*)(in + 8) };
+        size_t at{ EXPOSURE_HEADER + EXPOSURE_AREA * count };
+        if (!count || !side || at > file.size()) {
+            return false;
+        }
+        for (size_t r = 0; r < count; r++) {
+            const byte* area{ in + EXPOSURE_HEADER + EXPOSURE_AREA * r };
+            at += 12 * (size_t)*(const uint16_t*)(area + 0x2C) * *(const uint16_t*)(area + 0x2E) * *(const uint16_t*)(area + 0x30);
+            const size_t children{ *(const uint16_t*)(area + 0x32) };
+            const size_t first{ at };
+            at += EXPOSURE_AREA * children;
+            if (at > file.size()) {
+                return false;
+            }
+            for (size_t c = 0; c < children; c++) {
+                at += 0x10 * (size_t)*(const uint32_t*)(in + first + EXPOSURE_AREA * c + 0x3C);
+            }
+            if (at > file.size()) {
+                return false;
+            }
+        }
+        return at + 8 * side * side + 4 * indices == file.size();
+    }
 
     class XAssetLinkerImpl : public XAssetLinker {
       public:
@@ -306,6 +351,8 @@ namespace {
                 std::string cubeData{};
                 uint16_t cubeSize{};
                 uint8_t cubeMips{};
+                // its exposure areas, see EXPOSURE_HEADER
+                std::string exposureData{};
                 size_t ProbeCount() const { return probeData.size() / LIGHTMAP_ENTRY_SIZE; }
                 size_t CubeBytes() const {
                     size_t n{};
@@ -404,6 +451,14 @@ namespace {
                             return;
                         }
                     }
+                    if (s.HasMember("exposureAreas")) {
+                        if (!s["exposureAreas"].IsString() || !utils::ReadFile(path.parent_path() / s["exposureAreas"].GetString(), st.exposureData)
+                            || !ExposureAreasValid(st.exposureData)) {
+                            LOG_ERROR("lighting {}: lighting state {}'s exposureAreas file is bad", path.string(), j);
+                            ctx.error = true;
+                            return;
+                        }
+                    }
                 }
             }
 
@@ -418,8 +473,28 @@ namespace {
                 plainStates[j].probeData.clear();
                 plainStates[j].blendData.clear();
                 plainStates[j].cubeData.clear();
+                plainStates[j].exposureData.clear();
             }
             auto Baked = [&](size_t i, size_t j) -> const LightingState& { return i < bakedRegions ? lightingStates[j] : plainStates[j]; };
+            // "stateBlocks": the block each script lighting state reads (zm_towers' [0, 1, 0, 0]: its own grid after
+            // setlightingstate 1). Without it all 4 read the first block
+            std::array<uint8_t, 4> stateBlocks{};
+            if (auto blocksIt{ cfg.main.FindMember("stateBlocks") }; blocksIt != cfg.main.MemberEnd()) {
+                if (!blocksIt->value.IsArray() || blocksIt->value.Size() != stateBlocks.size()) {
+                    LOG_ERROR("lighting {}: stateBlocks isn't an array of {}", path.string(), stateBlocks.size());
+                    ctx.error = true;
+                    return;
+                }
+                size_t block{};
+                for (auto& v : blocksIt->value.GetArray()) {
+                    if (!v.IsUint() || v.GetUint() >= stateBlocks.size()) {
+                        LOG_ERROR("lighting {}: a stateBlocks entry isn't 0 to {}", path.string(), stateBlocks.size() - 1);
+                        ctx.error = true;
+                        return;
+                    }
+                    stateBlocks[block++] = (uint8_t)v.GetUint();
+                }
+            }
 
             std::vector<std::string> states{};
             // each state's tree size by quality (the u32s of its objects' shadow data)
@@ -435,6 +510,7 @@ namespace {
                     }
                     // the plain values only, then the objects and the records' handles (and images)
                     std::memset(data.data() + STATE_PLAIN_END, 0, STATE_SIZE - STATE_PLAIN_END);
+                    std::memcpy(data.data() + STATE_BLOCKS, stateBlocks.data(), stateBlocks.size());
                     /*
                      * The sun shadow block by quality (0xEA0 + 0x80 * j, its object at 0x70; the view's copy at +0x22E0): the
                      * sun matrix 0x10-0x48, the tree's root grid at u32 0x04 of the data (zm_towers' its part 1, 0x01ADB033),
@@ -472,6 +548,16 @@ namespace {
                         }
 
                         *(float*)(data.data() + SUN_VOLUMES + 0x40 * j + 4) = lightingStates[j].exposure;
+                        if (const std::string& areas{ Baked(states.size(), j).exposureData }; !areas.empty()) {
+                            byte* volume{ (byte*)data.data() + SUN_VOLUMES + 0x40 * j };
+                            *(uint32_t*)volume = *(const uint32_t*)areas.data();
+                            *(uint64_t*)(volume + 0x08) = fastfile::linker::memory::POINTER_NEXT;
+                            std::memcpy(volume + 0x10, areas.data() + 0x10, 0x18);
+                            *(uint32_t*)(volume + 0x28) = *(const uint32_t*)(areas.data() + 4);
+                            *(uint32_t*)(volume + 0x2C) = *(const uint32_t*)(areas.data() + 8);
+                            *(uint64_t*)(volume + 0x30) = fastfile::linker::memory::POINTER_NEXT;
+                            *(uint64_t*)(volume + 0x38) = fastfile::linker::memory::POINTER_NEXT;
+                        }
 
                         const SkyEntry& stateSky{ lightingStates[j].sky };
                         byte* skyEntry{ (byte*)data.data() + SKY_ENTRIES + SKY_ENTRY_SIZE * j };
@@ -873,6 +959,49 @@ namespace {
                             LOG_ERROR("lighting {}: bad lens flare in sky entry {}", path.string(), j);
                             ctx.error = true;
                         }
+                    }
+                    // the exposure areas after the sky entries (sub_142E1C7D0's order)
+                    for (size_t j = 0; j < 4; j++) {
+                        const std::string& file{ Baked(i, j).exposureData };
+                        if (file.empty()) {
+                            continue;
+                        }
+                        const byte* in{ (const byte*)file.data() };
+                        const size_t count{ *(const uint32_t*)in };
+                        const size_t side{ *(const uint32_t*)(in + 4) };
+                        const size_t indices{ *(const uint32_t*)(in + 8) };
+                        const byte* areas{ in + EXPOSURE_HEADER };
+                        const byte* at{ areas + EXPOSURE_AREA * count };
+                        ff.data.Align(8);
+                        ff.data.WriteStream(areas, EXPOSURE_AREA * count);
+                        for (size_t r = 0; r < count; r++) {
+                            const byte* area{ areas + EXPOSURE_AREA * r };
+                            const size_t cells{ 12 * (size_t)*(const uint16_t*)(area + 0x2C) * *(const uint16_t*)(area + 0x2E) * *(const uint16_t*)(area + 0x30) };
+                            ff.data.Align(2);
+                            ff.data.WriteStream(at, cells);
+                            at += cells;
+                            const size_t children{ *(const uint16_t*)(area + 0x32) };
+                            if (!children) {
+                                continue;
+                            }
+                            const byte* childAreas{ at };
+                            ff.data.Align(8);
+                            ff.data.WriteStream(childAreas, EXPOSURE_AREA * children);
+                            at += EXPOSURE_AREA * children;
+                            for (size_t c = 0; c < children; c++) {
+                                const size_t planes{ 0x10 * (size_t)*(const uint32_t*)(childAreas + EXPOSURE_AREA * c + 0x3C) };
+                                if (planes) {
+                                    ff.data.Align(4);
+                                    ff.data.WriteStream(at, planes);
+                                    at += planes;
+                                }
+                            }
+                        }
+                        ff.data.Align(4);
+                        ff.data.WriteStream(at, 8 * side * side);
+                        at += 8 * side * side;
+                        ff.data.Align(4);
+                        ff.data.WriteStream(at, 4 * indices);
                     }
                 }
             }
