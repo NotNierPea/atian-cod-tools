@@ -2787,6 +2787,44 @@ namespace {
                 ctx.AddScrString(boneNames[b], boneIndices[b].name, ff);
             }
             size_t numChildren{ allBones - model.numRootBones };
+            /*
+             * "boneRotations": { "tag_ik_loc_ri": [x, y, z, w] }: a glTF bone's bind rotation (game space, model space
+             * = local: its parent unrotated), else none at rest. For bones with no geometry of their own read as bound:
+             * the 3rd person hand IK takes a weapon's tag_ik_loc_le / _ri straight from its bind quat and trans
+             * (IKImport_GetRightHandIKTagMat), so unrotated ones twisted the hands off the gun.
+             */
+            std::unordered_map<std::string, std::array<double, 4>> boneRot{};
+            if (const rapidjson::Value* br{ Member(cfg.main, "boneRotations") }; !useGameSkel && br && br->IsObject()) {
+                for (auto it{ br->MemberBegin() }; it != br->MemberEnd(); ++it) {
+                    if (!it->value.IsArray() || it->value.Size() != 4) {
+                        continue;
+                    }
+                    std::array<double, 4> q{};
+                    double len{};
+                    for (rapidjson::SizeType k = 0; k < 4; k++) {
+                        q[k] = it->value[k].IsNumber() ? it->value[k].GetDouble() : 0;
+                        len += q[k] * q[k];
+                    }
+                    len = std::sqrt(len);
+                    if (len < 1e-6) {
+                        continue;
+                    }
+                    for (double& c : q) {
+                        c /= len;
+                    }
+                    boneRot[it->name.GetString()] = q;
+                }
+            }
+            auto BindQuat = [&](size_t b) -> const double* {
+                static const double none[4]{ 0, 0, 0, 1 };
+                if (b < boneNames.size()) {
+                    auto it{ boneRot.find(boneNames[b]) };
+                    if (it != boneRot.end()) {
+                        return it->second.data();
+                    }
+                }
+                return none;
+            };
             if (useGameSkel && numChildren) {
                 // the skeleton's as they are
                 model.parentList = (byte*)fastfile::linker::memory::POINTER_NEXT;
@@ -2807,9 +2845,8 @@ namespace {
                 ff.data.WriteStream(parentList.data(), parentList.size());
                 model.quats = (uint64_t*)fastfile::linker::memory::POINTER_NEXT;
                 ff.data.Align(8);
-                double identity[4]{ 0, 0, 0, 1 };
                 for (size_t b = model.numRootBones; b < numBones; b++) {
-                    ff.data.WriteStream<uint64_t>(PackQuat(identity));
+                    ff.data.WriteStream<uint64_t>(PackQuat(BindQuat(b)));
                 }
                 // packed float3 per bone, the 16 bytes a bone the loader reads padded with zeros
                 model.trans = (byte*)fastfile::linker::memory::POINTER_NEXT;
@@ -2856,8 +2893,11 @@ namespace {
             for (size_t b = 0; !useGameSkel && b < numBones; b++) {
                 std::vector<byte> bm{ baseMat };
                 float* f{ (float*)bm.data() };
-                f[0] = f[1] = f[2] = 0;
-                f[3] = 1;
+                const double* q{ BindQuat(b) };
+                f[0] = (float)q[0];
+                f[1] = (float)q[1];
+                f[2] = (float)q[2];
+                f[3] = (float)q[3];
                 f[4] = (float)boneWorld[b][0];
                 f[5] = (float)boneWorld[b][1];
                 f[6] = (float)boneWorld[b][2];
