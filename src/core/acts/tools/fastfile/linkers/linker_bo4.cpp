@@ -271,21 +271,19 @@ namespace fastfile::linker::bo4 {
                 ff.data.Link(blocks);
 
                 /*
-                 * A map zone (a clipMap in it) gets the block the lobby's preload loads it into: the Preload_* loaders
-                 * push XFILE_BLOCK_TEMP_PRELOAD where the Load_* ones push XFILE_BLOCK_TEMP, and it doesn't rewind (the
-                 * level's temp data stays there until DB_FinishPreloadedZone). Empty, the preload wrote the clipMap_t at
-                 * null. Stock levels' are the temp data so counted plus 0x1D8 to 0x248 (zm_towers, zm_mansion,
-                 * zm_office, zm_zodt8 read back).
+                 * Every zone with temp data gets the block a preload loads it into: the Preload_* loaders push
+                 * XFILE_BLOCK_TEMP_PRELOAD where the Load_* ones push XFILE_BLOCK_TEMP, and it doesn't rewind (the temp
+                 * data stays there until DB_FinishPreloadedZone). Empty, the preload writes at null: a map's clipMap_t
+                 * in the lobby's preload, a GfxImage of a zone loaded with core_frontend when the menus come back after
+                 * a match (that load is a preload, flags 0x200, and the whole batch preloads). Stock levels' are the
+                 * temp data so counted plus 0x1D8 to 0x248 (zm_towers, zm_mansion, zm_office, zm_zodt8 read back).
                  */
                 constexpr size_t PRELOAD_MARGIN = 0x1000;
-                for (const fastfile::linker::memory::AssetData* asset : ff.data.assets) {
-                    if (asset->type == games::bo4::pool::ASSET_TYPE_CLIPMAP) {
-                        blocks[XFILE_BLOCK_TEMP_PRELOAD] = std::max<size_t>(
-                            blocks[XFILE_BLOCK_TEMP_PRELOAD], ff.data.blocks[XFILE_BLOCK_TEMP].totalSize + PRELOAD_MARGIN
-                        );
-                        LOG_INFO("Preload block of {}: 0x{:x}", ff.ffname, blocks[XFILE_BLOCK_TEMP_PRELOAD]);
-                        break;
-                    }
+                if (ff.data.blocks[XFILE_BLOCK_TEMP].totalSize) {
+                    blocks[XFILE_BLOCK_TEMP_PRELOAD] = std::max<size_t>(
+                        blocks[XFILE_BLOCK_TEMP_PRELOAD], ff.data.blocks[XFILE_BLOCK_TEMP].totalSize + PRELOAD_MARGIN
+                    );
+                    LOG_INFO("Preload block of {}: 0x{:x}", ff.ffname, blocks[XFILE_BLOCK_TEMP_PRELOAD]);
                 }
 
                 ff.data.WriteLinkedData(data);
